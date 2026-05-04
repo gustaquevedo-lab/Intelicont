@@ -1,0 +1,15 @@
+{
+  "name": "intelicont-web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "echo 'Frontend skeleton - replace with Next.js app'",
+    "build": "echo 'Frontend skeleton - build placeholder'",
+    "lint": "echo 'Frontend lint placeholder'",
+    "test": "echo 'Frontend tests placeholder'"
+  },
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}

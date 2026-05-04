@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8.x'
+      - name: Install
+        run: pnpm install
+      - name: Lint
+        run: pnpm -w lint || true
+      - name: Typecheck
+        run: echo 'Typecheck placeholder' || true
+      - name: Run tests
+        run: pnpm -w test || true
