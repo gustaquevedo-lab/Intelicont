@@ -5,16 +5,13 @@ import {
   FileText,
   Plus,
   Search,
-  Filter,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calendar,
   Sparkles,
   CheckCircle,
-  AlertCircle,
   Clock,
   MoreHorizontal,
   Download,
+  Calendar,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,50 +44,43 @@ export default function AsientosPage() {
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
 
   const asientosFiltrados = mockAsientos.filter((a) => {
-    const matchesSearch =
-      a.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.numero.includes(searchTerm) ||
-      a.empresa.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = a.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) || a.numero.includes(searchTerm) || a.empresa.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesEstado = filtroEstado === "todos" || a.estado === filtroEstado;
     return matchesSearch && matchesEstado;
   });
 
-  const totalPosteados = mockAsientos.filter((a) => a.estado === "Posteado").length;
-  const totalBorradores = mockAsientos.filter((a) => a.estado === "Borrador").length;
-  const sugerenciasIA = mockAsientos.filter((a) => a.sugerenciaIA).length;
-
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Asientos Contables</h1>
-          <p className="text-zinc-400 mt-1">Gestión del libro diario y asientos</p>
+          <h1 className="text-xl lg:text-2xl font-semibold text-white">Asientos Contables</h1>
+          <p className="text-zinc-400 text-sm mt-0.5">Gestión del libro diario y asientos</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors border border-zinc-700">
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors border border-zinc-700">
             <Download className="h-4 w-4" />
-            Exportar
+            <span className="hidden sm:inline">Exportar</span>
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
+          <button className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
             <Plus className="h-4 w-4" />
-            Nuevo Asiento
+            <span className="hidden sm:inline">Nuevo Asiento</span>
           </button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Total Asientos" value={mockAsientos.length.toString()} icon={FileText} />
-        <StatCard title="Posteados" value={totalPosteados.toString()} icon={CheckCircle} color="text-green-400" />
-        <StatCard title="Borradores" value={totalBorradores.toString()} icon={Clock} color="text-yellow-400" />
-        <StatCard title="Sugerencias IA" value={sugerenciasIA.toString()} icon={Sparkles} color="text-purple-400" />
+        <StatCard title="Posteados" value={mockAsientos.filter((a) => a.estado === "Posteado").length.toString()} icon={CheckCircle} color="text-green-400" />
+        <StatCard title="Borradores" value={mockAsientos.filter((a) => a.estado === "Borrador").length.toString()} icon={Clock} color="text-yellow-400" />
+        <StatCard title="Sugerencias IA" value={mockAsientos.filter((a) => a.sugerenciaIA).length.toString()} icon={Sparkles} color="text-purple-400" />
       </div>
 
-      {/* Filters */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden mb-6">
-        <div className="p-4 border-b border-zinc-800">
-          <div className="flex flex-col sm:flex-row gap-3">
+      {/* Filters & List */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+        <div className="p-3 border-b border-zinc-800">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
               <input
@@ -98,16 +88,16 @@ export default function AsientosPage() {
                 placeholder="Buscar asiento..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               {["todos", "Borrador", "Posteado"].map((estado) => (
                 <button
                   key={estado}
                   onClick={() => setFiltroEstado(estado)}
                   className={cn(
-                    "px-3 py-2 rounded-lg text-xs font-medium transition-colors",
+                    "px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap",
                     filtroEstado === estado
                       ? "bg-blue-600 text-white"
                       : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border border-zinc-700"
@@ -120,15 +110,11 @@ export default function AsientosPage() {
           </div>
         </div>
 
-        {/* Asientos List */}
-        <div className="divide-y divide-zinc-800">
+        <div className="divide-y divide-zinc-800/50">
           {asientosFiltrados.map((asiento) => (
-            <div
-              key={asiento.id}
-              className="p-4 hover:bg-zinc-800/40 transition-colors cursor-pointer"
-            >
+            <div key={asiento.id} className="p-3 sm:p-4 hover:bg-zinc-800/30 transition-colors cursor-pointer">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className={cn(
                     "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
                     asiento.sugerenciaIA
@@ -143,7 +129,7 @@ export default function AsientosPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-white text-sm font-medium">{asiento.numero}</p>
+                      <span className="text-white text-sm font-mono font-medium">{asiento.numero}</span>
                       <span className={cn(
                         "inline-flex px-2 py-0.5 rounded text-xs font-medium",
                         asiento.estado === "Posteado" ? "bg-green-900/30 text-green-400" :
@@ -160,26 +146,26 @@ export default function AsientosPage() {
                       )}
                     </div>
                     <p className="text-zinc-400 text-sm mt-0.5 truncate">{asiento.descripcion}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
+                    <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {asiento.fecha}
                       </span>
                       <span>{asiento.empresa}</span>
-                      <span className="text-zinc-600">•</span>
-                      <span>{asiento.origen}</span>
+                      <span className="text-zinc-600 hidden sm:inline">•</span>
+                      <span className="hidden sm:inline">{asiento.origen}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 sm:justify-end">
+                <div className="flex items-center gap-3 sm:justify-end shrink-0">
                   <div className="text-right">
                     <p className="text-white text-sm font-medium tabular-nums">
-                      {asiento.total.toLocaleString("es-PY")} ₲
+                      ₲ {asiento.total.toLocaleString("es-PY")}
                     </p>
                     <p className="text-zinc-500 text-xs">{asiento.lineas} líneas</p>
                   </div>
-                  <button className="p-2 hover:bg-zinc-700 rounded-lg transition-colors shrink-0">
+                  <button className="p-1.5 hover:bg-zinc-700 rounded-lg transition-colors">
                     <MoreHorizontal className="h-4 w-4 text-zinc-500" />
                   </button>
                 </div>
@@ -190,9 +176,8 @@ export default function AsientosPage() {
 
         {asientosFiltrados.length === 0 && (
           <div className="p-12 text-center">
-            <FileText className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+            <FileText className="h-12 w-12 text-zinc-600 mx-auto mb-3" />
             <p className="text-zinc-500 text-sm">No se encontraron asientos</p>
-            <p className="text-zinc-600 text-xs mt-1">Intenta con otros filtros o crea uno nuevo</p>
           </div>
         )}
       </div>
@@ -203,7 +188,7 @@ export default function AsientosPage() {
 function StatCard({ title, value, icon: Icon, color = "text-zinc-400" }: any) {
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-1">
         <span className="text-zinc-400 text-xs uppercase tracking-wide">{title}</span>
         <Icon className={cn("h-4 w-4", color)} />
       </div>
