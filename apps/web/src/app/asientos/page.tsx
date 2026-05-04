@@ -62,10 +62,13 @@ export default function AsientosPage() {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">Exportar</span>
           </button>
-          <button className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
+          <a
+            href="/asientos/nuevo"
+            className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
+          >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Nuevo Asiento</span>
-          </button>
+          </a>
         </div>
       </div>
 
