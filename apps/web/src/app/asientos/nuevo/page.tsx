@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Plus,
@@ -12,8 +13,10 @@ import {
   FileText,
   Building2,
   Save,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createAsiento } from "@/lib/actions";
 
 interface Linea {
   id: string;
@@ -22,7 +25,6 @@ interface Linea {
   descripcion: string;
   debito: string;
   credito: string;
-  centroCosto?: string;
 }
 
 const CUENTAS_MOCK = [
@@ -71,6 +73,10 @@ function formatGs(value: string) {
 }
 
 export default function NuevoAsientoPage() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
   const [fecha, setFecha] = useState(new Date().toISOString().split("T")[0]);
   const [descripcion, setDescripcion] = useState("");
   const [empresa, setEmpresa] = useState("");
@@ -104,13 +110,8 @@ export default function NuevoAsientoPage() {
       lineas.map((l) => {
         if (l.id !== id) return l;
         const updated = { ...l, [field]: value };
-        // If setting a value in debito, clear credito and vice versa
-        if (field === "debito" && parseFloat(value) > 0) {
-          updated.credito = "";
-        }
-        if (field === "credito" && parseFloat(value) > 0) {
-          updated.debito = "";
-        }
+        if (field === "debito" && parseFloat(value) > 0) updated.credito = "";
+        if (field === "credito" && parseFloat(value) > 0) updated.debito = "";
         return updated;
       })
     );
@@ -122,13 +123,40 @@ export default function NuevoAsientoPage() {
   };
 
   const handleSugerenciaIA = () => {
-    // Mock IA suggestion: auto-fill a typical purchase entry
     setDescripcion("Compra mercadería con IVA 10%");
     setLineas([
       { id: uid(), cuenta: "1.2.01", cuentaNombre: "Mercaderías", descripcion: "Compra mercadería gravada 10%", debito: "10000000", credito: "" },
       { id: uid(), cuenta: "1.1.06", cuentaNombre: "IVA Crédito Fiscal", descripcion: "IVA 10% compra", debito: "1000000", credito: "" },
       { id: uid(), cuenta: "2.1.01", cuentaNombre: "Cuentas a Pagar Proveedores", descripcion: "Compra a crédito", debito: "", credito: "11000000" },
     ]);
+  };
+
+  const handlePublicar = () => {
+    setFeedback(null);
+    startTransition(async () => {
+      const result = await createAsiento({
+        entityId: empresa,
+        periodId: "",
+        date: fecha,
+        descripcion,
+        lineas: lineas
+          .filter((l) => l.cuenta)
+          .map((l) => ({
+            accountId: l.cuenta,
+            debit: l.debito || "0",
+            credit: l.credito || "0",
+            currencyCode: "PYG",
+            description: l.descripcion,
+          })),
+      });
+
+      if (result.success) {
+        setFeedback({ type: "success", message: result.message });
+        setTimeout(() => router.push("/asientos"), 1500);
+      } else {
+        setFeedback({ type: "error", message: result.message });
+      }
+    });
   };
 
   const isComplete = descripcion && empresa && totals.balanced && totals.totalDebito > 0;
@@ -155,19 +183,37 @@ export default function NuevoAsientoPage() {
             Sugerir con IA
           </button>
           <button
-            disabled={!isComplete}
+            disabled={!isComplete || isPending}
+            onClick={handlePublicar}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              isComplete
+              isComplete && !isPending
                 ? "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20"
                 : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
             )}
           >
-            <Save className="h-4 w-4" />
-            Publicar Asiento
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {isPending ? "Guardando..." : "Publicar Asiento"}
           </button>
         </div>
       </div>
+
+      {/* Feedback */}
+      {feedback && (
+        <div className={cn(
+          "flex items-center gap-2 p-4 rounded-xl border animate-in",
+          feedback.type === "success"
+            ? "bg-green-900/10 border-green-800/50 text-green-400"
+            : "bg-red-900/10 border-red-800/50 text-red-400"
+        )}>
+          {feedback.type === "success" ? <CheckCircle2 className="h-5 w-5 shrink-0" /> : <AlertCircle className="h-5 w-5 shrink-0" />}
+          <span className="text-sm">{feedback.message}</span>
+        </div>
+      )}
 
       {/* Balance Indicator */}
       <div className={cn(
@@ -199,7 +245,7 @@ export default function NuevoAsientoPage() {
                 ? "bg-green-900/30 text-green-400"
                 : "bg-yellow-900/30 text-yellow-400"
             )}>
-              {totals.balanced && totals.totalDebito > 0 ? "Balanceado" : "Desbalanceado"}
+              {totals.balanced && totals.totalDebito > 0 ? "✓ Balanceado" : "⚠ Desbalanceado"}
             </span>
             {totals.totalDebito > 0 && !totals.balanced && (
               <span className="text-xs text-yellow-400">
@@ -236,11 +282,11 @@ export default function NuevoAsientoPage() {
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
               <option value="">Seleccionar empresa</option>
-              <option>Importadora del Este S.A.</option>
-              <option>Tecnología Asunción SRL</option>
-              <option>Distribuciones Ñandutí SA</option>
-              <option>Consultora Guaraní SRL</option>
-              <option>Frigorífico Central SA</option>
+              <option value="mock-1">Importadora del Este S.A.</option>
+              <option value="mock-2">Tecnología Asunción SRL</option>
+              <option value="mock-3">Distribuciones Ñandutí SA</option>
+              <option value="mock-4">Consultora Guaraní SRL</option>
+              <option value="mock-5">Frigorífico Central SA</option>
             </select>
           </div>
           <div>
@@ -298,21 +344,24 @@ export default function NuevoAsientoPage() {
                         )}
                       </button>
                       {showSuggestions === linea.id && (
-                        <div className="absolute z-20 top-full left-0 mt-1 w-80 max-h-64 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl shadow-black/50">
-                          <div className="p-2 border-b border-zinc-800">
-                            <p className="text-zinc-400 text-xs">Plan de cuentas</p>
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setShowSuggestions(null)} />
+                          <div className="absolute z-20 top-full left-0 mt-1 w-80 max-h-64 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl shadow-black/50">
+                            <div className="p-2 border-b border-zinc-800">
+                              <p className="text-zinc-400 text-xs">Plan de cuentas</p>
+                            </div>
+                            {CUENTAS_MOCK.map((c) => (
+                              <button
+                                key={c.code}
+                                onClick={() => selectCuenta(linea.id, c.code, c.name)}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-800 transition-colors"
+                              >
+                                <span className="text-blue-400 font-mono text-xs">{c.code}</span>{" "}
+                                <span className="text-zinc-300">{c.name}</span>
+                              </button>
+                            ))}
                           </div>
-                          {CUENTAS_MOCK.map((c) => (
-                            <button
-                              key={c.code}
-                              onClick={() => selectCuenta(linea.id, c.code, c.name)}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-800 transition-colors"
-                            >
-                              <span className="text-blue-400 font-mono text-xs">{c.code}</span>{" "}
-                              <span className="text-zinc-300">{c.name}</span>
-                            </button>
-                          ))}
-                        </div>
+                        </>
                       )}
                     </div>
                   </td>
@@ -322,7 +371,7 @@ export default function NuevoAsientoPage() {
                       value={linea.descripcion}
                       onChange={(e) => updateLinea(linea.id, "descripcion", e.target.value)}
                       placeholder="Detalle de la línea"
-                      className="w-full px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50"
+                      className="w-full px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                     />
                   </td>
                   <td className="py-2 px-4">
@@ -334,7 +383,7 @@ export default function NuevoAsientoPage() {
                         updateLinea(linea.id, "debito", val);
                       }}
                       placeholder="0"
-                      className="w-full text-right px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-green-500/50 focus:border-green-500/50"
+                      className="w-full text-right px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-green-500/50"
                     />
                   </td>
                   <td className="py-2 px-4">
@@ -346,7 +395,7 @@ export default function NuevoAsientoPage() {
                         updateLinea(linea.id, "credito", val);
                       }}
                       placeholder="0"
-                      className="w-full text-right px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50"
+                      className="w-full text-right px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                     />
                   </td>
                   <td className="py-2 px-2">

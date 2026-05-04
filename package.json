@@ -13,5 +13,13 @@
     "test": "echo 'Test placeholder'",
     "dev": "echo 'Dev placeholder'"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@trpc/client": "^11.17.0",
+    "@trpc/server": "^11.17.0",
+    "drizzle-orm": "^0.45.2"
+  }
 }
