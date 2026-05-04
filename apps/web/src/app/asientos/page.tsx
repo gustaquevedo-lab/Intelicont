@@ -1,0 +1,213 @@
+"use client";
+
+import { useState } from "react";
+import {
+  FileText,
+  Plus,
+  Search,
+  Filter,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calendar,
+  Sparkles,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  MoreHorizontal,
+  Download,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Asiento {
+  id: string;
+  numero: string;
+  fecha: string;
+  empresa: string;
+  origen: string;
+  estado: "Borrador" | "Posteado" | "Revertido";
+  descripcion: string;
+  total: number;
+  lineas: number;
+  sugerenciaIA?: boolean;
+}
+
+const mockAsientos: Asiento[] = [
+  { id: "JE-001", numero: "001-2026", fecha: "2026-05-01", empresa: "Importadora del Este", origen: "XML SIFEN", estado: "Posteado", descripcion: "Compra mercadería Factura 001-233", total: 15750000, lineas: 4, sugerenciaIA: true },
+  { id: "JE-002", numero: "002-2026", fecha: "2026-05-02", empresa: "Tech Asunción", origen: "Manual", estado: "Posteado", descripcion: "Pago honorarios profesionales", total: 2500000, lineas: 2 },
+  { id: "JE-003", numero: "003-2026", fecha: "2026-05-03", empresa: "Importadora del Este", origen: "XML SIFEN", estado: "Borrador", descripcion: "Venta Factura 002-445", total: 8920000, lineas: 3, sugerenciaIA: true },
+  { id: "JE-004", numero: "004-2026", fecha: "2026-05-04", empresa: "Ñandutí Dist.", origen: "Conciliación", estado: "Posteado", descripcion: "Conciliación bancaria Mayo", total: 5600000, lineas: 2 },
+  { id: "JE-005", numero: "005-2026", fecha: "2026-05-05", empresa: "Frigocentral", origen: "XML SIFEN", estado: "Borrador", descripcion: "Retención IVA proveedor", total: 1230000, lineas: 2, sugerenciaIA: true },
+  { id: "JE-006", numero: "REV-001", fecha: "2026-05-06", empresa: "Tech Asunción", origen: "Reversión", estado: "Posteado", descripcion: "Reversión asiento JE-002 (error imputación)", total: 2500000, lineas: 2 },
+  { id: "JE-007", numero: "006-2026", fecha: "2026-05-07", empresa: "Guaraní Consult.", origen: "Manual", estado: "Posteado", descripcion: "Ajuste por inflación Mayo", total: 890000, lineas: 6 },
+  { id: "JE-008", numero: "007-2026", fecha: "2026-05-08", empresa: "Importadora del Este", origen: "XML SIFEN", estado: "Borrador", descripcion: "Nota de Crédito 001-089", total: 1250000, lineas: 3, sugerenciaIA: true },
+];
+
+export default function AsientosPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+
+  const asientosFiltrados = mockAsientos.filter((a) => {
+    const matchesSearch =
+      a.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.numero.includes(searchTerm) ||
+      a.empresa.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesEstado = filtroEstado === "todos" || a.estado === filtroEstado;
+    return matchesSearch && matchesEstado;
+  });
+
+  const totalPosteados = mockAsientos.filter((a) => a.estado === "Posteado").length;
+  const totalBorradores = mockAsientos.filter((a) => a.estado === "Borrador").length;
+  const sugerenciasIA = mockAsientos.filter((a) => a.sugerenciaIA).length;
+
+  return (
+    <div className="p-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold text-white">Asientos Contables</h1>
+          <p className="text-zinc-400 mt-1">Gestión del libro diario y asientos</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm transition-colors border border-zinc-700">
+            <Download className="h-4 w-4" />
+            Exportar
+          </button>
+          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
+            <Plus className="h-4 w-4" />
+            Nuevo Asiento
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <StatCard title="Total Asientos" value={mockAsientos.length.toString()} icon={FileText} />
+        <StatCard title="Posteados" value={totalPosteados.toString()} icon={CheckCircle} color="text-green-400" />
+        <StatCard title="Borradores" value={totalBorradores.toString()} icon={Clock} color="text-yellow-400" />
+        <StatCard title="Sugerencias IA" value={sugerenciasIA.toString()} icon={Sparkles} color="text-purple-400" />
+      </div>
+
+      {/* Filters */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden mb-6">
+        <div className="p-4 border-b border-zinc-800">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Buscar asiento..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              {["todos", "Borrador", "Posteado"].map((estado) => (
+                <button
+                  key={estado}
+                  onClick={() => setFiltroEstado(estado)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-xs font-medium transition-colors",
+                    filtroEstado === estado
+                      ? "bg-blue-600 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 border border-zinc-700"
+                  )}
+                >
+                  {estado === "todos" ? "Todos" : estado}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Asientos List */}
+        <div className="divide-y divide-zinc-800">
+          {asientosFiltrados.map((asiento) => (
+            <div
+              key={asiento.id}
+              className="p-4 hover:bg-zinc-800/40 transition-colors cursor-pointer"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <div className={cn(
+                    "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                    asiento.sugerenciaIA
+                      ? "bg-purple-900/30 border border-purple-800"
+                      : "bg-zinc-800 border border-zinc-700"
+                  )}>
+                    {asiento.sugerenciaIA ? (
+                      <Sparkles className="h-5 w-5 text-purple-400" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-zinc-400" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-white text-sm font-medium">{asiento.numero}</p>
+                      <span className={cn(
+                        "inline-flex px-2 py-0.5 rounded text-xs font-medium",
+                        asiento.estado === "Posteado" ? "bg-green-900/30 text-green-400" :
+                        asiento.estado === "Borrador" ? "bg-yellow-900/30 text-yellow-400" :
+                        "bg-zinc-800 text-zinc-500"
+                      )}>
+                        {asiento.estado}
+                      </span>
+                      {asiento.sugerenciaIA && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-purple-900/20 text-purple-400 border border-purple-800/50">
+                          <Sparkles className="h-3 w-3" />
+                          IA
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-zinc-400 text-sm mt-0.5 truncate">{asiento.descripcion}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {asiento.fecha}
+                      </span>
+                      <span>{asiento.empresa}</span>
+                      <span className="text-zinc-600">•</span>
+                      <span>{asiento.origen}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 sm:justify-end">
+                  <div className="text-right">
+                    <p className="text-white text-sm font-medium tabular-nums">
+                      {asiento.total.toLocaleString("es-PY")} ₲
+                    </p>
+                    <p className="text-zinc-500 text-xs">{asiento.lineas} líneas</p>
+                  </div>
+                  <button className="p-2 hover:bg-zinc-700 rounded-lg transition-colors shrink-0">
+                    <MoreHorizontal className="h-4 w-4 text-zinc-500" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {asientosFiltrados.length === 0 && (
+          <div className="p-12 text-center">
+            <FileText className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
+            <p className="text-zinc-500 text-sm">No se encontraron asientos</p>
+            <p className="text-zinc-600 text-xs mt-1">Intenta con otros filtros o crea uno nuevo</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, color = "text-zinc-400" }: any) {
+  return (
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-zinc-400 text-xs uppercase tracking-wide">{title}</span>
+        <Icon className={cn("h-4 w-4", color)} />
+      </div>
+      <p className={cn("text-2xl font-bold", color)}>{value}</p>
+    </div>
+  );
+}
