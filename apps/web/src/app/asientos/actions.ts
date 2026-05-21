@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, and, ilike, or, sql } from "drizzle-orm";
+import { eq, and, ilike, or, sql, desc, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import {
@@ -220,6 +220,85 @@ export async function createAsiento(
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error al guardar el asiento";
     return { ok: false, error: msg };
+  }
+}
+
+// ─── List journal entries with totals ────────────────────────────────────────
+
+export interface AsientoRow {
+  id:          string;
+  number:      string;
+  date:        string;
+  description: string;
+  status:      string;
+  source:      string;
+  entityId:    string;
+  entityName:  string;
+  totalDebit:  number;
+  lineCount:   number;
+}
+
+export async function loadAsientos(filters?: {
+  entityId?: string;
+  status?:   string;
+  search?:   string;
+}): Promise<ActionResult<AsientoRow[]>> {
+  try {
+    const db = getDb();
+
+    const conditions = [];
+    if (filters?.entityId) conditions.push(eq(journalEntries.entityId, filters.entityId));
+    if (filters?.status && filters.status !== "todos") {
+      conditions.push(eq(journalEntries.status, filters.status as "draft" | "posted" | "reversed"));
+    }
+    if (filters?.search?.trim()) {
+      const q = `%${filters.search.trim()}%`;
+      conditions.push(or(
+        ilike(journalEntries.description, q),
+        ilike(journalEntries.number, q),
+      ));
+    }
+
+    const rows = await db
+      .select({
+        id:          journalEntries.id,
+        number:      journalEntries.number,
+        date:        journalEntries.date,
+        description: journalEntries.description,
+        status:      journalEntries.status,
+        source:      journalEntries.source,
+        entityId:    journalEntries.entityId,
+        entityName:  entities.legalName,
+        totalDebit:  sql<number>`COALESCE(SUM(${journalLines.debit}::numeric), 0)`,
+        lineCount:   sql<number>`COUNT(${journalLines.id})::int`,
+      })
+      .from(journalEntries)
+      .innerJoin(entities,      eq(journalEntries.entityId, entities.id))
+      .leftJoin(journalLines,   eq(journalLines.entryId, journalEntries.id))
+      .where(conditions.length ? and(...conditions) : undefined)
+      .groupBy(journalEntries.id, entities.legalName)
+      .orderBy(desc(journalEntries.date), desc(journalEntries.createdAt))
+      .limit(200);
+
+    return {
+      ok: true,
+      data: rows.map((r) => ({
+        id:          r.id,
+        number:      r.number ?? "",
+        date:        r.date instanceof Date
+                       ? r.date.toISOString().split("T")[0]
+                       : String(r.date),
+        description: r.description ?? "",
+        status:      r.status ?? "draft",
+        source:      r.source ?? "manual",
+        entityId:    r.entityId,
+        entityName:  r.entityName,
+        totalDebit:  Number(r.totalDebit),
+        lineCount:   Number(r.lineCount),
+      })),
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al cargar asientos" };
   }
 }
 
