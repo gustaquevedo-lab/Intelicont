@@ -17,8 +17,18 @@ function isPublic(pathname: string) {
   );
 }
 
+// Skip auth enforcement when Supabase is not configured (local dev / preview)
+const SUPABASE_CONFIGURED =
+  !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder");
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── No Supabase credentials → pass everything through (dev/preview mode) ──
+  if (!SUPABASE_CONFIGURED) {
+    return NextResponse.next();
+  }
 
   // Refresh the Supabase session on every request (keeps JWT alive)
   const { user, response } = await updateSession(request);
