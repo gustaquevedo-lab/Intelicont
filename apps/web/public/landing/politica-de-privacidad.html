@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidad | InteliCont</title>
+  <meta name="description" content="Política de privacidad de InteliCont. Cómo recopilamos, almacenamos y protegemos tus datos contables y los de tus clientes empresas. IntelliHouse, Paraguay." />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #104c91; --primary-dark: #0a356b; --primary-light: #256ebf;
+      --primary-600: #1561e1; --secondary: #00a651; --secondary-dark: #00823e;
+      --body-bg: #f0f4f8; --text-dark: #0f172a; --text-muted: #64748b; --border: #e2e8f0;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--body-bg); color: var(--text-dark); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(16,76,145,0.07); transition: box-shadow 0.3s; }
+    .navbar.scrolled { box-shadow: 0 2px 24px rgba(16,76,145,0.10); }
+    .navbar-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-text span:first-child { font-size: 18px; font-weight: 700; color: var(--primary-light); }
+    .nav-logo-text span:last-child { font-size: 18px; font-weight: 800; color: var(--secondary); }
+    .btn-nav { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white; font-weight: 700; font-size: 14px; padding: 10px 22px; border-radius: 12px; border: none; cursor: pointer; text-decoration: none; box-shadow: 0 4px 18px rgba(0,166,81,0.35); transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-nav:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,166,81,0.45); }
+
+    .page-hero { background: linear-gradient(135deg, #071e3d 0%, #0d3a6b 35%, #104c91 70%, #1561e1 100%); padding: 120px 24px 80px; text-align: center; position: relative; overflow: hidden; }
+    .page-hero::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1px); background-size: 26px 26px; pointer-events: none; }
+    .page-hero-inner { max-width: 800px; margin: 0 auto; position: relative; z-index: 1; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,166,81,0.15); border: 1px solid rgba(0,166,81,0.3); border-radius: 99px; padding: 6px 16px; margin-bottom: 28px; }
+    .hero-badge span { font-size: 12px; font-weight: 700; color: #4ade80; letter-spacing: 0.04em; }
+    .page-hero h1 { font-size: clamp(32px, 4.5vw, 52px); font-weight: 900; line-height: 1.08; letter-spacing: -0.03em; color: white; margin-bottom: 20px; }
+    .page-hero p { font-size: 17px; line-height: 1.7; color: rgba(255,255,255,0.72); max-width: 600px; margin: 0 auto; }
+
+    .content-outer { max-width: 1100px; margin: 0 auto; padding: 64px 24px 96px; display: grid; grid-template-columns: 260px 1fr; gap: 48px; align-items: start; }
+    .sidebar { position: sticky; top: 92px; }
+    .sidebar-card { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(16,76,145,0.06); overflow: hidden; }
+    .sidebar-header { background: linear-gradient(135deg, var(--primary), var(--primary-600)); padding: 16px 20px; }
+    .sidebar-header h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.8); }
+    .sidebar-links { padding: 8px 0; }
+    .sidebar-links a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; transition: all 0.2s; border-left: 3px solid transparent; }
+    .sidebar-links a:hover { color: var(--primary); background: #f8faff; border-left-color: var(--primary-600); }
+    .sidebar-links .num { font-size: 11px; font-weight: 800; color: var(--primary-600); width: 20px; flex-shrink: 0; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; transition: color 0.2s; margin-bottom: 20px; }
+    .back-link:hover { color: var(--primary); }
+
+    .section-block { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(16,76,145,0.06); margin-bottom: 24px; overflow: hidden; }
+    .section-block-header { display: flex; align-items: center; gap: 20px; padding: 28px 32px 0; }
+    .section-num { font-size: 48px; font-weight: 900; color: var(--border); line-height: 1; letter-spacing: -0.04em; flex-shrink: 0; user-select: none; }
+    .section-block-header h2 { font-size: 20px; font-weight: 800; color: var(--text-dark); letter-spacing: -0.01em; line-height: 1.3; }
+    .section-block-body { padding: 16px 32px 32px; }
+    .section-block-body p { font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 14px; }
+    .section-block-body p:last-child { margin-bottom: 0; }
+    .section-block-body ul { margin: 12px 0 14px 20px; }
+    .section-block-body ul li { font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 8px; }
+    .section-block-body ul li::marker { color: var(--primary-600); }
+
+    .callout { display: flex; gap: 14px; align-items: flex-start; border-radius: 12px; padding: 18px 20px; margin: 18px 0; }
+    .callout.blue { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .callout.green { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .callout.purple { background: #f5f3ff; border: 1px solid #ddd6fe; }
+    .callout p { font-size: 14px; color: #334155; line-height: 1.7; margin-bottom: 0 !important; }
+    .callout strong { color: var(--text-dark); }
+
+    .data-table { width: 100%; border-collapse: collapse; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin: 16px 0 20px; }
+    .data-table thead tr { background: linear-gradient(135deg, var(--primary), var(--primary-600)); }
+    .data-table thead th { padding: 12px 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: white; text-align: left; }
+    .data-table tbody tr { border-bottom: 1px solid var(--border); }
+    .data-table tbody tr:last-child { border-bottom: none; }
+    .data-table tbody tr:nth-child(even) { background: #f8faff; }
+    .data-table td { padding: 12px 16px; font-size: 14px; color: #334155; vertical-align: top; line-height: 1.6; }
+    .data-table td:first-child { font-weight: 600; color: var(--text-dark); white-space: nowrap; }
+
+    .footer-mini { background: #0f172a; color: rgba(255,255,255,0.5); padding: 32px 24px; text-align: center; font-size: 14px; }
+    .footer-mini a { color: rgba(255,255,255,0.6); text-decoration: none; margin: 0 8px; }
+    .footer-mini a:hover { color: white; }
+
+    @media (max-width: 768px) {
+      .content-outer { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .section-block-body { padding: 16px 20px 24px; }
+      .section-block-header { padding: 20px 20px 0; }
+      .data-table { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <div class="navbar-inner">
+    <a href="/landing/" class="nav-logo">
+      <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="pBg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#1a6eff"/><stop offset="1" stop-color="#0d47c9"/></linearGradient></defs>
+        <rect width="40" height="40" rx="11" fill="url(#pBg)"/>
+        <rect x="7" y="12" width="26" height="2.5" rx="1.25" fill="white"/>
+        <rect x="18.75" y="12" width="2.5" height="17" rx="1.25" fill="white"/>
+        <rect x="9" y="19.5" width="7" height="2" rx="1" fill="rgba(255,255,255,0.8)"/>
+        <rect x="9" y="23.5" width="5" height="2" rx="1" fill="rgba(255,255,255,0.5)"/>
+        <path d="M23.5 21.5 L26 24.5 L32 18" stroke="#00d46a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="33.5" cy="6.5" r="3.5" fill="#00a651"/>
+      </svg>
+      <div class="nav-logo-text"><span>Inteli</span><span>Cont</span></div>
+    </a>
+    <a href="/app" class="btn-nav">Empezar gratis</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="hero-badge"><span>🔒 Privacidad · Última actualización: Mayo 2026</span></div>
+    <h1>Política de Privacidad</h1>
+    <p>Tus datos contables son confidenciales. Acá explicamos exactamente qué recopilamos, cómo lo protegemos y cuáles son tus derechos.</p>
+  </div>
+</section>
+
+<div class="content-outer">
+  <aside class="sidebar">
+    <a href="/landing/" class="back-link">← Volver a InteliCont</a>
+    <div class="sidebar-card">
+      <div class="sidebar-header"><h3>Contenido</h3></div>
+      <div class="sidebar-links">
+        <a href="#p1"><span class="num">01</span>Responsable</a>
+        <a href="#p2"><span class="num">02</span>Qué datos recopilamos</a>
+        <a href="#p3"><span class="num">03</span>Cómo usamos los datos</a>
+        <a href="#p4"><span class="num">04</span>Compartición de datos</a>
+        <a href="#p5"><span class="num">05</span>Seguridad</a>
+        <a href="#p6"><span class="num">06</span>IA y datos contables</a>
+        <a href="#p7"><span class="num">07</span>Retención y eliminación</a>
+        <a href="#p8"><span class="num">08</span>Tus derechos</a>
+        <a href="#p9"><span class="num">09</span>Cookies</a>
+        <a href="#p10"><span class="num">10</span>Contacto</a>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+
+    <div class="section-block" id="p1">
+      <div class="section-block-header">
+        <div class="section-num">01</div>
+        <h2>Responsable del Tratamiento</h2>
+      </div>
+      <div class="section-block-body">
+        <p>El responsable del tratamiento de tus datos es:</p>
+        <ul>
+          <li><strong>Razón social:</strong> IntelliHouse Soluciones E.A.S.</li>
+          <li><strong>RUC:</strong> 80144114-5</li>
+          <li><strong>Domicilio:</strong> Pedro Juan Caballero, Amambay, Paraguay</li>
+          <li><strong>Email de privacidad:</strong> <a href="mailto:privacidad@intelicont.com.py" style="color:var(--primary-600);">privacidad@intelicont.com.py</a></li>
+          <li><strong>Teléfono:</strong> +595 994 516 360</li>
+        </ul>
+        <div class="callout green">
+          <span style="font-size:18px;">🛡️</span>
+          <p><strong>Compromiso:</strong> IntelliHouse trata los datos de nuestros clientes y los de sus empresas gestionadas con el mismo nivel de cuidado que un contador aplica al secreto profesional. Nunca los vendemos, nunca los compartimos con anunciantes.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block" id="p2">
+      <div class="section-block-header">
+        <div class="section-num">02</div>
+        <h2>Qué Datos Recopilamos</h2>
+      </div>
+      <div class="section-block-body">
+        <table class="data-table">
+          <thead><tr><th>Categoría</th><th>Datos específicos</th><th>Fuente</th></tr></thead>
+          <tbody>
+            <tr><td>Cuenta de usuario</td><td>Nombre, email, contraseña (hash), teléfono, RUC personal</td><td>Registro directo</td></tr>
+            <tr><td>Datos de empresa</td><td>RUC, razón social, dirección, régimen fiscal, plan de cuentas, asientos contables</td><td>Usuario / SIFEN</td></tr>
+            <tr><td>Comprobantes fiscales</td><td>XMLs SIFEN, timbrados, CDC, datos de proveedores y clientes</td><td>SIFEN / usuario</td></tr>
+            <tr><td>Datos de uso</td><td>Páginas visitadas, acciones realizadas, timestamps, IP de acceso</td><td>Automático</td></tr>
+            <tr><td>Dispositivo</td><td>Tipo de navegador, sistema operativo, resolución (sin fingerprinting)</td><td>Automático</td></tr>
+            <tr><td>Pagos</td><td>Plan contratado, historial de facturación (no almacenamos tarjetas)</td><td>Procesador de pagos</td></tr>
+          </tbody>
+        </table>
+        <p>No recopilamos datos sensibles (salud, biometría, creencias) ni datos de menores.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="p3">
+      <div class="section-block-header">
+        <div class="section-num">03</div>
+        <h2>Cómo Usamos los Datos</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Usamos los datos exclusivamente para las siguientes finalidades:</p>
+        <ul>
+          <li><strong>Prestación del servicio:</strong> procesar asientos, generar libros, importar SIFEN, enviar alertas fiscales</li>
+          <li><strong>Mejora del producto:</strong> análisis de uso agregado y anonimizado para detectar fricciones y priorizar funciones</li>
+          <li><strong>Comunicaciones del servicio:</strong> notificaciones de vencimientos, actualizaciones críticas, alertas de seguridad</li>
+          <li><strong>Soporte:</strong> diagnóstico de problemas cuando lo solicitás</li>
+          <li><strong>Facturación:</strong> emisión de recibos y gestión de suscripciones</li>
+          <li><strong>Cumplimiento legal:</strong> respuesta a requerimientos legales en Paraguay</li>
+        </ul>
+        <p><strong>No usamos tus datos</strong> para publicidad de terceros, perfilado para venta ni entrenamiento de modelos de IA públicos.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="p4">
+      <div class="section-block-header">
+        <div class="section-num">04</div>
+        <h2>Compartición de Datos con Terceros</h2>
+      </div>
+      <div class="section-block-body">
+        <p>IntelliHouse <strong>no vende datos</strong> a terceros. Podemos compartir datos limitados solo con los siguientes proveedores de infraestructura, bajo contratos de confidencialidad:</p>
+        <table class="data-table">
+          <thead><tr><th>Proveedor</th><th>Finalidad</th><th>Datos compartidos</th></tr></thead>
+          <tbody>
+            <tr><td>Supabase (EE.UU.)</td><td>Base de datos y autenticación</td><td>Todos los datos del sistema</td></tr>
+            <tr><td>Vercel (EE.UU.)</td><td>Hosting de la aplicación web</td><td>Logs de acceso, IP</td></tr>
+            <tr><td>Anthropic (EE.UU.)</td><td>Sugerencias de asientos por IA</td><td>Datos contables anonimizados en contexto</td></tr>
+            <tr><td>Sentry (EE.UU.)</td><td>Monitoreo de errores</td><td>Stack traces, sin datos personales</td></tr>
+            <tr><td>PostHog (EU)</td><td>Analítica de producto</td><td>Eventos de uso anonimizados</td></tr>
+          </tbody>
+        </table>
+        <p>Ante requerimiento judicial o de autoridad competente en Paraguay, podemos estar obligados a revelar datos. Notificaremos al usuario siempre que sea legalmente posible.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="p5">
+      <div class="section-block-header">
+        <div class="section-num">05</div>
+        <h2>Seguridad de los Datos</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Implementamos medidas técnicas y organizativas para proteger tus datos:</p>
+        <ul>
+          <li><strong>Cifrado en reposo:</strong> AES-256 para todos los datos almacenados</li>
+          <li><strong>Cifrado en tránsito:</strong> TLS 1.3 en todas las comunicaciones</li>
+          <li><strong>Aislamiento multi-tenant:</strong> Row Level Security (RLS) en base de datos — cada empresa solo ve sus propios datos</li>
+          <li><strong>Autenticación:</strong> 2FA disponible, sesiones con expiración automática</li>
+          <li><strong>Backups:</strong> diarios con retención de 90 días, en servidores separados</li>
+          <li><strong>Acceso interno:</strong> los empleados de IntelliHouse solo acceden a datos de clientes con justificación documentada y para soporte autorizado</li>
+          <li><strong>Auditoría:</strong> log inmutable de todos los accesos y cambios (audit_events)</li>
+        </ul>
+        <div class="callout blue">
+          <span style="font-size:18px;">🔐</span>
+          <p><strong>Incidente de seguridad:</strong> en caso de brecha que afecte datos personales, notificaremos a los usuarios afectados en un plazo máximo de 72 horas con descripción del incidente y medidas tomadas.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block" id="p6">
+      <div class="section-block-header">
+        <div class="section-num">06</div>
+        <h2>Inteligencia Artificial y Datos Contables</h2>
+      </div>
+      <div class="section-block-body">
+        <p>InteliCont usa modelos de inteligencia artificial (Anthropic Claude) para generar sugerencias de asientos contables. Esto implica que fragmentos de tus datos contables se envían a la API de Anthropic como contexto.</p>
+        <div class="callout purple">
+          <span style="font-size:18px;">🤖</span>
+          <p><strong>Garantías sobre IA:</strong> los datos enviados a Anthropic se usan exclusivamente para generar la respuesta de esa sesión. Bajo los términos de uso de la API de Anthropic, los datos de clientes de API no se usan para entrenar sus modelos públicos. Las sugerencias siempre requieren aprobación humana — la IA nunca registra un asiento sin confirmación del usuario.</p>
+        </div>
+        <p>Podés optar por desactivar las funciones de IA desde la configuración de tu cuenta, en cuyo caso ningún dato contable se envía a modelos externos.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="p7">
+      <div class="section-block-header">
+        <div class="section-num">07</div>
+        <h2>Retención y Eliminación de Datos</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Conservamos tus datos mientras tu cuenta esté activa y por el período necesario para cumplir obligaciones legales.</p>
+        <table class="data-table">
+          <thead><tr><th>Tipo de dato</th><th>Período de retención</th></tr></thead>
+          <tbody>
+            <tr><td>Datos de cuenta activa</td><td>Mientras la cuenta esté activa</td></tr>
+            <tr><td>Datos contables (asientos, libros)</td><td>10 años desde la operación (requerimiento fiscal PY)</td></tr>
+            <tr><td>Datos tras cancelación</td><td>60 días para exportación, luego eliminación definitiva</td></tr>
+            <tr><td>Logs de auditoría</td><td>5 años (cumplimiento legal)</td></tr>
+            <tr><td>Datos de uso anonimizados</td><td>Indefinido (no permiten identificación)</td></tr>
+            <tr><td>Backups</td><td>90 días, luego rotación automática</td></tr>
+          </tbody>
+        </table>
+        <p>Para solicitar la eliminación anticipada de tus datos, contactá a <a href="mailto:privacidad@intelicont.com.py" style="color:var(--primary-600);">privacidad@intelicont.com.py</a>. Los datos sujetos a retención legal (10 años para registros contables) no pueden eliminarse antes del plazo.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="p8">
+      <div class="section-block-header">
+        <div class="section-num">08</div>
+        <h2>Tus Derechos</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Tenés los siguientes derechos sobre tus datos personales:</p>
+        <ul>
+          <li><strong>Acceso:</strong> solicitá una copia de todos los datos que tenemos sobre vos</li>
+          <li><strong>Rectificación:</strong> corregí datos incorrectos directamente desde tu perfil o contactándonos</li>
+          <li><strong>Exportación:</strong> descargá todos tus datos en formato estándar (CSV, JSON, PDF) desde el panel de configuración</li>
+          <li><strong>Eliminación:</strong> solicitá la eliminación de tu cuenta y datos (sujeto a retención legal)</li>
+          <li><strong>Oposición al tratamiento:</strong> podés oponerte a ciertos tratamientos (ej. analítica de uso) desde la configuración</li>
+          <li><strong>Portabilidad:</strong> recibí tus datos en formato estructurado y legible por máquina</li>
+        </ul>
+        <p>Para ejercer cualquiera de estos derechos, escribí a <a href="mailto:privacidad@intelicont.com.py" style="color:var(--primary-600);">privacidad@intelicont.com.py</a> con asunto "Ejercicio de derechos ARCO". Respondemos en máximo 30 días hábiles.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="p9">
+      <div class="section-block-header">
+        <div class="section-num">09</div>
+        <h2>Cookies y Tecnologías Similares</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Usamos cookies y almacenamiento local con las siguientes finalidades:</p>
+        <ul>
+          <li><strong>Sesión (esencial):</strong> mantener tu sesión iniciada, no se puede desactivar</li>
+          <li><strong>Preferencias (funcional):</strong> recordar configuración de idioma, empresa activa, modo de vista</li>
+          <li><strong>Analítica (opcional):</strong> PostHog para entender cómo se usa la aplicación y mejorarla — podés desactivarlas</li>
+        </ul>
+        <p>No usamos cookies de publicidad ni de seguimiento cross-site. Podés gestionar las cookies opcionales desde "Configuración → Privacidad" en la aplicación.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="p10">
+      <div class="section-block-header">
+        <div class="section-num">10</div>
+        <h2>Contacto y Actualizaciones</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Para cualquier consulta sobre privacidad o ejercicio de derechos:</p>
+        <ul>
+          <li><strong>Email:</strong> <a href="mailto:privacidad@intelicont.com.py" style="color:var(--primary-600);">privacidad@intelicont.com.py</a></li>
+          <li><strong>WhatsApp:</strong> <a href="https://wa.me/595994516360" style="color:var(--primary-600);">+595 994 516 360</a></li>
+          <li><strong>Dirección:</strong> IntelliHouse · Pedro Juan Caballero, Amambay, Paraguay</li>
+        </ul>
+        <p>Esta política puede actualizarse. Las modificaciones significativas se notificarán por email con al menos 15 días de anticipación. La versión vigente siempre está disponible en este URL.</p>
+        <div class="callout green">
+          <span style="font-size:18px;">✅</span>
+          <p><strong>Última actualización:</strong> Mayo 2026. Versión 1.0.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer class="footer-mini">
+  <p>© 2026 Todos los derechos reservados. IntelliHouse Soluciones E.A.S. RUC 80144114-5 · <a href="/landing/">InteliCont</a> · <a href="/landing/terminos-de-uso.html">Términos</a> · <a href="/landing/politica-de-privacidad.html">Privacidad</a> · <a href="https://wa.me/595994516360">+595 994 516 360</a></p>
+</footer>
+
+<script>
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 20));
+</script>
+</body>
+</html>

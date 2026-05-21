@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/app-shell";
@@ -6,8 +6,67 @@ import AppShell from "@/components/app-shell";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Intelicont — SaaS Contable AI-First",
-  description: "Plataforma contable inteligente para Paraguay. Rápida, moderna y automatizada.",
+  title: {
+    default: "InteliCont — Software Contable AI-First para Paraguay",
+    template: "%s | InteliCont",
+  },
+  description:
+    "Gestioná múltiples empresas, automatizá SIFEN, generá Hechauka y RG90 automáticamente. El software contable más avanzado de Paraguay, con IA incluida.",
+  keywords: [
+    "software contable Paraguay",
+    "contabilidad SIFEN",
+    "Hechauka automático",
+    "RG90 Paraguay",
+    "software SET DNIT",
+    "multi-empresa contabilidad",
+    "InteliCont",
+    "Intellihouse",
+  ],
+  authors: [{ name: "Intellihouse", url: "https://intelicont.com.py" }],
+  creator: "Intellihouse",
+  publisher: "Intellihouse",
+  metadataBase: new URL("https://intelicont.com.py"),
+  openGraph: {
+    type: "website",
+    locale: "es_PY",
+    url: "https://intelicont.com.py",
+    siteName: "InteliCont",
+    title: "InteliCont — La contabilidad de tu estudio, automatizada",
+    description:
+      "Gestioná N empresas con SIFEN integrado, IA que sugiere asientos y cierre de período en horas. Hecho para Paraguay.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "InteliCont — Dashboard contable inteligente para Paraguay",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "InteliCont — La contabilidad de tu estudio, automatizada",
+    description:
+      "SIFEN integrado. Multi-empresa. IA incluida. El software que los contadores paraguayos estaban esperando.",
+    images: ["/og-image.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#104c91",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

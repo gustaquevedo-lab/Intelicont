@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InteliCont — Software Contable AI-First para Paraguay</title>
+  <meta name="description" content="El software contable más avanzado de Paraguay. Gestioná múltiples contribuyentes, automatizá SIFEN, Hechauka y RG90. IA incluida. Hecho para estudios contables y empresas paraguayas." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://intelicont.com.py/" />
+
+  <!-- Open Graph / WhatsApp -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://intelicont.com.py/" />
+  <meta property="og:title" content="InteliCont — La contabilidad de tu estudio, automatizada" />
+  <meta property="og:description" content="Gestioná múltiples contribuyentes con SIFEN integrado, IA que sugiere asientos y cierre de período en horas. Hecho para Paraguay." />
+  <meta property="og:image" content="https://intelicont.com.py/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="InteliCont — Software contable AI-First para Paraguay" />
+  <meta property="og:locale" content="es_PY" />
+  <meta property="og:site_name" content="InteliCont" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="InteliCont — La contabilidad de tu estudio, automatizada" />
+  <meta name="twitter:description" content="SIFEN integrado. Multi-contribuyente. IA incluida. El software que los contadores paraguayos estaban esperando." />
+  <meta name="twitter:image" content="https://intelicont.com.py/og-image.png" />
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "InteliCont",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "https://intelicont.com.py",
+    "description": "Software de contabilidad AI-First para estudios contables y empresas del Paraguay. Gestión multi-contribuyente, SIFEN integrado, libros automáticos, cumplimiento DNIT completo.",
+    "offers": [
+      { "@type": "Offer", "name": "Estándar", "price": "275000", "priceCurrency": "PYG", "billingIncrement": "P1M" },
+      { "@type": "Offer", "name": "Pro", "price": "385000", "priceCurrency": "PYG", "billingIncrement": "P1M" },
+      { "@type": "Offer", "name": "Corporativo", "price": "594000", "priceCurrency": "PYG", "billingIncrement": "P1M" }
+    ],
+    "publisher": {
+      "@type": "Organization",
+      "name": "IntelliHouse Soluciones E.A.S.",
+      "url": "https://intelicont.com.py",
+      "taxID": "80144114-5",
+      "address": { "@type": "PostalAddress", "addressLocality": "Pedro Juan Caballero", "addressCountry": "PY" },
+      "contactPoint": { "@type": "ContactPoint", "telephone": "+595-994-516-360", "contactType": "customer service", "availableLanguage": "Spanish" }
+    }
+  }
+  </script>
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0d47c9;
+      --primary-light: #1a6eff;
+      --primary-dark: #0a35a0;
+      --secondary: #00a651;
+      --secondary-dark: #00823e;
+      --secondary-light: #00d46a;
+      --accent: #3AAFA9;
+      --body-bg: #f0f4f8;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--body-bg); color: var(--text-dark); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+    /* ── NAVBAR ── */
+    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,255,255,0.93); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(13,71,201,0.08); transition: box-shadow 0.3s; }
+    .navbar.scrolled { box-shadow: 0 2px 24px rgba(13,71,201,0.10); }
+    .navbar-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-icon { width: 34px; height: 34px; flex-shrink: 0; }
+    .nav-logo-text { display: flex; align-items: baseline; line-height: 1; }
+    .nav-logo-text .i { font-size: 17px; font-weight: 900; color: var(--primary-light); letter-spacing: -0.035em; }
+    .nav-logo-text .c { font-size: 17px; font-weight: 300; color: var(--secondary); letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a { font-size: 14px; font-weight: 600; color: #475569; text-decoration: none; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-py { display: inline-flex; align-items: center; gap: 7px; background: #f0f4ff; border: 1px solid #dde4f8; border-radius: 99px; padding: 5px 13px 5px 10px; font-size: 11px; font-weight: 700; color: #3b5bdb; letter-spacing: 0.02em; white-space: nowrap; user-select: none; }
+    .nav-py svg { border-radius: 2px; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(0,0,0,0.10); }
+    .btn-nav { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white; font-weight: 700; font-size: 14px; padding: 10px 22px; border-radius: 12px; border: none; cursor: pointer; text-decoration: none; box-shadow: 0 4px 18px rgba(0,166,81,0.3); transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-nav:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,166,81,0.4); }
+    .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 8px; flex-shrink: 0; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--primary); margin: 4px 0; transition: all 0.3s; border-radius: 2px; }
+    .hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+    .mobile-nav { display: none; position: fixed; top: 68px; left: 0; right: 0; bottom: 0; z-index: 99; }
+    .mobile-nav.open { display: block; }
+    .mobile-nav-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
+    .mobile-nav-panel { position: absolute; top: 0; left: 0; right: 0; background: white; padding: 24px; border-bottom: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0,0,0,0.12); animation: slideDown 0.25s ease; }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    .mobile-nav-panel a { display: block; padding: 13px 0; font-size: 16px; font-weight: 600; color: #374151; text-decoration: none; border-bottom: 1px solid #f1f5f9; transition: color 0.2s; }
+    .mobile-nav-panel a:last-child { border-bottom: none; }
+    .mobile-nav-panel a:hover { color: var(--primary); }
+    .mobile-nav-cta { display: block; margin-top: 16px; background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white !important; font-weight: 700; font-size: 15px !important; padding: 14px 20px !important; border-radius: 12px; text-align: center; border-bottom: none !important; box-shadow: 0 4px 16px rgba(0,166,81,0.3); }
+
+    /* ── HERO ── */
+    .hero { min-height: 100vh; background: linear-gradient(135deg, #050f2c 0%, #091e57 35%, #0d47c9 75%, #1a6eff 100%); position: relative; overflow: hidden; display: flex; align-items: center; padding-top: 68px; }
+    .hero::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 28px 28px; pointer-events: none; }
+    .hero-glow-1 { position: absolute; top: -10%; right: -5%; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(0,212,106,0.15) 0%, transparent 70%); pointer-events: none; }
+    .hero-glow-2 { position: absolute; bottom: -15%; left: -8%; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(58,175,169,0.12) 0%, transparent 70%); pointer-events: none; }
+    .hero-inner { max-width: 1200px; margin: 0 auto; padding: 80px 24px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; position: relative; z-index: 1; width: 100%; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,212,106,0.12); border: 1px solid rgba(0,212,106,0.28); border-radius: 99px; padding: 6px 14px; margin-bottom: 24px; }
+    .hero-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #00d46a; box-shadow: 0 0 8px #00d46a; animation: ping 2s ease-in-out infinite; }
+    @keyframes ping { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.4);opacity:.7;} }
+    .hero-badge span { font-size: 12px; font-weight: 700; color: #00d46a; letter-spacing: 0.04em; }
+    .hero h1 { font-size: clamp(36px, 4.2vw, 60px); font-weight: 900; line-height: 1.06; letter-spacing: -0.03em; color: white; margin-bottom: 24px; }
+    .hero h1 .accent { color: #00d46a; }
+    .hero p { font-size: 18px; line-height: 1.7; color: rgba(255,255,255,0.7); margin-bottom: 36px; max-width: 480px; }
+    .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 40px; }
+    .btn-hero-primary { display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white; font-weight: 800; font-size: 16px; padding: 16px 32px; border-radius: 14px; border: none; cursor: pointer; text-decoration: none; box-shadow: 0 8px 32px rgba(0,166,81,0.45); transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(0,166,81,0.5); }
+    .btn-hero-secondary { display: inline-flex; align-items: center; gap: 10px; background: transparent; border: 1.5px solid rgba(255,255,255,0.28); color: white; font-weight: 700; font-size: 16px; padding: 16px 28px; border-radius: 14px; cursor: pointer; text-decoration: none; backdrop-filter: blur(8px); transition: all 0.2s; }
+    .btn-hero-secondary:hover { border-color: rgba(255,255,255,0.55); background: rgba(255,255,255,0.06); }
+    .hero-trust { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .hero-trust span { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: 0.1em; }
+    .hero-trust-sep { width: 1px; height: 12px; background: rgba(255,255,255,0.18); }
+
+    /* Mockup */
+    .hero-mockup { position: relative; }
+    .mockup-frame { background: rgba(255,255,255,0.97); border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 2px 24px rgba(0,0,0,0.1), 0 32px 80px rgba(0,0,0,0.3); overflow: hidden; }
+    .mockup-chrome { background: #1e293b; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+    .mockup-dots { display: flex; gap: 6px; }
+    .mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .mockup-url { flex: 1; background: #0f172a; border-radius: 6px; padding: 5px 12px; font-size: 11px; color: rgba(255,255,255,0.38); font-family: monospace; }
+    .mockup-body { display: flex; }
+    .mockup-sidebar { width: 50px; background: #0d47c9; padding: 12px 8px; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+    .mockup-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .mockup-icon.active { background: var(--secondary); }
+    .mockup-icon.inactive { background: rgba(255,255,255,0.1); }
+    .mockup-content { flex: 1; background: #f1f5f9; padding: 14px; }
+    .mockup-header { font-size: 10px; font-weight: 800; color: #0f172a; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .mockup-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .mockup-kpi { background: white; border-radius: 10px; padding: 10px; border: 1px solid #e2e8f0; }
+    .mockup-kpi-label { font-size: 8px; color: #94a3b8; font-weight: 600; margin-bottom: 4px; }
+    .mockup-kpi-value { font-size: 14px; font-weight: 900; color: #0f172a; }
+    .mockup-kpi-value.green { color: #16a34a; }
+    .mockup-kpi-value.amber { color: #d97706; }
+    .mockup-table { background: white; border-radius: 10px; overflow: hidden; }
+    .mockup-tr { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid #f1f5f9; font-size: 9px; color: #334155; }
+    .mockup-tr:last-child { border-bottom: none; }
+    .mockup-badge { font-size: 8px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+    .mockup-badge.green { background: #f0fdf4; color: #16a34a; }
+    .mockup-badge.amber { background: #fffbeb; color: #d97706; }
+    .mockup-badge.red { background: #fef2f2; color: #dc2626; }
+    .float-badge { position: absolute; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; animation: float 4s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+    .float-badge.green { background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white; box-shadow: 0 8px 32px rgba(0,166,81,0.45); bottom: -20px; left: -24px; }
+    .float-badge.white { background: white; color: var(--text-dark); box-shadow: 0 8px 24px rgba(0,0,0,0.14); top: -20px; right: -24px; animation-delay: 1.5s; }
+    .hero-wave { position: absolute; bottom: 0; left: 0; right: 0; line-height: 0; }
+
+    /* ── SECTIONS ── */
+    .section { padding: 96px 24px; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--secondary); margin-bottom: 12px; }
+    .section-title { font-size: clamp(28px, 3.5vw, 44px); font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; color: var(--text-dark); margin-bottom: 16px; }
+    .section-subtitle { font-size: 18px; color: var(--text-muted); line-height: 1.6; max-width: 540px; }
+    .section-header { margin-bottom: 56px; }
+
+    /* Pain points */
+    .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .pain-card { background: white; border-radius: 20px; padding: 28px; border: 1.5px solid var(--border); transition: all 0.3s; position: relative; overflow: hidden; }
+    .pain-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #ef4444, #f97316); }
+    .pain-card:hover { border-color: #fca5a5; box-shadow: 0 8px 32px rgba(239,68,68,0.07); transform: translateY(-2px); }
+    .pain-emoji { font-size: 30px; margin-bottom: 16px; display: block; }
+    .pain-title { font-size: 16px; font-weight: 800; color: var(--text-dark); margin-bottom: 10px; }
+    .pain-text { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+
+    /* Features */
+    .features-bg { background: white; }
+    .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .feature-item { display: flex; gap: 20px; padding: 28px; border-radius: 20px; border: 1.5px solid var(--border); transition: all 0.3s; background: #fafbff; }
+    .feature-item:hover { border-color: #bfdbfe; box-shadow: 0 8px 32px rgba(13,71,201,0.07); transform: translateY(-2px); }
+    .feature-icon { width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0; background: linear-gradient(135deg, var(--primary-light), var(--primary)); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .feature-icon.green { background: linear-gradient(135deg, #00d46a, var(--secondary)); }
+    .feature-icon.teal { background: linear-gradient(135deg, #4dc9c3, var(--accent)); }
+    .feature-title { font-size: 16px; font-weight: 800; color: var(--text-dark); margin-bottom: 8px; }
+    .feature-text { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+    .feature-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .feature-tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: #eff6ff; color: var(--primary); }
+    .feature-tag.green { background: #f0fdf4; color: var(--secondary-dark); }
+
+    /* Inhouse segment */
+    .inhouse-section { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-top: 1px solid #bbf7d0; border-bottom: 1px solid #bbf7d0; }
+    .inhouse-inner { max-width: 1200px; margin: 0 auto; padding: 96px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+    .inhouse-benefits { display: flex; flex-direction: column; gap: 20px; margin-top: 36px; }
+    .inhouse-benefit { display: flex; gap: 16px; align-items: flex-start; }
+    .inhouse-benefit-icon { width: 40px; height: 40px; border-radius: 12px; background: white; border: 1.5px solid #86efac; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .inhouse-benefit-title { font-size: 15px; font-weight: 700; color: #064e3b; margin-bottom: 4px; }
+    .inhouse-benefit-text { font-size: 14px; color: #065f46; line-height: 1.6; }
+    .inhouse-plan-card { background: white; border-radius: 24px; padding: 36px; border: 2px solid #00a651; box-shadow: 0 8px 40px rgba(0,166,81,0.12); }
+    .inhouse-plan-badge { display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 99px; padding: 4px 12px; margin-bottom: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #065f46; }
+    .inhouse-plan-name { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px; }
+    .inhouse-plan-price { font-size: 44px; font-weight: 900; color: var(--text-dark); letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
+    .inhouse-plan-desc { font-size: 15px; color: var(--text-muted); margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--border); line-height: 1.5; }
+    .inhouse-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .inhouse-features li { display: flex; gap: 10px; font-size: 14px; color: #334155; }
+    .inhouse-features li::before { content: '✓'; color: var(--secondary); font-weight: 900; flex-shrink: 0; }
+    .btn-inhouse { display: block; width: 100%; text-align: center; padding: 14px; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; text-decoration: none; background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white; box-shadow: 0 6px 24px rgba(0,166,81,0.3); transition: all 0.2s; }
+    .btn-inhouse:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,166,81,0.4); }
+
+    /* Ecosystem */
+    .ecosystem-bg { background: linear-gradient(135deg, #050f2c 0%, #0d47c9 100%); }
+    .ecosystem-inner { max-width: 1200px; margin: 0 auto; padding: 96px 24px; }
+    .ecosystem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
+    .eco-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 28px; transition: all 0.3s; }
+    .eco-card:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); transform: translateY(-3px); }
+    .eco-card.featured { background: rgba(0,166,81,0.12); border-color: rgba(0,212,106,0.35); }
+    .eco-badge { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 10px; border-radius: 99px; background: rgba(0,212,106,0.15); color: #00d46a; margin-bottom: 16px; display: inline-block; }
+    .eco-logo { font-size: 20px; font-weight: 900; color: white; margin-bottom: 8px; }
+    .eco-logo span { color: #00d46a; }
+    .eco-desc { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.6; }
+
+    /* Comparison */
+    .compare-table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 24px rgba(13,71,201,0.06); }
+    .compare-table thead tr { background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
+    .compare-table thead th { padding: 18px 20px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: white; }
+    .compare-table thead th.hl { background: rgba(0,212,106,0.25); }
+    .compare-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    .compare-table tbody tr:last-child { border-bottom: none; }
+    .compare-table tbody tr:hover { background: #f8faff; }
+    .compare-table td { padding: 13px 20px; font-size: 14px; color: var(--text-dark); vertical-align: middle; }
+    .compare-table td.fname { font-weight: 600; color: #334155; }
+    .compare-table td.hl { background: #f0fdf4; }
+    .chk { color: #16a34a; font-weight: 700; }
+    .crs { color: #dc2626; }
+    .prt { color: #d97706; font-size: 13px; font-weight: 600; }
+
+    /* Bank APIs banner */
+    .bank-api-banner { background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #bfdbfe; border-radius: 16px; padding: 24px 28px; display: flex; align-items: center; gap: 20px; margin-top: 32px; }
+    .bank-api-icon { font-size: 32px; flex-shrink: 0; }
+    .bank-api-title { font-size: 15px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+    .bank-api-text { font-size: 14px; color: #334155; line-height: 1.5; }
+    .bank-logos { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+    .bank-chip { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 99px; background: white; border: 1px solid #bfdbfe; color: var(--primary); }
+
+    /* Pricing */
+    .pricing-bg { background: white; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 56px; }
+    .plan-card { border-radius: 24px; padding: 28px 24px; border: 2px solid var(--border); background: #fafbff; position: relative; transition: all 0.3s; }
+    .plan-card:hover { border-color: var(--primary-light); box-shadow: 0 12px 48px rgba(13,71,201,0.10); transform: translateY(-4px); }
+    .plan-card.popular { border-color: var(--primary); background: white; box-shadow: 0 8px 48px rgba(13,71,201,0.14); transform: translateY(-8px); }
+    .plan-card.popular:hover { transform: translateY(-12px); }
+    .plan-popular-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 5px 16px; border-radius: 99px; white-space: nowrap; }
+    .plan-name { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 6px; }
+    .plan-contributors { font-size: 12px; color: var(--secondary-dark); font-weight: 700; background: #f0fdf4; display: inline-block; padding: 2px 10px; border-radius: 99px; margin-bottom: 14px; }
+    .plan-price { font-size: 36px; font-weight: 900; color: var(--text-dark); letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
+    .plan-price sup { font-size: 15px; font-weight: 700; vertical-align: super; }
+    .plan-price .period { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+    .plan-tagline { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); line-height: 1.5; }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .plan-features li { display: flex; gap: 8px; font-size: 13px; color: #334155; line-height: 1.4; }
+    .plan-features li::before { content: '✓'; color: var(--secondary); font-weight: 900; font-size: 13px; flex-shrink: 0; }
+    .plan-features li.muted { color: #94a3b8; }
+    .plan-features li.muted::before { content: '—'; color: #cbd5e1; }
+    .btn-plan { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; border: 2px solid transparent; transition: all 0.2s; }
+    .btn-plan.outline { border-color: var(--primary); color: var(--primary); background: transparent; }
+    .btn-plan.outline:hover { background: var(--primary); color: white; }
+    .btn-plan.filled { background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; box-shadow: 0 6px 24px rgba(13,71,201,0.3); }
+    .btn-plan.filled:hover { box-shadow: 0 12px 32px rgba(13,71,201,0.4); transform: translateY(-1px); }
+    .btn-plan.enterprise { border-color: #64748b; color: #475569; background: transparent; }
+    .btn-plan.enterprise:hover { background: #f8fafc; }
+
+    /* Testimonials */
+    .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
+    .testimonial-card { background: white; border-radius: 20px; padding: 28px; border: 1.5px solid var(--border); }
+    .testimonial-stars { color: #f59e0b; font-size: 15px; margin-bottom: 16px; }
+    .testimonial-text { font-size: 15px; color: #334155; line-height: 1.8; margin-bottom: 20px; font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-light), var(--primary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+    .testimonial-name { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+    .testimonial-role { font-size: 12px; color: var(--text-muted); }
+
+    /* FAQ */
+    .faq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 56px; }
+    .faq-item { background: #fafbff; border: 1.5px solid var(--border); border-radius: 16px; padding: 22px; cursor: pointer; transition: all 0.2s; }
+    .faq-item:hover { border-color: #bfdbfe; }
+    .faq-item.open { border-color: var(--primary-light); background: white; box-shadow: 0 4px 20px rgba(13,71,201,0.07); }
+    .faq-q { font-size: 15px; font-weight: 700; color: var(--text-dark); display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .faq-icon { font-size: 20px; color: var(--primary); transition: transform 0.2s; flex-shrink: 0; margin-top: -2px; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-a { font-size: 14px; color: var(--text-muted); line-height: 1.7; margin-top: 14px; display: none; }
+    .faq-item.open .faq-a { display: block; }
+
+    /* CTA */
+    .cta-section { background: linear-gradient(135deg, #050f2c 0%, #091e57 35%, #0d47c9 75%, #1a6eff 100%); padding: 96px 24px; text-align: center; position: relative; overflow: hidden; }
+    .cta-section::before { content:''; position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,0.05) 1px,transparent 1px); background-size:28px 28px; pointer-events:none; }
+    .cta-inner { max-width: 680px; margin: 0 auto; position: relative; z-index: 1; }
+    .cta-inner h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 900; color: white; letter-spacing: -0.03em; margin-bottom: 16px; line-height: 1.1; }
+    .cta-inner p { font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 36px; line-height: 1.6; }
+    .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* Footer */
+    .footer { background: #0a0f1e; color: rgba(255,255,255,0.65); padding: 64px 24px 32px; }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+    .footer-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .footer-logo-text .i { font-size: 17px; font-weight: 700; color: var(--primary-light); }
+    .footer-logo-text .c { font-size: 17px; font-weight: 800; color: var(--secondary); }
+    .footer-desc { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.45); max-width: 280px; }
+    .footer-contact { margin-top: 20px; font-size: 13px; color: rgba(255,255,255,0.4); line-height: 1.9; }
+    .footer-contact a { color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.2s; }
+    .footer-contact a:hover { color: white; }
+    .footer-col h4 { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: white; margin-bottom: 20px; }
+    .footer-col a { display: block; font-size: 14px; color: rgba(255,255,255,0.45); text-decoration: none; margin-bottom: 12px; transition: color 0.2s; }
+    .footer-col a:hover { color: white; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.07); padding-top: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 13px; color: rgba(255,255,255,0.3); }
+    .footer-legal { display: flex; gap: 20px; }
+    .footer-legal a { font-size: 13px; color: rgba(255,255,255,0.38); text-decoration: none; transition: color 0.2s; }
+    .footer-legal a:hover { color: rgba(255,255,255,0.75); }
+    .footer-ecosystem { margin-top: 10px; }
+    .footer-ecosystem a { font-size: 12px; color: rgba(255,255,255,0.38); text-decoration: none; margin-right: 12px; transition: color 0.2s; }
+    .footer-ecosystem a:hover { color: rgba(255,255,255,0.7); }
+
+    /* ── WHATSAPP WIDGET ── */
+    .wa-widget { position: fixed; bottom: 28px; right: 28px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+    .wa-bubble { background: white; border-radius: 16px; padding: 14px 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08); max-width: 252px; opacity: 0; transform: translateY(8px) scale(0.96); transition: opacity 0.25s ease, transform 0.25s ease; pointer-events: none; border: 1px solid #e2e8f0; }
+    .wa-bubble.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .wa-bubble-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .wa-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #00a651, #00823e); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .wa-bubble-name { font-size: 13px; font-weight: 800; color: #0f172a; }
+    .wa-bubble-status { font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 4px; margin-top: 1px; }
+    .wa-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+    .wa-bubble-text { font-size: 13px; color: #374151; line-height: 1.55; }
+    .wa-bubble-cta { display: block; margin-top: 12px; background: linear-gradient(135deg, #25D366, #128C7E); color: white; font-size: 13px; font-weight: 700; padding: 9px 14px; border-radius: 10px; text-decoration: none; text-align: center; transition: opacity 0.2s; }
+    .wa-bubble-cta:hover { opacity: 0.9; }
+    .wa-btn { width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #25D366, #128C7E); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 28px rgba(37,211,102,0.5), 0 2px 8px rgba(0,0,0,0.12); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+    .wa-btn:hover { transform: scale(1.08); box-shadow: 0 12px 36px rgba(37,211,102,0.6); }
+    .wa-btn-ping { position: absolute; inset: 0; border-radius: 50%; background: rgba(37,211,102,0.35); animation: wa-ping 2.5s ease-in-out infinite; }
+    @keyframes wa-ping { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.5); opacity: 0; } }
+    .wa-unread { position: absolute; top: -3px; right: -3px; width: 18px; height: 18px; border-radius: 50%; background: #ef4444; border: 2px solid white; font-size: 10px; font-weight: 900; color: white; display: flex; align-items: center; justify-content: center; }
+    @media (max-width: 768px) { .wa-widget { bottom: 20px; right: 16px; } }
+
+    /* ── SCREENSHOTS ── */
+    .ss-section { background: white; }
+    .ss-tabs { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; justify-content: center; }
+    .ss-tab { padding: 10px 22px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #f8fafc; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .ss-tab:hover { border-color: var(--primary-light); color: var(--primary-light); background: white; }
+    .ss-tab.active { background: var(--primary-light); color: white; border-color: var(--primary-light); box-shadow: 0 4px 14px rgba(26,110,255,0.3); }
+    .ss-frame { display: none; animation: ssFade 0.3s ease; }
+    .ss-frame.active { display: block; }
+    @keyframes ssFade { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+    .ss-browser { background: white; border-radius: 16px; box-shadow: 0 24px 80px rgba(13,71,201,0.12), 0 4px 20px rgba(0,0,0,0.07); overflow: hidden; border: 1px solid #dde4f0; max-width: 960px; margin: 0 auto; }
+    .ss-chrome { background: #f1f5f9; border-bottom: 1px solid #e2e8f0; padding: 11px 16px; display: flex; align-items: center; gap: 12px; }
+    .ss-dots { display: flex; gap: 6px; }
+    .ss-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .ss-url { flex: 1; background: white; border-radius: 6px; padding: 5px 12px; font-size: 11px; color: #64748b; font-family: monospace; border: 1px solid #e2e8f0; }
+    .ss-app { display: grid; grid-template-columns: 56px 1fr; height: 500px; }
+    .ss-sidebar { background: #0f172a; display: flex; flex-direction: column; align-items: center; padding: 14px 0; gap: 4px; }
+    .ss-ico { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; transition: background 0.15s; }
+    .ss-ico.on { background: rgba(26,110,255,0.3); }
+    .ss-ico:not(.on) { opacity: 0.5; }
+    .ss-main { overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; }
+    .ss-topbar { background: white; border-bottom: 1px solid #e2e8f0; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .ss-topbar-title { font-size: 15px; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; }
+    .ss-topbar-meta { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+    .ss-content { padding: 20px 24px; flex: 1; }
+    .ss-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .ss-kpi { background: white; border-radius: 10px; border: 1px solid #e2e8f0; padding: 14px 16px; }
+    .ss-kpi-lbl { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ss-kpi-val { font-size: 22px; font-weight: 900; margin-top: 4px; letter-spacing: -0.02em; }
+    .ss-kpi-val.blue { color: #1a6eff; }
+    .ss-kpi-val.green { color: #16a34a; }
+    .ss-kpi-val.amber { color: #d97706; }
+    .ss-card { background: white; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; }
+    .ss-card-head { padding: 11px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em; display: grid; align-items: center; }
+    .ss-row { padding: 11px 16px; border-bottom: 1px solid #f1f5f9; display: grid; align-items: center; font-size: 13px; }
+    .ss-row:last-child { border-bottom: none; }
+    .ss-name { font-weight: 600; color: #1e293b; }
+    .ss-sub { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+    .ss-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .ss-badge.g { background: #f0fdf4; color: #16a34a; }
+    .ss-badge.a { background: #fffbeb; color: #d97706; }
+    .ss-badge.r { background: #fef2f2; color: #dc2626; }
+    .ss-badge.b { background: #eff6ff; color: #2563eb; }
+    .ss-form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .ss-field { background: white; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; }
+    .ss-field-lbl { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em; }
+    .ss-field-val { font-size: 13px; color: #0f172a; font-weight: 500; margin-top: 2px; }
+    .ss-entry-grid { background: white; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 14px; }
+    .ss-entry-head { display: grid; grid-template-columns: 2.2fr 1.4fr 1.4fr; padding: 10px 16px; background: #1e293b; }
+    .ss-entry-head span { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.08em; }
+    .ss-entry-row { display: grid; grid-template-columns: 2.2fr 1.4fr 1.4fr; padding: 10px 16px; border-bottom: 1px solid #f1f5f9; align-items: center; }
+    .ss-entry-row:last-child { border-bottom: none; }
+    .ss-entry-acct { font-size: 13px; color: #1e293b; font-weight: 600; }
+    .ss-entry-code { font-size: 10px; color: #94a3b8; }
+    .ss-must { font-size: 13px; font-weight: 800; color: #2563eb; }
+    .ss-haber { font-size: 13px; font-weight: 800; color: #16a34a; }
+    .ss-empty { color: #cbd5e1; font-size: 13px; }
+    .ss-balance-ok { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 11px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .ss-ai-row { background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 11px 16px; display: flex; align-items: center; gap: 10px; }
+    .ss-action-row { display: flex; gap: 10px; }
+    .ss-btn-p { background: #1a6eff; color: white; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .ss-btn-s { background: white; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .ss-metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .ss-metric { background: white; border-radius: 10px; border: 1px solid #e2e8f0; padding: 16px; }
+    .ss-metric-lbl { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .ss-metric-val { font-size: 18px; font-weight: 900; margin-top: 4px; letter-spacing: -0.02em; }
+    .ss-metric-val.green { color: #16a34a; }
+    .ss-metric-val.blue { color: #1a6eff; }
+    .ss-metric-val.gray { color: #475569; }
+    @media (max-width: 768px) { .ss-app { height: auto; grid-template-columns: 44px 1fr; } .ss-kpi-row { grid-template-columns: repeat(2, 1fr); } .ss-metric-row { grid-template-columns: 1fr 1fr; } .ss-form-row { grid-template-columns: 1fr 1fr; } }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 1024px) {
+      .pain-grid { grid-template-columns: repeat(2, 1fr); }
+      .features-grid { grid-template-columns: 1fr; }
+      .ecosystem-grid { grid-template-columns: repeat(2, 1fr); }
+      .inhouse-inner { grid-template-columns: 1fr; gap: 40px; }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .plan-card.popular { transform: none; }
+    }
+    @media (max-width: 768px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+      .hero-mockup { display: none; }
+      .pain-grid, .features-grid, .ecosystem-grid, .testimonials-grid, .faq-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .nav-links, .btn-nav.desktop-only { display: none; }
+      .hamburger { display: block; }
+      .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+      .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+      .compare-table td, .compare-table th { padding: 10px 12px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar" id="navbar">
+  <div class="navbar-inner">
+    <a href="/landing/" class="nav-logo">
+      <svg class="nav-logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="nBg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#1a6eff"/><stop offset="1" stop-color="#0d47c9"/></linearGradient></defs>
+        <rect width="40" height="40" rx="11" fill="url(#nBg)"/>
+        <!-- T-account: barra horizontal superior -->
+        <rect x="7" y="12" width="26" height="2.5" rx="1.25" fill="white"/>
+        <!-- T-account: divisor vertical central -->
+        <rect x="18.75" y="12" width="2.5" height="17" rx="1.25" fill="white"/>
+        <!-- Lado débito (izquierda): entradas -->
+        <rect x="9" y="19.5" width="7" height="2" rx="1" fill="rgba(255,255,255,0.8)"/>
+        <rect x="9" y="23.5" width="5" height="2" rx="1" fill="rgba(255,255,255,0.5)"/>
+        <!-- Lado crédito (derecha): check verde = partida cuadrada -->
+        <path d="M23.5 21.5 L26 24.5 L32 18" stroke="#00d46a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <!-- Punto acento verde (esquina) -->
+        <circle cx="33.5" cy="6.5" r="3.5" fill="#00a651"/>
+      </svg>
+      <div class="nav-logo-text"><span class="i">Inteli</span><span class="c">Cont</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="#funciones">Funciones</a>
+      <a href="#empresas">Para Empresas</a>
+      <a href="#comparacion">Comparación</a>
+      <a href="#planes">Planes</a>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div class="nav-py desktop-only">
+        <svg width="20" height="13" viewBox="0 0 20 13" xmlns="http://www.w3.org/2000/svg">
+          <rect width="20" height="4.33" fill="#D52B1E"/>
+          <rect y="4.33" width="20" height="4.34" fill="#FFFFFF"/>
+          <rect y="8.67" width="20" height="4.33" fill="#0038A8"/>
+        </svg>
+        Hecho en Paraguay
+      </div>
+      <a href="/app" style="font-size:14px;font-weight:600;color:#475569;text-decoration:none;" class="desktop-only">Iniciar sesión</a>
+      <a href="/app" class="btn-nav desktop-only">Empezar gratis →</a>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Menú"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mobile-nav" id="mobileNav">
+  <div class="mobile-nav-overlay" id="mobileOverlay"></div>
+  <div class="mobile-nav-panel">
+    <a href="#funciones" class="mobile-link">Funciones</a>
+    <a href="#empresas" class="mobile-link">Para Empresas</a>
+    <a href="#comparacion" class="mobile-link">Comparación</a>
+    <a href="#planes" class="mobile-link">Planes</a>
+    <a href="/app" class="mobile-nav-cta">Empezar gratis →</a>
+  </div>
+</div>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-glow-1"></div>
+  <div class="hero-glow-2"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">
+        <div class="hero-badge-dot"></div>
+        <svg width="18" height="12" viewBox="0 0 18 12" xmlns="http://www.w3.org/2000/svg" style="border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,0.2);flex-shrink:0;">
+          <rect width="18" height="4" fill="#D52B1E"/>
+          <rect y="4" width="18" height="4" fill="#FFFFFF"/>
+          <rect y="8" width="18" height="4" fill="#0038A8"/>
+        </svg>
+        <span>Diseñado para Paraguay · Cumplimiento DNIT garantizado</span>
+      </div>
+      <h1>La contabilidad de tu estudio,<br/><span class="accent">automatizada de verdad.</span></h1>
+      <p>Gestioná múltiples contribuyentes, importá SIFEN automáticamente y cerrá períodos en horas. Con IA que aprende de cada empresa y APIs bancarias nativas.</p>
+      <div class="hero-ctas">
+        <a href="/app" class="btn-hero-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Empezar gratis — 14 días
+        </a>
+        <a href="https://wa.me/595994516360?text=Hola%2C%20quiero%20ver%20una%20demo%20de%20InteliCont" class="btn-hero-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Ver demo por WhatsApp
+        </a>
+      </div>
+      <div class="hero-trust">
+        <span>Sin tarjeta de crédito</span>
+        <div class="hero-trust-sep"></div>
+        <span>SIFEN nativo</span>
+        <div class="hero-trust-sep"></div>
+        <span>API bancaria Itaú &amp; GNB</span>
+        <div class="hero-trust-sep"></div>
+        <span>IA incluida</span>
+      </div>
+    </div>
+    <div class="hero-mockup">
+      <div class="float-badge white">
+        <div style="width:26px;height:26px;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:13px;">✅</div>
+        <div><div style="font-size:10px;color:#64748b;font-weight:600;">Hechauka IVA</div><div style="color:#16a34a;font-size:12px;">Generado en 3s</div></div>
+      </div>
+      <div class="mockup-frame">
+        <div class="mockup-chrome">
+          <div class="mockup-dots">
+            <div class="mockup-dot" style="background:#ef4444;"></div>
+            <div class="mockup-dot" style="background:#f59e0b;"></div>
+            <div class="mockup-dot" style="background:#22c55e;"></div>
+          </div>
+          <div class="mockup-url">app.intelicont.com.py/panel</div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="mockup-icon active">🏠</div>
+            <div class="mockup-icon inactive">🏢</div>
+            <div class="mockup-icon inactive">📒</div>
+            <div class="mockup-icon inactive">📊</div>
+            <div class="mockup-icon inactive">🏦</div>
+            <div class="mockup-icon inactive">📅</div>
+          </div>
+          <div class="mockup-content">
+            <div class="mockup-header">Panel · 12 contribuyentes activos</div>
+            <div class="mockup-kpis">
+              <div class="mockup-kpi"><div class="mockup-kpi-label">Obligaciones DNIT</div><div class="mockup-kpi-value amber">7</div></div>
+              <div class="mockup-kpi"><div class="mockup-kpi-label">Asientos este mes</div><div class="mockup-kpi-value green">1.240</div></div>
+              <div class="mockup-kpi"><div class="mockup-kpi-label">SIFEN importados</div><div class="mockup-kpi-value green">342</div></div>
+              <div class="mockup-kpi"><div class="mockup-kpi-label">Cierre promedio</div><div class="mockup-kpi-value green">2.4h</div></div>
+            </div>
+            <div class="mockup-table">
+              <div class="mockup-tr"><span>Importadora del Este SA</span><span class="mockup-badge amber">IVA 104 · 3 días</span></div>
+              <div class="mockup-tr"><span>Tecnología Asunción SRL</span><span class="mockup-badge green">Al día</span></div>
+              <div class="mockup-tr"><span>Dist. Ñandutí SA</span><span class="mockup-badge red">Hechauka hoy</span></div>
+              <div class="mockup-tr"><span>Consultora Guaraní SRL</span><span class="mockup-badge green">Al día</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="float-badge green">
+        <div style="width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:13px;">⚡</div>
+        <div><div style="font-size:10px;color:rgba(255,255,255,0.8);">Itaú API · sincronizado</div><div style="font-size:12px;">342 mov. conciliados</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-wave">
+    <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg"><path d="M0,40 C480,80 960,0 1440,40 L1440,60 L0,60 Z" fill="#f0f4f8"/></svg>
+  </div>
+</section>
+
+<!-- ── PAIN POINTS ── -->
+<section class="section" id="problemas">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-label">El problema real</div>
+      <h2 class="section-title">¿Cuántas horas perdés en esto cada mes?</h2>
+      <p class="section-subtitle">Los contadores paraguayos cargan con procesos manuales que llevan décadas sin automatizarse.</p>
+    </div>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <span class="pain-emoji">📋</span>
+        <h3 class="pain-title">El Excel que siempre falla</h3>
+        <p class="pain-text">Importar SIFEN a mano, cruzar con el IVA, encontrar la diferencia de dos centavos a las 23:59. Un error humano puede costarte multas del DNIT.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">⏰</span>
+        <h3 class="pain-title">Deadlines que no perdonan</h3>
+        <p class="pain-text">El DNIT no espera. Hechauka, RG90, Formulario 104, IRE 501v2 — cada mes, para cada contribuyente. La carga crece y el tiempo no.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">🏢</span>
+        <h3 class="pain-title">N empresas, N archivos distintos</h3>
+        <p class="pain-text">Un estudio con 15 contribuyentes tiene 15 archivos separados. Imposible tener visión general sin invertir horas en consolidar la información.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">🔌</span>
+        <h3 class="pain-title">Software que no se conecta con nada</h3>
+        <p class="pain-text">Descargás el XML de SIFEN, lo abrís en Excel, lo pasás al sistema. Tres pasos para algo que debería ser automático desde hace años.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">🏦</span>
+        <h3 class="pain-title">Conciliación bancaria artesanal</h3>
+        <p class="pain-text">Exportar el extracto del banco, comparar fila por fila con los asientos. Itaú y GNB ya tienen APIs abiertas — nadie las está usando para vos todavía.</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">💸</span>
+        <h3 class="pain-title">Pagar por lo que no usás</h3>
+        <p class="pain-text">Módulos separados para cada función, actualizaciones de pago, soporte con costo adicional. Al final del año el software consume una parte importante del margen del estudio.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="section features-bg" id="funciones">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-label">La solución</div>
+      <h2 class="section-title">Todo lo que tu estudio necesita,<br/>en un solo lugar</h2>
+      <p class="section-subtitle">Cada función fue diseñada para la realidad del contador paraguayo. Sin módulos extra, sin costos ocultos.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon green">🔗</div>
+        <div>
+          <h3 class="feature-title">SIFEN nativo — sin intermediarios</h3>
+          <p class="feature-text">Importación automática de comprobantes electrónicos directamente desde SIFEN. Los XMLs se procesan, clasifican y contabilizan solos. Sin Excel, sin copy-paste.</p>
+          <div class="feature-tags"><span class="feature-tag green">SIFEN</span><span class="feature-tag green">XML automático</span><span class="feature-tag green">Timbrado DNIT</span></div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🏢</div>
+        <div>
+          <h3 class="feature-title">Multi-contribuyente en una sola vista</h3>
+          <p class="feature-text">Gestioná 20 o 40 contribuyentes con la misma facilidad que uno. Panel unificado, alertas centralizadas, cambio de empresa en un click.</p>
+          <div class="feature-tags"><span class="feature-tag">Multi-tenant</span><span class="feature-tag">Vista unificada</span></div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon green">📅</div>
+        <div>
+          <h3 class="feature-title">Calendario fiscal DNIT inteligente</h3>
+          <p class="feature-text">Todas las fechas del DNIT calculadas automáticamente para cada contribuyente según su régimen (IVA General, IRE, ReSimple, IRP). Alertas antes de vencer.</p>
+          <div class="feature-tags"><span class="feature-tag green">DNIT</span><span class="feature-tag green">Alertas</span><span class="feature-tag green">Regímenes PY</span></div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon teal">🤖</div>
+        <div>
+          <h3 class="feature-title">IA que sugiere asientos</h3>
+          <p class="feature-text">Inteligencia artificial (Claude Sonnet) que aprende los patrones de cada empresa y sugiere asientos con score de confianza. Vos aprobás, la IA aprende. Siempre con humano en el loop.</p>
+          <div class="feature-tags"><span class="feature-tag">IA incluida</span><span class="feature-tag">Doble partida</span></div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon green">📝</div>
+        <div>
+          <h3 class="feature-title">Hechauka y RG90 automáticos</h3>
+          <p class="feature-text">Generación del Hechauka y RG90 listos para subir a Marangatú. Cruce automático con comprobantes SIFEN para detectar inconsistencias antes de presentar al DNIT.</p>
+          <div class="feature-tags"><span class="feature-tag green">RG90</span><span class="feature-tag green">Hechauka</span><span class="feature-tag green">Marangatú</span></div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🏦</div>
+        <div>
+          <h3 class="feature-title">API bancaria Itaú &amp; GNB nativa</h3>
+          <p class="feature-text">Integración directa con Open Banking Itaú y GNB Business Connect 2.0 — los únicos bancos del Paraguay con API pública. Conciliación automática, saldos en tiempo real.</p>
+          <div class="feature-tags"><span class="feature-tag">Itaú Open Banking</span><span class="feature-tag">GNB Connect</span><span class="feature-tag">Tiempo real</span></div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📊</div>
+        <div>
+          <h3 class="feature-title">Libros contables en 1 click</h3>
+          <p class="feature-text">Libro Diario, Mayor, IVA compras/ventas, EEFF completos — generados automáticamente. Exportá a PDF o Excel con el formato que el DNIT requiere.</p>
+          <div class="feature-tags"><span class="feature-tag">Libro IVA</span><span class="feature-tag">Libro Diario</span><span class="feature-tag">EEFF</span></div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon teal">🔒</div>
+        <div>
+          <h3 class="feature-title">Auditoría completa e inmutable</h3>
+          <p class="feature-text">Libro inmutable: cada asiento queda grabado con quién lo hizo, cuándo y por qué. Correcciones solo por contra-asiento. RLS por contribuyente — datos completamente aislados.</p>
+          <div class="feature-tags"><span class="feature-tag">Audit trail</span><span class="feature-tag">Inmutable</span><span class="feature-tag">Multi-tenant RLS</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SEGMENTO EMPRESA / INHOUSE ── -->
+<section class="inhouse-section" id="empresas">
+  <div class="inhouse-inner">
+    <div>
+      <div class="section-label">Para empresas con contabilidad interna</div>
+      <h2 class="section-title">¿Tu empresa lleva su propia contabilidad?</h2>
+      <p class="section-subtitle" style="max-width:100%;">No todos los negocios tercerizan el área contable. Muchas empresas medianas tienen su propio departamento de contabilidad y necesitan un sistema que potencie a su equipo interno, no que lo reemplace.</p>
+      <div class="inhouse-benefits">
+        <div class="inhouse-benefit">
+          <div class="inhouse-benefit-icon">⚡</div>
+          <div>
+            <div class="inhouse-benefit-title">Un sistema para todo tu equipo contable</div>
+            <div class="inhouse-benefit-text">Usuarios ilimitados dentro de tu empresa. El contador principal, los auxiliares, el gerente que solo necesita ver los reportes — todos con el acceso que les corresponde.</div>
+          </div>
+        </div>
+        <div class="inhouse-benefit">
+          <div class="inhouse-benefit-icon">🤖</div>
+          <div>
+            <div class="inhouse-benefit-title">IA entrenada en tus operaciones</div>
+            <div class="inhouse-benefit-text">La IA aprende el plan de cuentas, los proveedores habituales y los patrones de tu empresa. Con el tiempo, el 80% de los asientos se registran solos para que el equipo solo revise.</div>
+          </div>
+        </div>
+        <div class="inhouse-benefit">
+          <div class="inhouse-benefit-icon">🏦</div>
+          <div>
+            <div class="inhouse-benefit-title">Integración con tus bancos</div>
+            <div class="inhouse-benefit-text">Si operás con Itaú o GNB, la conciliación bancaria es automática. Los movimientos del banco se cruzan con los asientos sin que nadie tenga que hacer nada.</div>
+          </div>
+        </div>
+        <div class="inhouse-benefit">
+          <div class="inhouse-benefit-icon">📊</div>
+          <div>
+            <div class="inhouse-benefit-title">Reportes para la gerencia, en tiempo real</div>
+            <div class="inhouse-benefit-text">Estados financieros, flujo de caja, indicadores — disponibles en el momento. Nada de esperar al contador para saber cómo está la empresa.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="inhouse-plan-card">
+        <div class="inhouse-plan-badge">🏢 Plan Empresa</div>
+        <div class="inhouse-plan-name">Inhouse</div>
+        <div class="inhouse-plan-price"><sup>Gs.</sup> 440.000 <span style="font-size:15px;font-weight:500;color:#64748b;">/ mes</span></div>
+        <p class="inhouse-plan-desc">Para empresas con departamento contable propio. Un solo RUC, equipo completo, todas las funciones.</p>
+        <ul class="inhouse-features">
+          <li>1 empresa / RUC (tu propia empresa)</li>
+          <li>Usuarios ilimitados</li>
+          <li>SIFEN automático (recepción y emisión)</li>
+          <li>IA para sugerencias de asientos</li>
+          <li>Hechauka y RG90 automáticos</li>
+          <li>Conciliación bancaria API (Itaú / GNB)</li>
+          <li>EEFF, flujo de caja, indicadores</li>
+          <li>Dashboard gerencial de solo lectura</li>
+          <li>Soporte prioritario por WhatsApp</li>
+          <li>Integración con SueldOK (nómina)</li>
+        </ul>
+        <a href="https://wa.me/595994516360?text=Hola%2C%20tengo%20una%20empresa%20con%20contabilidad%20interna%20y%20quiero%20conocer%20InteliCont%20Plan%20Empresa" class="btn-inhouse">Consultar por WhatsApp →</a>
+        <p style="font-size:12px;color:#94a3b8;text-align:center;margin-top:12px;">14 días gratis · Sin tarjeta de crédito</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SCREENSHOTS ── -->
+<section class="section ss-section" id="screenshots">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-label">Así se ve por dentro</div>
+      <h2 class="section-title">El sistema que tus contadores van a usar a diario</h2>
+      <p class="section-subtitle">No prometemos, mostramos. Cada pantalla diseñada para perder el menor tiempo posible.</p>
+    </div>
+
+    <div class="ss-tabs">
+      <button class="ss-tab active" onclick="showSS(this,'sc1')">📊 Panel de Contribuyentes</button>
+      <button class="ss-tab" onclick="showSS(this,'sc2')">📝 Nuevo Asiento</button>
+      <button class="ss-tab" onclick="showSS(this,'sc3')">📋 Hechauka IVA</button>
+    </div>
+
+    <!-- Screen 1: Panel / Dashboard -->
+    <div class="ss-frame active" id="sc1">
+      <div class="ss-browser">
+        <div class="ss-chrome">
+          <div class="ss-dots">
+            <div class="ss-dot" style="background:#ef4444;"></div>
+            <div class="ss-dot" style="background:#f59e0b;"></div>
+            <div class="ss-dot" style="background:#22c55e;"></div>
+          </div>
+          <div class="ss-url">app.intelicont.com.py/panel</div>
+        </div>
+        <div class="ss-app">
+          <div class="ss-sidebar">
+            <div class="ss-ico on">🏠</div>
+            <div class="ss-ico">🏢</div>
+            <div class="ss-ico">📝</div>
+            <div class="ss-ico">📒</div>
+            <div class="ss-ico">🏦</div>
+            <div class="ss-ico">📅</div>
+            <div class="ss-ico">⚙️</div>
+          </div>
+          <div class="ss-main">
+            <div class="ss-topbar">
+              <div>
+                <div class="ss-topbar-title">Panel General</div>
+                <div class="ss-topbar-meta">Mayo 2026 · 12 contribuyentes activos</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <div style="background:#1a6eff;color:white;font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;">+ Agregar empresa</div>
+              </div>
+            </div>
+            <div class="ss-content">
+              <div class="ss-kpi-row">
+                <div class="ss-kpi"><div class="ss-kpi-lbl">Contribuyentes</div><div class="ss-kpi-val blue">12</div></div>
+                <div class="ss-kpi"><div class="ss-kpi-lbl">Vencimientos hoy</div><div class="ss-kpi-val amber">3</div></div>
+                <div class="ss-kpi"><div class="ss-kpi-lbl">Asientos / mes</div><div class="ss-kpi-val green">1.847</div></div>
+                <div class="ss-kpi"><div class="ss-kpi-lbl">Cierre promedio</div><div class="ss-kpi-val green">2.3h</div></div>
+              </div>
+              <div class="ss-card">
+                <div class="ss-card-head" style="grid-template-columns:2fr 1.2fr 1fr 1fr;">
+                  <span>Empresa</span><span>RUC</span><span>Período</span><span>Estado</span>
+                </div>
+                <div class="ss-row" style="grid-template-columns:2fr 1.2fr 1fr 1fr;">
+                  <div><div class="ss-name">Importadora del Este SA</div><div class="ss-sub">IRE General · IVA 10%</div></div>
+                  <div style="font-size:12px;color:#64748b;">80023451-1</div>
+                  <div style="font-size:12px;color:#64748b;">Abr 2026</div>
+                  <div><span class="ss-badge a">⚠ IVA 104 · 3d</span></div>
+                </div>
+                <div class="ss-row" style="grid-template-columns:2fr 1.2fr 1fr 1fr;">
+                  <div><div class="ss-name">Tecnología Asunción SRL</div><div class="ss-sub">IRE Simple · IVA 10%</div></div>
+                  <div style="font-size:12px;color:#64748b;">80041299-7</div>
+                  <div style="font-size:12px;color:#64748b;">Abr 2026</div>
+                  <div><span class="ss-badge g">✓ Al día</span></div>
+                </div>
+                <div class="ss-row" style="grid-template-columns:2fr 1.2fr 1fr 1fr;">
+                  <div><div class="ss-name">Distribuidora Ñandutí SA</div><div class="ss-sub">IRE ReSimple · IVA mixto</div></div>
+                  <div style="font-size:12px;color:#64748b;">80058801-3</div>
+                  <div style="font-size:12px;color:#64748b;">Abr 2026</div>
+                  <div><span class="ss-badge r">🔴 Hechauka hoy</span></div>
+                </div>
+                <div class="ss-row" style="grid-template-columns:2fr 1.2fr 1fr 1fr;">
+                  <div><div class="ss-name">Consultora Guaraní SRL</div><div class="ss-sub">IRE Simple · Exento</div></div>
+                  <div style="font-size:12px;color:#64748b;">80072134-9</div>
+                  <div style="font-size:12px;color:#64748b;">Abr 2026</div>
+                  <div><span class="ss-badge g">✓ Al día</span></div>
+                </div>
+                <div class="ss-row" style="grid-template-columns:2fr 1.2fr 1fr 1fr;">
+                  <div><div class="ss-name">Agropecuaria Paraguay SA</div><div class="ss-sub">IRE General · IVA 5%</div></div>
+                  <div style="font-size:12px;color:#64748b;">80091456-2</div>
+                  <div style="font-size:12px;color:#64748b;">Abr 2026</div>
+                  <div><span class="ss-badge b">⏳ En proceso</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Nuevo Asiento -->
+    <div class="ss-frame" id="sc2">
+      <div class="ss-browser">
+        <div class="ss-chrome">
+          <div class="ss-dots">
+            <div class="ss-dot" style="background:#ef4444;"></div>
+            <div class="ss-dot" style="background:#f59e0b;"></div>
+            <div class="ss-dot" style="background:#22c55e;"></div>
+          </div>
+          <div class="ss-url">app.intelicont.com.py/asientos/nuevo</div>
+        </div>
+        <div class="ss-app">
+          <div class="ss-sidebar">
+            <div class="ss-ico">🏠</div>
+            <div class="ss-ico">🏢</div>
+            <div class="ss-ico on">📝</div>
+            <div class="ss-ico">📒</div>
+            <div class="ss-ico">🏦</div>
+            <div class="ss-ico">📅</div>
+            <div class="ss-ico">⚙️</div>
+          </div>
+          <div class="ss-main">
+            <div class="ss-topbar">
+              <div>
+                <div class="ss-topbar-title">Nuevo Asiento de Diario</div>
+                <div class="ss-topbar-meta">Importadora del Este SA · Compra a proveedor con IVA 10%</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <div style="background:#f0fdf4;color:#16a34a;font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;border:1px solid #86efac;">🤖 IA sugirió este asiento</div>
+              </div>
+            </div>
+            <div class="ss-content">
+              <div class="ss-form-row">
+                <div class="ss-field"><div class="ss-field-lbl">Fecha</div><div class="ss-field-val">06/05/2026</div></div>
+                <div class="ss-field"><div class="ss-field-lbl">Referencia / Timbrado</div><div class="ss-field-val">SIFEN-001-2026-00891</div></div>
+                <div class="ss-field"><div class="ss-field-lbl">Tipo</div><div class="ss-field-val">Compra — Proveedor</div></div>
+              </div>
+              <div class="ss-entry-grid">
+                <div class="ss-entry-head">
+                  <span>Cuenta contable</span><span style="text-align:right;">Débito</span><span style="text-align:right;">Crédito</span>
+                </div>
+                <div class="ss-entry-row">
+                  <div><div class="ss-entry-acct">Compras de mercaderías</div><div class="ss-entry-code">1-1-01-001 · Activo corriente</div></div>
+                  <div style="text-align:right;"><span class="ss-must">Gs. 5.000.000</span></div>
+                  <div style="text-align:right;"><span class="ss-empty">—</span></div>
+                </div>
+                <div class="ss-entry-row">
+                  <div><div class="ss-entry-acct">IVA crédito fiscal 10%</div><div class="ss-entry-code">1-1-03-001 · Crédito fiscal</div></div>
+                  <div style="text-align:right;"><span class="ss-must">Gs. 500.000</span></div>
+                  <div style="text-align:right;"><span class="ss-empty">—</span></div>
+                </div>
+                <div class="ss-entry-row">
+                  <div><div class="ss-entry-acct">Cuentas por pagar — Proveedor</div><div class="ss-entry-code">2-1-01-042 · Pasivo corriente · Dist. Miura SRL</div></div>
+                  <div style="text-align:right;"><span class="ss-empty">—</span></div>
+                  <div style="text-align:right;"><span class="ss-haber">Gs. 5.500.000</span></div>
+                </div>
+              </div>
+              <div class="ss-balance-ok">
+                <span style="font-size:18px;">✅</span>
+                <div>
+                  <div style="font-size:13px;font-weight:800;color:#15803d;">Asiento cuadrado · Doble partida verificada</div>
+                  <div style="font-size:11px;color:#166534;margin-top:1px;">Débito Gs. 5.500.000 = Crédito Gs. 5.500.000</div>
+                </div>
+              </div>
+              <div class="ss-ai-row" style="margin-bottom:14px;">
+                <span style="font-size:16px;">🤖</span>
+                <div style="font-size:12px;color:#1e40af;line-height:1.5;">La IA detectó que este comprobante corresponde a <strong>compra con IVA 10%</strong> de Dist. Miura SRL (proveedor habitual). Cuentas sugeridas con 94% de confianza.</div>
+              </div>
+              <div class="ss-action-row">
+                <button class="ss-btn-p">Registrar asiento</button>
+                <button class="ss-btn-s">Guardar borrador</button>
+                <button class="ss-btn-s">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Hechauka IVA -->
+    <div class="ss-frame" id="sc3">
+      <div class="ss-browser">
+        <div class="ss-chrome">
+          <div class="ss-dots">
+            <div class="ss-dot" style="background:#ef4444;"></div>
+            <div class="ss-dot" style="background:#f59e0b;"></div>
+            <div class="ss-dot" style="background:#22c55e;"></div>
+          </div>
+          <div class="ss-url">app.intelicont.com.py/libros/hechauka</div>
+        </div>
+        <div class="ss-app">
+          <div class="ss-sidebar">
+            <div class="ss-ico">🏠</div>
+            <div class="ss-ico">🏢</div>
+            <div class="ss-ico">📝</div>
+            <div class="ss-ico on">📒</div>
+            <div class="ss-ico">🏦</div>
+            <div class="ss-ico">📅</div>
+            <div class="ss-ico">⚙️</div>
+          </div>
+          <div class="ss-main">
+            <div class="ss-topbar">
+              <div>
+                <div class="ss-topbar-title">Hechauka IVA · Abril 2026</div>
+                <div class="ss-topbar-meta">Importadora del Este SA · RUC 80023451-1 · 487 comprobantes procesados</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <div style="background:#f0fdf4;color:#16a34a;font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;border:1px solid #86efac;cursor:pointer;">📥 Generar XML</div>
+                <div style="background:#eff6ff;color:#2563eb;font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;border:1px solid #bfdbfe;cursor:pointer;">📄 Vista PDF</div>
+              </div>
+            </div>
+            <div class="ss-content">
+              <div class="ss-metric-row">
+                <div class="ss-metric"><div class="ss-metric-lbl">Comprobantes totales</div><div class="ss-metric-val blue">487</div></div>
+                <div class="ss-metric"><div class="ss-metric-lbl">IVA crédito (compras)</div><div class="ss-metric-val green">Gs. 8.340.000</div></div>
+                <div class="ss-metric"><div class="ss-metric-lbl">IVA débito (ventas)</div><div class="ss-metric-val gray">Gs. 11.820.000</div></div>
+              </div>
+              <div class="ss-metric-row">
+                <div class="ss-metric"><div class="ss-metric-lbl">IVA 10% a pagar</div><div class="ss-metric-val" style="color:#dc2626;">Gs. 3.480.000</div></div>
+                <div class="ss-metric"><div class="ss-metric-lbl">IVA 5% a pagar</div><div class="ss-metric-val" style="color:#d97706;">Gs. 1.180.000</div></div>
+                <div class="ss-metric"><div class="ss-metric-lbl">Operaciones exentas</div><div class="ss-metric-val gray">Gs. 12.700.000</div></div>
+              </div>
+              <div class="ss-card">
+                <div class="ss-card-head" style="grid-template-columns:1fr 1.5fr 1.2fr 1fr 1fr;">
+                  <span>Tipo</span><span>Proveedor / Cliente</span><span>Timbrado</span><span>Base imponible</span><span>IVA</span>
+                </div>
+                <div class="ss-row" style="grid-template-columns:1fr 1.5fr 1.2fr 1fr 1fr;">
+                  <div><span class="ss-badge b">Compra</span></div>
+                  <div><div class="ss-name" style="font-size:12px;">Dist. Miura SRL</div></div>
+                  <div style="font-size:11px;color:#64748b;font-family:monospace;">001-002-0001891</div>
+                  <div style="font-size:13px;font-weight:700;color:#1e293b;">Gs. 5.000.000</div>
+                  <div style="font-size:13px;font-weight:700;color:#16a34a;">Gs. 500.000</div>
+                </div>
+                <div class="ss-row" style="grid-template-columns:1fr 1.5fr 1.2fr 1fr 1fr;">
+                  <div><span class="ss-badge g">Venta</span></div>
+                  <div><div class="ss-name" style="font-size:12px;">Supermercado Norte SA</div></div>
+                  <div style="font-size:11px;color:#64748b;font-family:monospace;">001-001-0003204</div>
+                  <div style="font-size:13px;font-weight:700;color:#1e293b;">Gs. 8.200.000</div>
+                  <div style="font-size:13px;font-weight:700;color:#dc2626;">Gs. 820.000</div>
+                </div>
+                <div class="ss-row" style="grid-template-columns:1fr 1.5fr 1.2fr 1fr 1fr;">
+                  <div><span class="ss-badge b">Compra</span></div>
+                  <div><div class="ss-name" style="font-size:12px;">Logística PY SRL</div></div>
+                  <div style="font-size:11px;color:#64748b;font-family:monospace;">001-001-0009871</div>
+                  <div style="font-size:13px;font-weight:700;color:#1e293b;">Gs. 2.300.000</div>
+                  <div style="font-size:13px;font-weight:700;color:#16a34a;">Gs. 115.000</div>
+                </div>
+                <div class="ss-row" style="grid-template-columns:1fr 1.5fr 1.2fr 1fr 1fr;background:#fffbeb;">
+                  <div><span class="ss-badge a">Nota deb.</span></div>
+                  <div><div class="ss-name" style="font-size:12px;">Cliente Rodrigo Vera</div></div>
+                  <div style="font-size:11px;color:#64748b;font-family:monospace;">001-003-0000312</div>
+                  <div style="font-size:13px;font-weight:700;color:#1e293b;">Gs. 1.400.000</div>
+                  <div style="font-size:13px;font-weight:700;color:#d97706;">Gs. 70.000</div>
+                </div>
+              </div>
+              <div style="margin-top:16px;display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 16px;">
+                <span style="font-size:18px;">✅</span>
+                <div style="font-size:13px;font-weight:700;color:#15803d;">Hechauka validada · Listo para presentar al DNIT via Marangatú</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ECOSYSTEM ── -->
+<section class="ecosystem-bg">
+  <div class="ecosystem-inner">
+    <div style="text-align:center;margin-bottom:56px;">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:#00d46a;margin-bottom:12px;">Ecosistema Inteli*</div>
+      <h2 style="font-size:clamp(28px,3.5vw,44px);font-weight:900;color:white;letter-spacing:-0.02em;margin-bottom:16px;">InteliCont es parte de algo mayor</h2>
+      <p style="font-size:18px;color:rgba(255,255,255,0.6);max-width:520px;margin:0 auto;line-height:1.6;">IntelliHouse construye el ecosistema de gestión más completo de Paraguay. Cada producto se integra con los demás.</p>
+    </div>
+    <div class="ecosystem-grid">
+      <div class="eco-card featured">
+        <span class="eco-badge">Estás aquí</span>
+        <div class="eco-logo">Inteli<span>Cont</span></div>
+        <p class="eco-desc">Contabilidad AI-First para estudios y empresas. Multi-contribuyente, SIFEN, IA, libros automáticos, cumplimiento DNIT.</p>
+      </div>
+      <div class="eco-card">
+        <span class="eco-badge">Auditoría</span>
+        <div class="eco-logo">Inteli<span>Audit</span></div>
+        <p class="eco-desc">Auditoría impositiva automatizada. Cruzá RG90, SIFEN y Hechauka con IA. Del Excel artesanal al informe firmable en horas.</p>
+      </div>
+      <div class="eco-card">
+        <span class="eco-badge">RRHH · Nómina</span>
+        <div class="eco-logo">Sueld<span>OK</span></div>
+        <p class="eco-desc">Liquidación de sueldos, IPS, aguinaldo y vacaciones para Paraguay. Exporta asientos a InteliCont automáticamente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── COMPARACIÓN ── -->
+<section class="section" id="comparacion" style="background:var(--body-bg);">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-label">Comparación honesta</div>
+      <h2 class="section-title">¿Por qué InteliCont?</h2>
+      <p class="section-subtitle">Comparamos con las soluciones más usadas en Paraguay. Solo datos verificables.</p>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th style="width:32%;">Funcionalidad</th>
+            <th class="hl">✅ InteliCont</th>
+            <th>Expert360</th>
+            <th>Ábaco</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="fname">Cloud / Sin instalación</td><td class="hl"><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+          <tr><td class="fname">App móvil</td><td class="hl"><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+          <tr><td class="fname">SIFEN integrado</td><td class="hl"><span class="chk">✓ Automático</span></td><td><span class="prt">Manual</span></td><td><span class="chk">✓</span></td></tr>
+          <tr><td class="fname">Hechauka automático</td><td class="hl"><span class="chk">✓</span></td><td><span class="prt">Parcial</span></td><td><span class="prt">Parcial</span></td></tr>
+          <tr><td class="fname">RG90 automático</td><td class="hl"><span class="chk">✓</span></td><td><span class="prt">Parcial</span></td><td><span class="prt">Parcial</span></td></tr>
+          <tr><td class="fname">Inteligencia Artificial para asientos</td><td class="hl"><span class="chk">✓ Incluida</span></td><td><span class="crs">✗</span></td><td><span class="crs">✗</span></td></tr>
+          <tr><td class="fname">Calendario DNIT con alertas</td><td class="hl"><span class="chk">✓ Automático</span></td><td><span class="prt">Manual</span></td><td><span class="prt">Manual</span></td></tr>
+          <tr><td class="fname">API bancaria nativa (Itaú / GNB)</td><td class="hl"><span class="chk">✓</span></td><td><span class="crs">✗</span></td><td><span class="crs">✗</span></td></tr>
+          <tr><td class="fname">Regímenes DNIT (IRE, ReSimple, IVA, IRP)</td><td class="hl"><span class="chk">✓ Todos</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+          <tr><td class="fname">Plan para empresa con contabilidad interna</td><td class="hl"><span class="chk">✓</span></td><td><span class="crs">✗</span></td><td><span class="crs">✗</span></td></tr>
+          <tr><td class="fname">Ecosistema integrado (auditoría + nómina)</td><td class="hl"><span class="chk">✓ Inteli*</span></td><td><span class="crs">✗</span></td><td><span class="crs">✗</span></td></tr>
+          <tr><td class="fname">Precio base (10 contribuyentes)</td><td class="hl" style="color:#16a34a;font-weight:700;">Gs. 275.000</td><td style="color:#64748b;">Gs. 300.000 (hasta 25)</td><td style="color:#64748b;">Gs. 279.900 (hasta 10)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px;font-size:12px;color:#94a3b8;text-align:center;">* Basado en información pública de cada proveedor. Última verificación: mayo 2026.</p>
+
+    <div class="bank-api-banner">
+      <div class="bank-api-icon">🏦</div>
+      <div>
+        <div class="bank-api-title">Integración bancaria nativa — primera en Paraguay</div>
+        <div class="bank-api-text">Banco Itaú Paraguay lanzó Open Banking con ISO 20022. Banco GNB lanzó GNB Business Connect 2.0 (1M+ operaciones procesadas). InteliCont los usa para conciliar automáticamente — sin descargar extractos manualmente.</div>
+        <div class="bank-logos">
+          <span class="bank-chip">🏦 Itaú Open Banking</span>
+          <span class="bank-chip">🏦 GNB Business Connect 2.0</span>
+          <span class="bank-chip">Más bancos próximamente</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PLANES ── -->
+<section class="section pricing-bg" id="planes">
+  <div class="section-inner">
+    <div class="section-header" style="text-align:center;">
+      <div class="section-label">Planes y precios</div>
+      <h2 class="section-title">Precio justo. Sin sorpresas.</h2>
+      <p class="section-subtitle" style="margin:0 auto;">Todos los planes incluyen SIFEN, libros contables, calendario DNIT y soporte en español. Sin costo adicional por usuario.</p>
+    </div>
+    <div class="pricing-grid">
+
+      <!-- Estándar -->
+      <div class="plan-card">
+        <div class="plan-name">Estándar</div>
+        <div class="plan-contributors">Hasta 10 contribuyentes</div>
+        <div class="plan-price"><sup>Gs.</sup> 275.000 <span class="period">/ mes</span></div>
+        <p class="plan-tagline">Para estudios que empiezan a ordenar su cartera de clientes con una herramienta profesional.</p>
+        <ul class="plan-features">
+          <li>Hasta 10 contribuyentes</li>
+          <li>Asientos manuales ilimitados</li>
+          <li>Libros Diario, Mayor, IVA</li>
+          <li>Importación SIFEN manual</li>
+          <li>Calendario DNIT básico</li>
+          <li>EEFF básicos</li>
+          <li>Usuarios ilimitados del estudio</li>
+          <li class="muted">SIFEN automático</li>
+          <li class="muted">IA sugerencias</li>
+          <li class="muted">API bancaria</li>
+        </ul>
+        <a href="/app/registro?plan=estandar" class="btn-plan outline">Empezar gratis 14 días</a>
+      </div>
+
+      <!-- Pro (popular) -->
+      <div class="plan-card popular">
+        <div class="plan-popular-badge">⭐ Más elegido</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-contributors">Hasta 20 contribuyentes</div>
+        <div class="plan-price"><sup>Gs.</sup> 385.000 <span class="period">/ mes</span></div>
+        <p class="plan-tagline">Para estudios en crecimiento que necesitan automatización real y IA desde el primer día.</p>
+        <ul class="plan-features">
+          <li>Hasta 20 contribuyentes</li>
+          <li>SIFEN automático</li>
+          <li>IA: sugerencias de asientos</li>
+          <li>Hechauka y RG90 automáticos</li>
+          <li>Calendario DNIT con alertas</li>
+          <li>EEFF completos (NIIF simplificada)</li>
+          <li>Conciliación bancaria API</li>
+          <li>Soporte prioritario WhatsApp</li>
+          <li class="muted">White-label en reportes</li>
+          <li class="muted">API REST propia</li>
+        </ul>
+        <a href="/app/registro?plan=pro" class="btn-plan filled">Empezar gratis 14 días</a>
+      </div>
+
+      <!-- Corporativo -->
+      <div class="plan-card">
+        <div class="plan-name">Corporativo</div>
+        <div class="plan-contributors">Hasta 40 contribuyentes</div>
+        <div class="plan-price"><sup>Gs.</sup> 594.000 <span class="period">/ mes</span></div>
+        <p class="plan-tagline">Para firmas contables con cartera grande que necesitan todo incluido y white-label.</p>
+        <ul class="plan-features">
+          <li>Hasta 40 contribuyentes</li>
+          <li>Todo el plan Pro</li>
+          <li>White-label en reportes y PDFs</li>
+          <li>API REST completa</li>
+          <li>Integración InteliAudit + SueldOK</li>
+          <li>SLA 99.9% garantizado</li>
+          <li>Soporte dedicado + onboarding</li>
+          <li>Capacitación personalizada del equipo</li>
+        </ul>
+        <a href="/app/registro?plan=corporativo" class="btn-plan outline">Empezar gratis 14 días</a>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="plan-card">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-contributors">+40 contribuyentes</div>
+        <div class="plan-price" style="font-size:28px;letter-spacing:-0.02em;">A medida</div>
+        <p class="plan-tagline">Para firmas grandes o grupos corporativos con necesidades específicas de integración y volumen.</p>
+        <ul class="plan-features">
+          <li>Contribuyentes ilimitados</li>
+          <li>Todo el plan Corporativo</li>
+          <li>Servidor dedicado en Paraguay</li>
+          <li>Integraciones ERP a medida</li>
+          <li>Contrato SLA personalizado</li>
+          <li>Account manager asignado</li>
+          <li>Precio según volumen y necesidades</li>
+        </ul>
+        <a href="https://wa.me/595994516360?text=Hola%2C%20quiero%20info%20del%20plan%20Enterprise%20de%20InteliCont" class="btn-plan enterprise">Hablar con ventas →</a>
+      </div>
+
+    </div>
+
+    <!-- Inhouse reminder -->
+    <div style="margin-top:24px;padding:20px 24px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div style="font-size:24px;">🏢</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;color:#065f46;margin-bottom:2px;">¿Empresa con contabilidad interna? Tenemos un plan especial para vos.</div>
+        <div style="font-size:13px;color:#047857;">Plan Inhouse — Gs. 440.000/mes · 1 RUC · Usuarios ilimitados · Todas las funciones Pro</div>
+      </div>
+      <a href="#empresas" style="font-size:14px;font-weight:700;color:#00a651;text-decoration:none;white-space:nowrap;">Ver detalles →</a>
+    </div>
+
+    <div style="text-align:center;margin-top:32px;">
+      <p style="font-size:14px;color:#64748b;">¿Tenés dudas sobre qué plan te conviene? <a href="https://wa.me/595994516360?text=Hola%2C%20necesito%20ayuda%20para%20elegir%20el%20plan%20de%20InteliCont" style="color:var(--primary-light);font-weight:600;text-decoration:none;">Consultanos por WhatsApp →</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIOS ── -->
+<section class="section" style="background:var(--body-bg);">
+  <div class="section-inner">
+    <div class="section-header" style="text-align:center;">
+      <div class="section-label">Testimonios</div>
+      <h2 class="section-title">Lo que dicen quienes lo probaron</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"Pasé de tardar 2 días en el cierre mensual de 8 empresas a cerrarlo en una tarde. El Hechauka se genera solo. No puedo creer que antes lo hacía a mano."</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">MV</div>
+          <div>
+            <div class="testimonial-name">María V.</div>
+            <div class="testimonial-role">Contadora Pública · Asunción</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"Tengo 18 clientes, todos con régimen distinto. InteliCont me recuerda cada vencimiento del DNIT y genera el RG90 sin que toque nada. Es un salvavidas."</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" style="background:linear-gradient(135deg,#00d46a,#00823e);">JL</div>
+          <div>
+            <div class="testimonial-name">Juan L.</div>
+            <div class="testimonial-role">Estudio Contable · Ciudad del Este</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"Nuestra empresa tiene un departamento contable de 3 personas. Antes usábamos Excel. Con InteliCont la conciliación con Itaú es automática y los estados financieros están listos en segundos."</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar" style="background:linear-gradient(135deg,#3AAFA9,#2D908B);">SR</div>
+          <div>
+            <div class="testimonial-name">Sandra R.</div>
+            <div class="testimonial-role">Gerente Administrativo · Pedro Juan Caballero</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section class="section" style="background:white;" id="faq">
+  <div class="section-inner">
+    <div class="section-header" style="text-align:center;">
+      <div class="section-label">FAQ</div>
+      <h2 class="section-title">Preguntas frecuentes</h2>
+    </div>
+    <div class="faq-grid">
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">¿InteliCont cumple con los requisitos del DNIT?<span class="faq-icon">+</span></div>
+        <div class="faq-a">Sí. InteliCont fue diseñado específicamente para el marco fiscal paraguayo: IVA General y Exportador, IRE General, Simple y ReSimple, IRP, IRACIS, Hechauka, RG90 y SIFEN. Las alícuotas y fechas del DNIT se actualizan automáticamente.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">¿Cómo funciona la integración con SIFEN?<span class="faq-icon">+</span></div>
+        <div class="faq-a">InteliCont importa automáticamente los comprobantes electrónicos desde SIFEN. Los XMLs se procesan, clasifican por tipo y se convierten en asientos contables sugeridos, que el contador revisa y aprueba. Sin descargas manuales, sin Excel.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">¿Qué bancos tienen integración nativa?<span class="faq-icon">+</span></div>
+        <div class="faq-a">Actualmente Banco Itaú Paraguay (Open Banking Itaú, ISO 20022) y Banco GNB (GNB Business Connect 2.0). Son los únicos bancos paraguayos con API pública para terceros. Estamos integrando más bancos a medida que habiliten sus APIs.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">¿Puedo migrar desde otro sistema contable?<span class="faq-icon">+</span></div>
+        <div class="faq-a">Sí. Incluimos asistencia de migración en el onboarding. Podemos importar el plan de cuentas, saldos iniciales y comprobantes históricos desde los formatos más comunes. El proceso tarda entre 1 y 5 días hábiles según el volumen.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">¿La IA reemplaza al contador?<span class="faq-icon">+</span></div>
+        <div class="faq-a">No, y es intencional. La IA de InteliCont opera siempre con humano en el loop: sugiere, explica el porqué, muestra un score de confianza y espera tu aprobación. El contador sigue siendo el responsable profesional. La IA hace el trabajo pesado.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">¿Cuál es la diferencia entre el plan Estudio y el plan Inhouse?<span class="faq-icon">+</span></div>
+        <div class="faq-a">Los planes Estándar, Pro y Corporativo son para estudios contables que gestionan múltiples contribuyentes (clientes). El plan Inhouse es para una empresa que quiere llevar su propia contabilidad internamente: un solo RUC, usuarios ilimitados del equipo interno, todas las funciones Pro.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">¿Dónde están almacenados mis datos?<span class="faq-icon">+</span></div>
+        <div class="faq-a">Los datos se almacenan con cifrado AES-256 en reposo y TLS 1.3 en tránsito. El plan Enterprise incluye opción de servidor dedicado en Paraguay. Backups automáticos diarios con retención de 90 días. Los datos de cada contribuyente están aislados por Row Level Security.</div>
+      </div>
+      <div class="faq-item" onclick="toggleFaq(this)">
+        <div class="faq-q">¿Hay soporte en español y horario paraguayo?<span class="faq-icon">+</span></div>
+        <div class="faq-a">Sí. Soporte por WhatsApp en español, lunes a sábado de 7:00 a 20:00 horario PY. Los planes Pro, Corporativo e Inhouse tienen soporte prioritario. Somos un equipo local de Pedro Juan Caballero — entendemos tu realidad.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA FINAL ── -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2>¿Listo para dejar de hacer contabilidad artesanal?</h2>
+    <p>14 días gratis, sin tarjeta de crédito. Onboarding en 30 minutos. Soporte incluido desde el primer día.</p>
+    <div class="cta-buttons">
+      <a href="/app" class="btn-hero-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Empezar gratis ahora
+      </a>
+      <a href="https://wa.me/595994516360?text=Hola%2C%20quiero%20una%20demo%20de%20InteliCont" class="btn-hero-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+        Pedir demo por WhatsApp
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="fBg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#1a6eff"/><stop offset="1" stop-color="#0d47c9"/></linearGradient></defs>
+            <rect width="40" height="40" rx="11" fill="url(#fBg)"/>
+            <rect x="9" y="12" width="22" height="3" rx="1.5" fill="white"/>
+            <rect x="9" y="18.5" width="22" height="3" rx="1.5" fill="white"/>
+            <rect x="9" y="25" width="14" height="3" rx="1.5" fill="white"/>
+            <path d="M25.5 26.5 L27.5 29 L32 24" stroke="#00d46a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <div class="footer-logo-text"><span class="i">Inteli</span><span class="c">Cont</span></div>
+        </div>
+        <p class="footer-desc">Software contable AI-First para estudios contables y empresas del Paraguay. Multi-contribuyente, SIFEN, IA y cumplimiento DNIT completo.</p>
+        <div class="footer-contact">
+          IntelliHouse Soluciones E.A.S.<br/>
+          RUC 80144114-5<br/>
+          Pedro Juan Caballero, Amambay, Paraguay<br/>
+          <a href="tel:+595994516360">+595 994 516 360</a><br/>
+          <a href="mailto:hola@intelicont.com.py">hola@intelicont.com.py</a>
+        </div>
+        <div class="footer-ecosystem" style="margin-top:16px;">
+          <span style="font-size:11px;color:rgba(255,255,255,0.28);display:block;margin-bottom:6px;">Ecosistema Inteli*</span>
+          <a href="https://inteliaudit.com.py">InteliAudit</a>
+          <a href="#">SueldOK</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Producto</h4>
+        <a href="#funciones">Funciones</a>
+        <a href="#empresas">Para Empresas</a>
+        <a href="#planes">Planes</a>
+        <a href="#comparacion">Comparación</a>
+        <a href="/app">Iniciar sesión</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="/landing/terminos-de-uso.html">Términos de uso</a>
+        <a href="/landing/politica-de-privacidad.html">Política de privacidad</a>
+      </div>
+      <div class="footer-col">
+        <h4>Soporte</h4>
+        <a href="https://wa.me/595994516360">WhatsApp</a>
+        <a href="mailto:hola@intelicont.com.py">Email</a>
+        <a href="#">Documentación</a>
+        <a href="#">Blog contable PY</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2026 Todos los derechos reservados. IntelliHouse Soluciones E.A.S. RUC 80144114-5</p>
+      <div class="footer-legal">
+        <a href="/landing/terminos-de-uso.html">Términos</a>
+        <a href="/landing/politica-de-privacidad.html">Privacidad</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ── WHATSAPP WIDGET ── -->
+<div class="wa-widget" id="waWidget">
+  <div class="wa-bubble" id="waBubble">
+    <div class="wa-bubble-header">
+      <div class="wa-avatar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <div>
+        <div class="wa-bubble-name">Equipo InteliCont</div>
+        <div class="wa-bubble-status"><div class="wa-status-dot"></div> En línea ahora</div>
+      </div>
+    </div>
+    <div class="wa-bubble-text">¡Hola! 👋 ¿Tenés dudas sobre InteliCont? Respondemos al toque desde Pedro Juan Caballero.</div>
+    <a href="https://wa.me/595994516360?text=Hola%2C%20estoy%20viendo%20InteliCont%20y%20tengo%20una%20consulta" target="_blank" rel="noopener" class="wa-bubble-cta">
+      Escribinos por WhatsApp →
+    </a>
+  </div>
+  <button class="wa-btn" id="waBtn" aria-label="Contactar por WhatsApp">
+    <div class="wa-btn-ping"></div>
+    <span class="wa-unread">1</span>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  </button>
+</div>
+
+<script>
+  // Navbar scroll
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 20));
+
+  // Hamburger
+  const hamburger = document.getElementById('hamburger');
+  const mobileNav = document.getElementById('mobileNav');
+  const mobileOverlay = document.getElementById('mobileOverlay');
+  hamburger.addEventListener('click', () => { hamburger.classList.toggle('open'); mobileNav.classList.toggle('open'); });
+  mobileOverlay.addEventListener('click', () => { hamburger.classList.remove('open'); mobileNav.classList.remove('open'); });
+  document.querySelectorAll('.mobile-link').forEach(l => l.addEventListener('click', () => { hamburger.classList.remove('open'); mobileNav.classList.remove('open'); }));
+
+  // FAQ
+  function toggleFaq(el) {
+    const open = el.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!open) el.classList.add('open');
+  }
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  });
+
+  // WhatsApp widget — estilo Inteliaudit
+  const waBtn = document.getElementById('waBtn');
+  const waBubble = document.getElementById('waBubble');
+  const waUnread = waBtn.querySelector('.wa-unread');
+  let bubbleOpen = false;
+  if (window.innerWidth > 768) {
+    setTimeout(() => { waBubble.classList.add('visible'); bubbleOpen = true; }, 4000);
+  }
+  waBtn.addEventListener('click', () => {
+    bubbleOpen = !bubbleOpen;
+    waBubble.classList.toggle('visible', bubbleOpen);
+    if (waUnread) waUnread.style.display = 'none';
+  });
+  document.addEventListener('click', (e) => {
+    const widget = document.getElementById('waWidget');
+    if (!widget.contains(e.target) && bubbleOpen) {
+      waBubble.classList.remove('visible');
+      bubbleOpen = false;
+    }
+  });
+
+  // Screenshots tab switcher
+  function showSS(btn, id) {
+    document.querySelectorAll('.ss-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.ss-frame').forEach(f => f.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+  }
+</script>
+</body>
+</html>

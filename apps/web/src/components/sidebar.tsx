@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/logo";
 
 const routes = [
   { label: "Panel General", href: "/", icon: LayoutDashboard },
@@ -36,17 +37,11 @@ export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMob
   const sidebarContent = (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
-            <span className="text-white font-bold text-sm">IC</span>
-          </div>
-          {!collapsed && (
-            <div className="overflow-hidden">
-              <h2 className="text-white font-semibold text-base leading-tight">Intelicont</h2>
-              <p className="text-zinc-500 text-[10px] uppercase tracking-wider">SaaS Contable</p>
-            </div>
-          )}
-        </div>
+        {collapsed ? (
+          <Logo variant="icon" size="sm" />
+        ) : (
+          <Logo variant="full" size="sm" showTagline={false} />
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">

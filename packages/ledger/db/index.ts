@@ -1,8 +1,14 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "./schema";
 
-import * as schema from "../../packages/ledger/db/schema";
+// Para desarrollo y scripts Node.js (seed, migrations).
+// En Next.js App Router (Server Components / Server Actions) este cliente funciona bien.
+// Para Edge Runtime en el futuro: usar @supabase/supabase-js o el pooler de Supabase.
+const client = postgres(process.env.DATABASE_URL!, {
+  max: 1,        // una conexión en scripts/seed
+  ssl: "require", // Supabase siempre requiere SSL
+});
 
-const sql = neon(process.env.DATABASE_URL!);
-
-export const db = drizzle(sql, { schema });
+export const db = drizzle(client, { schema });
+export { client };
