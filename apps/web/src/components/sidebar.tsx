@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard, Building2, FileText, BookOpen,
   Users, Settings, Calculator, Calendar,
-  ChevronLeft, ChevronRight, X,
+  ChevronLeft, ChevronRight, X, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 const routes = [
   { label: "Panel General",          href: "/",             icon: LayoutDashboard },
@@ -30,6 +31,13 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const router   = useRouter();
+  const supabase = createClient();
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   const content = (
     <div className="flex flex-col h-full">
@@ -152,6 +160,21 @@ export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMob
             </div>
           )}
         </div>
+      </div>
+
+      {/* Logout button */}
+      <div className={cn("px-3 pb-4", collapsed && "flex justify-center")}>
+        <button
+          onClick={handleLogout}
+          title="Cerrar sesión"
+          className={cn(
+            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-white/50 hover:text-red-300 hover:bg-red-500/10 transition-colors text-sm font-medium",
+            collapsed && "justify-center w-11 h-11 p-0"
+          )}
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Cerrar sesión</span>}
+        </button>
       </div>
     </div>
   );
