@@ -246,7 +246,7 @@ export function AsientosClient({ initialAsientos, entities, dbError }: Props) {
                   <div className="min-w-0 flex-1">
                     {/* Top row: number + badges */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-gray-900 dark:text-white text-sm font-bold font-mono">{a.number}</span>
+                      <Link href={`/asientos/${a.id}`} className="text-gray-900 dark:text-white text-sm font-bold font-mono hover:text-primary transition-colors">{a.number}</Link>
 
                       {/* Status badge */}
                       <span className={cn(
@@ -307,9 +307,13 @@ export function AsientosClient({ initialAsientos, entities, dbError }: Props) {
                     </button>
                   )}
 
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                  <Link
+                    href={`/asientos/${a.id}`}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Ver detalle"
+                  >
                     <MoreHorizontal className="h-4 w-4 text-gray-400" />
-                  </button>
+                  </Link>
                 </div>
               </div>
             );

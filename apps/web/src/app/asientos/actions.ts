@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, and, ilike, or, sql, desc, asc } from "drizzle-orm";
+import { eq, and, ilike, or, sql, desc, asc, count as drizzleCount } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import {
@@ -353,5 +353,199 @@ export async function postearAsiento(
       return { ok: false, error: msg };
     }
     return { ok: false, error: msg };
+  }
+}
+
+// ─── Load single entry with lines ────────────────────────────────────────────
+
+export interface AsientoLine {
+  id:          string;
+  accountId:   string;
+  accountCode: string;
+  accountName: string;
+  debit:       number;
+  credit:      number;
+  currency:    string;
+  description: string | null;
+}
+
+export interface AsientoDetail {
+  id:          string;
+  number:      string;
+  date:        string;
+  description: string;
+  status:      string;
+  source:      string;
+  entityId:    string;
+  entityName:  string;
+  postedAt:    string | null;
+  reversalOf:  string | null;
+  versionOf:   string | null;
+  createdAt:   string;
+  totalDebit:  number;
+  totalCredit: number;
+  lineas:      AsientoLine[];
+}
+
+export async function loadAsientoDetail(id: string): Promise<ActionResult<AsientoDetail>> {
+  if (!id) return { ok: false, error: "ID requerido" };
+  try {
+    const db = getDb();
+
+    const [row] = await db
+      .select({
+        id:          journalEntries.id,
+        number:      journalEntries.number,
+        date:        journalEntries.date,
+        description: journalEntries.description,
+        status:      journalEntries.status,
+        source:      journalEntries.source,
+        entityId:    journalEntries.entityId,
+        entityName:  entities.legalName,
+        postedAt:    journalEntries.postedAt,
+        reversalOf:  journalEntries.reversalOf,
+        versionOf:   journalEntries.versionOf,
+        createdAt:   journalEntries.createdAt,
+      })
+      .from(journalEntries)
+      .innerJoin(entities, eq(journalEntries.entityId, entities.id))
+      .where(eq(journalEntries.id, id));
+
+    if (!row) return { ok: false, error: "Asiento no encontrado" };
+
+    const lines = await db
+      .select({
+        id:          journalLines.id,
+        accountId:   journalLines.accountId,
+        accountCode: accounts.code,
+        accountName: accounts.name,
+        debit:       journalLines.debit,
+        credit:      journalLines.credit,
+        currency:    journalLines.currencyCode,
+        description: journalLines.description,
+      })
+      .from(journalLines)
+      .innerJoin(accounts, eq(journalLines.accountId, accounts.id))
+      .where(eq(journalLines.entryId, id))
+      .orderBy(asc(journalLines.id));
+
+    const lineas: AsientoLine[] = lines.map((l) => ({
+      id:          l.id,
+      accountId:   l.accountId,
+      accountCode: l.accountCode,
+      accountName: l.accountName,
+      debit:       Number(l.debit),
+      credit:      Number(l.credit),
+      currency:    l.currency,
+      description: l.description,
+    }));
+
+    const totalDebit  = lineas.reduce((s, l) => s + l.debit,  0);
+    const totalCredit = lineas.reduce((s, l) => s + l.credit, 0);
+
+    return {
+      ok: true,
+      data: {
+        id:          row.id,
+        number:      row.number ?? "",
+        date:        row.date instanceof Date ? row.date.toISOString().split("T")[0] : String(row.date).slice(0, 10),
+        description: row.description ?? "",
+        status:      row.status ?? "draft",
+        source:      row.source ?? "manual",
+        entityId:    row.entityId,
+        entityName:  row.entityName,
+        postedAt:    row.postedAt instanceof Date ? row.postedAt.toISOString() : row.postedAt ? String(row.postedAt) : null,
+        reversalOf:  row.reversalOf,
+        versionOf:   row.versionOf,
+        createdAt:   row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+        totalDebit,
+        totalCredit,
+        lineas,
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al cargar asiento" };
+  }
+}
+
+// ─── Reverse a POSTED entry (contra-asiento) ──────────────────────────────────
+
+export async function reverseJournalEntry(
+  entryId:     string,
+  description: string,
+): Promise<ActionResult<{ id: string; number: string }>> {
+  if (!entryId) return { ok: false, error: "ID requerido" };
+
+  try {
+    const db = getDb();
+
+    const [original] = await db
+      .select()
+      .from(journalEntries)
+      .where(eq(journalEntries.id, entryId));
+
+    if (!original)                     return { ok: false, error: "Asiento no encontrado" };
+    if (original.status !== "posted")  return { ok: false, error: "Solo se pueden revertir asientos posteados" };
+    if (original.reversalOf)           return { ok: false, error: "Este asiento ya es una reversión" };
+
+    const originalLines = await db
+      .select()
+      .from(journalLines)
+      .where(eq(journalLines.entryId, entryId));
+
+    if (originalLines.length === 0) return { ok: false, error: "El asiento no tiene líneas" };
+
+    const result = await db.transaction(async (tx) => {
+      const year = new Date().getFullYear();
+      const [{ cnt }] = await tx
+        .select({ cnt: drizzleCount() })
+        .from(journalEntries)
+        .where(eq(journalEntries.entityId, original.entityId));
+
+      const seq    = (Number(cnt) || 0) + 1;
+      const number = `REV-${String(seq).padStart(5, "0")}-${year}`;
+
+      const [reversal] = await tx
+        .insert(journalEntries)
+        .values({
+          entityId:    original.entityId,
+          periodId:    original.periodId ?? undefined,
+          date:        new Date(),
+          number,
+          source:      "manual" as const,
+          description: description.trim() || `Reversión de ${original.number ?? entryId}`,
+          status:      "posted" as const,
+          postedAt:    new Date(),
+          reversalOf:  entryId,
+        })
+        .returning();
+
+      // Swap debit ↔ credit on each line
+      await tx.insert(journalLines).values(
+        originalLines.map((l) => ({
+          entryId:     reversal.id,
+          accountId:   l.accountId,
+          debit:       l.credit,   // swapped
+          credit:      l.debit,    // swapped
+          currencyCode: l.currencyCode,
+          fxRate:      l.fxRate ?? "1",
+          description: l.description,
+        }))
+      );
+
+      // Mark original as reversed
+      await tx
+        .update(journalEntries)
+        .set({ status: "reversed" })
+        .where(eq(journalEntries.id, entryId));
+
+      return { id: reversal.id, number };
+    });
+
+    revalidatePath("/asientos");
+    revalidatePath(`/asientos/${entryId}`);
+    return { ok: true, data: result };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al revertir asiento" };
   }
 }
