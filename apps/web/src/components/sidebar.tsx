@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Building2, FileText, BookOpen,
   Users, Settings, Calculator, Calendar,
   ChevronLeft, ChevronRight, X, LogOut, Receipt,
-  BookMarked, Cpu, ClipboardList,
+  BookMarked, Cpu, ClipboardList, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -18,7 +18,8 @@ const routes = [
   { label: "Clientes/Proveedores",   href: "/terceros",      icon: Users,           group: "maestros"   },
   { label: "Comprobantes SIFEN",     href: "/comprobantes",  icon: Receipt,         group: "contable"   },
   { label: "Asientos",               href: "/asientos",      icon: FileText,        group: "contable"   },
-  { label: "Libros",                 href: "/libros",        icon: BookOpen,        group: "contable"   },
+  { label: "Plan de Cuentas",        href: "/cuentas",       icon: Layers,          group: "contable"   },
+  { label: "Libro Mayor",            href: "/libros",        icon: BookOpen,        group: "contable"   },
   { label: "Libro IVA",              href: "/libro-iva",     icon: BookMarked,      group: "contable"   },
   { label: "Formulario 104",         href: "/formulario104", icon: ClipboardList,   group: "fiscal"     },
   { label: "Calendario Fiscal",      href: "/calendario",    icon: Calendar,        group: "fiscal"     },

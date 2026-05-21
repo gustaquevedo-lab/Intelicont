@@ -1,13 +1,7 @@
-"use client";
-import { Calculator } from "lucide-react";
-import PlaceholderPage from "@/components/placeholder-page";
+import { CalculadoraClient } from "./_components/calculadora-client";
+
+export const metadata = { title: "Calculadora de Impuestos — InteliCont" };
 
 export default function ImpuestosPage() {
-  return (
-    <PlaceholderPage
-      title="Calculadora de Impuestos"
-      description="Cálculo de IVA, IRE, IRP, retenciones y formulários SET"
-      icon={Calculator}
-    />
-  );
+  return <CalculadoraClient />;
 }
