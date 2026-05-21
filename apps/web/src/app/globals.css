@@ -1,60 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ── Base ──────────────────────────────────────────────────────────────────── */
 @layer base {
-  :root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --border: 240 3.7% 15.9%;
-    --radius: 0.75rem;
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-}
 
-@layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground;
+    @apply text-gray-900 transition-colors duration-300;
+    background: radial-gradient(ellipse at top left, #EEF4FF 0%, #F0F4F8 55%, #E8EEF5 100%);
+    min-height: 100vh;
+  }
+
+  .dark body {
+    @apply text-gray-100;
+    background: radial-gradient(circle at top left, #1E293B, #0F172A 100%);
+  }
+
+  /* Smooth theme transitions */
+  body, .card, button, input, select, textarea, aside, header {
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-timing-function: ease-in-out;
+    transition-duration: 200ms;
   }
 }
 
-@layer utilities {
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+/* ── Components ────────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* Sidebar brand gradient */
+  .sidebar-gradient {
+    background: linear-gradient(180deg, #13407c 0%, #104c91 40%, #0d3d75 100%);
   }
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
+  .dark .sidebar-gradient {
+    background: linear-gradient(180deg, #0a2244 0%, #13407c 40%, #0c2a52 100%);
   }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(240 3.7% 15.9%);
-    border-radius: 3px;
+
+  /* Glassmorphism card */
+  .card {
+    @apply bg-white/80 dark:bg-slate-800/80 rounded-2xl shadow-card
+           border border-white/60 dark:border-slate-700/50
+           backdrop-blur-md transition-all duration-300;
   }
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: hsl(240 3.7% 25%);
+  .card:hover {
+    @apply shadow-card-hover -translate-y-0.5;
+  }
+  .card-flat {
+    @apply bg-white dark:bg-slate-800 rounded-2xl
+           border border-gray-100 dark:border-slate-700
+           shadow-card transition-all duration-300;
+  }
+
+  /* Primary button — navy */
+  .btn-primary {
+    @apply bg-primary text-white px-5 py-2.5 rounded-xl font-semibold
+           hover:bg-primary-dark active:scale-95 transition-all duration-200
+           shadow-primary flex items-center justify-center gap-2;
+  }
+  /* Secondary button — green */
+  .btn-secondary {
+    @apply bg-secondary text-white px-5 py-2.5 rounded-xl font-semibold
+           hover:bg-secondary-dark active:scale-95 transition-all duration-200
+           shadow-secondary flex items-center justify-center gap-2;
+  }
+  /* Ghost button */
+  .btn-ghost {
+    @apply px-4 py-2 rounded-xl font-medium text-gray-600 dark:text-gray-300
+           hover:bg-gray-100 dark:hover:bg-slate-700
+           border border-gray-200 dark:border-slate-600
+           transition-all duration-200 flex items-center gap-2;
+  }
+
+  /* Input */
+  .input-field {
+    @apply w-full border border-gray-200 dark:border-slate-600 rounded-xl
+           px-4 py-2.5 bg-white/70 dark:bg-slate-800/70 text-gray-900 dark:text-gray-100
+           placeholder-gray-400 dark:placeholder-gray-500
+           focus:ring-2 focus:ring-primary/20 focus:border-primary
+           outline-none transition-all;
+  }
+
+  /* Status badges */
+  .badge-green  { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-secondary-50 text-secondary-700 border border-secondary-200; }
+  .badge-yellow { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200; }
+  .badge-red    { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200; }
+  .badge-blue   { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-200; }
+  .badge-gray   { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200; }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+           text-white/70 hover:text-white hover:bg-white/10
+           transition-all duration-200 relative;
+  }
+  .nav-item-active {
+    @apply text-white bg-white/15 shadow-sm;
+  }
+
+  /* Section heading */
+  .section-title {
+    @apply text-lg font-bold text-gray-900 dark:text-white;
+  }
+  .section-subtitle {
+    @apply text-sm text-gray-500 dark:text-gray-400 mt-0.5;
+  }
+
+  /* Stat card gradient accents */
+  .stat-card-blue   { background: linear-gradient(135deg, #eef6ff 0%, #d9ecff 100%); }
+  .stat-card-green  { background: linear-gradient(135deg, #effef5 0%, #d7fee7 100%); }
+  .stat-card-amber  { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); }
+  .stat-card-purple { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); }
+
+  /* Table */
+  .table-row-hover {
+    @apply hover:bg-primary-50/40 dark:hover:bg-slate-700/30 transition-colors cursor-pointer;
+  }
+
+  /* Page layout */
+  .page-container {
+    @apply p-4 lg:p-8 max-w-7xl mx-auto space-y-6 animate-fade-in-up;
   }
 }
 
-/* Smooth transitions for all interactive elements */
-button, a {
-  transition-property: color, background-color, border-color;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
+/* ── Custom Scrollbar ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-gray-300 dark:bg-slate-600 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-gray-400 dark:bg-slate-500; }
 
-/* Fade in animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* ── Animations ────────────────────────────────────────────────────────────── */
+@keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn   { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pulseSoft { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-.animate-in {
-  animation: fadeIn 0.2s ease-out;
+.animate-in { animation: fadeInUp 0.25s ease-out; }
+
+/* ── Glassmorphism overlay ─────────────────────────────────────────────────── */
+.glass-panel {
+  @apply bg-white/10 dark:bg-black/20 backdrop-blur-xl
+         border border-white/20 dark:border-white/10 shadow-2xl;
 }

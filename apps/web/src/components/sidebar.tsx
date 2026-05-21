@@ -4,47 +4,104 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard,
-  Building2,
-  FileText,
-  BookOpen,
-  Users,
-  Settings,
-  Calculator,
-  Calendar,
-  ChevronRight,
-  ChevronLeft,
-  Menu,
-  X,
+  LayoutDashboard, Building2, FileText, BookOpen,
+  Users, Settings, Calculator, Calendar,
+  ChevronLeft, ChevronRight, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/logo";
 
 const routes = [
-  { label: "Panel General", href: "/", icon: LayoutDashboard },
-  { label: "Empresas", href: "/empresas", icon: Building2 },
-  { label: "Asientos", href: "/asientos", icon: FileText },
-  { label: "Libros", href: "/libros", icon: BookOpen },
-  { label: "Clientes/Proveedores", href: "/terceros", icon: Users },
-  { label: "Calendario Fiscal", href: "/calendario", icon: Calendar },
-  { label: "Calculadora Impuestos", href: "/impuestos", icon: Calculator },
-  { label: "Configuración", href: "/configuracion", icon: Settings },
+  { label: "Panel General",          href: "/",             icon: LayoutDashboard },
+  { label: "Empresas",               href: "/empresas",     icon: Building2       },
+  { label: "Asientos",               href: "/asientos",     icon: FileText        },
+  { label: "Libros",                 href: "/libros",       icon: BookOpen        },
+  { label: "Clientes / Proveedores", href: "/terceros",     icon: Users           },
+  { label: "Calendario Fiscal",      href: "/calendario",   icon: Calendar        },
+  { label: "Calculadora",            href: "/impuestos",    icon: Calculator      },
+  { label: "Configuración",          href: "/configuracion", icon: Settings       },
 ];
 
-export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMobileClose }: { collapsed?: boolean; onToggle?: () => void; mobileOpen?: boolean; onMobileClose?: () => void }) {
+interface SidebarProps {
+  collapsed?: boolean;
+  onToggle?: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
 
-  const sidebarContent = (
+  const content = (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-zinc-800">
-        {collapsed ? (
-          <Logo variant="icon" size="sm" />
-        ) : (
-          <Logo variant="full" size="sm" showTagline={false} />
+
+      {/* Logo area */}
+      <div className={cn(
+        "flex items-center border-b border-white/10 shrink-0",
+        collapsed ? "justify-center p-4" : "justify-between px-5 py-4"
+      )}>
+        {!collapsed && (
+          <div className="flex items-center gap-2.5">
+            {/* T-account isotipo */}
+            <svg width="32" height="32" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="sbg" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#1a6eff"/>
+                  <stop offset="100%" stopColor="#104c91"/>
+                </linearGradient>
+              </defs>
+              <rect width="44" height="44" rx="12" fill="url(#sbg)"/>
+              <rect x="8"  y="13" width="28" height="3"   rx="1.5" fill="white"/>
+              <rect x="20" y="13" width="3"  height="19"  rx="1.5" fill="white"/>
+              <rect x="10" y="21" width="7"  height="2.5" rx="1.25" fill="rgba(255,255,255,0.75)"/>
+              <rect x="10" y="26" width="5"  height="2.5" rx="1.25" fill="rgba(255,255,255,0.45)"/>
+              <path d="M25.5 22.5 L28.5 26 L34.5 19" stroke="#00d46a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="38" cy="6" r="4" fill="#00a651"/>
+            </svg>
+            <div>
+              <span className="text-white font-black text-lg leading-none">Inteli</span><span className="text-secondary-300 font-light text-lg leading-none">Cont</span>
+            </div>
+          </div>
         )}
+        {collapsed && (
+          <svg width="28" height="28" viewBox="0 0 44 44" fill="none">
+            <rect width="44" height="44" rx="12" fill="rgba(255,255,255,0.15)"/>
+            <rect x="8"  y="13" width="28" height="3"   rx="1.5" fill="white"/>
+            <rect x="20" y="13" width="3"  height="19"  rx="1.5" fill="white"/>
+            <rect x="10" y="21" width="7"  height="2.5" rx="1.25" fill="rgba(255,255,255,0.75)"/>
+            <path d="M25.5 22.5 L28.5 26 L34.5 19" stroke="#00d46a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+
+        {/* Collapse toggle — desktop only, shown when not collapsed */}
+        {!collapsed && (
+          <button
+            onClick={onToggle}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors hidden lg:flex"
+            title="Colapsar sidebar"
+          >
+            <ChevronLeft className="h-4 w-4 text-white/60" />
+          </button>
+        )}
+
+        {/* Mobile close */}
+        <button onClick={onMobileClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors lg:hidden">
+          <X className="h-4 w-4 text-white/60" />
+        </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
+      {/* Collapsed expand button */}
+      {collapsed && (
+        <button
+          onClick={onToggle}
+          className="mx-auto mt-3 p-2 rounded-lg hover:bg-white/10 transition-colors hidden lg:flex"
+          title="Expandir sidebar"
+        >
+          <ChevronRight className="h-4 w-4 text-white/60" />
+        </button>
+      )}
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5 mt-1">
         {routes.map((route) => {
           const isActive = pathname === route.href;
           return (
@@ -52,32 +109,46 @@ export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMob
               key={route.href}
               href={route.href}
               onClick={() => onMobileClose?.()}
+              title={collapsed ? route.label : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative",
-                isActive
-                  ? "bg-blue-600/10 text-blue-400 font-medium"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
+                "nav-item",
+                isActive && "nav-item-active",
+                collapsed && "justify-center px-2"
               )}
             >
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-500 rounded-r-full" />
+              {/* Active indicator */}
+              {isActive && !collapsed && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-secondary rounded-r-full" />
               )}
-              <route.icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-blue-400" : "text-zinc-500 group-hover:text-zinc-300")} />
+              <route.icon className={cn(
+                "h-5 w-5 shrink-0 transition-colors",
+                isActive ? "text-white" : "text-white/50"
+              )} />
               {!collapsed && <span className="truncate">{route.label}</span>}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-3 border-t border-zinc-800">
-        <div className={cn("flex items-center gap-3 p-2.5 rounded-lg bg-zinc-900 border border-zinc-800", collapsed && "justify-center px-2")}>
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shrink-0">
-            <span className="text-white font-medium text-xs">CA</span>
+      {/* Divider */}
+      <div className="mx-4 border-t border-white/10" />
+
+      {/* User avatar */}
+      <div className={cn(
+        "p-3",
+        collapsed && "flex justify-center"
+      )}>
+        <div className={cn(
+          "flex items-center gap-3 p-2.5 rounded-xl bg-white/10 hover:bg-white/15 transition-colors cursor-pointer",
+          collapsed && "justify-center w-11 h-11 p-0"
+        )}>
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-secondary to-primary-300 flex items-center justify-center shrink-0 text-white font-bold text-xs shadow-sm">
+            CA
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">Contador Admin</p>
-              <p className="text-zinc-500 text-[10px] truncate">Estudio Contable</p>
+              <p className="text-white text-sm font-semibold truncate leading-tight">Contador Admin</p>
+              <p className="text-white/50 text-[11px] truncate">Estudio Contable</p>
             </div>
           )}
         </div>
@@ -89,28 +160,26 @@ export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMob
     <>
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={onMobileClose} />
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          onClick={onMobileClose}
+        />
       )}
 
       {/* Mobile sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 w-72 bg-zinc-950 border-r border-zinc-800 z-50 transform transition-transform duration-300 lg:hidden",
+        "fixed inset-y-0 left-0 w-72 sidebar-gradient shadow-sidebar z-50 transform transition-transform duration-300 lg:hidden",
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="absolute top-4 right-4">
-          <button onClick={onMobileClose} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-            <X className="h-4 w-4 text-zinc-400" />
-          </button>
-        </div>
-        {sidebarContent}
+        {content}
       </div>
 
       {/* Desktop sidebar */}
       <aside className={cn(
-        "hidden lg:flex flex-col h-screen sticky top-0 border-r border-zinc-800 bg-zinc-950 transition-all duration-300",
-        collapsed ? "w-[72px]" : "w-72"
+        "hidden lg:flex flex-col h-screen sticky top-0 sidebar-gradient shadow-sidebar transition-all duration-300 shrink-0",
+        collapsed ? "w-[72px]" : "w-64"
       )}>
-        {sidebarContent}
+        {content}
       </aside>
     </>
   );

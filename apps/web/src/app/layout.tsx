@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/app-shell";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], weight: ["300","400","500","600","700","800","900"] });
 
 export const metadata: Metadata = {
   title: {
@@ -17,14 +17,13 @@ export const metadata: Metadata = {
     "contabilidad SIFEN",
     "Hechauka automático",
     "RG90 Paraguay",
-    "software SET DNIT",
+    "software DNIT",
     "multi-empresa contabilidad",
     "InteliCont",
     "Intellihouse",
   ],
-  authors: [{ name: "Intellihouse", url: "https://intelicont.com.py" }],
-  creator: "Intellihouse",
-  publisher: "Intellihouse",
+  authors: [{ name: "IntelliHouse Soluciones E.A.S.", url: "https://intelicont.com.py" }],
+  creator: "IntelliHouse Soluciones E.A.S.",
   metadataBase: new URL("https://intelicont.com.py"),
   openGraph: {
     type: "website",
@@ -34,33 +33,13 @@ export const metadata: Metadata = {
     title: "InteliCont — La contabilidad de tu estudio, automatizada",
     description:
       "Gestioná N empresas con SIFEN integrado, IA que sugiere asientos y cierre de período en horas. Hecho para Paraguay.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "InteliCont — Dashboard contable inteligente para Paraguay",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "InteliCont — La contabilidad de tu estudio, automatizada",
-    description:
-      "SIFEN integrado. Multi-empresa. IA incluida. El software que los contadores paraguayos estaban esperando.",
-    images: ["/og-image.png"],
   },
   icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     shortcut: "/favicon.svg",
     apple: "/favicon.svg",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -71,11 +50,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es">
       <body className={inter.className}>
         <AppShell>{children}</AppShell>
       </body>
