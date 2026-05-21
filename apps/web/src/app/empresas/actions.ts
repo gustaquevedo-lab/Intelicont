@@ -49,6 +49,61 @@ export async function getEmpresas(): Promise<ActionResult<Entity[]>> {
   }
 }
 
+// ─── UPDATE ───────────────────────────────────────────────────────────────────
+
+export async function updateEmpresa(
+  id: string,
+  formData: FormData
+): Promise<ActionResult<Entity>> {
+  const rawRuc   = (formData.get("ruc") as string | null)?.trim() ?? "";
+  const rucCheck = validateRUC(rawRuc);
+  if (!rucCheck.valid) return { ok: false, error: rucCheck.error! };
+
+  const legalName = (formData.get("legalName") as string | null)?.trim() ?? "";
+  if (!legalName) return { ok: false, error: "La razón social es requerida" };
+
+  const tradeName  = (formData.get("tradeName")  as string | null)?.trim() || null;
+  const regimen    = (formData.get("taxRegimes")  as string | null)?.trim() ?? "";
+  const taxRegimes = regimen
+    ? regimen.split("/").map((r) => r.trim()).filter(Boolean)
+    : [];
+
+  try {
+    const db = getDb();
+    const [updated] = await db
+      .update(entities)
+      .set({ ruc: rucCheck.normalized!, legalName, tradeName, taxRegimes })
+      .where(eq(entities.id, id))
+      .returning();
+
+    if (!updated) return { ok: false, error: "Empresa no encontrada" };
+    revalidatePath("/empresas");
+    return { ok: true, data: updated };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error al actualizar";
+    if (msg.includes("unique") || msg.includes("duplicate")) {
+      return { ok: false, error: `El RUC ${rucCheck.normalized} ya está en uso` };
+    }
+    return { ok: false, error: msg };
+  }
+}
+
+// ─── DEACTIVATE / REACTIVATE ──────────────────────────────────────────────────
+
+export async function setEmpresaStatus(
+  id: string,
+  status: "active" | "inactive" | "closed"
+): Promise<ActionResult<void>> {
+  try {
+    const db = getDb();
+    await db.update(entities).set({ status }).where(eq(entities.id, id));
+    revalidatePath("/empresas");
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al actualizar estado" };
+  }
+}
+
 // ─── INSERT ───────────────────────────────────────────────────────────────────
 
 export interface CreateEmpresaInput {

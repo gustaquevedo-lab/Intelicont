@@ -1,13 +1,16 @@
-"use client";
-import { Calendar } from "lucide-react";
-import PlaceholderPage from "@/components/placeholder-page";
+import { loadCalendario } from "./actions";
+import { CalendarioClient } from "./_components/calendario-client";
 
-export default function CalendarioPage() {
+export const metadata = { title: "Calendario Fiscal — DNIT" };
+
+export default async function CalendarioPage() {
+  const result = await loadCalendario(new Date().getFullYear(), 4);
+  const emptyData = { obligaciones: [], entities: [] };
+
   return (
-    <PlaceholderPage
-      title="Calendario Fiscal"
-      description="Vencimientos DNIT/SET, presentaciones y obligaciones tributarias"
-      icon={Calendar}
+    <CalendarioClient
+      data={result.ok ? result.data : emptyData}
+      dbError={result.ok ? undefined : result.error}
     />
   );
 }
