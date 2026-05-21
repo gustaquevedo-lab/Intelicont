@@ -23,6 +23,7 @@ export function getDb(): DbInstance {
     ssl: "require",
     idle_timeout: 20,
     connect_timeout: 10,
+    prepare: false, // required for Supabase connection pooler (PgBouncer)
   });
 
   _db = drizzle(client, { schema });
