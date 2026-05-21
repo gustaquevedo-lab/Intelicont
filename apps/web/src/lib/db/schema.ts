@@ -146,3 +146,75 @@ export const terceros = pgTable("terceros", {
 
 export type Tercero    = typeof terceros.$inferSelect;
 export type NewTercero = typeof terceros.$inferInsert;
+
+// ─── Tax Documents (comprobantes SIFEN) ──────────────────────────────────────
+
+export const taxDocTypeEnum   = pgEnum("tax_doc_type",   ["factura","nota_credito","nota_debito","autofactura","nota_remision","retencion"]);
+export const taxDocStatusEnum = pgEnum("tax_doc_status", ["pending_review","proposed","approved","rejected","posted"]);
+
+export const taxDocuments = pgTable("tax_documents", {
+  id:             uuid("id").primaryKey().defaultRandom(),
+  entityId:       uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  cdc:            varchar("cdc",         { length: 44 }),
+  timbrado:       varchar("timbrado",    { length: 20 }),
+  docType:        taxDocTypeEnum("doc_type").default("factura"),
+  docNumber:      varchar("doc_number",  { length: 20 }),
+  issueDate:      timestamp("issue_date").notNull(),
+  issuerRuc:      varchar("issuer_ruc",  { length: 20 }).notNull(),
+  issuerName:     text("issuer_name").notNull(),
+  receiverRuc:    varchar("receiver_ruc",{ length: 20 }),
+  receiverName:   text("receiver_name"),
+  subtotal:       numeric("subtotal",    { precision: 20, scale: 4 }).default("0"),
+  iva10:          numeric("iva_10",      { precision: 20, scale: 4 }).default("0"),
+  iva5:           numeric("iva_5",       { precision: 20, scale: 4 }).default("0"),
+  ivaExento:      numeric("iva_exento",  { precision: 20, scale: 4 }).default("0"),
+  total:          numeric("total",       { precision: 20, scale: 4 }).notNull(),
+  currencyCode:   varchar("currency_code",{ length: 3 }).default("PYG"),
+  status:         taxDocStatusEnum("status").default("pending_review"),
+  aiProvider:     varchar("ai_provider", { length: 50 }),
+  aiConfidence:   numeric("ai_confidence",{ precision: 4, scale: 3 }),
+  aiReasoning:    text("ai_reasoning"),
+  sourceXml:      text("source_xml"),
+  sourceFilename: text("source_filename"),
+  journalEntryId: uuid("journal_entry_id"),
+  partnerId:      uuid("partner_id"),
+  createdAt:      timestamp("created_at").defaultNow(),
+  updatedAt:      timestamp("updated_at").defaultNow(),
+});
+
+export type TaxDocument    = typeof taxDocuments.$inferSelect;
+export type NewTaxDocument = typeof taxDocuments.$inferInsert;
+
+export const taxDocumentLines = pgTable("tax_document_lines", {
+  id:          uuid("id").primaryKey().defaultRandom(),
+  docId:       uuid("doc_id").references(() => taxDocuments.id, { onDelete: "cascade" }).notNull(),
+  lineNumber:  integer("line_number").notNull(),
+  description: text("description").notNull(),
+  quantity:    numeric("quantity",   { precision: 20, scale: 4 }).default("1"),
+  unitPrice:   numeric("unit_price", { precision: 20, scale: 4 }).notNull(),
+  ivaRate:     integer("iva_rate").default(10),
+  ivaAmount:   numeric("iva_amount", { precision: 20, scale: 4 }).default("0"),
+  lineTotal:   numeric("line_total", { precision: 20, scale: 4 }).notNull(),
+});
+
+export const aiProposals = pgTable("ai_proposals", {
+  id:           uuid("id").primaryKey().defaultRandom(),
+  docId:        uuid("doc_id").references(() => taxDocuments.id, { onDelete: "cascade" }).notNull(),
+  provider:     varchar("provider",     { length: 50 }).notNull(),
+  model:        varchar("model",        { length: 100 }),
+  confidence:   numeric("confidence",   { precision: 4, scale: 3 }),
+  reasoning:    text("reasoning"),
+  proposalJson: jsonb("proposal_json").notNull(),
+  status:       varchar("status",       { length: 20 }).default("pending"),
+  reviewedAt:   timestamp("reviewed_at"),
+  createdAt:    timestamp("created_at").defaultNow(),
+});
+
+// ─── Global Settings ──────────────────────────────────────────────────────────
+
+export const globalSettings = pgTable("global_settings", {
+  key:         varchar("key", { length: 100 }).primaryKey(),
+  value:       text("value"),
+  description: text("description"),
+  updatedAt:   timestamp("updated_at").defaultNow(),
+});

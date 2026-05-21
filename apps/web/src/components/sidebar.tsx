@@ -6,21 +6,25 @@ import Link from "next/link";
 import {
   LayoutDashboard, Building2, FileText, BookOpen,
   Users, Settings, Calculator, Calendar,
-  ChevronLeft, ChevronRight, X, LogOut,
+  ChevronLeft, ChevronRight, X, LogOut, Receipt,
+  BookMarked, Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 const routes = [
-  { label: "Panel General",          href: "/",             icon: LayoutDashboard },
-  { label: "Empresas",               href: "/empresas",     icon: Building2       },
-  { label: "Asientos",               href: "/asientos",     icon: FileText        },
-  { label: "Libros",                 href: "/libros",       icon: BookOpen        },
-  { label: "Clientes / Proveedores", href: "/terceros",     icon: Users           },
-  { label: "Calendario Fiscal",      href: "/calendario",   icon: Calendar        },
-  { label: "Calculadora",            href: "/impuestos",    icon: Calculator      },
-  { label: "Configuración",          href: "/configuracion", icon: Settings       },
-];
+  { label: "Panel General",          href: "/",              icon: LayoutDashboard, group: "inicio"     },
+  { label: "Empresas",               href: "/empresas",      icon: Building2,       group: "maestros"   },
+  { label: "Clientes/Proveedores",   href: "/terceros",      icon: Users,           group: "maestros"   },
+  { label: "Comprobantes SIFEN",     href: "/comprobantes",  icon: Receipt,         group: "contable"   },
+  { label: "Asientos",               href: "/asientos",      icon: FileText,        group: "contable"   },
+  { label: "Libros",                 href: "/libros",        icon: BookOpen,        group: "contable"   },
+  { label: "Libro IVA",              href: "/libro-iva",     icon: BookMarked,      group: "contable"   },
+  { label: "Calendario Fiscal",      href: "/calendario",    icon: Calendar,        group: "fiscal"     },
+  { label: "Calculadora",            href: "/impuestos",     icon: Calculator,      group: "fiscal"     },
+  { label: "Config. IA",             href: "/configuracion", icon: Cpu,             group: "config"     },
+  { label: "Configuración",          href: "/configuracion", icon: Settings,        group: "config"     },
+].filter((r, i, arr) => arr.findIndex((x) => x.href === r.href) === i); // dedupe
 
 interface SidebarProps {
   collapsed?: boolean;

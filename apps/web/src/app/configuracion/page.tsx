@@ -1,13 +1,14 @@
-"use client";
-import { Settings } from "lucide-react";
-import PlaceholderPage from "@/components/placeholder-page";
+import { loadAISettings } from "@/app/comprobantes/actions";
+import { ConfiguracionClient } from "./_components/configuracion-client";
 
-export default function ConfiguracionPage() {
+export const metadata = { title: "Configuración — InteliCont" };
+
+export default async function ConfiguracionPage() {
+  const result = await loadAISettings();
   return (
-    <PlaceholderPage
-      title="Configuración"
-      description="Régimen tributario, plan de cuentas, usuarios y preferencias del sistema"
-      icon={Settings}
+    <ConfiguracionClient
+      initialSettings={result.ok ? result.data : {}}
+      dbError={result.ok ? undefined : result.error}
     />
   );
 }
