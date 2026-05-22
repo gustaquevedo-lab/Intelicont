@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import {
-  Building2, Plus, AlertTriangle, TrendingUp, Clock,
-  Search, Sparkles, ArrowUpRight, ArrowDownRight,
-  CalendarClock, ChevronRight, BarChart3, FileText,
+  Building2, Plus, AlertTriangle, TrendingUp,
+  Search, Sparkles, ArrowUpRight,
+  CalendarClock, ChevronRight, FileText, Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import type { DashboardStats, DashboardEntity } from "@/app/dashboard-actions";
+import type { DashboardStats, DashboardEntity, DashboardObligacion } from "@/app/dashboard-actions";
 
 // ─── Palette for entity avatars (deterministic by index) ──────────────────────
 const GRADIENTS = [
@@ -22,24 +22,27 @@ const GRADIENTS = [
   "from-emerald-500 to-green-700",
 ];
 
-// Static upcoming obligations (placeholder — no obligations table yet)
-const MOCK_OBLIGACIONES = [
-  { id: 1, empresa: "Importadora del Este",   tipo: "IVA 104",    fecha: "2026-06-12", estado: "Pendiente",    urgencia: "high"     },
-  { id: 2, empresa: "Consultora del Paraguay", tipo: "IRE 501v2", fecha: "2026-06-15", estado: "En proceso",   urgencia: "medium"   },
-  { id: 3, empresa: "Distribuidora Central",   tipo: "Hechauka",  fecha: "2026-06-10", estado: "Vence pronto", urgencia: "critical" },
-];
+// Urgency display config
+const URGENCY_META: Record<string, { dot: string; text: string; bg: string; label: string }> = {
+  overdue:  { dot: "bg-red-600 animate-pulse",  text: "text-red-600",   bg: "bg-red-50 dark:bg-red-900/10",    label: "Vencida"      },
+  critical: { dot: "bg-red-500 animate-pulse",  text: "text-red-600",   bg: "bg-red-50 dark:bg-red-900/10",    label: "Crítico"      },
+  high:     { dot: "bg-amber-500",              text: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/10", label: "Esta semana"  },
+  medium:   { dot: "bg-primary",               text: "text-primary",   bg: "",                                 label: "Este mes"     },
+  low:      { dot: "bg-gray-400",              text: "text-gray-500",  bg: "",                                 label: "Próximamente" },
+};
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  stats:    DashboardStats;
-  empresas: DashboardEntity[];
-  dbError?: string;
+  stats:        DashboardStats;
+  empresas:     DashboardEntity[];
+  obligaciones: DashboardObligacion[];
+  dbError?:     string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function DashboardClient({ stats, empresas, dbError }: Props) {
+export function DashboardClient({ stats, empresas, obligaciones, dbError }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filtered = empresas.filter(
@@ -57,15 +60,17 @@ export function DashboardClient({ stats, empresas, dbError }: Props) {
       icon:      Building2,
       accent:    "stat-card-blue",
       iconColor: "text-primary bg-primary-100",
+      href:      "/empresas",
     },
     {
-      title:     "Asientos Borradores",
-      value:     String(stats.draftsTotal),
-      change:    stats.draftsTotal > 0 ? "Requieren atención" : "Todo al día",
-      trend:     stats.draftsTotal > 0 ? "warn" as const : "up" as const,
-      icon:      AlertTriangle,
+      title:     "Comprobantes Pendientes",
+      value:     String(stats.pendingComprobantes),
+      change:    stats.pendingComprobantes > 0 ? "Requieren revisión IA" : "Sin pendientes",
+      trend:     stats.pendingComprobantes > 0 ? "warn" as const : "up" as const,
+      icon:      Receipt,
       accent:    "stat-card-amber",
       iconColor: "text-amber-600 bg-amber-100",
+      href:      "/comprobantes",
     },
     {
       title:     "Asientos Este Mes",
@@ -75,15 +80,17 @@ export function DashboardClient({ stats, empresas, dbError }: Props) {
       icon:      TrendingUp,
       accent:    "stat-card-green",
       iconColor: "text-secondary bg-secondary-100",
+      href:      "/asientos",
     },
     {
-      title:     "Total Asientos",
-      value:     stats.totalEntries.toLocaleString("es-PY"),
-      change:    "En libro diario",
-      trend:     "up" as const,
-      icon:      FileText,
+      title:     "Borradores",
+      value:     String(stats.draftsTotal),
+      change:    stats.draftsTotal > 0 ? "Sin postear" : "Todo al día",
+      trend:     stats.draftsTotal > 0 ? "warn" as const : "up" as const,
+      icon:      stats.draftsTotal > 0 ? AlertTriangle : FileText,
       accent:    "stat-card-purple",
-      iconColor: "text-violet-600 bg-violet-100",
+      iconColor: stats.draftsTotal > 0 ? "text-amber-600 bg-amber-100" : "text-violet-600 bg-violet-100",
+      href:      "/asientos",
     },
   ];
 
@@ -120,7 +127,7 @@ export function DashboardClient({ stats, empresas, dbError }: Props) {
       {/* ── KPI Stats ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.title} className="card overflow-hidden group">
+          <Link key={stat.title} href={stat.href} className="card overflow-hidden group hover:shadow-md transition-shadow">
             <div className={cn("absolute inset-0 opacity-60 rounded-2xl", stat.accent)} style={{ position: "absolute" }} />
             <div className="relative p-5">
               <div className="flex items-start justify-between mb-3">
@@ -141,70 +148,59 @@ export function DashboardClient({ stats, empresas, dbError }: Props) {
                 </span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
       {/* ── Main grid ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* ── Obligaciones (placeholder) ──────────────────────────────────── */}
+        {/* ── Obligaciones DNIT (real data) ───────────────────────────────── */}
         <div className="lg:col-span-1 card-flat overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
             <div className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-primary" />
               <h2 className="font-bold text-gray-900 dark:text-white text-sm">Obligaciones Próximas</h2>
             </div>
-            <button className="text-xs text-primary font-semibold hover:underline flex items-center gap-0.5">
+            <Link href="/calendario" className="text-xs text-primary font-semibold hover:underline flex items-center gap-0.5">
               Ver todas <ChevronRight className="h-3 w-3" />
-            </button>
+            </Link>
           </div>
 
           <div className="divide-y divide-gray-50 dark:divide-slate-700/50">
-            {MOCK_OBLIGACIONES.map((ob) => {
-              const colors = ({
-                critical: { dot: "bg-red-500 animate-pulse", text: "text-red-600",   bg: "bg-red-50 dark:bg-red-900/10" },
-                high:     { dot: "bg-amber-500",             text: "text-amber-600", bg: "" },
-                medium:   { dot: "bg-primary",               text: "text-primary",   bg: "" },
-              } as Record<string, { dot: string; text: string; bg: string }>)[ob.urgencia] ?? { dot: "bg-gray-400", text: "text-gray-500", bg: "" };
-
-              return (
-                <div key={ob.id} className={cn("flex items-center justify-between px-5 py-4 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition-colors cursor-pointer", colors.bg)}>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", colors.dot)} />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{ob.tipo}</p>
-                      <p className="text-gray-500 dark:text-gray-400 text-xs truncate">{ob.empresa}</p>
+            {obligaciones.length === 0 ? (
+              <div className="py-8 text-center">
+                <CalendarClock className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                <p className="text-xs text-gray-400">Sin obligaciones próximas</p>
+              </div>
+            ) : (
+              obligaciones.map((ob, idx) => {
+                const meta = URGENCY_META[ob.urgency] ?? URGENCY_META.low;
+                return (
+                  <Link
+                    key={idx}
+                    href="/calendario"
+                    className={cn("flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition-colors", meta.bg)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", meta.dot)} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{ob.tipo}</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs truncate">{ob.empresa}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right shrink-0 ml-2">
-                    <p className="text-gray-700 dark:text-gray-300 text-xs font-mono">{ob.fecha}</p>
-                    <p className={cn("text-xs font-semibold", colors.text)}>{ob.estado}</p>
-                  </div>
-                </div>
-              );
-            })}
+                    <div className="text-right shrink-0 ml-2">
+                      <p className="text-gray-700 dark:text-gray-300 text-xs font-mono">{ob.dueDate}</p>
+                      <p className={cn("text-xs font-semibold", meta.text)}>{meta.label}</p>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
           </div>
 
-          {/* Bar chart placeholder */}
-          <div className="px-5 py-4 bg-gray-50/50 dark:bg-slate-800/30 border-t border-gray-100 dark:border-slate-700">
-            <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className="h-3.5 w-3.5 text-gray-400" />
-              <span className="text-xs font-medium text-gray-500">Vencimientos próximos 30 días</span>
-            </div>
-            <div className="flex items-end gap-1 h-8">
-              {[3,5,2,7,4,6,3,8,5,4,9,6,3,5,2].map((v, i) => (
-                <div
-                  key={i}
-                  className="flex-1 rounded-sm"
-                  style={{
-                    height: `${(v / 9) * 100}%`,
-                    background: v > 6 ? "#ef4444" : v > 4 ? "#f59e0b" : "#104c91",
-                    opacity: 0.7,
-                  }}
-                />
-              ))}
-            </div>
+          <div className="px-5 py-3 bg-gray-50/50 dark:bg-slate-800/30 border-t border-gray-100 dark:border-slate-700">
+            <p className="text-[10px] text-gray-400">Basado en Calendario DNIT 2026 · Vencimientos por dígito RUC</p>
           </div>
         </div>
 
@@ -280,12 +276,12 @@ export function DashboardClient({ stats, empresas, dbError }: Props) {
         </div>
       </div>
 
-      {/* ── Quick link to asientos ───────────────────────────────────────────── */}
+      {/* ── Quick links ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { href: "/asientos",     label: "Asientos Contables",   icon: FileText,    desc: "Libro diario, crear y postear" },
-          { href: "/libros",       label: "Libro Mayor",          icon: TrendingUp,  desc: "Consultar saldos y movimientos" },
-          { href: "/calendario",   label: "Calendario Fiscal",    icon: CalendarClock, desc: "Vencimientos DNIT" },
+          { href: "/comprobantes", label: "Comprobantes SIFEN",   icon: Receipt,       desc: "Subir XML, propuesta IA de asiento" },
+          { href: "/libro-iva",    label: "Libro IVA",            icon: TrendingUp,    desc: "Compras, ventas y Hechauka" },
+          { href: "/formulario104",label: "Formulario 104",       icon: FileText,      desc: "Declaración IVA para DNIT (Marangatú)" },
         ].map((link) => (
           <Link
             key={link.href}
