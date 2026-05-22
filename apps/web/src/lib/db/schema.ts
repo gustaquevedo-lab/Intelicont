@@ -218,3 +218,51 @@ export const globalSettings = pgTable("global_settings", {
   description: text("description"),
   updatedAt:   timestamp("updated_at").defaultNow(),
 });
+
+// ─── Timbrados ────────────────────────────────────────────────────────────────
+
+export const timbrados = pgTable("timbrados", {
+  id:             uuid("id").primaryKey().defaultRandom(),
+  entityId:       uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  numero:         varchar("numero",         { length: 20 }).notNull(),
+  tipo:           varchar("tipo",           { length: 50 }).default("factura"),
+  puntoEmision:   varchar("punto_emision",  { length: 10 }),
+  establecimiento:varchar("establecimiento",{ length: 10 }),
+  rangoDesde:     varchar("rango_desde",    { length: 20 }),
+  rangoHasta:     varchar("rango_hasta",    { length: 20 }),
+  validoDesde:    timestamp("valido_desde").notNull(),
+  validoHasta:    timestamp("valido_hasta").notNull(),
+  isActive:       boolean("is_active").default(true),
+  notas:          text("notas"),
+  createdAt:      timestamp("created_at").defaultNow(),
+  updatedAt:      timestamp("updated_at").defaultNow(),
+});
+
+export type Timbrado    = typeof timbrados.$inferSelect;
+export type NewTimbrado = typeof timbrados.$inferInsert;
+
+// ─── Retenciones (Tesaka) ─────────────────────────────────────────────────────
+
+export const retenciones = pgTable("retenciones", {
+  id:             uuid("id").primaryKey().defaultRandom(),
+  entityId:       uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  periodoYear:    integer("periodo_year").notNull(),
+  periodoMonth:   integer("periodo_month").notNull(),
+  fecha:          timestamp("fecha").notNull(),
+  terceroRuc:     varchar("tercero_ruc",   { length: 20 }).notNull(),
+  terceroNombre:  text("tercero_nombre").notNull(),
+  docTipo:        varchar("doc_tipo",      { length: 30 }).default("factura"),
+  docNumero:      varchar("doc_numero",    { length: 20 }),
+  montoBase:      numeric("monto_base",    { precision: 20, scale: 4 }).notNull(),
+  tipoRetencion:  varchar("tipo_retencion",{ length: 50 }).notNull(),
+  tasa:           numeric("tasa",          { precision: 6,  scale: 4 }).notNull(),
+  montoRetencion: numeric("monto_retencion",{ precision: 20, scale: 4 }).notNull(),
+  comprobanteRet: varchar("comprobante_ret",{ length: 20 }),
+  status:         varchar("status",        { length: 20 }).default("borrador"),
+  taxDocumentId:  uuid("tax_document_id").references(() => taxDocuments.id, { onDelete: "set null" }),
+  createdAt:      timestamp("created_at").defaultNow(),
+  updatedAt:      timestamp("updated_at").defaultNow(),
+});
+
+export type Retencion    = typeof retenciones.$inferSelect;
+export type NewRetencion = typeof retenciones.$inferInsert;

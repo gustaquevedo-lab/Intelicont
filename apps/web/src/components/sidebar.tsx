@@ -8,24 +8,50 @@ import {
   Users, Settings, Calculator, Calendar,
   ChevronLeft, ChevronRight, X, LogOut, Receipt,
   BookMarked, Cpu, ClipboardList, Layers,
+  BarChart3, CalendarDays, Stamp, HandCoins, TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
+interface RouteGroup {
+  key:   string;
+  label: string;
+}
+
+const GROUPS: RouteGroup[] = [
+  { key: "inicio",   label: "Inicio"        },
+  { key: "maestros", label: "Maestros"      },
+  { key: "contable", label: "Contabilidad"  },
+  { key: "estados",  label: "Est. Financieros" },
+  { key: "fiscal",   label: "Fiscal"        },
+  { key: "config",   label: "Configuración" },
+];
+
 const routes = [
-  { label: "Panel General",          href: "/",              icon: LayoutDashboard, group: "inicio"     },
-  { label: "Empresas",               href: "/empresas",      icon: Building2,       group: "maestros"   },
-  { label: "Clientes/Proveedores",   href: "/terceros",      icon: Users,           group: "maestros"   },
-  { label: "Comprobantes SIFEN",     href: "/comprobantes",  icon: Receipt,         group: "contable"   },
-  { label: "Asientos",               href: "/asientos",      icon: FileText,        group: "contable"   },
-  { label: "Plan de Cuentas",        href: "/cuentas",       icon: Layers,          group: "contable"   },
-  { label: "Libro Mayor",            href: "/libros",        icon: BookOpen,        group: "contable"   },
-  { label: "Libro IVA",              href: "/libro-iva",     icon: BookMarked,      group: "contable"   },
-  { label: "Formulario 104",         href: "/formulario104", icon: ClipboardList,   group: "fiscal"     },
-  { label: "Calendario Fiscal",      href: "/calendario",    icon: Calendar,        group: "fiscal"     },
-  { label: "Calculadora",            href: "/impuestos",     icon: Calculator,      group: "fiscal"     },
-  { label: "Config. IA",             href: "/configuracion", icon: Cpu,             group: "config"     },
-  { label: "Configuración",          href: "/configuracion", icon: Settings,        group: "config"     },
+  // ── Inicio ──────────────────────────────────────────────────────
+  { label: "Panel General",          href: "/",               icon: LayoutDashboard, group: "inicio"   },
+  // ── Maestros ─────────────────────────────────────────────────────
+  { label: "Empresas",               href: "/empresas",       icon: Building2,       group: "maestros" },
+  { label: "Clientes/Proveedores",   href: "/terceros",       icon: Users,           group: "maestros" },
+  { label: "Timbrados DNIT",         href: "/timbrados",      icon: Stamp,           group: "maestros" },
+  // ── Contabilidad ─────────────────────────────────────────────────
+  { label: "Comprobantes SIFEN",     href: "/comprobantes",   icon: Receipt,         group: "contable" },
+  { label: "Asientos",               href: "/asientos",       icon: FileText,        group: "contable" },
+  { label: "Plan de Cuentas",        href: "/cuentas",        icon: Layers,          group: "contable" },
+  { label: "Libro Mayor",            href: "/libros",         icon: BookOpen,        group: "contable" },
+  { label: "Libro IVA",              href: "/libro-iva",      icon: BookMarked,      group: "contable" },
+  { label: "Períodos Fiscales",      href: "/periodos",       icon: CalendarDays,    group: "contable" },
+  // ── Estados Financieros ──────────────────────────────────────────
+  { label: "Estados Financieros",    href: "/estados-financieros", icon: BarChart3,  group: "estados"  },
+  // ── Fiscal ───────────────────────────────────────────────────────
+  { label: "Formulario 104 IVA",     href: "/formulario104",  icon: ClipboardList,   group: "fiscal"   },
+  { label: "Tesaka (Retenciones)",   href: "/tesaka",         icon: HandCoins,       group: "fiscal"   },
+  { label: "Formulario 501 IRE",     href: "/formulario501",  icon: TrendingUp,      group: "fiscal"   },
+  { label: "Calendario Fiscal",      href: "/calendario",     icon: Calendar,        group: "fiscal"   },
+  { label: "Calculadora",            href: "/impuestos",      icon: Calculator,      group: "fiscal"   },
+  // ── Config ───────────────────────────────────────────────────────
+  { label: "Config. IA",             href: "/configuracion",  icon: Cpu,             group: "config"   },
+  { label: "Configuración",          href: "/configuracion",  icon: Settings,        group: "config"   },
 ].filter((r, i, arr) => arr.findIndex((x) => x.href === r.href) === i); // dedupe
 
 interface SidebarProps {
@@ -115,31 +141,48 @@ export function Sidebar({ collapsed = false, onToggle, mobileOpen = false, onMob
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-0.5 mt-1">
-        {routes.map((route) => {
-          const isActive = pathname === route.href;
+      <nav className="flex-1 overflow-y-auto p-3 mt-1">
+        {GROUPS.map((group) => {
+          const groupRoutes = routes.filter((r) => r.group === group.key);
+          if (groupRoutes.length === 0) return null;
           return (
-            <Link
-              key={route.href}
-              href={route.href}
-              onClick={() => onMobileClose?.()}
-              title={collapsed ? route.label : undefined}
-              className={cn(
-                "nav-item",
-                isActive && "nav-item-active",
-                collapsed && "justify-center px-2"
+            <div key={group.key} className="mb-2">
+              {/* Group label */}
+              {!collapsed && (
+                <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/30 select-none">
+                  {group.label}
+                </p>
               )}
-            >
-              {/* Active indicator */}
-              {isActive && !collapsed && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-secondary rounded-r-full" />
-              )}
-              <route.icon className={cn(
-                "h-5 w-5 shrink-0 transition-colors",
-                isActive ? "text-white" : "text-white/50"
-              )} />
-              {!collapsed && <span className="truncate">{route.label}</span>}
-            </Link>
+              {collapsed && <div className="my-1 border-t border-white/10" />}
+              <div className="space-y-0.5">
+                {groupRoutes.map((route) => {
+                  const isActive = pathname === route.href || (route.href !== "/" && pathname.startsWith(route.href));
+                  return (
+                    <Link
+                      key={route.href}
+                      href={route.href}
+                      onClick={() => onMobileClose?.()}
+                      title={collapsed ? route.label : undefined}
+                      className={cn(
+                        "nav-item",
+                        isActive && "nav-item-active",
+                        collapsed && "justify-center px-2"
+                      )}
+                    >
+                      {/* Active indicator */}
+                      {isActive && !collapsed && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-secondary rounded-r-full" />
+                      )}
+                      <route.icon className={cn(
+                        "h-5 w-5 shrink-0 transition-colors",
+                        isActive ? "text-white" : "text-white/50"
+                      )} />
+                      {!collapsed && <span className="truncate">{route.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>
