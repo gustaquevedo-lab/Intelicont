@@ -13,3 +13,4 @@ package-lock.json
 .vscode/
 .idea/
 *.tgz
+.vercel

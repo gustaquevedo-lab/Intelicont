@@ -182,7 +182,7 @@ export async function loadEntidadesParaIVA(): Promise<ActionResult<Array<{ id: s
 // Format: DNIT Hechauka v3 — Tab-separated
 // Cols: fecha | tipo | numero | ruc_emisor | nombre_emisor | gravado10 | iva10 | gravado5 | iva5 | exento | total
 
-export function generateHechauka(
+export async function generateHechauka(
   entityRuc:  string,
   entityName: string,
   year:       number,
