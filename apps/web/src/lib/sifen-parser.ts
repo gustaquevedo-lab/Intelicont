@@ -1,234 +1,347 @@
 /**
- * SIFEN XML Parser — InteliCont
+ * Parser XML SIFEN — Facturas Electrónicas Paraguay
  *
- * Parses XML de facturas electrónicas del sistema SIFEN (DNIT Paraguay).
- * Soporta: factura (tipo 1), nota crédito (tipo 5), nota débito (tipo 6),
- *          autofactura (tipo 4), nota de remisión (tipo 7).
- *
- * Spec: Manual Técnico SIFEN v150 y posteriores.
- * El XML viene firmado (XAdES); aquí solo parseamos el payload sin validar firma.
+ * Extrae datos de XML de facturas SIFEN (DNIT) y los mapea
+ * a estructuras contables para sugerencia de asiento automático.
  */
 
-export type DocType = "factura" | "nota_credito" | "nota_debito" | "autofactura" | "nota_remision" | "retencion";
-
-export interface SifenLine {
-  lineNumber:  number;
-  description: string;
-  quantity:    number;
-  unitPrice:   number;
-  ivaRate:     0 | 5 | 10;
-  ivaAmount:   number;
-  lineTotal:   number;
+export interface SifenInvoice {
+  cdc: string;
+  numero: string;
+  fechaEmision: string;
+  tipoDoc: "factura" | "nota_credito" | "nota_debito" | "recibo";
+  condicion: "contado" | "credito";
+  timbrado: string;
+  emisor: {
+    ruc: string;
+    nombre: string;
+    nombreFantasia?: string;
+  };
+  receptor: {
+    ruc: string;
+    nombre: string;
+  };
+  montos: {
+    gravado10: number;
+    gravado5: number;
+    exento: number;
+    iva10: number;
+    iva5: number;
+    totalIva: number;
+    total: number;
+  };
+  items: SifenItem[];
+  direccion: string;
 }
 
-export interface SifenDocument {
-  cdc:          string | null;
-  timbrado:     string | null;
-  docType:      DocType;
-  docNumber:    string | null;   // "001-001-0000001"
-  issueDate:    string;          // "YYYY-MM-DD"
-  issuerRuc:    string;
-  issuerName:   string;
-  receiverRuc:  string | null;
-  receiverName: string | null;
-  subtotal:     number;
-  iva10:        number;
-  iva5:         number;
-  ivaExento:    number;
-  total:        number;
-  currency:     string;
-  lines:        SifenLine[];
-  rawXml:       string;
-  filename:     string;
+export interface SifenItem {
+  codigo: string;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number;
+  ivaRate: number;
+  total: number;
 }
 
-export interface ParseResult {
-  ok:       true;
-  doc:      SifenDocument;
-} | {
-  ok:       false;
-  error:    string;
-}
-
-// ─── Type-code map (SIFEN iTiDE) ──────────────────────────────────────────────
-const TYPE_MAP: Record<string, DocType> = {
-  "1": "factura",
-  "2": "nota_credito",  // some specs use 2 for NC
-  "4": "autofactura",
-  "5": "nota_credito",
-  "6": "nota_debito",
-  "7": "nota_remision",
-  "11": "retencion",
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getText(xml: string, tag: string): string {
-  const m = xml.match(new RegExp(`<${tag}[^>]*>([^<]*)<\/${tag}>`, "i"));
-  return m?.[1]?.trim() ?? "";
-}
-
-function getFloat(xml: string, tag: string): number {
-  return parseFloat(getText(xml, tag) || "0") || 0;
-}
-
-function getAttr(xml: string, tag: string, attr: string): string {
-  const m = xml.match(new RegExp(`<${tag}[^>]*\\s${attr}="([^"]*)"`, "i"));
-  return m?.[1]?.trim() ?? "";
-}
-
-/** Extract all occurrences of a repeating tag block */
-function getAllBlocks(xml: string, tag: string): string[] {
-  const re = new RegExp(`<${tag}[\\s>][\\s\\S]*?<\\/${tag}>`, "gi");
-  return xml.match(re) ?? [];
-}
-
-// ─── Date normalization ────────────────────────────────────────────────────────
-function normalizeDate(raw: string): string {
-  // SIFEN uses YYYY-MM-DD or YYYY-MM-DDThh:mm:ss
-  if (!raw) return new Date().toISOString().split("T")[0];
-  const d = raw.slice(0, 10); // take YYYY-MM-DD part
-  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : new Date().toISOString().split("T")[0];
-}
-
-// ─── IVA rate normalization ────────────────────────────────────────────────────
-function normalizeIvaRate(raw: string | number): 0 | 5 | 10 {
-  const n = Number(raw);
-  if (n === 5)  return 5;
-  if (n === 10) return 10;
-  return 0;
-}
-
-// ─── Main parser ──────────────────────────────────────────────────────────────
-
-export function parseSifenXml(xml: string, filename = "documento.xml"): ParseResult {
+export function parseSifenXML(xmlString: string): SifenInvoice | null {
   try {
-    // ── CDC ────────────────────────────────────────────────────────────────────
-    const cdc = getText(xml, "CDC") || getText(xml, "dCDC") || getText(xml, "Id") || null;
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
 
-    // ── Timbrado ───────────────────────────────────────────────────────────────
-    const timbrado = getText(xml, "dNumTim") || getText(xml, "nroTimbrado") || getText(xml, "timbrado") || null;
+    // Check for parse errors
+    const parseError = xmlDoc.querySelector("parsererror");
+    if (parseError) return null;
 
-    // ── Document type ──────────────────────────────────────────────────────────
-    const rawType = getText(xml, "iTiDE") || getText(xml, "tipoDocumento") || getText(xml, "tipo") || "1";
-    const docType: DocType = TYPE_MAP[rawType] ?? "factura";
+    // CDC
+    const cdc = getTagValue(xmlDoc, "dEmis") || getTagValue(xmlDoc, "CDC") || "";
 
-    // ── Document number (establecimiento-punto-numero) ─────────────────────────
-    const estab  = getText(xml, "dEst")  || getText(xml, "establecimiento") || "001";
-    const punto  = getText(xml, "dPunExp")|| getText(xml, "puntoExpedicion") || "001";
-    const numero = getText(xml, "dNumDoc")|| getText(xml, "numeroDocumento")  || getText(xml, "nroDocumento") || "0000001";
-    const docNumber = `${estab.padStart(3,"0")}-${punto.padStart(3,"0")}-${numero.padStart(7,"0")}`;
+    // Timbrado
+    const timbrado = getTagValue(xmlDoc, "dTimbrado") || getTagValue(xmlDoc, "Timbrado") || "";
 
-    // ── Issue date ─────────────────────────────────────────────────────────────
-    const rawDate   = getText(xml, "dFeEmiDE") || getText(xml, "fechaEmision") || getText(xml, "dFecFirma") || "";
-    const issueDate = normalizeDate(rawDate);
+    // Number
+    const numeroEstablecimiento = getTagValue(xmlDoc, "dNroEstab") || "";
+    const numeroPuntoVenta = getTagValue(xmlDoc, "dPtoExp") || "";
+    const numeroDocumento = getTagValue(xmlDoc, "dNroDoc") || "";
+    const numero = `${numeroEstablecimiento}-${numeroPuntoVenta}-${numeroDocumento}`;
 
-    // ── Issuer (emisor) ────────────────────────────────────────────────────────
-    const issuerRuc  = getText(xml, "dRucEm")   || getText(xml, "rucEmisor")   || getText(xml, "dRUCEmi") || "";
-    const issuerName = getText(xml, "dNomEmi")  || getText(xml, "razonSocialEmisor") || getText(xml, "dNomRazSocEmi") || "";
+    // Date
+    const fechaEmision = getTagValue(xmlDoc, "dFEEmis") || getTagValue(xmlDoc, "FechaEmision") || "";
 
-    if (!issuerRuc) {
-      return { ok: false, error: "RUC del emisor no encontrado en el XML" };
-    }
+    // Type
+    const tipoDocumento = getTagValue(xmlDoc, "cTiOpe") || getTagValue(xmlDoc, "TipoDocumento") || "";
+    let tipoDoc: SifenInvoice["tipoDoc"] = "factura";
+    if (tipoDocumento === "2" || tipoDocumento.includes("credito")) tipoDoc = "nota_credito";
+    if (tipoDocumento === "3" || tipoDocumento.includes("debito")) tipoDoc = "nota_debito";
+    if (tipoDocumento === "4" || tipoDocumento.includes("recibo")) tipoDoc = "recibo";
 
-    // ── Receiver (receptor) ────────────────────────────────────────────────────
-    const receiverRuc  = getText(xml, "dRucRec")  || getText(xml, "rucReceptor")  || getText(xml, "dRUCRec")  || null;
-    const receiverName = getText(xml, "dNomRec")  || getText(xml, "razonSocialReceptor") || getText(xml, "dNomRazSocRec") || null;
+    // Condition
+    const condicion = getTagValue(xmlDoc, "cCond") || getTagValue(xmlDoc, "Condicion") || "";
+    const condicionFinal: "contado" | "credito" = condicion === "2" ? "credito" : "contado";
 
-    // ── Currency ───────────────────────────────────────────────────────────────
-    const currency = getText(xml, "cMoneOpe") || getText(xml, "moneda") || "PYG";
+    // Emitter
+    const emisorRuc = getTagValue(xmlDoc, "dRucEmis") || getTagValue(xmlDoc, "RucEmisor") || "";
+    const emisorNombre = getTagValue(xmlDoc, "dNomEmis") || getTagValue(xmlDoc, "NombreEmisor") || getTagValue(xmlDoc, "EmiNom") || "";
+    const emisorFantasia = getTagValue(xmlDoc, "dNomFanEmis") || getTagValue(xmlDoc, "NombreFantasia") || "";
 
-    // ── Totals ─────────────────────────────────────────────────────────────────
-    // Try multiple tag names (SIFEN versions vary)
-    const iva10 = getFloat(xml, "dTotOpe10") || getFloat(xml, "ivaGravado10") || getFloat(xml, "ivaGravadoTasa10");
-    const iva5  = getFloat(xml, "dTotOpe5")  || getFloat(xml, "ivaGravado5")  || getFloat(xml, "ivaGravadoTasa5");
-    const ivaEx = getFloat(xml, "dTotExe")   || getFloat(xml, "montoExento")  || getFloat(xml, "totalExento");
+    // Receiver
+    const receptorRuc = getTagValue(xmlDoc, "dRucRece") || getTagValue(xmlDoc, "RucReceptor") || "";
+    const receptorNombre = getTagValue(xmlDoc, "dNomRece") || getTagValue(xmlDoc, "NombreReceptor") || "";
 
-    let total = getFloat(xml, "dTotGralOpe") || getFloat(xml, "montoTotal") || getFloat(xml, "totalGeneral");
+    // Amounts
+    const gravado10 = parseFloat(getTagValue(xmlDoc, "dTotGrav10") || getTagValue(xmlDoc, "dTot Grav 10") || getTagValue(xmlDoc, "TotGralItem") || "0");
+    const gravado5 = parseFloat(getTagValue(xmlDoc, "dTotGrav5") || getTagValue(xmlDoc, "dTot Grav 5") || getTagValue(xmlDoc, "TotGralItem5") || "0");
+    const exento = parseFloat(getTagValue(xmlDoc, "dTot Exe") || getTagValue(xmlDoc, "TotExe") || "0");
+    const iva10 = parseFloat(getTagValue(xmlDoc, "dTotIVA10") || getTagValue(xmlDoc, "Iva10") || "0");
+    const iva5 = parseFloat(getTagValue(xmlDoc, "dTotIVA5") || getTagValue(xmlDoc, "Iva5") || "0");
+    const totalIva = iva10 + iva5;
+    const total = parseFloat(getTagValue(xmlDoc, "dTotOpe") || getTagValue(xmlDoc, "Total") || "0") || (gravado10 + gravado5 + exento + totalIva);
 
-    // Subtotal (before IVA — in PY IVA is included in price)
-    const subtotal10 = getFloat(xml, "dBasGravIva10") || getFloat(xml, "baseImponible10") || (iva10 ? iva10 / 0.10 * 0.90 : 0);
-    const subtotal5  = getFloat(xml, "dBasGravIva5")  || getFloat(xml, "baseImponible5")  || (iva5  ? iva5  / 0.05 * 0.95 : 0);
-    const subtotal   = subtotal10 + subtotal5 + ivaEx;
-
-    // ── Line items ─────────────────────────────────────────────────────────────
-    const lineBlocks = getAllBlocks(xml, "gCamItem") || getAllBlocks(xml, "item") || getAllBlocks(xml, "detalle");
-
-    const lines: SifenLine[] = lineBlocks.map((block, idx) => {
-      const desc      = getText(block, "dDesProSer") || getText(block, "descripcion") || getText(block, "dDesProd") || `Ítem ${idx + 1}`;
-      const qty       = getFloat(block, "dCantProSer") || getFloat(block, "cantidad") || 1;
-      const unitPrice = getFloat(block, "dPUniProSer") || getFloat(block, "precioUnitario") || getFloat(block, "dPrecUniSinIva") || 0;
-      const rawRate   = getText(block, "cTasaIva") || getText(block, "tasaIva") || getText(block, "ivaRate") || "10";
-      const ivaRate   = normalizeIvaRate(rawRate);
-      const ivaAmt    = getFloat(block, "dIvaItem") || getFloat(block, "montoIva") || 0;
-      const lineTotal = getFloat(block, "dTotBruOpeItem") || getFloat(block, "totalItem") || (qty * unitPrice);
-
-      return {
-        lineNumber:  idx + 1,
-        description: desc,
-        quantity:    qty,
-        unitPrice,
-        ivaRate,
-        ivaAmount:   ivaAmt,
-        lineTotal,
-      };
+    // Items
+    const items: SifenItem[] = [];
+    const itemElements = xmlDoc.querySelectorAll("dDetItem, Item");
+    itemElements.forEach((el) => {
+      const parent = el.parentElement;
+      if (parent) {
+        items.push({
+          codigo: getTagValue(xmlDoc, "dCodProd") || "",
+          descripcion: getTagValue(xmlDoc, "dDSProd") || "",
+          cantidad: parseFloat(getTagValue(xmlDoc, "dCant") || "1"),
+          precioUnitario: parseFloat(getTagValue(xmlDoc, "dPUni") || "0"),
+          ivaRate: parseFloat(getTagValue(xmlDoc, "cIVA") || "10"),
+          total: parseFloat(getTagValue(xmlDoc, "dTotItem") || "0"),
+        });
+      }
     });
 
-    // If no lines found, create synthetic line from totals
-    if (lines.length === 0 && total > 0) {
-      lines.push({
-        lineNumber:  1,
-        description: `${docType === "factura" ? "Factura" : docType} ${docNumber}`,
-        quantity:    1,
-        unitPrice:   total,
-        ivaRate:     10,
-        ivaAmount:   iva10,
-        lineTotal:   total,
-      });
-    }
-
-    // If total is still 0, sum from lines
-    if (!total && lines.length > 0) {
-      total = lines.reduce((s, l) => s + l.lineTotal, 0);
-    }
-
     return {
-      ok: true,
-      doc: {
-        cdc,
-        timbrado,
-        docType,
-        docNumber,
-        issueDate,
-        issuerRuc,
-        issuerName,
-        receiverRuc: receiverRuc || null,
-        receiverName: receiverName || null,
-        subtotal:    Math.round(subtotal * 10000) / 10000,
-        iva10:       Math.round(iva10   * 10000) / 10000,
-        iva5:        Math.round(iva5    * 10000) / 10000,
-        ivaExento:   Math.round(ivaEx   * 10000) / 10000,
-        total:       Math.round(total   * 10000) / 10000,
-        currency,
-        lines,
-        rawXml:      xml,
-        filename,
+      cdc,
+      numero: numero || "S/N",
+      fechaEmision,
+      tipoDoc,
+      condicion: condicionFinal,
+      timbrado,
+      emisor: {
+        ruc: emisorRuc,
+        nombre: emisorNombre,
+        nombreFantasia: emisorFantasia || undefined,
       },
+      receptor: {
+        ruc: receptorRuc,
+        nombre: receptorNombre,
+      },
+      montos: {
+        gravado10: gravado10 || 0,
+        gravado5: gravado5 || 0,
+        exento: exento || 0,
+        iva10: iva10 || 0,
+        iva5: iva5 || 0,
+        totalIva,
+        total,
+      },
+      items,
+      direccion: tipoDoc === "factura" ? "received" : "issued",
     };
-  } catch (err) {
-    return {
-      ok:    false,
-      error: `Error al parsear XML: ${err instanceof Error ? err.message : String(err)}`,
-    };
+  } catch {
+    return null;
   }
 }
 
-// ─── Validation helpers ────────────────────────────────────────────────────────
+function getTagValue(doc: Document, tagName: string): string {
+  // Try exact match first
+  let el = doc.getElementsByTagName(tagName)[0];
+  if (el?.textContent) return el.textContent.trim();
 
-export function validateCDC(cdc: string): boolean {
-  return /^\d{44}$/.test(cdc);
+  // Try case-insensitive search
+  const allElements = doc.getElementsByTagName("*");
+  for (let i = 0; i < allElements.length; i++) {
+    if (allElements[i].tagName.toLowerCase() === tagName.toLowerCase()) {
+      return allElements[i].textContent?.trim() || "";
+    }
+  }
+
+  return "";
 }
 
-export function validateTimbrado(t: string): boolean {
-  return /^\d{6,15}$/.test(t);
+/**
+ * Generates a suggested journal entry from a parsed SIFEN invoice.
+ * This simulates the AI suggestion engine.
+ */
+export function suggestJournalEntry(invoice: SifenInvoice) {
+  const lines: Array<{
+    accountCode: string;
+    accountName: string;
+    debit: string;
+    credit: string;
+    description: string;
+  }> = [];
+
+  const isCreditNote = invoice.tipoDoc === "nota_credito";
+  const isDebitNote = invoice.tipoDoc === "nota_debito";
+
+  if (invoice.direccion === "received") {
+    // Purchase invoice or credit/debit note received
+
+    if (isCreditNote) {
+      // Credit note reverses a purchase — debit supplier, credit merchandise/IVA
+      if (Math.abs(invoice.montos.gravado10) > 0) {
+        lines.push({
+          accountCode: "1.2.01",
+          accountName: "Mercaderías",
+          debit: "",
+          credit: Math.abs(invoice.montos.gravado10).toFixed(2),
+          description: `NC — Devolución compra gravada 10% — ${invoice.numero}`,
+        });
+      }
+      if (Math.abs(invoice.montos.gravado5) > 0) {
+        lines.push({
+          accountCode: "1.2.01",
+          accountName: "Mercaderías",
+          debit: "",
+          credit: Math.abs(invoice.montos.gravado5).toFixed(2),
+          description: `NC — Devolución compra gravada 5% — ${invoice.numero}`,
+        });
+      }
+      if (Math.abs(invoice.montos.exento) > 0) {
+        lines.push({
+          accountCode: "5.1.10",
+          accountName: "Otros Gastos",
+          debit: "",
+          credit: Math.abs(invoice.montos.exento).toFixed(2),
+          description: `NC — Devolución compra exenta — ${invoice.numero}`,
+        });
+      }
+      if (Math.abs(invoice.montos.iva10) > 0) {
+        lines.push({
+          accountCode: "1.1.06",
+          accountName: "IVA Crédito Fiscal",
+          debit: "",
+          credit: Math.abs(invoice.montos.iva10).toFixed(2),
+          description: `NC — Reversión IVA 10% — ${invoice.numero}`,
+        });
+      }
+      if (Math.abs(invoice.montos.iva5) > 0) {
+        lines.push({
+          accountCode: "1.1.07",
+          accountName: "IVA Crédito Fiscal 5%",
+          debit: "",
+          credit: Math.abs(invoice.montos.iva5).toFixed(2),
+          description: `NC — Reversión IVA 5% — ${invoice.numero}`,
+        });
+      }
+      // Debit supplier for the total
+      lines.push({
+        accountCode: "2.1.01",
+        accountName: "Cuentas a Pagar Proveedores",
+        debit: Math.abs(invoice.montos.total).toFixed(2),
+        credit: "",
+        description: `NC — Proveedor: ${invoice.emisor.nombre}`,
+      });
+    } else {
+      // Regular purchase invoice or debit note
+      if (invoice.montos.gravado10 > 0) {
+        lines.push({
+          accountCode: "1.2.01",
+          accountName: "Mercaderías",
+          debit: invoice.montos.gravado10.toFixed(2),
+          credit: "",
+          description: `Compra gravada 10% — Factura ${invoice.numero}`,
+        });
+      }
+      if (invoice.montos.gravado5 > 0) {
+        lines.push({
+          accountCode: "1.2.01",
+          accountName: "Mercaderías",
+          debit: invoice.montos.gravado5.toFixed(2),
+          credit: "",
+          description: `Compra gravada 5% — Factura ${invoice.numero}`,
+        });
+      }
+      if (invoice.montos.exento > 0) {
+        lines.push({
+          accountCode: "5.1.10",
+          accountName: "Otros Gastos",
+          debit: invoice.montos.exento.toFixed(2),
+          credit: "",
+          description: `Compra exenta — Factura ${invoice.numero}`,
+        });
+      }
+      if (invoice.montos.iva10 > 0) {
+        lines.push({
+          accountCode: "1.1.06",
+          accountName: "IVA Crédito Fiscal",
+          debit: invoice.montos.iva10.toFixed(2),
+          credit: "",
+          description: `IVA 10% — Factura ${invoice.numero}`,
+        });
+      }
+      if (invoice.montos.iva5 > 0) {
+        lines.push({
+          accountCode: "1.1.07",
+          accountName: "IVA Crédito Fiscal 5%",
+          debit: invoice.montos.iva5.toFixed(2),
+          credit: "",
+          description: `IVA 5% — Factura ${invoice.numero}`,
+        });
+      }
+      lines.push({
+        accountCode: "2.1.01",
+        accountName: "Cuentas a Pagar Proveedores",
+        debit: "",
+        credit: invoice.montos.total.toFixed(2),
+        description: `Proveedor: ${invoice.emisor.nombre} — ${invoice.condicion}`,
+      });
+    }
+  } else {
+    // Sales invoice
+    if (invoice.montos.total > 0) {
+      lines.push({
+        accountCode: invoice.condicion === "contado" ? "1.1.02" : "1.1.05",
+        accountName: invoice.condicion === "contado" ? "Banco" : "Cuentas a Cobrar Clientes",
+        debit: invoice.montos.total.toFixed(2),
+        credit: "",
+        description: `Venta — Factura ${invoice.numero}`,
+      });
+    }
+    lines.push({
+      accountCode: "4.1.01",
+      accountName: "Ventas de Mercaderías",
+      debit: "",
+      credit: (invoice.montos.gravado10 + invoice.montos.gravado5 + invoice.montos.exento).toFixed(2),
+      description: `Venta gravada — Factura ${invoice.numero}`,
+    });
+    if (invoice.montos.iva10 > 0) {
+      lines.push({
+        accountCode: "2.1.02",
+        accountName: "IVA Débito Fiscal",
+        debit: "",
+        credit: invoice.montos.iva10.toFixed(2),
+        description: `IVA 10% débito — Factura ${invoice.numero}`,
+      });
+    }
+    if (invoice.montos.iva5 > 0) {
+      lines.push({
+        accountCode: "2.1.03",
+        accountName: "IVA Débito Fiscal 5%",
+        debit: "",
+        credit: invoice.montos.iva5.toFixed(2),
+        description: `IVA 5% débito — Factura ${invoice.numero}`,
+      });
+    }
+  }
+
+  // Verify balance
+  const totalDebit = lines.reduce((sum, l) => sum + parseFloat(l.debit || "0"), 0);
+  const totalCredit = lines.reduce((sum, l) => sum + parseFloat(l.credit || "0"), 0);
+  const balanced = Math.abs(totalDebit - totalCredit) < 0.01;
+
+  return {
+    lines,
+    totalDebit,
+    totalCredit,
+    balanced,
+    confidence: balanced ? 0.95 : 0.7,
+    rationale: balanced
+      ? "Asiento generado según reglas contables paraguayas. Débitos y créditos balanceados."
+      : "Se requiere ajuste manual — diferencia detectada.",
+  };
 }

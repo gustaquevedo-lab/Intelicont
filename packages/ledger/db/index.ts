@@ -1,14 +1,21 @@
-import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+
 import * as schema from "./schema";
 
-// Para desarrollo y scripts Node.js (seed, migrations).
-// En Next.js App Router (Server Components / Server Actions) este cliente funciona bien.
-// Para Edge Runtime en el futuro: usar @supabase/supabase-js o el pooler de Supabase.
-const client = postgres(process.env.DATABASE_URL!, {
-  max: 1,        // una conexión en scripts/seed
-  ssl: "require", // Supabase siempre requiere SSL
-});
+let _db: PostgresJsDatabase<typeof schema> | null = null;
 
-export const db = drizzle(client, { schema });
-export { client };
+export function getDb(): PostgresJsDatabase<typeof schema> {
+  if (_db) return _db;
+
+  const dbUrl = process.env.DATABASE_URL;
+
+  if (!dbUrl) {
+    throw new Error("DATABASE_URL is not configured. Set it in .env.local");
+  }
+
+  const sql = postgres(dbUrl, { prepare: false });
+  _db = drizzle(sql, { schema });
+  return _db;
+}

@@ -1,35 +1,54 @@
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 
-/**
- * Supabase Auth callback handler.
- * Handles:
- *  - Magic link clicks (email OTP)
- *  - OAuth redirects (Google, GitHub, etc.)
- *
- * Supabase redirects here with ?code=... after auth.
- * We exchange the code for a session and redirect the user.
- */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/";
+  const errorParam = searchParams.get("error");
+  const errorDesc = searchParams.get("error_description");
 
-  const code        = searchParams.get("code");
-  const next        = searchParams.get("next") ?? "/";
-  const redirectTo  = searchParams.get("redirectTo") ?? "/";
+  console.log("[Auth Callback]", { code: !!code, next, errorParam, errorDesc, origin });
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (!error) {
-      // Use `next` param from Supabase or `redirectTo` from our login form
-      const destination = next !== "/" ? next : redirectTo;
-      return NextResponse.redirect(new URL(destination, origin));
-    }
-
-    console.error("[auth/callback] exchangeCodeForSession error:", error.message);
+  if (errorParam) {
+    console.error("[Auth Callback] Error from Supabase:", errorParam, errorDesc);
+    return NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent(errorDesc || errorParam)}`, origin)
+    );
   }
 
-  // Something went wrong — send to login with error flag
-  return NextResponse.redirect(new URL("/login?error=auth_callback_failed", origin));
+  if (!code) {
+    console.error("[Auth Callback] No code provided");
+    return NextResponse.redirect(new URL("/login?error=no_code", origin));
+  }
+
+  let response = NextResponse.redirect(new URL(next, origin));
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          response = NextResponse.redirect(new URL(next, origin));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    console.error("[Auth Callback] exchangeCodeForSession error:", error.message);
+    return NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent(error.message)}`, origin)
+    );
+  }
+
+  console.log("[Auth Callback] Session established for:", data?.user?.email);
+  return response;
 }

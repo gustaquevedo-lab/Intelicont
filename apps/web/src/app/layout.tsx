@@ -1,73 +1,103 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/app-shell";
-import { ThemeProvider, THEME_SCRIPT } from "@/components/theme-provider";
+import { ThemeProvider } from "@/lib/theme-context";
+import { TRPCProvider } from "@/components/trpc-provider";
+import { PostHogProvider } from "@/lib/posthog-provider";
+import { ToastProvider } from "@/components/ui/toast";
+import { NotificationProvider } from "@/components/notifications";
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-  display: "swap",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "InteliCont — Software Contable AI-First para Paraguay",
+    default: "InteliCont — SaaS Contable AI-First para Paraguay",
     template: "%s | InteliCont",
   },
   description:
-    "Gestioná múltiples empresas, automatizá SIFEN, generá Hechauka y RG90 automáticamente. El software contable más avanzado de Paraguay, con IA incluida.",
+    "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA, cumple con DNIT/SET. Multi-tenant, libro inmutable, conciliación bancaria automática.",
   keywords: [
-    "software contable Paraguay",
-    "contabilidad SIFEN",
-    "Hechauka automático",
-    "RG90 Paraguay",
-    "software DNIT",
-    "multi-empresa contabilidad",
-    "InteliCont",
-    "Intellihouse",
+    "contabilidad",
+    "paraguay",
+    "SIFEN",
+    "DNIT",
+    "SET",
+    "IVA",
+    "IRE",
+    "IRP",
+    "facturación electrónica",
+    "Hechauka",
+    "libro electrónico",
+    "asientos contables",
+    "conciliación bancaria",
+    "multi-tenant",
+    "IA contable",
   ],
-  authors: [{ name: "IntelliHouse Soluciones E.A.S.", url: "https://intelicont.com.py" }],
-  creator: "IntelliHouse Soluciones E.A.S.",
-  metadataBase: new URL("https://intelicont.com.py"),
+  authors: [{ name: "InteliCont" }],
+  creator: "InteliCont",
+  publisher: "InteliCont",
   openGraph: {
     type: "website",
     locale: "es_PY",
-    url: "https://intelicont.com.py",
+    url: "https://intelicont.com",
     siteName: "InteliCont",
-    title: "InteliCont — La contabilidad de tu estudio, automatizada",
+    title: "InteliCont — SaaS Contable AI-First para Paraguay",
     description:
-      "Gestioná N empresas con SIFEN integrado, IA que sugiere asientos y cierre de período en horas. Hecho para Paraguay.",
+      "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA, cumple con DNIT/SET.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "InteliCont - Contabilidad Inteligente",
+      },
+    ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "InteliCont — SaaS Contable AI-First para Paraguay",
+    description:
+      "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  manifest: "/manifest.json",
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
   },
-  robots: { index: true, follow: true },
-};
-
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)",  color: "#0f172a" },
-  ],
-  width: "device-width",
-  initialScale: 1,
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <head>
-        {/* FOUC prevention — must run synchronously before first paint */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-background text-foreground antialiased`}>
         <ThemeProvider>
-          <AppShell>{children}</AppShell>
+          <PostHogProvider>
+            <TRPCProvider>
+              <ToastProvider>
+                <NotificationProvider>
+                  <AppShell>{children}</AppShell>
+                </NotificationProvider>
+              </ToastProvider>
+            </TRPCProvider>
+          </PostHogProvider>
         </ThemeProvider>
       </body>
     </html>

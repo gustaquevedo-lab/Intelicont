@@ -1,0 +1,24 @@
+{
+  "name": "@intelicont/ledger",
+  "private": true,
+  "version": "0.1.0",
+  "exports": {
+    ".": "./src/domain.ts",
+    "./fiscal-py": "./src/fiscal-py.ts",
+    "./ledger-engine": "./ledger-engine.ts",
+    "./retention-calculator": "./src/retention-calculator.ts",
+    "./fiscal-forms": "./src/fiscal-forms.ts",
+    "./rg90-engine": "./src/rg90-engine.ts"
+  },
+  "scripts": {
+    "db:seed": "tsx db/seed.ts",
+    "db:seed-auth": "tsx db/seed-auth.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

@@ -1,24 +1,19 @@
+"use client";
+
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-const IS_CONFIGURED = !!SUPABASE_URL && !SUPABASE_URL.includes("placeholder");
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-/**
- * Supabase client for Client Components.
- * When Supabase is not configured (dev/preview), returns a no-op client
- * with autoRefreshToken and persistSession disabled to avoid network loops.
- */
-export function createClient() {
-  return createBrowserClient(
-    IS_CONFIGURED ? SUPABASE_URL : "https://placeholder.supabase.co",
-    IS_CONFIGURED ? SUPABASE_KEY : "placeholder-anon-key",
-    {
-      auth: {
-        autoRefreshToken: IS_CONFIGURED,
-        persistSession:   IS_CONFIGURED,
-        detectSessionInUrl: IS_CONFIGURED,
-      },
-    }
-  );
+let _client: SupabaseClient | null = null;
+
+export function createClient(): SupabaseClient {
+  if (_client) return _client;
+  _client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return _client;
+}
+
+export function getSupabaseClient(): SupabaseClient {
+  return createClient();
 }

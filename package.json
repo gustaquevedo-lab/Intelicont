@@ -8,21 +8,20 @@
     "backlog/*"
   ],
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
+    "dev": "pnpm --filter @intelicont/web dev",
+    "build": "pnpm --filter @intelicont/web build",
+    "start": "pnpm --filter @intelicont/web start",
+    "lint": "pnpm --filter @intelicont/web lint",
+    "test": "pnpm --filter @intelicont/web test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "dotenv -e .env.local -- tsx packages/ledger/db/seed.ts",
-    "db:studio": "drizzle-kit studio",
-    "db:reset": "dotenv -e .env.local -- tsx packages/ledger/db/reset.ts"
+    "db:push": "drizzle-kit push",
+    "db:seed": "pnpm --filter @intelicont/ledger db:seed",
+    "db:seed-auth": "pnpm --filter @intelicont/ledger db:seed-auth",
+    "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
-    "dotenv-cli": "^7.4.2",
-    "drizzle-kit": "^0.31.10",
-    "tsx": "^4.19.2",
-    "typescript": "^5.8.3"
+    "drizzle-kit": "^0.31.10"
   },
   "dependencies": {
     "@trpc/client": "^11.17.0",
