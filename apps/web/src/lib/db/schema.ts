@@ -87,7 +87,7 @@ export type Account = typeof accounts.$inferSelect;
 export const journalEntries = pgTable("journal_entries", {
   id:          uuid("id").primaryKey().defaultRandom(),
   entityId:    uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
-  periodId:    uuid("period_id").references(() => fiscalPeriods.id, { onDelete: "set_null" }),
+  periodId:    uuid("period_id").references(() => fiscalPeriods.id, { onDelete: "set null" }),
   date:        timestamp("date").notNull(),
   number:      varchar("number", { length: 100 }),
   source:      journalSourceEnum("source").default("manual"),
