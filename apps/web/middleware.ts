@@ -25,6 +25,15 @@ const SUPABASE_CONFIGURED =
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Bypass auth entirely for crawler-facing assets ────────────────────────
+  // OG image must be reachable by WhatsApp/Meta/Twitter without any session.
+  if (
+    pathname === "/opengraph-image" ||
+    pathname.startsWith("/opengraph-image/")
+  ) {
+    return NextResponse.next();
+  }
+
   // ── No Supabase credentials → pass everything through (dev/preview mode) ──
   if (!SUPABASE_CONFIGURED) {
     return NextResponse.next();
