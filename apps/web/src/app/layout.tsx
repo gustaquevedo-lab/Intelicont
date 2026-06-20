@@ -47,10 +47,12 @@ export const metadata: Metadata = {
       "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA, cumple con la DNIT.",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://intelicont.vercel.app/og-image.jpg",
+        secureUrl: "https://intelicont.vercel.app/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "InteliCont - Contabilidad Inteligente",
+        type: "image/jpeg",
+        alt: "InteliCont — Contabilidad Inteligente para Paraguay",
       },
     ],
   },
@@ -59,7 +61,7 @@ export const metadata: Metadata = {
     title: "InteliCont — SaaS Contable AI-First para Paraguay",
     description:
       "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA.",
-    images: ["/og-image.png"],
+    images: ["https://intelicont.vercel.app/og-image.jpg"],
   },
   robots: {
     index: true,

@@ -21,8 +21,12 @@ type FormState =
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getRedirectTo() {
-  if (typeof window === "undefined") return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/callback`;
-  return `${window.location.origin}/auth/callback`;
+  // Use the configured app URL (production domain) for magic link redirects.
+  // This prevents the link in the email from pointing to localhost when developing.
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (typeof window !== "undefined" ? window.location.origin : "");
+  return `${appUrl}/auth/callback`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
