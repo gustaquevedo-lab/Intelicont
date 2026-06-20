@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Plus, Trash2, CheckCircle2, AlertCircle, Save, Loader2,
   Building2, Calendar, FileText, ShoppingBag, Landmark, CreditCard,
-  Layers, Package, Monitor, Briefcase, ChevronRight, Upload, Sparkles, X
+  Layers, Package, Monitor, Briefcase, ChevronRight, Upload, Sparkles, X,
+  DollarSign, RefreshCw, Globe
 } from "lucide-react";
+import { fetchExchangeRate, type ExchangeRateSource } from "../exchange-rate-actions";
 import { cn } from "@/lib/utils";
 import {
   createManualComprobante,
@@ -65,6 +67,16 @@ export default function RegistrarComprobantePage() {
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank" | "card" | "credit">("credit");
   const [bankAccountId, setBankAccountId] = useState("");
 
+  // ── Multimoneda ──
+  const [currency, setCurrency] = useState<"PYG" | "USD" | "EUR" | "BRL" | "ARS">("PYG");
+  const [tcSource, setTcSource] = useState<ExchangeRateSource>("manual");
+  const [tcBuy, setTcBuy] = useState<number>(0);   // Gs. compra
+  const [tcSell, setTcSell] = useState<number>(0);  // Gs. venta (usado para conversión)
+  const [tcDate, setTcDate] = useState("");
+  const [tcSourceName, setTcSourceName] = useState("");
+  const [tcLoading, setTcLoading] = useState(false);
+  const [tcError, setTcError] = useState<string | null>(null);
+
   const [lines, setLines] = useState<LineaDetalle[]>([
     { id: uid(), description: "", quantity: 1, unitPrice: 0, ivaRate: 10, lineTotal: 0, destination: "gasto" }
   ]);
@@ -108,6 +120,34 @@ export default function RegistrarComprobantePage() {
     if (entityId) refreshInventoryAndAssets(entityId);
   }, [entityId]);
 
+  // ── TC Fetch Handler ──
+  const handleFetchTC = async () => {
+    if (currency === "PYG" || tcSource === "manual") return;
+    setTcLoading(true);
+    setTcError(null);
+    const res = await fetchExchangeRate(currency, tcSource);
+    setTcLoading(false);
+    if (res.ok) {
+      setTcBuy(res.data.buyRate);
+      setTcSell(res.data.sellRate);
+      setTcDate(res.data.date);
+      setTcSourceName(res.data.sourceName);
+    } else {
+      setTcError(res.error);
+    }
+  };
+
+  // Reset TC when currency changes back to PYG
+  useEffect(() => {
+    if (currency === "PYG") {
+      setTcBuy(0);
+      setTcSell(0);
+      setTcDate("");
+      setTcSourceName("");
+      setTcError(null);
+    }
+  }, [currency]);
+
   // Sync paymentMethod with condition
   useEffect(() => {
     if (condition === "credit") {
@@ -130,7 +170,9 @@ export default function RegistrarComprobantePage() {
     return { valid: true };
   }, [timbrado]);
 
-  // Totals calculations
+  // Totals calculations — convierte a PYG si hay moneda extranjera
+  const tcRate = currency !== "PYG" && tcSell > 0 ? tcSell : 1;
+
   const totals = useMemo(() => {
     let subtotal = 0;
     let gravado10 = 0;
@@ -140,7 +182,11 @@ export default function RegistrarComprobantePage() {
     let iva5 = 0;
 
     lines.forEach((l) => {
-      const lineTotal = l.quantity * l.unitPrice;
+      // Si hay moneda extranjera con TC, convertimos el precio a PYG
+      const unitInPyg = currency !== "PYG" && tcSell > 0
+        ? l.unitPrice * tcSell
+        : l.unitPrice;
+      const lineTotal = l.quantity * unitInPyg;
       subtotal += lineTotal;
 
       if (l.ivaRate === 10) {
@@ -163,7 +209,8 @@ export default function RegistrarComprobantePage() {
       iva5: Math.round(iva5),
       total: Math.round(subtotal)
     };
-  }, [lines]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lines, currency, tcSell]);
 
   const addLine = () => {
     setLines([
@@ -548,6 +595,119 @@ export default function RegistrarComprobantePage() {
             </div>
           </div>
 
+          {/* ── Moneda y Tipo de Cambio ── */}
+          <div className="bg-gray-900/40 border border-gray-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-sm">
+            <h2 className="text-sm font-bold text-gray-200 border-b border-gray-800 pb-2 flex items-center gap-2">
+              <Globe className="h-4 w-4 text-cyan-400" /> Moneda y Tipo de Cambio
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Moneda */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Moneda del Comprobante</label>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all"
+                >
+                  <option value="PYG">🇵🇾 PYG — Guaraní</option>
+                  <option value="USD">🇺🇸 USD — Dólar</option>
+                  <option value="EUR">🇪🇺 EUR — Euro</option>
+                  <option value="BRL">🇧🇷 BRL — Real</option>
+                  <option value="ARS">🇦🇷 ARS — Peso Arg.</option>
+                </select>
+              </div>
+
+              {/* Fuente TC */}
+              {currency !== "PYG" && (
+                <div className="animate-in fade-in duration-200">
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">Fuente Tipo de Cambio</label>
+                  <select
+                    value={tcSource}
+                    onChange={(e) => setTcSource(e.target.value as ExchangeRateSource)}
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all"
+                  >
+                    <option value="manual">✍️ Manual — Ingreso propio</option>
+                    <option value="bcp">🏦 BCP — Banco Central PY</option>
+                    <option value="dnit">📋 DNIT — Cotización fiscal</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Botón traer / Input manual */}
+              {currency !== "PYG" && (
+                <div className="animate-in fade-in duration-200">
+                  <label className="block text-xs font-semibold text-gray-400 mb-1.5">
+                    TC Venta (Gs. por {currency})
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      placeholder="Ej: 7450"
+                      value={tcSell || ""}
+                      onChange={(e) => setTcSell(parseFloat(e.target.value) || 0)}
+                      readOnly={tcSource !== "manual"}
+                      className={cn(
+                        "flex-1 px-3 py-2 border rounded-xl text-sm text-white font-mono focus:outline-none focus:ring-2 transition-all",
+                        tcSource === "manual"
+                          ? "bg-gray-800/50 border-gray-700/50 focus:ring-cyan-500/30"
+                          : "bg-gray-800/20 border-gray-700/30 text-gray-400 cursor-not-allowed"
+                      )}
+                    />
+                    {tcSource !== "manual" && (
+                      <button
+                        type="button"
+                        onClick={handleFetchTC}
+                        disabled={tcLoading}
+                        title={`Traer TC del ${tcSource.toUpperCase()}`}
+                        className="px-3 py-2 bg-cyan-600/10 hover:bg-cyan-600/20 border border-cyan-500/30 text-cyan-400 rounded-xl transition-all disabled:opacity-50"
+                      >
+                        {tcLoading
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <RefreshCw className="h-4 w-4" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* TC Info Banner */}
+            {currency !== "PYG" && tcSell > 0 && (
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-cyan-950/20 border border-cyan-800/30 rounded-xl text-xs animate-in fade-in duration-300">
+                <DollarSign className="h-4 w-4 text-cyan-400 shrink-0" />
+                <span className="text-gray-300">
+                  <span className="font-bold text-cyan-300">1 {currency} = Gs. {tcSell.toLocaleString("es-PY")}</span>
+                  {tcBuy > 0 && <span className="text-gray-500 ml-2">(Compra: {tcBuy.toLocaleString("es-PY")})</span>}
+                </span>
+                {tcDate && <span className="text-gray-500">• Fecha: {tcDate}</span>}
+                {tcSourceName && <span className="text-gray-500">• {tcSourceName}</span>}
+                <span className="text-emerald-400 font-semibold ml-auto">
+                  Los montos se convierten automáticamente a Gs.
+                </span>
+              </div>
+            )}
+
+            {/* TC Error */}
+            {tcError && (
+              <div className="flex items-center gap-2 p-3 bg-red-950/20 border border-red-800/30 rounded-xl text-xs text-red-400 animate-in fade-in">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {tcError}. Podés ingresar la cotización manualmente.
+              </div>
+            )}
+
+            {/* TC Warning — moneda seleccionada sin TC */}
+            {currency !== "PYG" && tcSell === 0 && (
+              <div className="flex items-center gap-2 p-3 bg-amber-950/20 border border-amber-800/30 rounded-xl text-xs text-amber-400">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {tcSource === "manual"
+                  ? `Ingresá el TC de venta en Gs. por ${currency} para calcular los totales en PYG.`
+                  : `Hacé clic en 🔄 para traer el TC del ${tcSource.toUpperCase()} automáticamente.`
+                }
+              </div>
+            )}
+          </div>
+
           {/* Payment & Conditions */}
           <div className="bg-gray-900/40 border border-gray-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-sm">
             <h2 className="text-sm font-bold text-gray-200 border-b border-gray-800 pb-2">Condiciones y Pago</h2>
@@ -683,20 +843,41 @@ export default function RegistrarComprobantePage() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Precio Unitario (Gs.)</label>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                        Precio Unitario ({currency !== "PYG" ? currency : "Gs."})
+                      </label>
                       <input
                         type="number"
                         placeholder="0"
                         value={linea.unitPrice || ""}
-                        onChange={(e) => updateLine(linea.id, "unitPrice", parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateLine(linea.id, "unitPrice", parseFloat(e.target.value) || 0)}
                         className="w-full px-3 py-1.5 bg-gray-800/40 border border-gray-700/50 rounded-xl text-sm text-white font-mono text-right"
                       />
+                      {currency !== "PYG" && tcSell > 0 && (
+                        <p className="text-[9px] text-cyan-400 text-right mt-0.5 font-mono">
+                          ≈ Gs. {(linea.unitPrice * tcSell).toLocaleString("es-PY", { maximumFractionDigits: 0 })}
+                        </p>
+                      )}
                     </div>
 
                     <div className="col-span-2 flex items-end">
-                      <div className="w-full flex items-center justify-between px-3 py-2 bg-gray-800/20 border border-gray-700/30 rounded-xl text-sm">
-                        <span className="text-gray-500 font-medium">Subtotal Línea:</span>
-                        <span className="font-bold text-white font-mono">₲ {formatGs(linea.quantity * linea.unitPrice)}</span>
+                      <div className="w-full px-3 py-2 bg-gray-800/20 border border-gray-700/30 rounded-xl text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500 font-medium">Subtotal Línea:</span>
+                          {currency !== "PYG" ? (
+                            <span className="font-bold text-cyan-300 font-mono">
+                              {currency} {(linea.quantity * linea.unitPrice).toLocaleString("es-PY", { maximumFractionDigits: 2 })}
+                            </span>
+                          ) : (
+                            <span className="font-bold text-white font-mono">₲ {formatGs(linea.quantity * linea.unitPrice)}</span>
+                          )}
+                        </div>
+                        {currency !== "PYG" && tcSell > 0 && (
+                          <div className="flex items-center justify-between mt-0.5">
+                            <span className="text-[9px] text-gray-600">En Guaraníes:</span>
+                            <span className="text-[10px] font-mono text-gray-400">₲ {formatGs(linea.quantity * linea.unitPrice * tcSell)}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -787,6 +968,17 @@ export default function RegistrarComprobantePage() {
         <div className="space-y-6">
           <div className="bg-gray-900/40 border border-gray-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-sm sticky top-6">
             <h2 className="text-sm font-bold text-gray-200 border-b border-gray-800 pb-2">Resumen Impositivo (RG90)</h2>
+
+            {currency !== "PYG" && (
+              <div className="flex items-center gap-2 p-2.5 bg-cyan-950/30 border border-cyan-800/30 rounded-lg">
+                <DollarSign className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                <div className="text-[10px]">
+                  <span className="text-cyan-300 font-bold">{currency}</span>
+                  <span className="text-gray-400"> × TC {tcSell > 0 ? `Gs. ${tcSell.toLocaleString("es-PY")}` : "(sin TC)"}</span>
+                  {tcSell === 0 && <span className="text-amber-400 ml-1">← Ingresá el TC</span>}
+                </div>
+              </div>
+            )}
             
             <div className="space-y-2 text-sm font-mono">
               <div className="flex justify-between text-gray-400">

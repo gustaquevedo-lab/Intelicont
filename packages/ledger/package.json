@@ -7,6 +7,7 @@
     "./fiscal-py": "./src/fiscal-py.ts",
     "./ledger-engine": "./ledger-engine.ts",
     "./retention-calculator": "./src/retention-calculator.ts",
+    "./ruc-validator": "./src/ruc-validator.ts",
     "./fiscal-forms": "./src/fiscal-forms.ts",
     "./rg90-engine": "./src/rg90-engine.ts"
   },
