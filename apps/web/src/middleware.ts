@@ -1,7 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/signout"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/auth/callback",
+  "/auth/signout",
+  "/opengraph-image",
+  "/twitter-image",
+];
 
 function isPublic(pathname: string): boolean {
   return (
@@ -36,6 +42,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|otf|css|js)$).*)",
+    "/((?!_next/static|_next/image|opengraph-image|twitter-image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|otf|css|js)$).*)",
   ],
 };
