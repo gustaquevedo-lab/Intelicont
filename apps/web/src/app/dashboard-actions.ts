@@ -123,12 +123,18 @@ export async function loadDashboardObligaciones(): Promise<ActionResult<Dashboar
   try {
     const db   = getDb();
     const rows = await db
-      .select({ id: entities.id, legalName: entities.legalName, ruc: entities.ruc })
+      .select({ id: entities.id, legalName: entities.legalName, ruc: entities.ruc, status: entities.status, taxRegimes: entities.taxRegimes })
       .from(entities)
       .where(eq(entities.status, "active"))
       .orderBy(entities.legalName);
 
-    const entityList = rows.map((r) => ({ id: r.id, legalName: r.legalName, ruc: r.ruc }));
+    const entityList = rows.map((r) => ({
+      id:         r.id,
+      legalName:  r.legalName,
+      ruc:        r.ruc,
+      status:     r.status ?? "active",
+      taxRegimes: r.taxRegimes ?? null,
+    }));
     const now        = new Date();
     const obligations = computeObligaciones(entityList, now.getFullYear(), 2);
 

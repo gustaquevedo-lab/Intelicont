@@ -125,6 +125,8 @@ function IVATable({ rows, label }: { rows: LibroIVARow[]; label: string }) {
   );
 }
 
+import type { LibroIVASummary } from "../actions";
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -140,7 +142,7 @@ export function LibroIVAClient({ entities, defaultYear, defaultMonth, dbError }:
   const [entityId, setEntityId] = useState(entities[0]?.id ?? "");
   const [year,     setYear]     = useState(defaultYear);
   const [month,    setMonth]    = useState(defaultMonth);
-  const [data,     setData]     = useState<Awaited<ReturnType<typeof loadLibroIVA>> extends { ok: true; data: infer D } ? D : never | null>(null);
+  const [data,     setData]     = useState<LibroIVASummary | null>(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   const [, startTransition]     = useTransition();
@@ -160,10 +162,10 @@ export function LibroIVAClient({ entities, defaultYear, defaultMonth, dbError }:
     });
   }
 
-  function handleExportHechauka(type: "compras" | "ventas") {
+  async function handleExportHechauka(type: "compras" | "ventas") {
     if (!data || !entity) return;
     const rows = type === "compras" ? data.compras : data.ventas;
-    const csv  = generateHechauka(entity.ruc, entity.legalName, year, month, rows, type);
+    const csv  = await generateHechauka(entity.ruc, entity.legalName, year, month, rows, type);
     const blob = new Blob([csv], { type: "text/plain;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");

@@ -63,7 +63,7 @@ interface ReviewPanelProps {
 function ReviewPanel({ docId, onClose, onDone }: ReviewPanelProps) {
   const [loading, setLoading]       = useState(true);
   const [error,   setError]         = useState<string | null>(null);
-  const [docData, setDocData]       = useState<Awaited<ReturnType<typeof loadProposal>> extends { ok: true; data: infer D } ? D : never | null>(null);
+  const [docData, setDocData]       = useState<{ doc: Record<string, any>; proposal: JournalProposal | null } | null>(null);
   const [lines,   setLines]         = useState<ProposedLine[]>([]);
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);

@@ -189,7 +189,7 @@ export async function generateHechauka(
   month:      number,
   rows:       LibroIVARow[],
   type:       "compras" | "ventas"
-): string {
+): Promise<string> {
   const TIPOS: Record<string, string> = {
     factura:       "1",
     nota_credito:  "5",

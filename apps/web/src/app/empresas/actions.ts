@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { entities, type Entity } from "@/lib/db/schema";
 import { validateRUC } from "@/lib/ruc";
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // ─── Result type ──────────────────────────────────────────────────────────────
 
@@ -27,7 +27,7 @@ export async function getEmpresas(): Promise<ActionResult<Entity[]>> {
 
     // Auth check — we want to know who's requesting (for future row-level filter).
     // With dev RLS (USING true), all rows are visible regardless.
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     // Fetch all entities (RLS on Supabase side handles multi-tenant isolation).
@@ -119,7 +119,7 @@ export async function createEmpresa(
   formData: FormData
 ): Promise<ActionResult<Entity>> {
   // ── Auth ──────────────────────────────────────────────────────────────────
-  const supabase = await createClient();
+  const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // In dev (no real Supabase) we allow inserts; in prod, reject unauthenticated.

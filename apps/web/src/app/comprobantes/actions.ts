@@ -9,7 +9,7 @@ import {
   globalSettings, entities,
   type TaxDocument,
 } from "@/lib/db/schema";
-import { parseSifenXml, type SifenDocument } from "@/lib/sifen-parser";
+import { parseSifenXML, type SifenInvoice } from "@/lib/sifen-parser";
 import { createAIProvider, type AIConfig } from "@/lib/ai/provider-factory";
 import type { AIProviderInput } from "@/lib/ai/types";
 
@@ -40,6 +40,16 @@ async function loadAIConfig(): Promise<AIConfig> {
   }
 }
 
+// ─── Map SifenInvoice → normalized doc fields ─────────────────────────────────
+
+function mapDocType(inv: SifenInvoice): "factura" | "nota_credito" | "nota_debito" | "autofactura" | "nota_remision" | "retencion" {
+  const t = inv.tipoDoc;
+  if (t === "nota_credito") return "nota_credito";
+  if (t === "nota_debito")  return "nota_debito";
+  if (t === "recibo")       return "retencion";
+  return "factura";
+}
+
 // ─── Ingest XML → parse → save + AI proposal ─────────────────────────────────
 
 export interface IngestResult {
@@ -68,19 +78,34 @@ export async function ingestXML(
   if (!xmlContent)  return { ok: false, error: "XML vacío" };
 
   // ── Parse ──────────────────────────────────────────────────────────────────
-  const parseResult = parseSifenXml(xmlContent, filename);
-  if (!parseResult.ok) return { ok: false, error: parseResult.error };
-  const doc: SifenDocument = parseResult.doc;
+  const inv = parseSifenXML(xmlContent);
+  if (!inv) return { ok: false, error: "No se pudo parsear el XML SIFEN. Verificá el formato." };
+
+  const docType    = mapDocType(inv);
+  const docNumber  = inv.numero || null;
+  const issuerRuc  = inv.emisor.ruc;
+  const issuerName = inv.emisor.nombre;
+  const receiverRuc  = inv.receptor.ruc || null;
+  const receiverName = inv.receptor.nombre || null;
+  const issueDate  = inv.fechaEmision.slice(0, 10);
+  const timbrado   = inv.timbrado || null;
+  const cdc        = inv.cdc || null;
+  const iva10      = inv.montos.iva10;
+  const iva5       = inv.montos.iva5;
+  const ivaExento  = inv.montos.exento;
+  const subtotal   = inv.montos.gravado10 + inv.montos.gravado5 + inv.montos.exento;
+  const total      = inv.montos.total;
+  const currency   = "PYG";
 
   const db = getDb();
 
   // ── Duplicate check (by CDC if present) ────────────────────────────────────
-  if (doc.cdc) {
+  if (cdc) {
     const [existing] = await db.select({ id: taxDocuments.id })
       .from(taxDocuments)
-      .where(and(eq(taxDocuments.entityId, entityId), eq(taxDocuments.cdc, doc.cdc)));
+      .where(and(eq(taxDocuments.entityId, entityId), eq(taxDocuments.cdc, cdc)));
     if (existing) {
-      return { ok: false, error: `Este comprobante (CDC: ${doc.cdc}) ya fue ingresado` };
+      return { ok: false, error: `Este comprobante (CDC: ${cdc}) ya fue ingresado` };
     }
   }
 
@@ -96,24 +121,33 @@ export async function ingestXML(
   const provider   = createAIProvider(aiConfig);
 
   const aiInput: AIProviderInput = {
-    docType:     doc.docType,
-    issuerRuc:   doc.issuerRuc,
-    issuerName:  doc.issuerName,
-    receiverRuc: doc.receiverRuc,
-    total:       doc.total,
-    iva10:       doc.iva10,
-    iva5:        doc.iva5,
-    ivaExento:   doc.ivaExento,
-    subtotal:    doc.subtotal,
-    currency:    doc.currency,
-    issueDate:   doc.issueDate,
-    docNumber:   doc.docNumber,
-    lines:       doc.lines,
-    accounts:    acctRows.map((a) => ({
+    docType,
+    issuerRuc,
+    issuerName,
+    receiverRuc,
+    total,
+    iva10,
+    iva5,
+    ivaExento,
+    subtotal,
+    currency,
+    issueDate,
+    docNumber,
+    lines: inv.items.map((item, i) => ({
+      lineNumber:  i + 1,
+      description: item.descripcion,
+      quantity:    item.cantidad,
+      unitPrice:   item.precioUnitario,
+      ivaRate:     item.ivaRate,
+      ivaAmount:   item.total * (item.ivaRate / (100 + item.ivaRate)),
+      lineTotal:   item.total,
+    })),
+    accounts: acctRows.map((a) => ({
       id: a.id, code: a.code, name: a.name, nature: a.nature,
     })),
     perspective,
   };
+
 
   let proposal = null;
   let proposalId: string | null = null;
@@ -126,25 +160,35 @@ export async function ingestXML(
   }
 
   // ── Save to DB (transaction) ───────────────────────────────────────────────
+  const mappedLines = inv.items.map((item, i) => ({
+    lineNumber:  i + 1,
+    description: item.descripcion,
+    quantity:    item.cantidad,
+    unitPrice:   item.precioUnitario,
+    ivaRate:     item.ivaRate,
+    ivaAmount:   item.total * (item.ivaRate / (100 + item.ivaRate)),
+    lineTotal:   item.total,
+  }));
+
   const result = await db.transaction(async (tx) => {
     // Insert tax document
     const [savedDoc] = await tx.insert(taxDocuments).values({
       entityId,
-      cdc:          doc.cdc ?? undefined,
-      timbrado:     doc.timbrado ?? undefined,
-      docType:      doc.docType,
-      docNumber:    doc.docNumber ?? undefined,
-      issueDate:    new Date(doc.issueDate + "T12:00:00"),
-      issuerRuc:    doc.issuerRuc,
-      issuerName:   doc.issuerName,
-      receiverRuc:  doc.receiverRuc ?? undefined,
-      receiverName: doc.receiverName ?? undefined,
-      subtotal:     String(doc.subtotal),
-      iva10:        String(doc.iva10),
-      iva5:         String(doc.iva5),
-      ivaExento:    String(doc.ivaExento),
-      total:        String(doc.total),
-      currencyCode: doc.currency,
+      cdc:          cdc ?? undefined,
+      timbrado:     timbrado ?? undefined,
+      docType:      docType as "factura" | "nota_credito" | "nota_debito" | "autofactura" | "nota_remision" | "retencion",
+      docNumber:    docNumber ?? undefined,
+      issueDate:    new Date(issueDate + "T12:00:00"),
+      issuerRuc,
+      issuerName,
+      receiverRuc:  receiverRuc ?? undefined,
+      receiverName: receiverName ?? undefined,
+      subtotal:     String(subtotal),
+      iva10:        String(iva10),
+      iva5:         String(iva5),
+      ivaExento:    String(ivaExento),
+      total:        String(total),
+      currencyCode: currency,
       status:       proposal ? "proposed" : "pending_review",
       aiProvider:   proposal?.provider ?? undefined,
       aiConfidence: proposal ? String(proposal.confidence) : undefined,
@@ -154,9 +198,9 @@ export async function ingestXML(
     }).returning();
 
     // Insert lines
-    if (doc.lines.length > 0) {
+    if (mappedLines.length > 0) {
       await tx.insert(taxDocumentLines).values(
-        doc.lines.map((l) => ({
+        mappedLines.map((l) => ({
           docId:       savedDoc.id,
           lineNumber:  l.lineNumber,
           description: l.description,
@@ -194,13 +238,14 @@ export async function ingestXML(
       docId:      result.id,
       proposalId,
       parsed: {
-        docType:    doc.docType,
-        docNumber:  doc.docNumber,
-        issuerName: doc.issuerName,
-        total:      doc.total,
-        currency:   doc.currency,
-        linesCount: doc.lines.length,
+        docType,
+        docNumber,
+        issuerName,
+        total,
+        currency,
+        linesCount: mappedLines.length,
       },
+
       confidence: proposal?.confidence ?? 0,
       reasoning:  proposal?.reasoning  ?? "Sin propuesta IA",
       provider:   proposal?.provider   ?? "none",
@@ -236,7 +281,7 @@ export async function loadComprobantes(filters?: {
     const conditions = [];
     if (filters?.entityId) conditions.push(eq(taxDocuments.entityId, filters.entityId));
     if (filters?.status && filters.status !== "todos") {
-      conditions.push(eq(taxDocuments.status, filters.status as TaxDocument["status"]));
+      conditions.push(eq(taxDocuments.status, filters.status as "posted" | "rejected" | "pending_review" | "proposed" | "approved"));
     }
 
     const rows = await db
@@ -319,7 +364,7 @@ export async function loadProposal(docId: string): Promise<ActionResult<{
     const td = doc.tax_documents;
     const en = doc.entities;
 
-    const docRow: ComprobanteRow & { iva10: number; iva5: number; ivaExento: number; lines: typeof docLines } = {
+    const docRow: ComprobanteRow & { iva10: number; iva5: number; ivaExento: number; lines: Array<{ description: string; quantity: number; unitPrice: number; ivaRate: number; lineTotal: number }> } = {
       id:           td.id,
       entityId:     td.entityId,
       entityName:   en.legalName,
@@ -337,7 +382,13 @@ export async function loadProposal(docId: string): Promise<ActionResult<{
       iva10:        Number(td.iva10 ?? 0),
       iva5:         Number(td.iva5 ?? 0),
       ivaExento:    Number(td.ivaExento ?? 0),
-      lines:        docLines,
+      lines:        docLines.map((l) => ({
+        description: l.description,
+        quantity:    Number(l.quantity ?? 0),
+        unitPrice:   Number(l.unitPrice ?? 0),
+        ivaRate:     Number(l.ivaRate ?? 0),
+        lineTotal:   Number(l.lineTotal ?? 0),
+      })),
     };
 
     const proposal = latestProposal
