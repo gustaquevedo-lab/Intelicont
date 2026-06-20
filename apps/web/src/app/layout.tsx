@@ -11,6 +11,7 @@ import { NotificationProvider } from "@/components/notifications";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://intelicont.vercel.app"),
   title: {
     default: "InteliCont — SaaS Contable AI-First para Paraguay",
     template: "%s | InteliCont",
