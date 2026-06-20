@@ -208,7 +208,6 @@ export async function lookupRuc(
   // 4. If DV is invalid, skip remote lookup (avoid wasting calls on bad RUCs)
   if (!dvValidation.isValid && dvValidation.error?.includes("DV incorrecto")) {
     baseResult.source = "local-only";
-    baseResult.error = dvValidation.error;
     return baseResult;
   }
 
