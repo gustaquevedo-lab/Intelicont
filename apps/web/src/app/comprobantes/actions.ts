@@ -6,12 +6,14 @@ import { getDb } from "@/lib/db";
 import {
   taxDocuments, taxDocumentLines, aiProposals,
   journalEntries, journalLines, accounts,
-  globalSettings, entities,
+  globalSettings, entities, partners,
+  inventoryItems, stockTransactions, fixedAssets, bankAccounts,
   type TaxDocument,
 } from "@/lib/db/schema";
 import { parseSifenXML, type SifenInvoice } from "@/lib/sifen-parser";
 import { createAIProvider, type AIConfig } from "@/lib/ai/provider-factory";
 import type { AIProviderInput } from "@/lib/ai/types";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export type ActionResult<T = void> =
   | { ok: true;  data: T }
@@ -183,10 +185,11 @@ export async function ingestXML(
       issuerName,
       receiverRuc:  receiverRuc ?? undefined,
       receiverName: receiverName ?? undefined,
-      subtotal:     String(subtotal),
+      gravado10:    String(inv.montos.gravado10),
+      gravado5:     String(inv.montos.gravado5),
+      exento:       String(inv.montos.exento),
       iva10:        String(iva10),
       iva5:         String(iva5),
-      ivaExento:    String(ivaExento),
       total:        String(total),
       currencyCode: currency,
       status:       proposal ? "proposed" : "pending_review",
@@ -381,7 +384,7 @@ export async function loadProposal(docId: string): Promise<ActionResult<{
       createdAt:    td.createdAt instanceof Date ? td.createdAt.toISOString() : String(td.createdAt),
       iva10:        Number(td.iva10 ?? 0),
       iva5:         Number(td.iva5 ?? 0),
-      ivaExento:    Number(td.ivaExento ?? 0),
+      ivaExento:    Number(td.exento ?? 0),
       lines:        docLines.map((l) => ({
         description: l.description,
         quantity:    Number(l.quantity ?? 0),
@@ -522,3 +525,529 @@ export async function saveAISettings(settings: Record<string, string>): Promise<
     return { ok: false, error: err instanceof Error ? err.message : "Error al guardar" };
   }
 }
+
+// ─── Manual Voucher Entry action with Side Effects (Vanguard) ───────────────
+
+export interface ManualLineInput {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  ivaRate: number;
+  lineTotal: number;
+  destination: "gasto" | "mercaderia" | "activo_fijo";
+  productId?: string;
+  productCode?: string;
+  productDescription?: string;
+  usefulLifeMonths?: number;
+}
+
+export interface ManualComprobanteInput {
+  entityId: string;
+  direction: "issued" | "received";
+  docType: "factura" | "nota_credito" | "nota_debito" | "autofactura" | "nota_remision" | "retencion";
+  number: string;
+  timbrado: string;
+  issueDate: string; // YYYY-MM-DD
+  partnerRuc: string;
+  partnerName: string;
+  condition: "cash" | "credit";
+  gravado10: number;
+  gravado5: number;
+  exento: number;
+  iva10: number;
+  iva5: number;
+  total: number;
+  lines: ManualLineInput[];
+  paymentMethod: "cash" | "bank" | "card" | "credit";
+  bankAccountId?: string;
+}
+
+export async function createManualComprobante(
+  input: ManualComprobanteInput
+): Promise<ActionResult<{ docId: string; entryId: string; entryNumber: string }>> {
+  const {
+    entityId, direction, docType, number, timbrado, issueDate,
+    partnerRuc, partnerName, condition, gravado10, gravado5,
+    exento, iva10, iva5, total, lines, paymentMethod, bankAccountId
+  } = input;
+
+  if (!entityId) return { ok: false, error: "Falta empresa" };
+  if (!number) return { ok: false, error: "Falta número de comprobante" };
+  if (!partnerRuc || !partnerName) return { ok: false, error: "Falta datos del proveedor/cliente" };
+
+  try {
+    const db = getDb();
+    const parsedDate = new Date(issueDate + "T12:00:00");
+    const year = parsedDate.getFullYear();
+
+    // Fetch Entity for RUC/Name mapping
+    const entityRow = await db.select().from(entities).where(eq(entities.id, entityId)).limit(1);
+    if (entityRow.length === 0) return { ok: false, error: "Empresa no encontrada" };
+    const entityRuc = entityRow[0].ruc;
+    const entityLegalName = entityRow[0].legalName;
+
+    const result = await db.transaction(async (tx) => {
+      // 1. Find or create Partner
+      let partnerRow = await tx.select()
+        .from(partners)
+        .where(and(eq(partners.entityId, entityId), eq(partners.ruc, partnerRuc)))
+        .limit(1);
+
+      let partnerId: string;
+      if (partnerRow.length === 0) {
+        const [newPartner] = await tx.insert(partners).values({
+          entityId,
+          kind: direction === "received" ? "supplier" : "customer",
+          ruc: partnerRuc,
+          legalName: partnerName,
+        }).returning();
+        partnerId = newPartner.id;
+      } else {
+        partnerId = partnerRow[0].id;
+      }
+
+      // Determine issuer and receiver
+      const issuerRuc = direction === "received" ? partnerRuc : entityRuc;
+      const issuerName = direction === "received" ? partnerName : entityLegalName;
+      const receiverRuc = direction === "received" ? entityRuc : partnerRuc;
+      const receiverName = direction === "received" ? entityLegalName : partnerName;
+
+      // 2. Insert Tax Document
+      const [savedDoc] = await tx.insert(taxDocuments).values({
+        entityId,
+        direction,
+        docType,
+        docNumber: number,
+        timbrado,
+        issueDate: parsedDate,
+        partnerId,
+        issuerRuc,
+        issuerName,
+        receiverRuc,
+        receiverName,
+        condition: condition === "cash" ? "cash" : "credit",
+        gravado10: String(gravado10),
+        gravado5: String(gravado5),
+        exento: String(exento),
+        iva10: String(iva10),
+        iva5: String(iva5),
+        total: String(total),
+        status: "posted",
+      }).returning();
+
+      // Insert Tax Document Lines
+      if (lines.length > 0) {
+        await tx.insert(taxDocumentLines).values(
+          lines.map((l, i) => ({
+            docId: savedDoc.id,
+            lineNumber: i + 1,
+            description: l.description,
+            quantity: String(l.quantity),
+            unitPrice: String(l.unitPrice),
+            ivaRate: l.ivaRate,
+            lineTotal: String(l.lineTotal),
+          }))
+        );
+      }
+
+      // 3. Process Side Effects: Stock & Fixed Assets
+      for (const l of lines) {
+        if (l.destination === "mercaderia" && l.productCode) {
+          // Find or create inventory item
+          let [invItem] = await tx.select()
+            .from(inventoryItems)
+            .where(and(eq(inventoryItems.entityId, entityId), eq(inventoryItems.code, l.productCode)))
+            .limit(1);
+
+          if (!invItem) {
+            const [newItem] = await tx.insert(inventoryItems).values({
+              entityId,
+              code: l.productCode,
+              description: l.productDescription || l.description,
+              stockActual: "0",
+              costoPromedio: "0",
+            }).returning();
+            invItem = newItem;
+          }
+
+          // Insert stock transaction
+          await tx.insert(stockTransactions).values({
+            itemId: invItem.id,
+            taxDocumentId: savedDoc.id,
+            type: direction === "received" ? "purchase_in" : "sale_out",
+            quantity: String(l.quantity),
+            unitPrice: String(l.unitPrice),
+          });
+
+          // Update actual stock
+          const currentStock = Number(invItem.stockActual);
+          const currentAvgCost = Number(invItem.costoPromedio);
+          const transQty = l.quantity;
+          const transPrice = l.unitPrice;
+
+          let nextStock = currentStock;
+          let nextAvgCost = currentAvgCost;
+
+          if (direction === "received") {
+            // Purchase increases stock & updates average cost
+            nextStock = currentStock + transQty;
+            const currentTotalValue = currentStock * currentAvgCost;
+            const newAddedValue = transQty * transPrice;
+            nextAvgCost = nextStock > 0 ? (currentTotalValue + newAddedValue) / nextStock : 0;
+          } else {
+            // Sale decreases stock
+            nextStock = Math.max(0, currentStock - transQty);
+          }
+
+          await tx.update(inventoryItems)
+            .set({
+              stockActual: String(nextStock),
+              costoPromedio: String(nextAvgCost),
+              updatedAt: new Date(),
+            })
+            .where(eq(inventoryItems.id, invItem.id));
+        }
+
+        if (l.destination === "activo_fijo" && direction === "received") {
+          // Insert Fixed Asset entry
+          await tx.insert(fixedAssets).values({
+            entityId,
+            taxDocumentId: savedDoc.id,
+            code: `AF-${String(Math.random()).slice(2, 7)}`,
+            name: l.description,
+            adquisitionDate: issueDate,
+            costValue: String(l.lineTotal),
+            usefulLifeMonths: l.usefulLifeMonths || 60, // Default 5 years
+            depreciatedValue: "0",
+          });
+        }
+      }
+
+      // 4. Generate Journal Entry
+      // Sequence number
+      const [{ cnt }] = await tx.select({ cnt: drizzleCount() })
+        .from(journalEntries).where(eq(journalEntries.entityId, entityId));
+      const seq = (Number(cnt) || 0) + 1;
+      const entryNumber = `${String(seq).padStart(5, "0")}-${year}`;
+
+      const [entry] = await tx.insert(journalEntries).values({
+        entityId,
+        date: parsedDate,
+        number: entryNumber,
+        source: direction === "received" ? "purchase" : "sales",
+        description: `${direction === "received" ? "Compra" : "Venta"} s/ ${docType.toUpperCase()} Nro. ${number} — ${partnerName}`,
+        status: "posted",
+        postedAt: new Date(),
+      }).returning();
+
+      // Update tax document relation
+      await tx.update(taxDocuments)
+        .set({ journalEntryId: entry.id })
+        .where(eq(taxDocuments.id, savedDoc.id));
+
+      // Construct Journal Lines
+      const jeLines: Array<{ accountId: string; debit: string; credit: string; description: string }> = [];
+
+      // Query default accounts
+      const defaultInventoryAcc = await tx.select().from(accounts).where(and(eq(accounts.code, "1.2.01"))).limit(1);
+      const defaultAssetAcc = await tx.select().from(accounts).where(and(eq(accounts.code, "1.2.02"))).limit(1);
+      const defaultExpenseAcc = await tx.select().from(accounts).where(and(eq(accounts.code, "5.1.10"))).limit(1);
+      const defaultIvaCredito = await tx.select().from(accounts).where(and(eq(accounts.code, "1.1.06"))).limit(1);
+      const defaultIvaDebito = await tx.select().from(accounts).where(and(eq(accounts.code, "2.1.02"))).limit(1);
+      const defaultAccountsPayable = await tx.select().from(accounts).where(and(eq(accounts.code, "2.1.01"))).limit(1);
+      const defaultAccountsReceivable = await tx.select().from(accounts).where(and(eq(accounts.code, "1.1.05"))).limit(1);
+      const defaultSalesRevenue = await tx.select().from(accounts).where(and(eq(accounts.code, "4.1.01"))).limit(1);
+      const defaultCashAcc = await tx.select().from(accounts).where(and(eq(accounts.code, "1.1.01"))).limit(1);
+
+      // Debit/Credit placement depends on received (purchase) vs issued (sale)
+      if (direction === "received") {
+        // Purchase (Compras)
+        // Debit: items + IVA
+        for (const l of lines) {
+          let accId = defaultExpenseAcc[0]?.id;
+          if (l.destination === "mercaderia") accId = defaultInventoryAcc[0]?.id || accId;
+          if (l.destination === "activo_fijo") accId = defaultAssetAcc[0]?.id || accId;
+
+          if (accId) {
+            jeLines.push({
+              accountId: accId,
+              debit: String(l.lineTotal - (l.lineTotal * (l.ivaRate / (100 + l.ivaRate)))),
+              credit: "0",
+              description: l.description,
+            });
+          }
+        }
+
+        // Debit IVA
+        const totalIva = iva10 + iva5;
+        if (totalIva > 0 && defaultIvaCredito[0]?.id) {
+          jeLines.push({
+            accountId: defaultIvaCredito[0].id,
+            debit: String(totalIva),
+            credit: "0",
+            description: `IVA Crédito Fiscal s/ compra Nro ${number}`,
+          });
+        }
+
+        // Credit payment leg
+        let payAccId = defaultAccountsPayable[0]?.id;
+        if (paymentMethod === "cash") payAccId = defaultCashAcc[0]?.id || payAccId;
+        if (paymentMethod === "bank" && bankAccountId) {
+          const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
+          if (bankAcc?.glAccountId) payAccId = bankAcc.glAccountId;
+        }
+
+        if (payAccId) {
+          jeLines.push({
+            accountId: payAccId,
+            debit: "0",
+            credit: String(total),
+            description: `Pago s/ compra ${number} - ${paymentMethod}`,
+          });
+        }
+
+      } else {
+        // Sales (Ventas)
+        // Debit payment leg
+        let recAccId = defaultAccountsReceivable[0]?.id;
+        if (paymentMethod === "cash") recAccId = defaultCashAcc[0]?.id || recAccId;
+        if (paymentMethod === "bank" && bankAccountId) {
+          const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
+          if (bankAcc?.glAccountId) recAccId = bankAcc.glAccountId;
+        }
+
+        if (recAccId) {
+          jeLines.push({
+            accountId: recAccId,
+            debit: String(total),
+            credit: "0",
+            description: `Cobro s/ venta ${number} - ${paymentMethod}`,
+          });
+        }
+
+        // Credit Revenue
+        const subtotal = total - (iva10 + iva5);
+        if (defaultSalesRevenue[0]?.id) {
+          jeLines.push({
+            accountId: defaultSalesRevenue[0].id,
+            debit: "0",
+            credit: String(subtotal),
+            description: `Ingreso por venta s/ fac ${number}`,
+          });
+        }
+
+        // Credit IVA
+        const totalIva = iva10 + iva5;
+        if (totalIva > 0 && defaultIvaDebito[0]?.id) {
+          jeLines.push({
+            accountId: defaultIvaDebito[0].id,
+            debit: "0",
+            credit: String(totalIva),
+            description: `IVA Débito Fiscal s/ venta Nro ${number}`,
+          });
+        }
+      }
+
+      // Save Journal Lines
+      await tx.insert(journalLines).values(
+        jeLines.map((jl) => ({
+          entryId: entry.id,
+          accountId: jl.accountId,
+          debit: jl.debit,
+          credit: jl.credit,
+          currencyCode: "PYG",
+          description: jl.description,
+        }))
+      );
+
+      return { docId: savedDoc.id, entryId: entry.id, entryNumber };
+    });
+
+    revalidatePath("/comprobantes");
+    revalidatePath("/asientos");
+    return { ok: true, data: result };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al registrar comprobante manual" };
+  }
+}
+
+// ─── Gemini Multimodal OCR (Free Tier) ───────────────────────────────────────
+
+export async function processInvoiceOCR(
+  base64Data: string,
+  mimeType: string
+): Promise<ActionResult<{
+  docNumber?: string;
+  timbrado?: string;
+  issueDate?: string;
+  partnerRuc?: string;
+  partnerName?: string;
+  gravado10?: number;
+  gravado5?: number;
+  exento?: number;
+  total?: number;
+  lines?: Array<{ description: string; quantity: number; unitPrice: number; ivaRate: number; lineTotal: number }>;
+}>> {
+  try {
+    const aiConfig = await loadAIConfig();
+    const key = aiConfig.apiKey || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!key) {
+      return { ok: false, error: "La clave API de Gemini no está configurada. Por favor, agregala en Configuración." };
+    }
+
+    const genAI = new GoogleGenerativeAI(key);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `Analiza la imagen o PDF de esta factura de Paraguay y extrae los siguientes datos en formato JSON estricto:
+{
+  "docNumber": "número de factura formateado como XXX-XXX-XXXXXXX si es legible",
+  "timbrado": "número de timbrado de 8 dígitos",
+  "issueDate": "fecha de emisión en formato YYYY-MM-DD",
+  "partnerRuc": "RUC del emisor sin dígito verificador, o completo XXXXXX-X",
+  "partnerName": "Razón social del emisor/proveedor",
+  "gravado10": 100000, // número sin IVA
+  "gravado5": 0,       // número sin IVA
+  "exento": 0,
+  "total": 110000,     // número total de la factura
+  "lines": [
+    { "description": "descripción del ítem", "quantity": 1, "unitPrice": 110000, "ivaRate": 10, "lineTotal": 110000 }
+  ]
+}
+
+Responde únicamente con el objeto JSON estructurado, sin markdown ni bloques de código o explicaciones.`;
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: mimeType
+        }
+      }
+    ]);
+
+    const text = result.response.text();
+    const cleanJsonText = text.substring(
+      text.indexOf("{"),
+      text.lastIndexOf("}") + 1
+    );
+    const data = JSON.parse(cleanJsonText);
+
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al procesar el OCR con Gemini" };
+  }
+}
+
+// ─── Inline Creation Helpers ───────────────────────────────────────────────
+
+export async function createInlineProduct(
+  entityId: string,
+  code: string,
+  description: string
+): Promise<ActionResult<{ id: string; code: string; description: string }>> {
+  try {
+    const db = getDb();
+    const [existing] = await db.select()
+      .from(inventoryItems)
+      .where(and(eq(inventoryItems.entityId, entityId), eq(inventoryItems.code, code)))
+      .limit(1);
+
+    if (existing) {
+      return { ok: true, data: existing };
+    }
+
+    const [newItem] = await db.insert(inventoryItems).values({
+      entityId,
+      code,
+      description,
+      stockActual: "0",
+      costoPromedio: "0",
+    }).returning();
+
+    return { ok: true, data: newItem };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al crear producto inline" };
+  }
+}
+
+export async function createInlineFixedAsset(
+  entityId: string,
+  code: string,
+  name: string,
+  costValue: number,
+  usefulLifeMonths: number
+): Promise<ActionResult<{ id: string; code: string; name: string }>> {
+  try {
+    const db = getDb();
+    const [existing] = await db.select()
+      .from(fixedAssets)
+      .where(and(eq(fixedAssets.entityId, entityId), eq(fixedAssets.code, code)))
+      .limit(1);
+
+    if (existing) {
+      return { ok: true, data: existing };
+    }
+
+    const [newAsset] = await db.insert(fixedAssets).values({
+      entityId,
+      code,
+      name,
+      adquisitionDate: new Date().toISOString().split("T")[0],
+      costValue: String(costValue),
+      usefulLifeMonths,
+      depreciatedValue: "0",
+    }).returning();
+
+    return { ok: true, data: newAsset };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al crear activo fijo inline" };
+  }
+}
+
+export async function loadInventoryItems(entityId: string): Promise<ActionResult<Array<{ id: string; code: string; description: string; stockActual: number; costoPromedio: number }>>> {
+  try {
+    const db = getDb();
+    const rows = await db.select()
+      .from(inventoryItems)
+      .where(eq(inventoryItems.entityId, entityId))
+      .orderBy(inventoryItems.code);
+
+    return {
+      ok: true,
+      data: rows.map((r) => ({
+        id: r.id,
+        code: r.code,
+        description: r.description,
+        stockActual: Number(r.stockActual),
+        costoPromedio: Number(r.costoPromedio),
+      }))
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al cargar mercaderías" };
+  }
+}
+
+export async function loadFixedAssets(entityId: string): Promise<ActionResult<Array<{ id: string; code: string; name: string; costValue: number }>>> {
+  try {
+    const db = getDb();
+    const rows = await db.select()
+      .from(fixedAssets)
+      .where(eq(fixedAssets.entityId, entityId))
+      .orderBy(fixedAssets.code);
+
+    return {
+      ok: true,
+      data: rows.map((r) => ({
+        id: r.id,
+        code: r.code,
+        name: r.name,
+        costValue: Number(r.costValue),
+      }))
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al cargar activos fijos" };
+  }
+}
+
+

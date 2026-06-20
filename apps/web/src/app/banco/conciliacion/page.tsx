@@ -94,8 +94,45 @@ export default function ConciliacionBancariaPage() {
     setMatches(prev => prev.filter(m => m.bankMovementId !== bankId));
   };
 
-  const getGLTransaction = (id: string) => MOCK_GL.find(gl => gl.id === id);
+  const [customGL, setCustomGL] = useState<GLTransaction[]>([]);
+  const [registeringBmId, setRegisteringBmId] = useState<string | null>(null);
+  const [expenseAccount, setExpenseAccount] = useState("5.1.10");
+  const [expenseDesc, setExpenseDesc] = useState("");
+
+  const getGLTransaction = (id: string) => MOCK_GL.find(gl => gl.id === id) || customGL.find(gl => gl.id === id);
   const getBankMovement = (id: string) => bankMovements.find(bm => bm.id === id);
+
+  const handleRegisterExpense = (bm: BankMovement) => {
+    const newGlId = `gl-exp-${Date.now()}`;
+    const newGL: GLTransaction = {
+      id: newGlId,
+      date: bm.date,
+      amount: bm.amount,
+      direction: bm.direction === "debit" ? "credit" : "debit",
+      description: expenseDesc || bm.description || "Gasto Bancario",
+      partnerName: "Banco",
+      accountCode: expenseAccount,
+    };
+
+    setCustomGL(prev => [...prev, newGL]);
+    
+    // Automatically match and confirm
+    const newMatch = {
+      bankMovementId: bm.id,
+      glTransactionId: newGlId,
+      score: 1.0,
+      confidence: "high" as const,
+      reason: `Gasto Bancario Registrado (${expenseAccount})`,
+      confirmed: true,
+    };
+
+    setMatches(prev => [...prev, newMatch]);
+    setUnmatchedBank(prev => prev.filter(b => b.id !== bm.id));
+    
+    // Reset form state
+    setRegisteringBmId(null);
+    setExpenseDesc("");
+  };
 
   const confirmedCount = matches.filter(m => m.confirmed).length;
   const totalCount = matches.length;
@@ -277,15 +314,87 @@ export default function ConciliacionBancariaPage() {
                 </h3>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
-                {unmatchedBank.map((bm) => (
-                  <div key={bm.id} className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-gray-500">{bm.date}</span>
-                      <span className="text-xs text-gray-700 dark:text-gray-300">{bm.description}</span>
+                {unmatchedBank.map((bm) => {
+                  const isRegistering = registeringBmId === bm.id;
+                  return (
+                    <div key={bm.id} className="p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-gray-500">{bm.date}</span>
+                          <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">{bm.description}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-mono font-bold text-gray-900 dark:text-white">
+                            Gs. {bm.amount.toLocaleString("es-PY")}
+                          </span>
+                          {!isRegistering ? (
+                            <button
+                              onClick={() => {
+                                setRegisteringBmId(bm.id);
+                                setExpenseDesc(bm.description);
+                                setExpenseAccount("5.1.10");
+                              }}
+                              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-md transition-colors no-tap-highlight"
+                            >
+                              <CreditCard className="h-3 w-3" /> Registrar Gasto
+                            </button>
+                          ) : (
+                            <span className="text-xs text-blue-500 font-medium animate-pulse">Registrando...</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {isRegistering && (
+                        <div className="bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800/80 rounded-lg p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                                Cuenta de Gasto / Comisión
+                              </label>
+                              <select
+                                value={expenseAccount}
+                                onChange={(e) => setExpenseAccount(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-xs text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              >
+                                <option value="5.1.10">5.1.10 - Gastos Bancarios</option>
+                                <option value="5.1.09">5.1.09 - Comisiones Bancarias</option>
+                                <option value="5.1.12">5.1.12 - Intereses Financieros</option>
+                                <option value="5.1.06">5.1.06 - Servicios Públicos</option>
+                                <option value="5.1.05">5.1.05 - Alquileres Pagados</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                                Descripción del Asiento
+                              </label>
+                              <input
+                                type="text"
+                                value={expenseDesc}
+                                onChange={(e) => setExpenseDesc(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                placeholder="Concepto del gasto"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800/40">
+                            <button
+                              onClick={() => setRegisteringBmId(null)}
+                              className="px-2.5 py-1 text-[11px] font-medium text-gray-500 hover:text-gray-700 dark:hover:text-white"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={() => handleRegisterExpense(bm)}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-[11px] font-semibold shadow-sm transition-colors"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Registrar y Conciliar
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-xs font-mono text-gray-900 dark:text-white">Gs. {bm.amount.toLocaleString("es-PY")}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

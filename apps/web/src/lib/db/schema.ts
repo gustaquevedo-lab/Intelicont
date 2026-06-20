@@ -5,7 +5,7 @@
  */
 import {
   pgTable, uuid, varchar, text, integer, numeric,
-  timestamp, jsonb, boolean, pgEnum,
+  timestamp, jsonb, boolean, pgEnum, date,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -22,6 +22,9 @@ export const accountNatureEnum = pgEnum("account_nature", [
 export const fiscalPeriodStatusEnum = pgEnum("fiscal_period_status", [
   "open", "closing", "closed", "reopened",
 ]);
+
+export const docDirectionEnum = pgEnum("doc_direction", ["issued", "received"]);
+export const docConditionEnum = pgEnum("doc_condition", ["cash", "credit"]);
 
 // ─── Entities ─────────────────────────────────────────────────────────────────
 
@@ -155,6 +158,8 @@ export const taxDocStatusEnum = pgEnum("tax_doc_status", ["pending_review","prop
 export const taxDocuments = pgTable("tax_documents", {
   id:             uuid("id").primaryKey().defaultRandom(),
   entityId:       uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  direction:      docDirectionEnum("direction").default("received").notNull(),
+  condition:      docConditionEnum("condition").default("credit"),
   cdc:            varchar("cdc",         { length: 44 }),
   timbrado:       varchar("timbrado",    { length: 20 }),
   docType:        taxDocTypeEnum("doc_type").default("factura"),
@@ -164,10 +169,11 @@ export const taxDocuments = pgTable("tax_documents", {
   issuerName:     text("issuer_name").notNull(),
   receiverRuc:    varchar("receiver_ruc",{ length: 20 }),
   receiverName:   text("receiver_name"),
-  subtotal:       numeric("subtotal",    { precision: 20, scale: 4 }).default("0"),
+  gravado10:      numeric("gravado_10",  { precision: 20, scale: 4 }).default("0"),
+  gravado5:       numeric("gravado_5",   { precision: 20, scale: 4 }).default("0"),
+  exento:         numeric("exento",      { precision: 20, scale: 4 }).default("0"),
   iva10:          numeric("iva_10",      { precision: 20, scale: 4 }).default("0"),
   iva5:           numeric("iva_5",       { precision: 20, scale: 4 }).default("0"),
-  ivaExento:      numeric("iva_exento",  { precision: 20, scale: 4 }).default("0"),
   total:          numeric("total",       { precision: 20, scale: 4 }).notNull(),
   currencyCode:   varchar("currency_code",{ length: 3 }).default("PYG"),
   status:         taxDocStatusEnum("status").default("pending_review"),
@@ -266,3 +272,74 @@ export const retenciones = pgTable("retenciones", {
 
 export type Retencion    = typeof retenciones.$inferSelect;
 export type NewRetencion = typeof retenciones.$inferInsert;
+
+// ─── New Tables (Vanguard Operations) ───────────────────────────────────────
+
+export const partnerKindEnum = pgEnum("partner_kind", ["customer", "supplier", "both"]);
+
+export const partners = pgTable("partners", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  kind: partnerKindEnum("kind").notNull(),
+  ruc: varchar("ruc", { length: 20 }).notNull(),
+  legalName: text("legal_name").notNull(),
+  tradeName: text("trade_name"),
+  contacts: jsonb("contacts"),
+  defaultPaymentTerms: integer("default_payment_terms").default(30),
+  defaultAccountId: uuid("default_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  retentionProfile: jsonb("retention_profile"),
+  country: varchar("country", { length: 3 }).default("PRY"),
+  dvRuc: varchar("dv_ruc", { length: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const inventoryItems = pgTable("inventory_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  code: varchar("code", { length: 50 }).notNull(),
+  description: text("description").notNull(),
+  sku: varchar("sku", { length: 50 }),
+  stockActual: numeric("stock_actual", { precision: 20, scale: 4 }).default("0").notNull(),
+  costoPromedio: numeric("costo_promedio", { precision: 20, scale: 4 }).default("0").notNull(),
+  glAccountId: uuid("gl_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const stockTransactions = pgTable("stock_transactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  itemId: uuid("item_id").references(() => inventoryItems.id, { onDelete: "cascade" }).notNull(),
+  taxDocumentId: uuid("tax_document_id").references(() => taxDocuments.id, { onDelete: "set null" }),
+  type: varchar("type", { length: 20 }).notNull(), // "purchase_in", "sale_out", "adjustment"
+  quantity: numeric("quantity", { precision: 20, scale: 4 }).notNull(),
+  unitPrice: numeric("unit_price", { precision: 20, scale: 4 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const fixedAssets = pgTable("fixed_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  taxDocumentId: uuid("tax_document_id").references(() => taxDocuments.id, { onDelete: "set null" }),
+  code: varchar("code", { length: 50 }).notNull(),
+  name: text("name").notNull(),
+  serialNumber: varchar("serial_number", { length: 100 }),
+  adquisitionDate: date("adquisition_date" as any).notNull(),
+  costValue: numeric("cost_value", { precision: 20, scale: 4 }).notNull(),
+  usefulLifeMonths: integer("useful_life_months").notNull(),
+  depreciatedValue: numeric("depreciated_value", { precision: 20, scale: 4 }).default("0"),
+  glAccountId: uuid("gl_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  depreciationAccountId: uuid("depreciation_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const bankAccounts = pgTable("bank_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  bankName: text("bank_name").notNull(),
+  accountNumber: varchar("account_number", { length: 50 }).notNull(),
+  currencyCode: varchar("currency_code", { length: 3 }).default("PYG"),
+  glAccountId: uuid("gl_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  isActive: boolean("is_active").default(true),
+});

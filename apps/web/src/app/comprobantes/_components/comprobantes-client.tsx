@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useCallback } from "react";
 import {
   Receipt, Upload, CheckCircle2, Clock, AlertCircle,
   X, ChevronDown, Loader2, Sparkles, ThumbsUp, ThumbsDown,
-  FileX, FileCheck, Eye, RefreshCw,
+  FileX, FileCheck, Eye, RefreshCw, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ComprobanteRow } from "../actions";
@@ -382,6 +382,14 @@ export function ComprobantesClient({ initialData, entities, dbError }: Props) {
         <div>
           <h1 className="section-title text-2xl lg:text-3xl">Comprobantes SIFEN</h1>
           <p className="section-subtitle">Ingestión de facturas electrónicas con propuesta IA</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <a
+            href="/comprobantes/registrar"
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-600/10"
+          >
+            <Plus className="h-4 w-4" /> Registrar Manual
+          </a>
         </div>
       </div>
 

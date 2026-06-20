@@ -326,6 +326,52 @@ export const memberships = pgTable("memberships", {
   index("memberships_entity_id_idx").on(table.entityId),
 ]);
 
+// ─── Inventory: Items ─────────────────────────────────────────────────────
+
+export const inventoryItems = pgTable("inventory_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  code: varchar("code", { length: 50 }).notNull(),
+  description: text("description").notNull(),
+  sku: varchar("sku", { length: 50 }),
+  stockActual: numeric("stock_actual", { precision: 20, scale: 4 }).default("0").notNull(),
+  costoPromedio: numeric("costo_promedio", { precision: 20, scale: 4 }).default("0").notNull(),
+  glAccountId: uuid("gl_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// ─── Inventory: Stock Transactions ────────────────────────────────────────
+
+export const stockTransactions = pgTable("stock_transactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  itemId: uuid("item_id").references(() => inventoryItems.id, { onDelete: "cascade" }).notNull(),
+  taxDocumentId: uuid("tax_document_id").references(() => taxDocuments.id, { onDelete: "set null" }),
+  type: varchar("type", { length: 20 }).notNull(), // "purchase_in", "sale_out", "adjustment"
+  quantity: numeric("quantity", { precision: 20, scale: 4 }).notNull(),
+  unitPrice: numeric("unit_price", { precision: 20, scale: 4 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+// ─── Fixed Assets: Bienes ──────────────────────────────────────────────────
+
+export const fixedAssets = pgTable("fixed_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  taxDocumentId: uuid("tax_document_id").references(() => taxDocuments.id, { onDelete: "set null" }),
+  code: varchar("code", { length: 50 }).notNull(),
+  name: text("name").notNull(),
+  serialNumber: varchar("serial_number", { length: 100 }),
+  adquisitionDate: date("adquisition_date").notNull(),
+  costValue: numeric("cost_value", { precision: 20, scale: 4 }).notNull(),
+  usefulLifeMonths: integer("useful_life_months").notNull(),
+  depreciatedValue: numeric("depreciated_value", { precision: 20, scale: 4 }).default("0"),
+  glAccountId: uuid("gl_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  depreciationAccountId: uuid("depreciation_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 // ─── Relations ────────────────────────────────────────────────────────────
 
 export const entitiesRelations = relations(entities, ({ many }) => ({
@@ -445,4 +491,22 @@ export const auditEventsRelations = relations(auditEvents, ({ one }) => ({
 
 export const aiDecisionsRelations = relations(aiDecisions, ({ one }) => ({
   entity: one(entities, { fields: [aiDecisions.entityId], references: [entities.id] }),
+}));
+
+export const inventoryItemsRelations = relations(inventoryItems, ({ one, many }) => ({
+  entity: one(entities, { fields: [inventoryItems.entityId], references: [entities.id] }),
+  glAccount: one(accounts, { fields: [inventoryItems.glAccountId], references: [accounts.id] }),
+  transactions: many(stockTransactions),
+}));
+
+export const stockTransactionsRelations = relations(stockTransactions, ({ one }) => ({
+  item: one(inventoryItems, { fields: [stockTransactions.itemId], references: [inventoryItems.id] }),
+  taxDocument: one(taxDocuments, { fields: [stockTransactions.taxDocumentId], references: [taxDocuments.id] }),
+}));
+
+export const fixedAssetsRelations = relations(fixedAssets, ({ one }) => ({
+  entity: one(entities, { fields: [fixedAssets.entityId], references: [entities.id] }),
+  taxDocument: one(taxDocuments, { fields: [fixedAssets.taxDocumentId], references: [taxDocuments.id] }),
+  glAccount: one(accounts, { fields: [fixedAssets.glAccountId], references: [accounts.id] }),
+  depreciationAccount: one(accounts, { fields: [fixedAssets.depreciationAccountId], references: [accounts.id] }),
 }));
