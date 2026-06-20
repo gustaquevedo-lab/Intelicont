@@ -343,3 +343,30 @@ export const bankAccounts = pgTable("bank_accounts", {
   glAccountId: uuid("gl_account_id").references(() => accounts.id, { onDelete: "set null" }),
   isActive: boolean("is_active").default(true),
 });
+
+export const bankMovementDirectionEnum = pgEnum("bank_movement_direction", ["credit", "debit"]);
+export const reconciliationStatusEnum = pgEnum("reconciliation_status", [
+  "pending", "matched", "flagged", "manual",
+]);
+
+export const bankMovements = pgTable("bank_movements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, { onDelete: "cascade" }).notNull(),
+  date: date("date").notNull(),
+  amount: numeric("amount", { precision: 20, scale: 4 }).notNull(),
+  direction: bankMovementDirectionEnum("direction").notNull(),
+  ref: varchar("ref", { length: 200 }),
+  description: text("description"),
+  source: varchar("source", { length: 50 }).default("manual"),
+});
+
+export const reconciliations = pgTable("reconciliations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, { onDelete: "cascade" }).notNull(),
+  glTransactionId: uuid("gl_transaction_id"),
+  bankMovementId: uuid("bank_movement_id").references(() => bankMovements.id, { onDelete: "cascade" }),
+  status: reconciliationStatusEnum("status").default("pending"),
+  score: numeric("score", { precision: 5, scale: 2 }),
+  matchedBy: varchar("matched_by", { length: 50 }).default("manual"),
+  matchedAt: timestamp("matched_at"),
+});

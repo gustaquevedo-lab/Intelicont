@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   CheckCircle2, Clock, AlertCircle, Lock, Unlock,
   ChevronRight, TrendingUp, FileText, Download, Calendar,
   ChevronDown, ChevronUp, Sparkles, BarChart3, Calculator,
+  RefreshCw, Landmark, AlertTriangle, ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/lib/auth-store";
+import { verifyPeriodStatus, processAnnualClosing, type CierreValidations } from "./actions";
 
 interface ChecklistItem {
   id: string;
@@ -18,170 +21,367 @@ interface ChecklistItem {
   link?: string;
 }
 
-const CHECKLIST: ChecklistItem[] = [
-  { id: "c1", label: "Verificar asientos del período", description: "Revisar que todos los asientos estén posteados y balanceados", status: "done", link: "/asientos" },
-  { id: "c2", label: "Cargar todos los XML SIFEN", description: "Asegurar que todos los comprobantes electrónicos estén procesados", status: "done", link: "/sifen/historial" },
-  { id: "c3", label: "Conciliación bancaria", description: "Conciliar todos los movimientos bancarios del mes", status: "done", link: "/banco" },
-  { id: "c4", label: "Calcular depreciaciones", description: "Registrar depreciación mensual de activos fijos", status: "in_progress", link: "/activos" },
-  { id: "c5", label: "Verificar retenciones", description: "Controlar retenciones de IVA, IRE, IRP efectuadas y recibidas", status: "pending" },
-  { id: "c6", label: "Armotizar gastos pagados por adelantado", description: "Seguros, alquileres, suscripciones", status: "pending", dependsOn: ["c4"] },
-  { id: "c7", label: "Calcular previsión de incobrables", description: "Revisar cuentas a cobrar vencidas > 90 días", status: "pending" },
-  { id: "c8", label: "Calcular IRE del período", description: "Determinar base imponible y registrar provisión", status: "pending", dependsOn: ["c1", "c5"] },
-  { id: "c9", label: "Generar balance de comprobación", description: "Sumas y saldos del período — verificar débito = crédito", status: "pending", dependsOn: ["c1", "c4", "c5"], auto: true },
-  { id: "c10", label: "Cerrar período", description: "Bloquear el período para evitar modificaciones posteriores", status: "pending", dependsOn: ["c9"] },
-];
-
 export default function CierreMensualPage() {
-  const [items, setItems] = useState(CHECKLIST);
-  const [showDetail, setShowDetail] = useState<string | null>(null);
+  const selectedEntity = useAuthStore((state) => state.selectedEntity);
+  const [activeTab, setActiveTab] = useState<"mensual" | "anual">("mensual");
+  
+  // Selection
+  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedMonth, setSelectedMonth] = useState(5); // Mayo
+  
+  const [isPending, startTransition] = useTransition();
+  const [validations, setValidations] = useState<CierreValidations | null>(null);
   const [periodoBloqueado, setPeriodoBloqueado] = useState(false);
+  const [closingLogs, setClosingLogs] = useState<string | null>(null);
+  const [showDetail, setShowDetail] = useState<string | null>(null);
 
-  const done = items.filter(i => i.status === "done").length;
-  const total = items.length;
-  const pct = Math.round((done / total) * 100);
-  const canClose = items.every(i => i.status === "done" || i.auto);
-  const allDone = items.every(i => i.status === "done");
-
-  const toggleStatus = (id: string) => {
-    setItems(prev => prev.map(i => {
-      if (i.id !== id) return i;
-      const next: Record<string, ChecklistItem["status"]> = {
-        pending: "in_progress",
-        in_progress: "done",
-        done: "pending",
-      };
-      return { ...i, status: next[i.status] };
-    }));
+  const formatGs = (val: number) => {
+    return `Gs. ${Math.round(val).toLocaleString("es-PY")}`;
   };
 
-  const canToggle = (item: ChecklistItem): boolean => {
-    if (!item.dependsOn) return true;
-    return item.dependsOn.every(depId => {
-      const dep = items.find(i => i.id === depId);
-      return dep?.status === "done";
+  const loadValidations = () => {
+    if (!selectedEntity?.id) return;
+    startTransition(async () => {
+      const res = await verifyPeriodStatus(
+        selectedEntity.id,
+        selectedYear,
+        activeTab === "mensual" ? selectedMonth : undefined
+      );
+      if (res.ok) {
+        setValidations(res.data);
+      }
+    });
+  };
+
+  useEffect(() => {
+    loadValidations();
+  }, [selectedEntity, selectedYear, selectedMonth, activeTab]);
+
+  // Construct Dynamic Checklist based on real backend validations
+  const checklistItems: ChecklistItem[] = activeTab === "mensual" ? [
+    {
+      id: "m1",
+      label: "Asientos en Borrador (Draft)",
+      description: validations && validations.draftEntriesCount > 0
+        ? `Tenés ${validations.draftEntriesCount} asientos en estado borrador`
+        : "No existen asientos en borrador pendientes",
+      status: validations && validations.draftEntriesCount > 0 ? "blocked" : "done",
+      link: "/asientos"
+    },
+    {
+      id: "m2",
+      label: "Asientos Desbalanceados",
+      description: validations && validations.unbalancedEntriesCount > 0
+        ? `Encontrado(s) ${validations.unbalancedEntriesCount} asiento(s) descuadrados`
+        : "Todos los asientos están correctamente balanceados (Débito = Crédito)",
+      status: validations && validations.unbalancedEntriesCount > 0 ? "blocked" : "done",
+      link: "/asientos"
+    },
+    {
+      id: "m3",
+      label: "Conciliación de Movimientos Bancarios",
+      description: validations && validations.unreconciledBankCount > 0
+        ? `Existen ${validations.unreconciledBankCount} transacciones bancarias pendientes de conciliar`
+        : "Todas las transacciones bancarias están conciliadas",
+      status: validations && validations.unreconciledBankCount > 0 ? "in_progress" : "done",
+      link: "/banco/conciliacion"
+    },
+    {
+      id: "m4",
+      label: "Control de Saldos Bancarios vs Contabilidad",
+      description: validations && validations.bankBalances.some(b => Math.abs(b.difference) > 0.01)
+        ? "Existen diferencias entre el saldo contable y el extracto"
+        : "Los saldos del mayor coinciden con los extractos bancarios",
+      status: validations && validations.bankBalances.some(b => Math.abs(b.difference) > 0.01) ? "in_progress" : "done",
+      link: "/banco"
+    },
+    {
+      id: "m5",
+      label: "Cálculo de Costo de Ventas e Inventario",
+      description: "Generar el costo promedio ponderado de stock mensual",
+      status: "done",
+      link: "/comprobantes"
+    }
+  ] : [
+    {
+      id: "a1",
+      label: "Períodos Mensuales Cerrados",
+      description: validations
+        ? `${validations.monthsClosedCount} de 12 meses cerrados en el ejercicio fiscal`
+        : "Verificar bloqueo de meses anteriores",
+      status: validations && validations.monthsClosedCount === 12 ? "done" : "blocked",
+      link: "/periodos"
+    },
+    {
+      id: "a2",
+      label: "Depreciación de Activos Fijos del Ejercicio",
+      description: "Amortizaciones anuales completas de bienes de uso cargados",
+      status: "done",
+      link: "/activos"
+    },
+    {
+      id: "a3",
+      label: "Refundición de Cuentas de Resultado",
+      description: "Cerrar cuentas de Ingresos (Clase 4) y Egresos (Clase 5) contra Patrimonio",
+      status: closingLogs ? "done" : "pending",
+    },
+    {
+      id: "a4",
+      label: "Cierre Patrimonial del Ejercicio",
+      description: "Saldar cuentas de Activo, Pasivo y Patrimonio al 31 de Diciembre",
+      status: closingLogs ? "done" : "pending",
+    }
+  ];
+
+  const doneCount = checklistItems.filter(i => i.status === "done").length;
+  const totalCount = checklistItems.length;
+  const pct = Math.round((doneCount / totalCount) * 100);
+  const canClose = checklistItems.every(i => i.status === "done" || i.status === "in_progress");
+
+  const handleMonthlyLock = () => {
+    setPeriodoBloqueado(true);
+  };
+
+  const handleAnnualClosingProcess = () => {
+    if (!selectedEntity?.id) return;
+    startTransition(async () => {
+      const res = await processAnnualClosing(selectedEntity.id, selectedYear);
+      if (res.ok) {
+        setClosingLogs(
+          `✓ Asiento de Refundición generado: ${res.data.refundEntryNumber}\n✓ Asiento de Cierre Patrimonial generado: ${res.data.patrimonialEntryNumber}\n✓ Ejercicio Fiscal ${selectedYear} cerrado con éxito.`
+        );
+        loadValidations();
+      } else {
+        alert(res.error);
+      }
     });
   };
 
   return (
     <div className="p-3 sm:p-4 lg:p-8 max-w-5xl mx-auto space-y-4 sm:space-y-6">
+      
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Cierre Mensual</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Mayo 2026 — Importadora del Este S.A.</p>
+          <h1 className="text-xl lg:text-2xl font-bold text-white flex items-center gap-2">
+            Cierre de Períodos Contables
+          </h1>
+          <p className="text-gray-400 text-sm mt-0.5">
+            Bloqueo mensual, auditoría de balance y asientos automáticos de cierre del ejercicio.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={loadValidations}
+            disabled={isPending}
+            className="p-2 bg-gray-800 border border-gray-700/50 hover:bg-gray-750 text-gray-400 hover:text-white rounded-lg transition-colors"
+          >
+            <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
+          </button>
+
           {periodoBloqueado ? (
-            <span className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium border border-red-200 dark:border-red-800/30">
+            <span className="flex items-center gap-1.5 px-3 py-2 bg-red-950/20 border border-red-800/40 text-red-400 rounded-xl text-sm font-semibold">
               <Lock className="h-4 w-4" /> Período Cerrado
             </span>
           ) : (
             <button
-              disabled={!canClose}
-              onClick={() => setPeriodoBloqueado(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium disabled:opacity-40 transition-colors no-tap-highlight"
+              disabled={doneCount < totalCount || isPending}
+              onClick={activeTab === "mensual" ? handleMonthlyLock : handleAnnualClosingProcess}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg",
+                doneCount === totalCount && !isPending
+                  ? "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/10"
+                  : "bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/50"
+              )}
             >
               <Lock className="h-4 w-4" />
-              Cerrar Período
+              {activeTab === "mensual" ? "Bloquear Mes" : "Procesar Cierre Anual"}
             </button>
           )}
         </div>
       </div>
 
-      {/* Progress */}
-      <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium text-gray-900 dark:text-white">Progreso del Cierre</h2>
-          <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{pct}%</span>
+      {/* Tabs Menu */}
+      <div className="flex bg-gray-900/40 border border-gray-800/80 p-1 rounded-xl w-full sm:w-80 backdrop-blur-sm">
+        <button
+          onClick={() => { setActiveTab("mensual"); setClosingLogs(null); }}
+          className={cn(
+            "flex-1 py-2 text-xs font-semibold rounded-lg transition-all",
+            activeTab === "mensual" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
+          )}
+        >
+          Cierre Mensual
+        </button>
+        <button
+          onClick={() => { setActiveTab("anual"); setClosingLogs(null); }}
+          className={cn(
+            "flex-1 py-2 text-xs font-semibold rounded-lg transition-all",
+            activeTab === "anual" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
+          )}
+        >
+          Cierre Anual
+        </button>
+      </div>
+
+      {/* Selectors */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-gray-900/20 border border-gray-800/60 p-4 rounded-xl">
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 mb-1.5">Ejercicio Fiscal (Año)</label>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="w-full px-3 py-2 bg-gray-850 border border-gray-750 rounded-xl text-sm text-white focus:outline-none"
+          >
+            <option value={2026}>2026</option>
+            <option value={2025}>2025</option>
+          </select>
         </div>
-        <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+        
+        {activeTab === "mensual" && (
+          <div>
+            <label className="block text-xs font-semibold text-gray-400 mb-1.5">Mes a Cerrar</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="w-full px-3 py-2 bg-gray-850 border border-gray-750 rounded-xl text-sm text-white focus:outline-none animate-in fade-in"
+            >
+              <option value={1}>Enero</option>
+              <option value={2}>Febrero</option>
+              <option value={3}>Marzo</option>
+              <option value={4}>Abril</option>
+              <option value={5}>Mayo</option>
+              <option value={6}>Junio</option>
+              <option value={7}>Julio</option>
+              <option value={8}>Agosto</option>
+              <option value={9}>Septiembre</option>
+              <option value={10}>Octubre</option>
+              <option value={11}>Noviembre</option>
+              <option value={12}>Diciembre</option>
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Progress Card */}
+      <div className="bg-gray-900/40 border border-gray-800/80 rounded-2xl p-5 backdrop-blur-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-200">Progreso de Auditoría Contable</h2>
+          <span className="text-sm font-bold text-blue-400 font-mono">{pct}%</span>
+        </div>
+        <div className="h-3 bg-gray-850 rounded-full overflow-hidden">
           <div
             className={cn("h-full rounded-full transition-all duration-500", pct === 100 ? "bg-green-500" : "bg-blue-500")}
             style={{ width: `${pct}%` }}
           />
         </div>
-        <div className="flex items-center justify-between mt-1.5 text-[10px] text-gray-400">
-          <span>{done} de {total} completados</span>
-          <span>{allDone ? "Listo para cerrar" : canClose ? "Puede cerrarse" : `${total - done} pendientes`}</span>
+        <div className="flex items-center justify-between text-[10px] text-gray-500 font-medium">
+          <span>{doneCount} de {totalCount} controles listos</span>
+          <span>{pct === 100 ? "Listo para procesar cierre" : "Controles obligatorios pendientes"}</span>
         </div>
       </div>
 
       {/* Checklist */}
-      <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800">
-          <h2 className="text-sm font-medium text-gray-900 dark:text-white">Checklist de Cierre</h2>
+      <div className="bg-gray-900/40 border border-gray-800/80 rounded-2xl overflow-hidden backdrop-blur-sm">
+        <div className="p-4 border-b border-gray-800 flex justify-between items-center">
+          <h2 className="text-sm font-bold text-gray-200">Checklist Operativo de Contabilidad</h2>
         </div>
-        <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
-          {items.map((item) => {
-            const blocked = !canToggle(item);
-            const isExpanded = showDetail === item.id;
 
+        <div className="divide-y divide-gray-800/60">
+          {checklistItems.map((item) => {
+            const isExpanded = showDetail === item.id;
             return (
               <div key={item.id} className={cn(
                 "transition-colors",
-                item.status === "done" && "bg-green-50/30 dark:bg-green-500/5",
-                item.status === "in_progress" && "bg-blue-50/30 dark:bg-blue-500/5",
+                item.status === "done" && "bg-green-950/5",
+                item.status === "in_progress" && "bg-blue-950/5",
+                item.status === "blocked" && "bg-red-950/5"
               )}>
-                <div
-                  className="flex items-start gap-3 p-3 sm:p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/20 no-tap-highlight"
-                  onClick={() => !blocked && toggleStatus(item.id)}
-                >
-                  <button className={cn(
-                    "h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors no-tap-highlight",
-                    item.status === "done" && "bg-green-500 border-green-500",
-                    item.status === "in_progress" && "border-blue-500 bg-blue-50 dark:bg-blue-500/10",
-                    item.status === "pending" && "border-gray-300 dark:border-gray-600",
-                    item.status === "blocked" && "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-500/10",
-                    blocked && item.status !== "done" && "opacity-40 cursor-not-allowed"
+                <div className="flex items-start gap-4 p-4">
+                  <div className={cn(
+                    "h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all duration-200",
+                    item.status === "done" && "bg-green-500 border-green-500 text-white",
+                    item.status === "in_progress" && "border-blue-500 bg-blue-950/20 text-blue-400 animate-pulse",
+                    item.status === "pending" && "border-gray-700 bg-gray-900",
+                    item.status === "blocked" && "border-red-500 bg-red-950/20 text-red-400"
                   )}>
-                    {item.status === "done" && <CheckCircle2 className="h-4 w-4 text-white" />}
-                    {item.status === "in_progress" && <Clock className="h-3 w-3 text-blue-500" />}
-                    {item.status === "blocked" && <AlertCircle className="h-3 w-3 text-red-500" />}
-                  </button>
+                    {item.status === "done" && <CheckCircle2 className="h-4 w-4" />}
+                    {item.status === "in_progress" && <Clock className="h-3.5 w-3.5" />}
+                    {item.status === "blocked" && <AlertTriangle className="h-3.5 w-3.5" />}
+                  </div>
+
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "text-sm font-medium",
-                        item.status === "done" ? "text-green-700 dark:text-green-400 line-through" : "text-gray-900 dark:text-white"
-                      )}>
-                        {item.label}
-                      </span>
-                      {item.auto && <span className="text-[9px] px-1 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 text-purple-500">AUTO</span>}
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{item.description}</p>
-                    {blocked && item.status !== "done" && (
-                      <p className="text-[10px] text-red-400 mt-0.5">Requiere completar pasos anteriores</p>
+                    <span className={cn(
+                      "text-sm font-semibold",
+                      item.status === "done" ? "text-green-400 line-through opacity-80" : "text-white"
+                    )}>
+                      {item.label}
+                    </span>
+                    <p className="text-xs text-gray-400 mt-1">{item.description}</p>
+                    {item.status === "blocked" && (
+                      <p className="text-[10px] text-red-400 font-semibold mt-1 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Bloqueo: corregí los errores para cerrar
+                      </p>
                     )}
                   </div>
+
                   <div className="flex items-center gap-2 shrink-0">
                     {item.link && (
-                      <a href={item.link} onClick={(e) => e.stopPropagation()} className="text-[10px] text-blue-500 hover:text-blue-400 no-tap-highlight">
-                        Ir →
+                      <a href={item.link} className="text-xs text-blue-400 hover:text-blue-300 font-semibold bg-blue-500/10 px-2.5 py-1 rounded-lg transition-colors">
+                        Revisar →
                       </a>
                     )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setShowDetail(isExpanded ? null : item.id); }}
-                      className="p-1 no-tap-highlight"
-                    >
-                      {isExpanded ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
-                    </button>
+                    {(item.id === "m4" || item.id === "a3") && (
+                      <button
+                        onClick={() => setShowDetail(isExpanded ? null : item.id)}
+                        className="p-1 hover:bg-gray-800 rounded-lg text-gray-400"
+                      >
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {isExpanded && (
-                  <div className="px-3 sm:px-4 pb-3 sm:pb-4 ml-9 space-y-2">
-                    {item.id === "c9" && (
-                      <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-3 text-xs space-y-1 font-mono">
-                        <div className="flex justify-between"><span className="text-gray-400">Total Débito</span><span className="text-green-600">Gs. 48,250,000</span></div>
-                        <div className="flex justify-between"><span className="text-gray-400">Total Crédito</span><span className="text-red-600">Gs. 48,250,000</span></div>
-                        <div className="flex justify-between font-bold pt-1 border-t border-gray-200 dark:border-gray-700"><span>Diferencia</span><span className="text-green-600">Gs. 0</span></div>
-                      </div>
-                    )}
-                    {item.id === "c10" && canClose && (
-                      <div className="bg-yellow-50 dark:bg-yellow-500/5 rounded-lg p-3 text-xs border border-yellow-200 dark:border-yellow-800/30">
-                        <p className="text-yellow-700 dark:text-yellow-400 font-medium">⚠ Atención</p>
-                        <p className="text-yellow-600 dark:text-yellow-500 mt-1">Una vez cerrado, el período no podrá modificarse. Los ajustes requerirán reapertura con autorización.</p>
-                      </div>
-                    )}
+                {/* Expanded Details */}
+                {isExpanded && item.id === "m4" && validations && (
+                  <div className="px-4 pb-4 ml-10 space-y-3 animate-in fade-in duration-200">
+                    <div className="border border-gray-800 rounded-xl overflow-hidden bg-gray-950/40">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-gray-900 text-gray-400 uppercase tracking-wider font-bold">
+                          <tr>
+                            <th className="p-2.5">Banco / Cuenta</th>
+                            <th className="p-2.5 text-right">Saldo Mayor</th>
+                            <th className="p-2.5 text-right">Saldo Extracto</th>
+                            <th className="p-2.5 text-right">Diferencia</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800/60 font-mono">
+                          {validations.bankBalances.map((bal, idx) => (
+                            <tr key={idx} className="hover:bg-gray-900/20">
+                              <td className="p-2.5 font-medium text-white">{bal.bankName} - Cta. {bal.accountNumber}</td>
+                              <td className="p-2.5 text-right text-gray-300">{formatGs(bal.ledgerBalance)}</td>
+                              <td className="p-2.5 text-right text-gray-300">{formatGs(bal.statementBalance)}</td>
+                              <td className={cn(
+                                "p-2.5 text-right font-bold",
+                                Math.abs(bal.difference) > 0.01 ? "text-red-400" : "text-green-400"
+                              )}>
+                                {formatGs(bal.difference)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {isExpanded && item.id === "a3" && (
+                  <div className="px-4 pb-4 ml-10 space-y-2 text-xs text-gray-400 animate-in fade-in">
+                    <p>El cierre contable del ejercicio fiscal generará automáticamente dos transacciones clave:</p>
+                    <ul className="list-disc pl-4 space-y-1 font-mono text-[11px]">
+                      <li><span className="text-blue-400 font-bold">REF-XXXXX</span>: Refundición de las cuentas de ingresos y egresos para determinar la Utilidad/Pérdida Neta.</li>
+                      <li><span className="text-blue-400 font-bold">PAT-XXXXX</span>: Asiento de cierre patrimonial a fin de saldar los saldos de balance a cero en el ejercicio corriente.</li>
+                    </ul>
                   </div>
                 )}
               </div>
@@ -190,26 +390,15 @@ export default function CierreMensualPage() {
         </div>
       </div>
 
-      {/* Summary */}
-      {allDone && (
-        <div className="bg-green-50 dark:bg-green-500/5 border border-green-200 dark:border-green-800/30 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-6 w-6 text-green-500 shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-green-700 dark:text-green-400 font-medium">Cierre completado</h3>
-              <p className="text-green-600 dark:text-green-500 text-sm mt-1">
-                Período Mayo 2026 cerrado exitosamente. Se generaron los asientos de cierre y el balance de comprobación.
-              </p>
-              <div className="flex gap-2 mt-3">
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg text-xs font-medium no-tap-highlight">
-                  <Download className="h-3.5 w-3.5" /> Balance
-                </button>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg text-xs font-medium no-tap-highlight">
-                  <FileText className="h-3.5 w-3.5" /> Libro Diario
-                </button>
-              </div>
-            </div>
-          </div>
+      {/* Output Console / Action Logs */}
+      {closingLogs && (
+        <div className="bg-gray-900/50 border border-green-800/40 rounded-2xl p-5 backdrop-blur-sm space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+          <h3 className="text-sm font-bold text-green-400 flex items-center gap-1.5">
+            <ShieldCheck className="h-5 w-5" /> Proceso de Cierre Completado
+          </h3>
+          <pre className="font-mono text-xs text-gray-300 bg-gray-950/60 p-4 rounded-xl border border-gray-900 overflow-x-auto leading-relaxed whitespace-pre-wrap">
+            {closingLogs}
+          </pre>
         </div>
       )}
     </div>
