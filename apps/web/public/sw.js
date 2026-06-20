@@ -1,25 +1,13 @@
-// InteliCont Service Worker
-// Estrategias:
-// - App Shell: cache-first
-// - API: network-first con fallback a cache
-// - Imágenes: stale-while-revalidate
-// - Offline queue: background sync
-
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.1.0';
 const STATIC_CACHE = `intelicont-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `intelicont-dynamic-${CACHE_VERSION}`;
 const API_CACHE = `intelicont-api-${CACHE_VERSION}`;
 
-const STATIC_ASSETS = [
-  '/',
-  '/m',
-  '/manifest.json',
-  '/offline',
-];
+const STATIC_ASSETS = ['/', '/m', '/manifest.json', '/offline'];
 
-// ─── Install: precache app shell ─────────────────────────────────────────
+// ─── Install ──────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing InteliCont Service Worker');
+  console.log('[SW] Installing v' + CACHE_VERSION);
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch((err) => {
@@ -30,16 +18,15 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// ─── Activate: clean old caches ──────────────────────────────────────────
+// ─── Activate ─────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating InteliCont Service Worker');
+  console.log('[SW] Activating v' + CACHE_VERSION);
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => {
-            return name.startsWith('intelicont-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== API_CACHE;
-          })
+          .filter((name) => name.startsWith('intelicont-') &&
+            name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== API_CACHE)
           .map((name) => caches.delete(name))
       );
     })
@@ -47,14 +34,20 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
-// ─── Fetch: routing strategies ───────────────────────────────────────────
+// ─── Fetch ────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Skip non-http(s) — chrome-extension://, data:, blob:, etc.
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  // Skip Supabase API calls — let Supabase SDK handle auth directly
+  if (url.hostname.includes('supabase.co')) return;
+
   if (request.method !== 'GET') return;
 
-  // API: network-first, fallback cache
+  // API: network-first with queue fallback
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstStrategy(request));
     return;
@@ -72,7 +65,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pages: network-first with offline fallback
+  // Navigation: network-first with offline fallback
   if (request.mode === 'navigate') {
     event.respondWith(navigationStrategy(request));
     return;
@@ -82,7 +75,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(networkWithCacheFallback(request));
 });
 
-// ─── Strategies ──────────────────────────────────────────────────────────
+// ─── Strategies ───────────────────────────────────────────────────────────
 
 async function networkFirstStrategy(request) {
   try {
@@ -107,7 +100,7 @@ async function cacheFirstStrategy(request) {
   if (cachedResponse) return cachedResponse;
   try {
     const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
+    if (networkResponse && networkResponse.ok) {
       const cache = await caches.open(STATIC_CACHE);
       cache.put(request, networkResponse.clone());
     }
@@ -131,7 +124,15 @@ async function staleWhileRevalidate(request) {
 
 async function navigationStrategy(request) {
   try {
-    return await fetch(request);
+    const networkResponse = await fetch(request.url, {
+      headers: request.headers,
+      redirect: 'follow',
+    });
+    if (networkResponse.ok) {
+      const cache = await caches.open(STATIC_CACHE);
+      cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
   } catch (error) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) return cachedResponse;
@@ -153,26 +154,21 @@ async function networkWithCacheFallback(request) {
   }
 }
 
-// ─── Background Sync: sync offline queue ─────────────────────────────────
+// ─── Background Sync ──────────────────────────────────────────────────────
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-invoices') {
-    console.log('[SW] Background sync: invoices');
     event.waitUntil(syncPendingInvoices());
   }
 });
 
 async function syncPendingInvoices() {
-  // Notify clients to trigger sync
   const clients = await self.clients.matchAll();
   clients.forEach((client) => {
-    client.postMessage({
-      type: 'SYNC_INVOICES',
-      timestamp: Date.now(),
-    });
+    client.postMessage({ type: 'SYNC_INVOICES', timestamp: Date.now() });
   });
 }
 
-// ─── Push Notifications ──────────────────────────────────────────────────
+// ─── Push ─────────────────────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   const data = event.data.json();
@@ -189,7 +185,5 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(
-    self.clients.openWindow(event.notification.data || '/')
-  );
+  event.waitUntil(self.clients.openWindow(event.notification.data || '/'));
 });

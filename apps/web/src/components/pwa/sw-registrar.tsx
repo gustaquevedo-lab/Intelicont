@@ -9,18 +9,31 @@ export function ServiceWorkerRegistrar() {
 
     const register = async () => {
       try {
+        // Unregister any old SW first to force update
+        const oldRegs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of oldRegs) {
+          if (reg.active && !reg.active.scriptURL.includes('/sw.js')) {
+            await reg.unregister();
+          }
+        }
+
         const registration = await navigator.serviceWorker.register("/sw.js", {
           scope: "/",
+          updateViaCache: "none", // always fetch fresh SW from server
         });
         console.log("[PWA] Service worker registered:", registration.scope);
 
-        // Listen for updates
+        // Force update check immediately
+        await registration.update();
+
+        // Listen for updates — auto-reload when new SW activates
         registration.addEventListener("updatefound", () => {
           const newWorker = registration.installing;
           if (!newWorker) return;
           newWorker.addEventListener("statechange", () => {
             if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              console.log("[PWA] New content available, refresh to update");
+              console.log("[PWA] New SW available, reloading...");
+              setTimeout(() => window.location.reload(), 500);
             }
           });
         });
