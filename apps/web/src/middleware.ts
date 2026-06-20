@@ -23,6 +23,9 @@ export async function middleware(request: NextRequest) {
   const { user, response } = await updateSession(request);
 
   if (!user) {
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/landing/index.html", request.url));
+    }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
