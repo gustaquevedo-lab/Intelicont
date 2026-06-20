@@ -72,6 +72,13 @@ function formatGs(value: string) {
   return num.toLocaleString("es-PY");
 }
 
+function formatInputGs(value: string) {
+  if (!value) return "";
+  const num = parseInt(value.replace(/\D/g, ""), 10);
+  if (isNaN(num)) return "";
+  return num.toLocaleString("es-PY");
+}
+
 export default function NuevoAsientoPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -106,12 +113,15 @@ export default function NuevoAsientoPage() {
   };
 
   const updateLinea = (id: string, field: keyof Linea, value: string) => {
+    const cleanValue = (field === "debito" || field === "credito")
+      ? value.replace(/\D/g, "")
+      : value;
     setLineas(
       lineas.map((l) => {
         if (l.id !== id) return l;
-        const updated = { ...l, [field]: value };
-        if (field === "debito" && parseFloat(value) > 0) updated.credito = "";
-        if (field === "credito" && parseFloat(value) > 0) updated.debito = "";
+        const updated = { ...l, [field]: cleanValue };
+        if (field === "debito" && parseFloat(cleanValue) > 0) updated.credito = "";
+        if (field === "credito" && parseFloat(cleanValue) > 0) updated.debito = "";
         return updated;
       })
     );
@@ -377,9 +387,9 @@ export default function NuevoAsientoPage() {
                   <td className="py-2 px-4">
                     <input
                       type="text"
-                      value={linea.debito}
+                      value={formatInputGs(linea.debito)}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9.]/g, "");
+                        const val = e.target.value.replace(/\D/g, "");
                         updateLinea(linea.id, "debito", val);
                       }}
                       placeholder="0"
@@ -389,9 +399,9 @@ export default function NuevoAsientoPage() {
                   <td className="py-2 px-4">
                     <input
                       type="text"
-                      value={linea.credito}
+                      value={formatInputGs(linea.credito)}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9.]/g, "");
+                        const val = e.target.value.replace(/\D/g, "");
                         updateLinea(linea.id, "credito", val);
                       }}
                       placeholder="0"
