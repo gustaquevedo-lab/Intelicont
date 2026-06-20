@@ -260,9 +260,9 @@ export async function closePeriod(
               periodId:    period.id,
               date:        new Date(year, month - 1, 31 <= new Date(year, month, 0).getDate() ? 31 : new Date(year, month, 0).getDate()),
               number,
-              source:      "closing" as const,
+              source:      "manual", // 'closing' is not in the journalSourceEnum list, using 'manual' as the source
               description: `Asiento de cierre ${MONTHS_ES[month - 1]} ${year}`,
-              status:      "posted" as const,
+              status:      "posted",
               postedAt:    new Date(),
             }).returning();
 
