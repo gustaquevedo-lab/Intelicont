@@ -5,7 +5,20 @@ export const alt = "InteliCont — Contabilidad inteligente para Paraguay";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+const FONT_BASE = "https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.16/files";
+
+async function loadFont(weight: 500 | 700 | 800) {
+  const res = await fetch(`${FONT_BASE}/inter-latin-${weight}-normal.woff`);
+  return res.arrayBuffer();
+}
+
 export default async function OpengraphImage() {
+  const [inter500, inter700, inter800] = await Promise.all([
+    loadFont(500),
+    loadFont(700),
+    loadFont(800),
+  ]);
+
   return new ImageResponse(
     (
       <div
@@ -17,58 +30,200 @@ export default async function OpengraphImage() {
           alignItems: "center",
           justifyContent: "center",
           background:
-            "linear-gradient(135deg, #051125 0%, #0a2244 50%, #104c91 100%)",
-          fontFamily: "sans-serif",
+            "linear-gradient(135deg, #051125 0%, #0a2244 45%, #104c91 100%)",
+          fontFamily: "Inter",
+          padding: 44,
         }}
       >
-        {/* Big infinity logo — readable even at WhatsApp thumbnail size */}
-        <svg
-          width="360"
-          height="180"
-          viewBox="0 0 400 200"
-          style={{ marginBottom: 20 }}
-        >
-          <path
-            d="M 60 100 a 60 60 0 1 0 120 0 a 60 60 0 1 0 -120 0 Z M 90 100 a 30 30 0 1 1 60 0 a 30 30 0 1 1 -60 0 Z"
-            fill="#3b82f6"
-            fillRule="evenodd"
-          />
-          <path
-            d="M 220 100 a 60 60 0 1 0 120 0 a 60 60 0 1 0 -120 0 Z M 250 100 a 30 30 0 1 1 60 0 a 30 30 0 1 1 -60 0 Z"
-            fill="#10b981"
-            fillRule="evenodd"
-          />
-          <circle cx="200" cy="100" r="14" fill="#ffffff" />
-        </svg>
-
-        {/* Massive wordmark */}
+        {/* Logo + Wordmark row */}
         <div
           style={{
             display: "flex",
-            fontSize: 170,
-            fontWeight: 800,
-            letterSpacing: -7,
-            lineHeight: 1,
+            alignItems: "center",
+            gap: 24,
+            marginBottom: 14,
           }}
         >
-          <span style={{ color: "#60a5fa" }}>Inteli</span>
-          <span style={{ color: "#34d399" }}>Cont</span>
+          <svg width="150" height="78" viewBox="0 0 200 100">
+            <path
+              d="M 32 50 a 28 28 0 1 0 56 0 a 28 28 0 1 0 -56 0 Z M 48 50 a 12 12 0 1 1 24 0 a 12 12 0 1 1 -24 0 Z"
+              fill="#3b82f6"
+              fillRule="evenodd"
+            />
+            <path
+              d="M 112 50 a 28 28 0 1 0 56 0 a 28 28 0 1 0 -56 0 Z M 128 50 a 12 12 0 1 1 24 0 a 12 12 0 1 1 -24 0 Z"
+              fill="#10b981"
+              fillRule="evenodd"
+            />
+            <circle cx="100" cy="50" r="7" fill="#ffffff" />
+          </svg>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 128,
+              fontWeight: 800,
+              letterSpacing: -5,
+              lineHeight: 1,
+            }}
+          >
+            <span style={{ color: "#60a5fa" }}>Inteli</span>
+            <span style={{ color: "#34d399" }}>Cont</span>
+          </div>
         </div>
 
-        {/* Big readable tagline */}
         <div
           style={{
-            fontSize: 48,
-            color: "#e2e8f0",
-            marginTop: 28,
-            textAlign: "center",
+            fontSize: 32,
             fontWeight: 500,
+            color: "#cbd5e1",
+            marginBottom: 30,
+            textAlign: "center",
           }}
         >
           SaaS contable con IA para Paraguay
         </div>
+
+        {/* Mock asiento contable */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(148,163,184,0.28)",
+            borderRadius: 22,
+            padding: "24px 30px",
+            width: 820,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: "#052e16",
+                  background: "#a3e635",
+                  padding: "6px 14px",
+                  borderRadius: 999,
+                  letterSpacing: 1,
+                }}
+              >
+                IA · 98%
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: "#f1f5f9",
+                }}
+              >
+                Factura 001-001-0012345
+              </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#34d399",
+                letterSpacing: 1.5,
+              }}
+            >
+              SIFEN ✓
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "12px 0",
+              borderTop: "1px solid rgba(148,163,184,0.2)",
+            }}
+          >
+            <div
+              style={{ display: "flex", fontSize: 22, color: "#cbd5e1", fontWeight: 500 }}
+            >
+              Compras de mercaderías
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: 22,
+                color: "#60a5fa",
+                fontWeight: 800,
+              }}
+            >
+              Gs. 7.050.000
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "12px 0",
+              borderTop: "1px solid rgba(148,163,184,0.2)",
+            }}
+          >
+            <div
+              style={{ display: "flex", fontSize: 22, color: "#cbd5e1", fontWeight: 500 }}
+            >
+              IVA crédito fiscal 10%
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: 22,
+                color: "#60a5fa",
+                fontWeight: 800,
+              }}
+            >
+              Gs. 705.000
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "12px 0",
+              borderTop: "1px solid rgba(148,163,184,0.2)",
+            }}
+          >
+            <div
+              style={{ display: "flex", fontSize: 22, color: "#cbd5e1", fontWeight: 500 }}
+            >
+              Proveedores locales
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: 22,
+                color: "#34d399",
+                fontWeight: 800,
+              }}
+            >
+              Gs. 7.755.000
+            </div>
+          </div>
+        </div>
       </div>
     ),
-    { ...size },
+    {
+      ...size,
+      fonts: [
+        { name: "Inter", data: inter500, weight: 500, style: "normal" },
+        { name: "Inter", data: inter700, weight: 700, style: "normal" },
+        { name: "Inter", data: inter800, weight: 800, style: "normal" },
+      ],
+    },
   );
 }
