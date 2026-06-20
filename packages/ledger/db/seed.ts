@@ -158,11 +158,98 @@ async function main() {
 
   console.log(`   ✓ Asiento creado: ${entry.number}`);
 
+  // 6. Crear Partners (clientes/proveedores) de prueba
+  console.log("👥 Creando terceros (partners)...");
+  const [supplier] = await db
+    .insert(schema.partners)
+    .values({
+      entityId: entity.id,
+      kind: "supplier",
+      ruc: "4444444-4",
+      legalName: "Distribuidora Mayorista S.A.",
+      tradeName: "Mayorista S.A.",
+      country: "PRY",
+    })
+    .returning();
+
+  const [customer] = await db
+    .insert(schema.partners)
+    .values({
+      entityId: entity.id,
+      kind: "customer",
+      ruc: "1234567-4",
+      legalName: "Juan Pérez",
+      tradeName: "Pérez Ventas",
+      country: "PRY",
+    })
+    .returning();
+
+  console.log("   ✓ Terceros creados.");
+
+  // 7. Crear Tax Documents (comprobantes) de prueba para Mayo 2026
+  console.log("📄 Creando comprobantes de prueba para Libro IVA...");
+  const [purchaseInvoice] = await db
+    .insert(schema.taxDocuments)
+    .values({
+      entityId: entity.id,
+      direction: "received",
+      docType: "invoice",
+      number: "001-001-0000001",
+      timbrado: "12345678",
+      cdc: "12345678901234567890123456789012345678901234",
+      issueDate: "2026-05-10",
+      partnerId: supplier.id,
+      currencyCode: "PYG",
+      fxRate: "1",
+      condition: "credit",
+      status: "posted",
+      sifenStatus: "validated",
+      gravado10: "10000000.0000",
+      gravado5: "0.0000",
+      exento: "0.0000",
+      iva10: "1000000.0000",
+      iva5: "0.0000",
+      total: "11000000.0000",
+      ivaBookPeriod: period.id,
+      journalEntryId: entry.id,
+    })
+    .returning();
+
+  const [saleInvoice] = await db
+    .insert(schema.taxDocuments)
+    .values({
+      entityId: entity.id,
+      direction: "issued",
+      docType: "invoice",
+      number: "002-001-0000022",
+      timbrado: "87654321",
+      cdc: "43210987654321098765432109876543210987654321",
+      issueDate: "2026-05-15",
+      partnerId: customer.id,
+      currencyCode: "PYG",
+      fxRate: "1",
+      condition: "cash",
+      status: "posted",
+      sifenStatus: "validated",
+      gravado10: "5000000.0000",
+      gravado5: "0.0000",
+      exento: "0.0000",
+      iva10: "500000.0000",
+      iva5: "0.0000",
+      total: "5500000.0000",
+      ivaBookPeriod: period.id,
+    })
+    .returning();
+
+  console.log("   ✓ Comprobantes creados.");
+
   console.log("\n✅ Seed completado exitosamente!");
   console.log(`   Entidad: ${entity.legalName}`);
   console.log(`   Cuentas: ${insertedAccounts.length}`);
   console.log(`   Período: ${period.year}/${period.month}`);
   console.log(`   Asientos: 1`);
+  console.log(`   Terceros: 2`);
+  console.log(`   Comprobantes Libro IVA: 2`);
 
   await sql.end();
 }

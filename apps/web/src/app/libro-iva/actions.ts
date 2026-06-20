@@ -2,7 +2,7 @@
 
 import { eq, and, gte, lt, desc, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { taxDocuments, entities } from "@/lib/db/schema";
+import { taxDocuments, entities, partners } from "@ledger/db/schema";
 
 export type ActionResult<T = void> =
   | { ok: true;  data: T }
@@ -62,62 +62,65 @@ export async function loadLibroIVA(
         id:          taxDocuments.id,
         issueDate:   taxDocuments.issueDate,
         docType:     taxDocuments.docType,
-        docNumber:   taxDocuments.docNumber,
-        issuerRuc:   taxDocuments.issuerRuc,
-        issuerName:  taxDocuments.issuerName,
-        receiverRuc: taxDocuments.receiverRuc,
-        subtotal:    taxDocuments.subtotal,
+        docNumber:   taxDocuments.number,
+        partnerId:   taxDocuments.partnerId,
+        partnerRuc:  partners.ruc,
+        partnerName: partners.legalName,
+        gravado10:   taxDocuments.gravado10,
+        gravado5:    taxDocuments.gravado5,
+        exento:      taxDocuments.exento,
         iva10:       taxDocuments.iva10,
         iva5:        taxDocuments.iva5,
-        ivaExento:   taxDocuments.ivaExento,
         total:       taxDocuments.total,
         currencyCode:taxDocuments.currencyCode,
         status:      taxDocuments.status,
+        direction:   taxDocuments.direction,
       })
       .from(taxDocuments)
+      .leftJoin(partners, eq(taxDocuments.partnerId, partners.id))
       .where(
         and(
           eq(taxDocuments.entityId, entityId),
-          gte(taxDocuments.issueDate, from),
-          lt(taxDocuments.issueDate, to),
-          // Only posted/approved docs count in the book
+          gte(taxDocuments.issueDate, from.toISOString().split("T")[0]),
+          lt(taxDocuments.issueDate, to.toISOString().split("T")[0]),
+          // Only posted/approved/proposed docs count in the book
           sql`${taxDocuments.status} IN ('posted', 'approved', 'proposed')`,
         )
       )
       .orderBy(taxDocuments.issueDate);
 
+    // Compras = buyer perspective: issuer is someone else (we are receiver)
+    // Ventas  = seller perspective: issuer is this entity
+    const [entityRow] = await db.select({ ruc: entities.ruc, legalName: entities.legalName }).from(entities).where(eq(entities.id, entityId));
+    const entityRuc   = entityRow?.ruc ?? "";
+    const entityName  = entityRow?.legalName ?? "";
+
     function toRow(r: typeof rows[0]): LibroIVARow {
+      const isIssued = r.direction === "issued";
       return {
         id:          r.id,
-        issueDate:   r.issueDate instanceof Date ? r.issueDate.toISOString().split("T")[0] : String(r.issueDate).slice(0, 10),
+        issueDate:   r.issueDate ? String(r.issueDate).slice(0, 10) : "",
         docType:     r.docType ?? "factura",
         docNumber:   r.docNumber,
-        issuerRuc:   r.issuerRuc,
-        issuerName:  r.issuerName,
-        receiverRuc: r.receiverRuc,
-        subtotal:    Number(r.subtotal ?? 0),
+        issuerRuc:   isIssued ? entityRuc : (r.partnerRuc ?? ""),
+        issuerName:  isIssued ? entityName : (r.partnerName ?? ""),
+        receiverRuc: isIssued ? (r.partnerRuc ?? "") : entityRuc,
+        subtotal:    Number(r.gravado10 || 0) + Number(r.gravado5 || 0),
         iva10:       Number(r.iva10    ?? 0),
         iva5:        Number(r.iva5     ?? 0),
-        ivaExento:   Number(r.ivaExento?? 0),
+        ivaExento:   Number(r.exento   ?? 0),
         total:       Number(r.total),
         currency:    r.currencyCode ?? "PYG",
         status:      r.status ?? "proposed",
       };
     }
 
-    // Compras = buyer perspective: issuer is someone else (we are receiver)
-    // Ventas  = seller perspective: issuer is this entity
-    // Simple heuristic: check entity RUC
-    const [entityRow] = await db.select({ ruc: entities.ruc }).from(entities).where(eq(entities.id, entityId));
-    const entityRuc   = entityRow?.ruc ?? "";
-
     const compras: LibroIVARow[] = [];
     const ventas:  LibroIVARow[] = [];
 
     for (const r of rows) {
       const row = toRow(r);
-      // If issuer RUC matches entity → it's a sale; otherwise a purchase
-      if (row.issuerRuc.replace(/\D/g, "") === entityRuc.replace(/\D/g, "")) {
+      if (r.direction === "issued") {
         ventas.push(row);
       } else {
         compras.push(row);
