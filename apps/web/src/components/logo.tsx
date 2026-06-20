@@ -29,8 +29,8 @@ export function Logo({ size = 'md', showSlogan = false, dark = false, className 
           <svg width={s.icon} height={s.icon} viewBox="0 0 40 40" fill="none" className="shrink-0 drop-shadow-xl relative z-10 transition-transform duration-500 group-hover:scale-110">
             <rect width="40" height="40" rx="10" fill="url(#logoGradIC)" />
             
-            {/* Balance Loop Infinity Shape */}
-            <path d="M12 20 C12 15, 17 15, 20 20 C23 25, 28 25, 28 20 C28 15, 23 15, 20 20 C17 25, 12 25, 12 20 Z" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* Balance Loop Infinity Shape - Colorful Gradient */}
+            <path d="M12 20 C12 15, 17 15, 20 20 C23 25, 28 25, 28 20 C28 15, 23 15, 20 20 C17 25, 12 25, 12 20 Z" stroke="url(#loopGrad)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             
             {/* Spark at the junction */}
             <path d="M20 17 L20 23 M17 20 L23 20" stroke="#00d46a" strokeWidth="2.5" strokeLinecap="round" />
@@ -41,6 +41,10 @@ export function Logo({ size = 'md', showSlogan = false, dark = false, className 
                 <stop offset="0%" stopColor="#104c91" />
                 <stop offset="100%" stopColor="#0a2244" />
               </linearGradient>
+              <linearGradient id="loopGrad" x1="12" y1="15" x2="28" y2="25" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#38bdf8" />
+                <stop offset="100%" stopColor="#4ade80" />
+              </linearGradient>
             </defs>
           </svg>
           {/* Shimmer effect overlay */}
@@ -49,9 +53,8 @@ export function Logo({ size = 'md', showSlogan = false, dark = false, className 
  
         {/* Wordmark */}
         <div className="flex flex-col leading-none">
-          <span className={cn(s.text, "font-black tracking-tighter", textColor)}>
-            <span className="text-[#104c91] dark:text-[#256ebf]">Inteli</span>
-            <span className="text-[#00a651]">Cont</span>
+          <span className={cn(s.text, "font-black tracking-tighter bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-500 bg-clip-text text-transparent")}>
+            InteliCont
           </span>
         </div>
       </div>
