@@ -199,7 +199,7 @@ function NuevaRetencionForm({
           <Input
             type="number"
             min={1}
-            step={1}
+            step="1"
             value={form.montoBase || ""}
             onChange={(e) => set("montoBase", parseFloat(e.target.value) || 0)}
             placeholder="0"
