@@ -20,13 +20,13 @@ type FormState =
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Production URL — magic link emails must always redirect here.
+// NEVER use window.location.origin: if the user triggers login from localhost,
+// the email would contain a localhost link which is inaccessible on mobile.
+const PRODUCTION_URL = "https://intelicont.vercel.app";
+
 function getRedirectTo() {
-  // Use the configured app URL (production domain) for magic link redirects.
-  // This prevents the link in the email from pointing to localhost when developing.
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (typeof window !== "undefined" ? window.location.origin : "");
-  return `${appUrl}/auth/callback`;
+  return `${PRODUCTION_URL}/auth/callback`;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────

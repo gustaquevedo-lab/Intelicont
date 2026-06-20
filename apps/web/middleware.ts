@@ -8,7 +8,7 @@ const PUBLIC_PATHS = [
   "/landing",          // static landing HTML
   "/favicon.svg",
   "/logo.svg",
-  "/og-image.png",
+  "/opengraph-image",
 ];
 
 function isPublic(pathname: string) {
