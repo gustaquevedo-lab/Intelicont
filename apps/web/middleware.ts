@@ -61,10 +61,10 @@ export const config = {
   matcher: [
     /*
      * Match all paths EXCEPT:
-     * - _next/static  (Next.js static files)
-     * - _next/image   (Next.js image optimisation)
+     * - _next/static, _next/image (Next.js internals)
+     * - opengraph-image, twitter-image (crawler-facing OG assets)
      * - favicon.ico, .svg, .png, .jpg, .webp
      */
-    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|opengraph-image|twitter-image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
