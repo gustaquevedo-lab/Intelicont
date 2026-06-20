@@ -1,13 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import AppShell from "@/components/app-shell";
-import { ThemeProvider } from "@/lib/theme-context";
-import { TRPCProvider } from "@/components/trpc-provider";
-import { PostHogProvider } from "@/lib/posthog-provider";
-import { ToastProvider } from "@/components/ui/toast";
-import { NotificationProvider } from "@/components/notifications";
-import { ServiceWorkerRegistrar } from "@/components/pwa/sw-registrar";
+import { Providers } from "@/components/providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -116,18 +110,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
       </head>
       <body className={`${inter.className} bg-background text-foreground antialiased`}>
-        <ServiceWorkerRegistrar />
-        <ThemeProvider>
-          <PostHogProvider>
-            <TRPCProvider>
-              <ToastProvider>
-                <NotificationProvider>
-                  <AppShell>{children}</AppShell>
-                </NotificationProvider>
-              </ToastProvider>
-            </TRPCProvider>
-          </PostHogProvider>
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

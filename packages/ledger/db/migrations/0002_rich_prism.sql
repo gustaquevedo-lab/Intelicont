@@ -37,9 +37,6 @@ CREATE TABLE "stock_transactions" (
 	"unit_price" numeric(20, 4) NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now()
 );
---> statement-breakpoint
-ALTER TABLE "entities" ADD COLUMN "ai_provider" varchar(50) DEFAULT 'gemini' NOT NULL;--> statement-breakpoint
-ALTER TABLE "entities" ADD COLUMN "ai_api_key" text;--> statement-breakpoint
 ALTER TABLE "fixed_assets" ADD CONSTRAINT "fixed_assets_entity_id_entities_id_fk" FOREIGN KEY ("entity_id") REFERENCES "public"."entities"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "fixed_assets" ADD CONSTRAINT "fixed_assets_tax_document_id_tax_documents_id_fk" FOREIGN KEY ("tax_document_id") REFERENCES "public"."tax_documents"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "fixed_assets" ADD CONSTRAINT "fixed_assets_gl_account_id_accounts_id_fk" FOREIGN KEY ("gl_account_id") REFERENCES "public"."accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint

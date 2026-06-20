@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { LedgerErrorCode } from "@ledger/ledger-engine";
 
 // Mock the database module
 vi.mock("@/lib/supabase/server", () => ({
@@ -22,6 +23,11 @@ vi.mock("@ledger/ledger-engine", () => ({
   getDiario: vi.fn(),
 }));
 
+// Helper to build typed error mocks
+function errMock(code: LedgerErrorCode, message: string) {
+  return { success: false as const, error: { code, message } };
+}
+
 describe("Ledger Engine Integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -31,7 +37,7 @@ describe("Ledger Engine Integration", () => {
     it("should create a balanced journal entry", async () => {
       const { postEntry } = await import("@ledger/ledger-engine");
       const mockResult = {
-        success: true,
+        success: true as const,
         data: {
           id: "entry-1",
           number: "MAN-0001",
@@ -66,11 +72,7 @@ describe("Ledger Engine Integration", () => {
 
     it("should reject unbalanced entries", async () => {
       const { postEntry } = await import("@ledger/ledger-engine");
-      const mockResult = {
-        success: false,
-        error: { code: "UNBALANCED_ENTRY", message: "Debit does not equal credit" },
-      };
-      vi.mocked(postEntry).mockResolvedValue(mockResult);
+      vi.mocked(postEntry).mockResolvedValue(errMock("UNBALANCED_ENTRY", "Debit does not equal credit"));
 
       const result = await postEntry({
         entityId: "entity-1",
@@ -89,11 +91,7 @@ describe("Ledger Engine Integration", () => {
 
     it("should reject entries in closed periods", async () => {
       const { postEntry } = await import("@ledger/ledger-engine");
-      const mockResult = {
-        success: false,
-        error: { code: "PERIOD_CLOSED", message: "Fiscal period is closed" },
-      };
-      vi.mocked(postEntry).mockResolvedValue(mockResult);
+      vi.mocked(postEntry).mockResolvedValue(errMock("PERIOD_CLOSED", "Fiscal period is closed"));
 
       const result = await postEntry({
         entityId: "entity-1",
@@ -115,7 +113,7 @@ describe("Ledger Engine Integration", () => {
     it("should reverse a posted entry", async () => {
       const { reverseEntry } = await import("@ledger/ledger-engine");
       const mockResult = {
-        success: true,
+        success: true as const,
         data: {
           id: "rev-1",
           number: "REV-0001",
@@ -143,11 +141,7 @@ describe("Ledger Engine Integration", () => {
 
     it("should reject reversing already reversed entries", async () => {
       const { reverseEntry } = await import("@ledger/ledger-engine");
-      const mockResult = {
-        success: false,
-        error: { code: "ALREADY_REVERSED", message: "Entry is already a reversal" },
-      };
-      vi.mocked(reverseEntry).mockResolvedValue(mockResult);
+      vi.mocked(reverseEntry).mockResolvedValue(errMock("ALREADY_REVERSED", "Entry is already a reversal"));
 
       const result = await reverseEntry({
         entryId: "rev-1",
@@ -163,7 +157,7 @@ describe("Ledger Engine Integration", () => {
     it("should create an adjustment entry", async () => {
       const { adjustEntry } = await import("@ledger/ledger-engine");
       const mockResult = {
-        success: true,
+        success: true as const,
         data: {
           id: "adj-1",
           number: "ADJ-0001",
@@ -195,7 +189,17 @@ describe("Ledger Engine Integration", () => {
   describe("closePeriod", () => {
     it("should close an open period", async () => {
       const { closePeriod } = await import("@ledger/ledger-engine");
-      const mockResult = { success: true, data: { periodId: "period-1", closedAt: new Date() } };
+      const mockResult = {
+        success: true as const,
+        data: {
+          id: "period-1",
+          year: 2026,
+          month: 5,
+          status: "closed" as const,
+          closedAt: new Date(),
+          closedBy: "user-1",
+        },
+      };
       vi.mocked(closePeriod).mockResolvedValue(mockResult);
 
       const result = await closePeriod({
@@ -209,11 +213,7 @@ describe("Ledger Engine Integration", () => {
 
     it("should reject closing a period with draft entries", async () => {
       const { closePeriod } = await import("@ledger/ledger-engine");
-      const mockResult = {
-        success: false,
-        error: { code: "HAS_DRAFTS", message: "Period has draft entries" },
-      };
-      vi.mocked(closePeriod).mockResolvedValue(mockResult);
+      vi.mocked(closePeriod).mockResolvedValue(errMock("PERIOD_ALREADY_CLOSED", "Period has draft entries"));
 
       const result = await closePeriod({
         periodId: "period-1",
@@ -228,7 +228,17 @@ describe("Ledger Engine Integration", () => {
   describe("reopenPeriod", () => {
     it("should reopen a closed period", async () => {
       const { reopenPeriod } = await import("@ledger/ledger-engine");
-      const mockResult = { success: true, data: { periodId: "period-1", reopenedAt: new Date() } };
+      const mockResult = {
+        success: true as const,
+        data: {
+          id: "period-1",
+          year: 2026,
+          month: 4,
+          status: "closed" as const,
+          closedAt: new Date(),
+          closedBy: "user-1",
+        },
+      };
       vi.mocked(reopenPeriod).mockResolvedValue(mockResult);
 
       const result = await reopenPeriod({
@@ -243,11 +253,7 @@ describe("Ledger Engine Integration", () => {
 
     it("should reject reopening by same user who closed", async () => {
       const { reopenPeriod } = await import("@ledger/ledger-engine");
-      const mockResult = {
-        success: false,
-        error: { code: "SOD_VIOLATION", message: "Same user cannot reopen" },
-      };
-      vi.mocked(reopenPeriod).mockResolvedValue(mockResult);
+      vi.mocked(reopenPeriod).mockResolvedValue(errMock("NOT_AUTHORIZED", "Same user cannot reopen"));
 
       const result = await reopenPeriod({
         periodId: "period-1",
