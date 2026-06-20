@@ -6,6 +6,7 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showSlogan?: boolean;
   dark?: boolean;
+  hideText?: boolean;
   className?: string;
 }
 
@@ -16,7 +17,7 @@ const sizes = {
   xl: { icon: 64, text: 'text-5xl', slogan: 'text-sm' },
 };
 
-export function Logo({ size = 'md', showSlogan = false, dark = false, className }: LogoProps) {
+export function Logo({ size = 'md', showSlogan = false, dark = false, hideText = false, className }: LogoProps) {
   const s = sizes[size];
   const textColor = dark ? 'text-white' : 'text-gray-900 dark:text-white';
   const sloganColor = dark ? 'text-blue-200/60' : 'text-gray-400 dark:text-blue-200/60';
@@ -25,12 +26,19 @@ export function Logo({ size = 'md', showSlogan = false, dark = false, className 
     <div className={cn("flex flex-col items-start gap-1 group", className)}>
       <div className="flex items-center gap-3">
         <div className="relative flex items-center justify-center">
-          <svg width={s.icon * 1.8} height={s.icon} viewBox="0 0 72 36" fill="none" className="shrink-0 drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105">
+          <svg 
+            width={hideText ? s.icon : s.icon * 1.8} 
+            height={s.icon} 
+            viewBox="0 0 72 36" 
+            fill="none" 
+            style={{ overflow: 'visible' }}
+            className="shrink-0 drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105"
+          >
             {/* Balance Loop Infinity Shape - 3D Gradient matching the user's logo exactly */}
             <path 
-              d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" 
+              d="M 36 18 C 18 4, 6 10, 6 18 C 6 26, 18 32, 36 18 C 54 4, 66 10, 66 18 C 66 26, 54 32, 36 18 Z" 
               stroke="url(#loopGrad)" 
-              strokeWidth="6" 
+              strokeWidth="8" 
               strokeLinecap="round" 
               strokeLinejoin="round" 
               fill="none" 
@@ -56,11 +64,13 @@ export function Logo({ size = 'md', showSlogan = false, dark = false, className 
         </div>
  
         {/* Wordmark */}
-        <div className="flex flex-col leading-none">
-          <span className={cn(s.text, "font-bold tracking-tight text-slate-800 dark:text-white")}>
-            InteliCont
-          </span>
-        </div>
+        {!hideText && (
+          <div className="flex flex-col leading-none">
+            <span className={cn(s.text, "font-bold tracking-tight text-slate-800 dark:text-white")}>
+              InteliCont
+            </span>
+          </div>
+        )}
       </div>
       {showSlogan && (
         <p className={cn(s.slogan, "font-bold uppercase tracking-[0.2em] ml-1", sloganColor)}>

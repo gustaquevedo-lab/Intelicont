@@ -77,7 +77,7 @@ export function Sidebar({
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-white/5 flex items-center justify-between">
-        <Logo size={collapsed ? "sm" : "md"} showSlogan={!collapsed} dark={true} />
+        <Logo size={collapsed ? "sm" : "md"} showSlogan={!collapsed} hideText={collapsed} dark={true} />
         <button
           onClick={onMobileClose}
           className="lg:hidden p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-xl transition-all"
