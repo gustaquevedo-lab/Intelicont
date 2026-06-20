@@ -72,7 +72,24 @@ const ACTION_ICONS: Record<string, any> = {
   sifen_error: AlertCircle,
 };
 
+import { useAuthStore } from "@/lib/auth-store";
+import { FeatureGate } from "@/app/_components/feature-gate";
+
 export default function AuditTrailPage() {
+  const authStoreSelectedEntity = useAuthStore((state) => state.selectedEntity);
+
+  if (authStoreSelectedEntity?.features && !authStoreSelectedEntity.features.brainAi) {
+    return (
+      <FeatureGate
+        feature="brainAi"
+        title="Auditor Inteligente Desactivado"
+        description="La auditoría automatizada y el análisis inteligente de inconsistencias con inteligencia artificial requieren el motor de Brain AI Auditor™. Activa esta característica para este tenant."
+      >
+        <div />
+      </FeatureGate>
+    );
+  }
+
   const [search, setSearch] = useState("");
   const [filterAction, setFilterAction] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);

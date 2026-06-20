@@ -28,12 +28,28 @@ import { createAsiento } from "@/lib/actions";
 import { useUploadSifenXml, useApproveTaxDocument, useOpenPeriod } from "@/hooks/use-data";
 import { useEntity } from "@/hooks/use-entity";
 import { useUser } from "@/hooks/use-user";
+import { useAuthStore } from "@/lib/auth-store";
+import { FeatureGate } from "@/app/_components/feature-gate";
 
 type Step = "upload" | "review" | "success";
 
 export default function SifenPage() {
   const { user } = useUser();
   const { selectedEntity } = useEntity(user?.id);
+  const authStoreSelectedEntity = useAuthStore((state) => state.selectedEntity);
+  
+  if (authStoreSelectedEntity?.features && !authStoreSelectedEntity.features.sifen) {
+    return (
+      <FeatureGate
+        feature="sifen"
+        title="Módulo SIFEN Desactivado"
+        description="La emisión y recepción de comprobantes electrónicos a través del SIFEN de la DNIT requiere una licencia activa para este tenant. Ponte en contacto con soporte o cámbiate de plan."
+      >
+        <div />
+      </FeatureGate>
+    );
+  }
+
   const entityId = selectedEntity?.id ?? null;
   const { data: openPeriod } = useOpenPeriod(entityId);
   

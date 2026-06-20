@@ -14,6 +14,8 @@ import {
   Plus,
   RefreshCw,
 } from "lucide-react";
+import { useAuthStore } from "@/lib/auth-store";
+import { FeatureGate } from "@/app/_components/feature-gate";
 import { cn } from "@/lib/utils";
 
 type ConciliacionStatus = "conciliado" | "pendiente" | "diferencia";
@@ -88,6 +90,20 @@ const MOCK_MOVIMIENTOS: Movimiento[] = [
 const BANCOS = ["Todos", "Banco Galicia", "Banco Itau", "Banco Nacional"];
 
 export default function ConciliacionPage() {
+  const authStoreSelectedEntity = useAuthStore((state) => state.selectedEntity);
+
+  if (authStoreSelectedEntity?.features && !authStoreSelectedEntity.features.bankApi) {
+    return (
+      <FeatureGate
+        feature="bankApi"
+        title="API Bancaria Desactivada"
+        description="La conciliación bancaria y la sincronización con entidades bancarias como Itaú o GNB están desactivadas en tu plan actual. Habilítalo en el panel superadmin."
+      >
+        <div />
+      </FeatureGate>
+    );
+  }
+
   const [search, setSearch] = useState("");
   const [banco, setBanco] = useState("Todos");
   const [filterStatus, setFilterStatus] = useState<string>("all");

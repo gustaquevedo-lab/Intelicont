@@ -78,7 +78,7 @@ function PrintView({ data }: { data: Formulario501 }) {
         </tbody>
       </table>
       <div className="text-xs text-gray-400 mt-4">
-        Generado: {new Date(data.generatedAt).toLocaleString("es-PY")} — InteliCont
+        Generado: {new Date(data.generatedAt).toLocaleString("es-PY")} — <span className="font-semibold text-[#104c91] dark:text-[#256ebf]">Inteli</span><span className="font-semibold text-[#00a651]">Cont</span>
       </div>
     </div>
   );

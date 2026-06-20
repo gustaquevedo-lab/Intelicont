@@ -13,6 +13,8 @@ import { useTaxDocuments, usePendingTaxDocuments, useOpenPeriod } from "@/hooks/
 import { useApproveTaxDocument, useRejectTaxDocument, useBatchApproveTaxDocuments, useBatchRejectTaxDocuments } from "@/hooks/use-data";
 import { useEntity } from "@/hooks/use-entity";
 import { useUser } from "@/hooks/use-user";
+import { useAuthStore } from "@/lib/auth-store";
+import { FeatureGate } from "@/app/_components/feature-gate";
 import type { TaxDocument } from "@/lib/sifen-store";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -26,6 +28,20 @@ function fmtPyg(n: number): string {
 export default function SifenBandejaPage() {
   const { user } = useUser();
   const { selectedEntity } = useEntity(user?.id);
+  const authStoreSelectedEntity = useAuthStore((state) => state.selectedEntity);
+
+  if (authStoreSelectedEntity?.features && !authStoreSelectedEntity.features.sifen) {
+    return (
+      <FeatureGate
+        feature="sifen"
+        title="Bandeja SIFEN Desactivada"
+        description="El flujo de procesamiento y la bandeja de entrada para comprobantes electrónicos de la DNIT están desactivados en tu plan actual. Habilítalo en el panel superadmin."
+      >
+        <div />
+      </FeatureGate>
+    );
+  }
+
   const entityId = selectedEntity?.id ?? null;
   
   const { data: openPeriod } = useOpenPeriod(entityId);

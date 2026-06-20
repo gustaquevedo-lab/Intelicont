@@ -169,9 +169,9 @@ export function getFiscalObligations(): FiscalObligation[] {
     },
     {
       id: "ob-7",
-      title: "Hechauka — Abril 2026",
-      description: "Libro electrónico de compras y ventas. Exportar CSV para DNIT.",
-      type: "hechauka",
+      title: "RG 90 — Abril 2026",
+      description: "Presentación del Registro de Comprobantes. Exportar CSV para Marangatú (DNIT).",
+      type: "rg90",
       dueDate: "2026-05-20",
       entity: "Importadora del Este",
       status: "upcoming",

@@ -7,6 +7,8 @@ import {
   Eye, ChevronDown, ChevronUp, CreditCard, Banknote, Filter,
   Calendar, DollarSign, BarChart3, Zap,
 } from "lucide-react";
+import { useAuthStore } from "@/lib/auth-store";
+import { FeatureGate } from "@/app/_components/feature-gate";
 import { cn } from "@/lib/utils";
 import { matchBankToGL, type BankMovement, type GLTransaction, type MatchResult } from "@/lib/bank-matcher";
 import { parseBankCSV } from "@/lib/bank-parser";
@@ -30,6 +32,20 @@ const SAMPLE_CSV = `Fecha,Descripción,Referencia,Crédito,Débito
 16/05/2026,"Intereses ganados","",85000,0`;
 
 export default function ConciliacionBancariaPage() {
+  const authStoreSelectedEntity = useAuthStore((state) => state.selectedEntity);
+
+  if (authStoreSelectedEntity?.features && !authStoreSelectedEntity.features.bankApi) {
+    return (
+      <FeatureGate
+        feature="bankApi"
+        title="API Bancaria Desactivada"
+        description="La conciliación bancaria y la sincronización con entidades bancarias como Itaú o GNB están desactivadas en tu plan actual. Habilítalo en el panel superadmin."
+      >
+        <div />
+      </FeatureGate>
+    );
+  }
+
   const [step, setStep] = useState<"import" | "review" | "done">("import");
   const [csvText, setCsvText] = useState("");
   const [bankMovements, setBankMovements] = useState<BankMovement[]>([]);

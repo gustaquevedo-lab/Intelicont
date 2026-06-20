@@ -232,7 +232,7 @@ export function Formulario104Client({ entities, defaultYear, defaultMonth, dbErr
               </div>
               <div className="text-right text-sm">
                 <p><strong>Período:</strong> {MONTHS[month - 1]} {year}</p>
-                <p className="text-gray-500">Generado: {new Date().toLocaleDateString("es-PY")}</p>
+                <p className="text-gray-500">Generado: {new Date().toLocaleDateString("es-PY")} — <span className="font-semibold text-[#104c91] dark:text-[#256ebf]">Inteli</span><span className="font-semibold text-[#00a651]">Cont</span></p>
               </div>
             </div>
           </div>

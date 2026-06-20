@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>InteliCont — Software Contable AI-First para Paraguay</title>
-  <meta name="description" content="El software contable más avanzado de Paraguay. Gestioná múltiples contribuyentes, automatizá SIFEN, Hechauka y RG90. IA incluida. Hecho para estudios contables y empresas paraguayas." />
+  <meta name="description" content="El software contable más avanzado de Paraguay. Gestioná múltiples contribuyentes, automatizá SIFEN y el Registro de Comprobantes RG 90. IA incluida. Hecho para estudios contables y empresas paraguayas." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://intelicont.com.py/" />
 
@@ -63,9 +63,9 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --primary: #0d47c9;
-      --primary-light: #1a6eff;
-      --primary-dark: #0a35a0;
+      --primary: #104c91;
+      --primary-light: #256ebf;
+      --primary-dark: #0a2244;
       --secondary: #00a651;
       --secondary-dark: #00823e;
       --secondary-light: #00d46a;
@@ -251,12 +251,12 @@
 
     /* Pricing */
     .pricing-bg { background: white; }
-    .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 56px; }
-    .plan-card { border-radius: 24px; padding: 28px 24px; border: 2px solid var(--border); background: #fafbff; position: relative; transition: all 0.3s; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 56px; }
+    .plan-card { border-radius: 24px; padding: 28px 20px; border: 2px solid var(--border); background: #fafbff; position: relative; transition: all 0.3s; display: flex; flex-direction: column; justify-content: space-between; }
     .plan-card:hover { border-color: var(--primary-light); box-shadow: 0 12px 48px rgba(13,71,201,0.10); transform: translateY(-4px); }
-    .plan-card.popular { border-color: var(--primary); background: white; box-shadow: 0 8px 48px rgba(13,71,201,0.14); transform: translateY(-8px); }
+    .plan-card.popular { border-color: var(--secondary); background: white; box-shadow: 0 8px 48px rgba(0,166,81,0.14); transform: translateY(-8px); }
     .plan-card.popular:hover { transform: translateY(-12px); }
-    .plan-popular-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 5px 16px; border-radius: 99px; white-space: nowrap; }
+    .plan-popular-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--secondary-light), var(--secondary)); color: white; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; padding: 5px 16px; border-radius: 99px; white-space: nowrap; }
     .plan-name { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 6px; }
     .plan-contributors { font-size: 12px; color: var(--secondary-dark); font-weight: 700; background: #f0fdf4; display: inline-block; padding: 2px 10px; border-radius: 99px; margin-bottom: 14px; }
     .plan-price { font-size: 36px; font-weight: 900; color: var(--text-dark); letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
@@ -448,21 +448,18 @@
   <div class="navbar-inner">
     <a href="/landing/" class="nav-logo">
       <svg class="nav-logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs><linearGradient id="nBg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#1a6eff"/><stop offset="1" stop-color="#0d47c9"/></linearGradient></defs>
-        <rect width="40" height="40" rx="11" fill="url(#nBg)"/>
-        <!-- T-account: barra horizontal superior -->
-        <rect x="7" y="12" width="26" height="2.5" rx="1.25" fill="white"/>
-        <!-- T-account: divisor vertical central -->
-        <rect x="18.75" y="12" width="2.5" height="17" rx="1.25" fill="white"/>
-        <!-- Lado débito (izquierda): entradas -->
-        <rect x="9" y="19.5" width="7" height="2" rx="1" fill="rgba(255,255,255,0.8)"/>
-        <rect x="9" y="23.5" width="5" height="2" rx="1" fill="rgba(255,255,255,0.5)"/>
-        <!-- Lado crédito (derecha): check verde = partida cuadrada -->
-        <path d="M23.5 21.5 L26 24.5 L32 18" stroke="#00d46a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <!-- Punto acento verde (esquina) -->
-        <circle cx="33.5" cy="6.5" r="3.5" fill="#00a651"/>
+        <rect width="40" height="40" rx="10" fill="url(#logoGradICNav)" />
+        <path d="M12 20 C12 15, 17 15, 20 20 C23 25, 28 25, 28 20 C28 15, 23 15, 20 20 C17 25, 12 25, 12 20 Z" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        <path d="M20 17 L20 23 M17 20 L23 20" stroke="#00d46a" stroke-width="2.5" stroke-linecap="round" />
+        <circle cx="20" cy="20" r="1.5" fill="white" />
+        <defs>
+          <linearGradient id="logoGradICNav" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#104c91" />
+            <stop offset="100%" stop-color="#0a2244" />
+          </linearGradient>
+        </defs>
       </svg>
-      <div class="nav-logo-text"><span class="i">Inteli</span><span class="c">Cont</span></div>
+      <div class="nav-logo-text"><span class="i" style="color: #104c91;">Inteli</span><span class="c" style="color: #00a651;">Cont</span></div>
     </a>
     <div class="nav-links">
       <a href="#funciones">Funciones</a>
@@ -601,7 +598,7 @@
       <div class="pain-card">
         <span class="pain-emoji">⏰</span>
         <h3 class="pain-title">Deadlines que no perdonan</h3>
-        <p class="pain-text">El DNIT no espera. Hechauka, RG90, Formulario 104, IRE 501v2 — cada mes, para cada contribuyente. La carga crece y el tiempo no.</p>
+        <p class="pain-text">El DNIT no espera. El Registro de Comprobantes (RG 90), Formulario 104, IRE 501v2 — cada mes, para cada contribuyente. La carga crece y el tiempo no.</p>
       </div>
       <div class="pain-card">
         <span class="pain-emoji">🏢</span>
@@ -671,9 +668,9 @@
       <div class="feature-item">
         <div class="feature-icon green">📝</div>
         <div>
-          <h3 class="feature-title">Hechauka y RG90 automáticos</h3>
-          <p class="feature-text">Generación del Hechauka y RG90 listos para subir a Marangatú. Cruce automático con comprobantes SIFEN para detectar inconsistencias antes de presentar al DNIT.</p>
-          <div class="feature-tags"><span class="feature-tag green">RG90</span><span class="feature-tag green">Hechauka</span><span class="feature-tag green">Marangatú</span></div>
+          <h3 class="feature-title">RG 90 automatizado (y soporte Hechauka)</h3>
+          <p class="feature-text">Generación del Registro de Comprobantes (RG 90) listo para exportar a Marangatú. Dado que Hechauka está en proceso de derogación parcial, priorizamos RG 90 manteniendo soporte legacy.</p>
+          <div class="feature-tags"><span class="feature-tag green">RG 90</span><span class="feature-tag green">Marangatú</span><span class="feature-tag green">Cumplimiento DNIT</span></div>
         </div>
       </div>
       <div class="feature-item">
@@ -779,7 +776,7 @@
     <div class="ss-tabs">
       <button class="ss-tab active" onclick="showSS(this,'sc1')">📊 Panel de Contribuyentes</button>
       <button class="ss-tab" onclick="showSS(this,'sc2')">📝 Nuevo Asiento</button>
-      <button class="ss-tab" onclick="showSS(this,'sc3')">📋 Hechauka IVA</button>
+      <button class="ss-tab" onclick="showSS(this,'sc3')">📋 RG 90 IVA</button>
     </div>
 
     <!-- Screen 1: Panel / Dashboard -->
@@ -949,7 +946,7 @@
             <div class="ss-dot" style="background:#f59e0b;"></div>
             <div class="ss-dot" style="background:#22c55e;"></div>
           </div>
-          <div class="ss-url">app.intelicont.com.py/libros/hechauka</div>
+          <div class="ss-url">app.intelicont.com.py/libros/rg90</div>
         </div>
         <div class="ss-app">
           <div class="ss-sidebar">
@@ -964,7 +961,7 @@
           <div class="ss-main">
             <div class="ss-topbar">
               <div>
-                <div class="ss-topbar-title">Hechauka IVA · Abril 2026</div>
+                <div class="ss-topbar-title">RG 90 IVA · Abril 2026</div>
                 <div class="ss-topbar-meta">Importadora del Este SA · RUC 80023451-1 · 487 comprobantes procesados</div>
               </div>
               <div style="display:flex;gap:8px;">
@@ -1018,7 +1015,7 @@
               </div>
               <div style="margin-top:16px;display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 16px;">
                 <span style="font-size:18px;">✅</span>
-                <div style="font-size:13px;font-weight:700;color:#15803d;">Hechauka validada · Listo para presentar al DNIT via Marangatú</div>
+                <div style="font-size:13px;font-weight:700;color:#15803d;">RG 90 validada · Listo para presentar al DNIT vía Marangatú</div>
               </div>
             </div>
           </div>
@@ -1086,7 +1083,7 @@
           <tr><td class="fname">Regímenes DNIT (IRE, ReSimple, IVA, IRP)</td><td class="hl"><span class="chk">✓ Todos</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
           <tr><td class="fname">Plan para empresa con contabilidad interna</td><td class="hl"><span class="chk">✓</span></td><td><span class="crs">✗</span></td><td><span class="crs">✗</span></td></tr>
           <tr><td class="fname">Ecosistema integrado (auditoría + nómina)</td><td class="hl"><span class="chk">✓ Inteli*</span></td><td><span class="crs">✗</span></td><td><span class="crs">✗</span></td></tr>
-          <tr><td class="fname">Precio base (10 contribuyentes)</td><td class="hl" style="color:#16a34a;font-weight:700;">Gs. 275.000</td><td style="color:#64748b;">Gs. 300.000 (hasta 25)</td><td style="color:#64748b;">Gs. 279.900 (hasta 10)</td></tr>
+          <tr><td class="fname">Precio base (5 contribuyentes)</td><td class="hl" style="color:#16a34a;font-weight:700;">Gs. 180.000</td><td style="color:#64748b;">Gs. 300.000 (hasta 25)</td><td style="color:#64748b;">Gs. 279.900 (hasta 10)</td></tr>
         </tbody>
       </table>
     </div>
@@ -1117,84 +1114,112 @@
     </div>
     <div class="pricing-grid">
 
-      <!-- Estándar -->
+      <!-- Starter -->
       <div class="plan-card">
-        <div class="plan-name">Estándar</div>
-        <div class="plan-contributors">Hasta 10 contribuyentes</div>
-        <div class="plan-price"><sup>Gs.</sup> 275.000 <span class="period">/ mes</span></div>
-        <p class="plan-tagline">Para estudios que empiezan a ordenar su cartera de clientes con una herramienta profesional.</p>
-        <ul class="plan-features">
-          <li>Hasta 10 contribuyentes</li>
-          <li>Asientos manuales ilimitados</li>
-          <li>Libros Diario, Mayor, IVA</li>
-          <li>Importación SIFEN manual</li>
-          <li>Calendario DNIT básico</li>
-          <li>EEFF básicos</li>
-          <li>Usuarios ilimitados del estudio</li>
-          <li class="muted">SIFEN automático</li>
-          <li class="muted">IA sugerencias</li>
-          <li class="muted">API bancaria</li>
-        </ul>
-        <a href="/app/registro?plan=estandar" class="btn-plan outline">Empezar gratis 14 días</a>
+        <div>
+          <div class="plan-name">Starter</div>
+          <div class="plan-contributors">Hasta 5 contribuyentes</div>
+          <div class="plan-price"><sup>Gs.</sup> 180.000 <span class="period">/ mes</span></div>
+          <p class="plan-tagline">Para contadores independientes y estudios pequeños que inician su digitalización.</p>
+          <ul class="plan-features">
+            <li>Hasta 5 contribuyentes</li>
+            <li>1 usuario del estudio</li>
+            <li>Asientos manuales e importación</li>
+            <li>Libros contables automáticos</li>
+            <li>Cumplimiento de IVA general</li>
+            <li>Calendario DNIT básico</li>
+            <li class="muted">Brain AI Auditor™</li>
+            <li class="muted">SIFEN automático</li>
+            <li class="muted">API bancaria</li>
+          </ul>
+        </div>
+        <a href="/app/registro?plan=starter" class="btn-plan outline" style="margin-top:20px;">Empezar gratis 14 días</a>
       </div>
 
       <!-- Pro (popular) -->
       <div class="plan-card popular">
-        <div class="plan-popular-badge">⭐ Más elegido</div>
-        <div class="plan-name">Pro</div>
-        <div class="plan-contributors">Hasta 20 contribuyentes</div>
-        <div class="plan-price"><sup>Gs.</sup> 385.000 <span class="period">/ mes</span></div>
-        <p class="plan-tagline">Para estudios en crecimiento que necesitan automatización real y IA desde el primer día.</p>
-        <ul class="plan-features">
-          <li>Hasta 20 contribuyentes</li>
-          <li>SIFEN automático</li>
-          <li>IA: sugerencias de asientos</li>
-          <li>Hechauka y RG90 automáticos</li>
-          <li>Calendario DNIT con alertas</li>
-          <li>EEFF completos (NIIF simplificada)</li>
-          <li>Conciliación bancaria API</li>
-          <li>Soporte prioritario WhatsApp</li>
-          <li class="muted">White-label en reportes</li>
-          <li class="muted">API REST propia</li>
-        </ul>
-        <a href="/app/registro?plan=pro" class="btn-plan filled">Empezar gratis 14 días</a>
+        <div>
+          <div class="plan-popular-badge">⭐ Más elegido</div>
+          <div class="plan-name">Pro</div>
+          <div class="plan-contributors">Hasta 20 contribuyentes</div>
+          <div class="plan-price"><sup>Gs.</sup> 385.000 <span class="period">/ mes</span></div>
+          <p class="plan-tagline">Para estudios en crecimiento que necesitan automatización inteligente y auditoría.</p>
+          <ul class="plan-features">
+            <li>Hasta 20 contribuyentes</li>
+            <li>3 usuarios del estudio</li>
+            <li><strong>Brain AI Auditor™</strong> (IA)</li>
+            <li>SIFEN automático (recepción)</li>
+            <li>RG 90 y Hechauka automáticos</li>
+            <li>Conciliación bancaria (Itaú/GNB)</li>
+            <li>Calendario DNIT con alertas</li>
+            <li>Soporte prioritario WhatsApp</li>
+            <li class="muted">Marca blanca en reportes</li>
+          </ul>
+        </div>
+        <a href="/app/registro?plan=pro" class="btn-plan filled" style="margin-top:20px;">Empezar gratis 14 días</a>
       </div>
 
-      <!-- Corporativo -->
+      <!-- In-House -->
       <div class="plan-card">
-        <div class="plan-name">Corporativo</div>
-        <div class="plan-contributors">Hasta 40 contribuyentes</div>
-        <div class="plan-price"><sup>Gs.</sup> 594.000 <span class="period">/ mes</span></div>
-        <p class="plan-tagline">Para firmas contables con cartera grande que necesitan todo incluido y white-label.</p>
-        <ul class="plan-features">
-          <li>Hasta 40 contribuyentes</li>
-          <li>Todo el plan Pro</li>
-          <li>White-label en reportes y PDFs</li>
-          <li>API REST completa</li>
-          <li>Integración InteliAudit + SueldOK</li>
-          <li>SLA 99.9% garantizado</li>
-          <li>Soporte dedicado + onboarding</li>
-          <li>Capacitación personalizada del equipo</li>
-        </ul>
-        <a href="/app/registro?plan=corporativo" class="btn-plan outline">Empezar gratis 14 días</a>
+        <div>
+          <div class="plan-name">In-House</div>
+          <div class="plan-contributors">Empresa única (1 RUC)</div>
+          <div class="plan-price"><sup>Gs.</sup> 440.000 <span class="period">/ mes</span></div>
+          <p class="plan-tagline">Para empresas medianas con departamento contable y administrativo interno.</p>
+          <ul class="plan-features">
+            <li>1 contribuyente / RUC único</li>
+            <li>Usuarios y auxiliares ilimitados</li>
+            <li>SIFEN integrado (emisión/recep)</li>
+            <li><strong>Brain AI Auditor™</strong> (IA)</li>
+            <li>RG 90 y Hechauka automáticos</li>
+            <li>Conciliación bancaria API nativa</li>
+            <li>Estados Financieros en tiempo real</li>
+            <li>Integración con SueldOK (nómina)</li>
+            <li>Soporte dedicado</li>
+          </ul>
+        </div>
+        <a href="/app/registro?plan=inhouse" class="btn-plan outline" style="margin-top:20px;">Empezar gratis 14 días</a>
       </div>
 
-      <!-- Enterprise -->
+      <!-- Estudio / Enterprise -->
       <div class="plan-card">
-        <div class="plan-name">Enterprise</div>
-        <div class="plan-contributors">+40 contribuyentes</div>
-        <div class="plan-price" style="font-size:28px;letter-spacing:-0.02em;">A medida</div>
-        <p class="plan-tagline">Para firmas grandes o grupos corporativos con necesidades específicas de integración y volumen.</p>
-        <ul class="plan-features">
-          <li>Contribuyentes ilimitados</li>
-          <li>Todo el plan Corporativo</li>
-          <li>Servidor dedicado en Paraguay</li>
-          <li>Integraciones ERP a medida</li>
-          <li>Contrato SLA personalizado</li>
-          <li>Account manager asignado</li>
-          <li>Precio según volumen y necesidades</li>
-        </ul>
-        <a href="https://wa.me/595994516360?text=Hola%2C%20quiero%20info%20del%20plan%20Enterprise%20de%20InteliCont" class="btn-plan enterprise">Hablar con ventas →</a>
+        <div>
+          <div class="plan-name">Estudio / Enterprise</div>
+          <div class="plan-contributors">Hasta 50 contribuyentes</div>
+          <div class="plan-price"><sup>Gs.</sup> 650.000 <span class="period">/ mes</span></div>
+          <p class="plan-tagline">Para firmas consolidadas que requieren gran capacidad y soporte premium corporativo.</p>
+          <ul class="plan-features">
+            <li>Hasta 50 contribuyentes</li>
+            <li>Usuarios ilimitados del estudio</li>
+            <li>Todo el plan Pro</li>
+            <li>Brain AI Auditor™ Premium</li>
+            <li>Marca blanca en reportes y PDFs</li>
+            <li>API REST para integraciones</li>
+            <li>Soporte prioritario corporativo</li>
+            <li>Onboarding y migración gratis</li>
+          </ul>
+        </div>
+        <a href="/app/registro?plan=enterprise" class="btn-plan outline" style="margin-top:20px;">Empezar gratis 14 días</a>
+      </div>
+
+      <!-- Corporativo / Grandes Volúmenes -->
+      <div class="plan-card">
+        <div>
+          <div class="plan-name">Corporativo</div>
+          <div class="plan-contributors">+50 contribuyentes</div>
+          <div class="plan-price" style="font-size:28px;letter-spacing:-0.02em;">Consultar</div>
+          <p class="plan-tagline">Para estudios masivos y holdings con necesidades de escala personalizadas.</p>
+          <ul class="plan-features">
+            <li>50+ contribuyentes / ilimitados</li>
+            <li>Todo el plan Estudio / Enterprise</li>
+            <li>Servidor dedicado (opcional PY)</li>
+            <li>Account Manager dedicado</li>
+            <li>Migración asistida por ingenieros</li>
+            <li>Integración ERP a medida</li>
+            <li>Contrato SLA con firma legal</li>
+          </ul>
+        </div>
+        <a href="https://wa.me/595994516360?text=Hola%2C%20quiero%20info%20del%20plan%20Corporativo%20de%20Grandes%20Volumenes%20de%20InteliCont" class="btn-plan enterprise" style="margin-top:20px;">Hablar con ventas →</a>
       </div>
 
     </div>
@@ -1329,14 +1354,18 @@
       <div>
         <div class="footer-logo">
           <svg width="30" height="30" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs><linearGradient id="fBg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#1a6eff"/><stop offset="1" stop-color="#0d47c9"/></linearGradient></defs>
-            <rect width="40" height="40" rx="11" fill="url(#fBg)"/>
-            <rect x="9" y="12" width="22" height="3" rx="1.5" fill="white"/>
-            <rect x="9" y="18.5" width="22" height="3" rx="1.5" fill="white"/>
-            <rect x="9" y="25" width="14" height="3" rx="1.5" fill="white"/>
-            <path d="M25.5 26.5 L27.5 29 L32 24" stroke="#00d46a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <rect width="40" height="40" rx="10" fill="url(#logoGradICFoot)" />
+            <path d="M12 20 C12 15, 17 15, 20 20 C23 25, 28 25, 28 20 C28 15, 23 15, 20 20 C17 25, 12 25, 12 20 Z" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <path d="M20 17 L20 23 M17 20 L23 20" stroke="#00d46a" stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="20" cy="20" r="1.5" fill="white" />
+            <defs>
+              <linearGradient id="logoGradICFoot" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#104c91" />
+                <stop offset="100%" stop-color="#0a2244" />
+              </linearGradient>
+            </defs>
           </svg>
-          <div class="footer-logo-text"><span class="i">Inteli</span><span class="c">Cont</span></div>
+          <div class="footer-logo-text"><span class="i" style="color: #104c91;">Inteli</span><span class="c" style="color: #00a651;">Cont</span></div>
         </div>
         <p class="footer-desc">Software contable AI-First para estudios contables y empresas del Paraguay. Multi-contribuyente, SIFEN, IA y cumplimiento DNIT completo.</p>
         <div class="footer-contact">

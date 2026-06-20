@@ -1,7 +1,7 @@
 /**
  * Fiscal PY Rules Engine — Paraguay Tax Compliance
  *
- * Validates RUC, timbrado, CDC, and enforces SET/DNIT rules.
+ * Validates RUC, timbrado, CDC, and enforces DNIT rules.
  * All validation logic specific to Paraguay tax authority requirements.
  */
 
@@ -296,7 +296,7 @@ export function getRegimenDescription(regimen: string): string {
   return descriptions[regimen] || regimen;
 }
 
-// VAT return periods according to SET calendar
+// VAT return periods according to DNIT calendar
 export function getVencimientoIVA(year: number, month: number, ruc: string): Date {
   const rucLastDigit = parseInt(ruc.replace(/[^0-9]/g, "").slice(-1), 10);
   const baseDate = new Date(year, month, 10 + rucLastDigit);

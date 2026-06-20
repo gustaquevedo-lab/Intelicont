@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 export interface Notification {
   id: string;
-  type: "iva" | "ire" | "irp" | "hechauka" | "sifen" | "retencion" | "timbrado" | "cierre";
+  type: "iva" | "ire" | "irp" | "hechauka" | "rg90" | "sifen" | "retencion" | "timbrado" | "cierre";
   title: string;
   description: string;
   entityId: string;
@@ -42,10 +42,10 @@ function generateNotifications(): Notification[] {
       action: { label: "Ver Calendario", href: "/calendario" },
     },
     {
-      id: "n4", type: "hechauka", entityId: e1, entityName: "Importadora del Este",
-      title: "Hechauka — Libro Electrónico", description: "Presentación mensual RG 90/2021",
+      id: "n4", type: "rg90", entityId: e1, entityName: "Importadora del Este",
+      title: "Registro Mensual de Comprobantes (RG 90)", description: "Libro de compras/ventas para Marangatú",
       dueDate: "2026-05-25", daysLeft: 20, urgency: "info", read: false,
-      action: { label: "Descargar CSV", href: "/fiscal/hechauka" },
+      action: { label: "Conciliar RG 90", href: "/rg90" },
     },
     {
       id: "n5", type: "timbrado", entityId: e3, entityName: "Distribuciones Ñandutí",

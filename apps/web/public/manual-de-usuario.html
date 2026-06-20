@@ -374,16 +374,15 @@
     <div class="logo">
       <svg viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:34px;width:auto;">
         <rect x="0" y="2" width="36" height="36" rx="10" fill="url(#brandGrad)"/>
-        <line x1="10" y1="12" x2="26" y2="12" stroke="white" stroke-width="2.6" stroke-linecap="round"/>
-        <line x1="10" y1="20" x2="26" y2="20" stroke="white" stroke-width="2.6" stroke-linecap="round"/>
-        <line x1="10" y1="28" x2="22" y2="28" stroke="white" stroke-width="2.6" stroke-linecap="round"/>
-        <circle cx="28" cy="28" r="3" fill="#3b82f6"/>
-        <text x="44" y="26" font-family="Inter,sans-serif" font-weight="900" font-size="20" fill="#ffffff">Inteli</text>
+        <path d="M10.8 20 C10.8 15.5, 15.3 15.5, 18 20 C20.7 24.5, 25.2 24.5, 25.2 20 C25.2 15.5, 20.7 15.5, 18 20 C15.3 24.5, 10.8 24.5, 10.8 20 Z" stroke="white" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        <path d="M18 17.3 L18 22.7 M15.3 20 L20.7 20" stroke="#00d46a" stroke-width="2.25" stroke-linecap="round" />
+        <circle cx="18" cy="20" r="1.35" fill="white" />
+        <text x="44" y="26" font-family="Inter,sans-serif" font-weight="900" font-size="20" fill="#256ebf">Inteli</text>
         <text x="94" y="26" font-family="Inter,sans-serif" font-weight="300" font-size="20" fill="#00a651">Cont</text>
         <defs>
-          <linearGradient id="brandGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#1561e1"/>
-            <stop offset="1" stop-color="#104c91"/>
+          <linearGradient id="brandGrad" x1="0" y1="2" x2="36" y2="38" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#104c91"/>
+            <stop offset="1" stop-color="#0a2244"/>
           </linearGradient>
         </defs>
       </svg>
@@ -570,7 +569,7 @@
     <!-- 6. PLAN DE CUENTAS -->
     <div class="section" id="cuentas">
       <h2><span class="num">6</span> Catálogo y Plan de Cuentas</h2>
-      <p>El plan de cuentas estructura la contabilidad de la empresa. En Paraguay, debe cumplir con las regulaciones generales de la SET/DNIT para el mapeo impositivo.</p>
+      <p>El plan de cuentas estructura la contabilidad de la empresa. En Paraguay, debe cumplir con las regulaciones generales de la DNIT para el mapeo impositivo.</p>
       
       <h3>Jerarquía y Naturaleza Contable</h3>
       <p>Las cuentas contables se clasifican según su nivel de jerarquía (Códigos del tipo <code>1.1.01.001</code>) y su naturaleza de saldo:</p>
@@ -649,6 +648,14 @@
       
       <h3>Módulo RG90 (Libro de Compras y Ventas)</h3>
       <p>La **Resolución General 90/2021** establece la obligatoriedad del registro electrónico mensual de comprobantes. El sistema permite:</p>
+      
+      <div class="note"><span class="icon">🏛️</span>
+        <div>
+          <strong>Actualización DNIT & Transición RG 90:</strong><br>
+          En cumplimiento con la unificación de la autoridad fiscal bajo la **DNIT** (Dirección Nacional de Ingresos Tributarios), las antiguas obligaciones del sistema **Hechauka** han sido mayormente derogadas y reemplazadas por el registro obligatorio mensual **RG 90**. InteliCont valida y prioriza automáticamente todas las transacciones bajo la normativa de la RG 90, asegurando la consistencia y eliminando la necesidad de reportes manuales obsoletos.
+        </div>
+      </div>
+
       <ul>
         <li>Agrupar documentos tributarios por naturaleza de operación (Compras, Ventas, Ingresos, Egresos).</li>
         <li>Validar la estructura impositiva de cada fila para evitar rechazos en el sistema Marangatú de la DNIT.</li>

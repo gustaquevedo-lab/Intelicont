@@ -24,37 +24,34 @@ export function Logo({ size = 'md', showSlogan = false, dark = false, className 
   return (
     <div className={cn("flex flex-col items-start gap-1 group", className)}>
       <div className="flex items-center gap-3">
-        {/* Isotipo: squircle con ícono de contabilidad */}
+        {/* Isotipo: Opción 1 - Balance Loop (Infinity loop estilizado) */}
         <div className="relative">
           <svg width={s.icon} height={s.icon} viewBox="0 0 40 40" fill="none" className="shrink-0 drop-shadow-xl relative z-10 transition-transform duration-500 group-hover:scale-110">
             <rect width="40" height="40" rx="10" fill="url(#logoGradIC)" />
             
-            {/* Ícono de Ledger/Cuentas simplificado */}
-            <rect x="10" y="10" width="20" height="20" rx="2" stroke="white" strokeWidth="2.5" fill="none" />
-            <line x1="14" y1="15" x2="26" y2="15" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            <line x1="14" y1="20" x2="26" y2="20" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            <line x1="14" y1="25" x2="20" y2="25" stroke="white" strokeWidth="2" strokeLinecap="round" />
+            {/* Balance Loop Infinity Shape */}
+            <path d="M12 20 C12 15, 17 15, 20 20 C23 25, 28 25, 28 20 C28 15, 23 15, 20 20 C17 25, 12 25, 12 20 Z" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             
-            {/* Punto de acento (Green) */}
-            <circle cx="28" cy="28" r="5" fill="#00a651" className="animate-ai-pulse" />
-            <path d="M26.5 28L27.5 29L29.5 27" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-
+            {/* Spark at the junction */}
+            <path d="M20 17 L20 23 M17 20 L23 20" stroke="#00d46a" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx="20" cy="20" r="1.5" fill="white" />
+            
             <defs>
               <linearGradient id="logoGradIC" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#256ebf" />
-                <stop offset="100%" stopColor="#104c91" />
+                <stop offset="0%" stopColor="#104c91" />
+                <stop offset="100%" stopColor="#0a2244" />
               </linearGradient>
             </defs>
           </svg>
           {/* Shimmer effect overlay */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none rounded-[10px]" />
         </div>
-
+ 
         {/* Wordmark */}
         <div className="flex flex-col leading-none">
           <span className={cn(s.text, "font-black tracking-tighter", textColor)}>
-            <span className="text-primary-light dark:text-blue-400 group-hover:text-primary transition-colors">Inteli</span>
-            <span className="text-secondary group-hover:text-secondary-dark transition-colors">Cont</span>
+            <span className="text-[#104c91] dark:text-[#256ebf]">Inteli</span>
+            <span className="text-[#00a651]">Cont</span>
           </span>
         </div>
       </div>

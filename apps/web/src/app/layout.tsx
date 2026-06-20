@@ -16,18 +16,17 @@ export const metadata: Metadata = {
     template: "%s | InteliCont",
   },
   description:
-    "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA, cumple con DNIT/SET. Multi-tenant, libro inmutable, conciliación bancaria automática.",
+    "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA, cumple con la DNIT. Multi-tenant, libro inmutable, conciliación bancaria automática.",
   keywords: [
     "contabilidad",
     "paraguay",
     "SIFEN",
     "DNIT",
-    "SET",
     "IVA",
     "IRE",
     "IRP",
     "facturación electrónica",
-    "Hechauka",
+    "RG90",
     "libro electrónico",
     "asientos contables",
     "conciliación bancaria",
@@ -44,7 +43,7 @@ export const metadata: Metadata = {
     siteName: "InteliCont",
     title: "InteliCont — SaaS Contable AI-First para Paraguay",
     description:
-      "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA, cumple con DNIT/SET.",
+      "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA, cumple con la DNIT.",
     images: [
       {
         url: "/og-image.png",

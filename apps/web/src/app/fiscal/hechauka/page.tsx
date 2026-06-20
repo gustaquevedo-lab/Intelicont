@@ -22,7 +22,7 @@ export default function HechaukaPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
-            Hechauka — Libro Electrónico
+            RG 90 (ex Hechauka) — Libro Electrónico
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
             Libro de Compras y Ventas — RG 90/2021 — Período Mayo 2026
@@ -36,6 +36,19 @@ export default function HechaukaPage() {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">Descargar CSV</span>
           </button>
+        </div>
+      </div>
+
+      {/* Information Banner on Hechauka to RG 90 Transition */}
+      <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 p-4 rounded-xl flex items-start gap-3">
+        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+        <div>
+          <h4 className="text-xs sm:text-sm font-semibold text-blue-900 dark:text-blue-300">
+            Cumplimiento DNIT: RG 90 (Registro Electrónico de Comprobantes)
+          </h4>
+          <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+            De acuerdo con las resoluciones de la <strong>DNIT (ex SET)</strong>, el antiguo sistema informativo Hechauka ha sido discontinuado para las operaciones mensuales generales de compras y ventas, siendo reemplazado por el <strong>RG 90</strong> en el sistema Marangatú. InteliCont genera la información compatible con los requerimientos actuales.
+          </p>
         </div>
       </div>
 

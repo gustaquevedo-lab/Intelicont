@@ -162,7 +162,7 @@ export default function EstadosFinancierosPage() {
 
         {/* Footer */}
         <div className="p-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between text-[10px] text-gray-400">
-          <span>Generado por InteliCont</span>
+          <span>Generado por <span className="font-semibold text-[#104c91] dark:text-[#256ebf]">Inteli</span><span className="font-semibold text-[#00a651]">Cont</span></span>
           <span>{new Date().toLocaleDateString("es-PY")}</span>
         </div>
       </div>
