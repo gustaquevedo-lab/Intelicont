@@ -4,7 +4,7 @@ import { eq, and, sql, count as drizzleCount } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   journalEntries, journalLines, accounts, fiscalPeriods,
-  bankAccounts, bankMovements, reconciliations, type FiscalPeriod
+  bankAccounts, bankMovements, reconciliations, globalSettings, type FiscalPeriod
 } from "@/lib/db/schema";
 
 export type ActionResult<T = void> =
@@ -410,5 +410,114 @@ export async function processAnnualClosing(
     return { ok: true, data: result };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Error al procesar cierre anual" };
+  }
+}
+
+// Helper to load AI config from database
+async function loadAIConfig(): Promise<Record<string, string>> {
+  try {
+    const db = getDb();
+    const rows = await db.select().from(globalSettings)
+      .where(sql`key IN ('ai.provider', 'ai.model', 'ai.api_key', 'ai.enabled')`);
+    const cfg: Record<string, string> = {};
+    rows.forEach((r) => { cfg[r.key] = r.value ?? ""; });
+    return cfg;
+  } catch {
+    return {};
+  }
+}
+
+export async function reopenPeriodWithAuth(
+  entityId: string,
+  year: number,
+  month: number | undefined,
+  password: string
+): Promise<ActionResult<void>> {
+  if (!password) return { ok: false, error: "Contraseña requerida" };
+  try {
+    const db = getDb();
+    
+    // Fetch key from configuration settings
+    const [row] = await db.select().from(globalSettings)
+      .where(eq(globalSettings.key, "admin.reopen_key"))
+      .limit(1);
+    
+    const expectedPassword = row?.value || "admin123"; // default key
+    
+    if (password !== expectedPassword) {
+      return { ok: false, error: "Contraseña de administrador incorrecta. Acceso denegado." };
+    }
+    
+    // Reopen period
+    if (month) {
+      await db.update(fiscalPeriods)
+        .set({ status: "open", closedAt: null })
+        .where(
+          and(
+            eq(fiscalPeriods.entityId, entityId),
+            eq(fiscalPeriods.year, year),
+            eq(fiscalPeriods.month, month)
+          )
+        );
+    } else {
+      await db.update(fiscalPeriods)
+        .set({ status: "open", closedAt: null })
+        .where(
+          and(
+            eq(fiscalPeriods.entityId, entityId),
+            eq(fiscalPeriods.year, year)
+          )
+        );
+    }
+      
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al reabrir período" };
+  }
+}
+
+export async function analyzeClosingDiscrepancies(
+  entityId: string,
+  year: number,
+  month?: number
+): Promise<ActionResult<string>> {
+  try {
+    const db = getDb();
+    const verifRes = await verifyPeriodStatus(entityId, year, month);
+    if (!verifRes.ok) return { ok: false, error: verifRes.error };
+    
+    const v = verifRes.data;
+    
+    const cfg = await loadAIConfig();
+    const apiKey = cfg["ai.api_key"] || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!apiKey) {
+      return { ok: false, error: "La clave de la API de Gemini no está configurada. Por favor, regístrala en Configuración." };
+    }
+    
+    const periodName = month ? `Mes ${month} / ${year}` : `Año ${year}`;
+    let dataSummary = `Auditoría contable para el periodo: ${periodName}
+- Asientos en borrador: ${v.draftEntriesCount}
+- Asientos descuadrados: ${v.unbalancedEntriesCount}
+- Movimientos bancarios sin conciliar: ${v.unreconciledBankCount}
+Saldos Bancarios vs Libro Mayor:
+`;
+    v.bankBalances.forEach(b => {
+      dataSummary += `- Banco: ${b.bankName} Cta: ${b.accountNumber} | Mayor: Gs. ${b.ledgerBalance.toLocaleString("es-PY")} | Extracto: Gs. ${b.statementBalance.toLocaleString("es-PY")} | Diferencia: Gs. ${b.difference.toLocaleString("es-PY")}\n`;
+    });
+    
+    const prompt = `Actúas como un auditor contable experto para Paraguay. Analiza las siguientes discrepancias y descuadres de cierre de período:
+${dataSummary}
+
+Por favor, genera un informe técnico formal y profesional en español de Paraguay que responda a estas discrepancias. Indica las probables causas del descuadre contable, cómo afecta a las declaraciones juradas del IVA o IRE, y proporciona sugerencias concretas de asientos correctivos o pasos a seguir para regularizar la contabilidad.
+Usa formato de Markdown profesional, limpio y directo, sin rodeos comerciales.`;
+
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    
+    return { ok: true, data: result.response.text() };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al auditar con IA" };
   }
 }

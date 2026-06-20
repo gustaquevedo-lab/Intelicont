@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth-store";
-import { verifyPeriodStatus, processAnnualClosing, type CierreValidations } from "./actions";
+import { verifyPeriodStatus, processAnnualClosing, reopenPeriodWithAuth, analyzeClosingDiscrepancies, type CierreValidations } from "./actions";
 
 interface ChecklistItem {
   id: string;
@@ -34,6 +34,13 @@ export default function CierreMensualPage() {
   const [periodoBloqueado, setPeriodoBloqueado] = useState(false);
   const [closingLogs, setClosingLogs] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState<string | null>(null);
+
+  // New States for AI and Reopen Auth
+  const [aiReport, setAiReport] = useState<string | null>(null);
+  const [aiPending, setAiPending] = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenPassword, setReopenPassword] = useState("");
+  const [reopenError, setReopenError] = useState("");
 
   const formatGs = (val: number) => {
     return `Gs. ${Math.round(val).toLocaleString("es-PY")}`;
@@ -157,6 +164,46 @@ export default function CierreMensualPage() {
     });
   };
 
+  const handleAuditWithIA = () => {
+    if (!selectedEntity?.id) return;
+    setAiPending(true);
+    setAiReport(null);
+    startTransition(async () => {
+      const res = await analyzeClosingDiscrepancies(
+        selectedEntity.id,
+        selectedYear,
+        activeTab === "mensual" ? selectedMonth : undefined
+      );
+      setAiPending(false);
+      if (res.ok) {
+        setAiReport(res.data);
+      } else {
+        alert(res.error);
+      }
+    });
+  };
+
+  const handleReopenConfirm = async () => {
+    if (!selectedEntity?.id || !reopenPassword) return;
+    setReopenError("");
+    startTransition(async () => {
+      const res = await reopenPeriodWithAuth(
+        selectedEntity.id,
+        selectedYear,
+        activeTab === "mensual" ? selectedMonth : undefined,
+        reopenPassword
+      );
+      if (res.ok) {
+        setPeriodoBloqueado(false);
+        setShowReopenModal(false);
+        setReopenPassword("");
+        loadValidations();
+      } else {
+        setReopenError(res.error);
+      }
+    });
+  };
+
   return (
     <div className="p-3 sm:p-4 lg:p-8 max-w-5xl mx-auto space-y-4 sm:space-y-6">
       
@@ -180,10 +227,31 @@ export default function CierreMensualPage() {
             <RefreshCw className={cn("h-4 w-4", isPending && "animate-spin")} />
           </button>
 
+          <button
+            onClick={handleAuditWithIA}
+            disabled={aiPending || isPending}
+            className="flex items-center gap-1.5 px-3 py-2 bg-purple-900/30 hover:bg-purple-900/40 text-purple-400 border border-purple-800/40 rounded-xl text-sm font-semibold transition-colors"
+          >
+            <Sparkles className={cn("h-4 w-4", aiPending && "animate-spin")} />
+            {aiPending ? "Auditando..." : "Auditar con Copiloto IA"}
+          </button>
+
           {periodoBloqueado ? (
-            <span className="flex items-center gap-1.5 px-3 py-2 bg-red-950/20 border border-red-800/40 text-red-400 rounded-xl text-sm font-semibold">
-              <Lock className="h-4 w-4" /> Período Cerrado
-            </span>
+            <div className="flex items-center gap-2 animate-in fade-in">
+              <span className="flex items-center gap-1.5 px-3 py-2 bg-red-950/20 border border-red-800/40 text-red-400 rounded-xl text-sm font-semibold">
+                <Lock className="h-4 w-4" /> Período Cerrado
+              </span>
+              <button
+                onClick={() => {
+                  setReopenPassword("");
+                  setReopenError("");
+                  setShowReopenModal(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-semibold border border-gray-700/50 transition-colors"
+              >
+                <Unlock className="h-4 w-4" /> Reabrir
+              </button>
+            </div>
           ) : (
             <button
               disabled={doneCount < totalCount || isPending}
@@ -399,6 +467,76 @@ export default function CierreMensualPage() {
           <pre className="font-mono text-xs text-gray-300 bg-gray-950/60 p-4 rounded-xl border border-gray-900 overflow-x-auto leading-relaxed whitespace-pre-wrap">
             {closingLogs}
           </pre>
+        </div>
+      )}
+
+      {/* AI Copiloto Audit Report */}
+      {aiReport && (
+        <div className="bg-purple-950/20 border border-purple-800/40 rounded-2xl p-5 backdrop-blur-sm space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+          <h3 className="text-sm font-bold text-purple-400 flex items-center gap-1.5">
+            <Sparkles className="h-5 w-5 animate-pulse" /> Auditoría del Copiloto IA (Gemini)
+          </h3>
+          <div className="text-gray-300 text-xs max-w-none leading-relaxed space-y-2 font-sans bg-gray-950/40 p-4 rounded-xl border border-purple-900/30 whitespace-pre-wrap">
+            {aiReport}
+          </div>
+        </div>
+      )}
+
+      {/* Admin Reopen Modal */}
+      {showReopenModal && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-400 shrink-0">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Reapertura del Período</h3>
+                <p className="text-[11px] text-gray-400 mt-0.5">Autorización administrativa requerida</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-300 leading-relaxed">
+              La reapertura permite modificar comprobantes y asientos de este período. Ingresá la contraseña administrativa para proceder.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Contraseña de Administrador
+              </label>
+              <input
+                type="password"
+                value={reopenPassword}
+                onChange={(e) => setReopenPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              {reopenError && (
+                <p className="text-[10px] text-red-400 font-semibold mt-1 animate-pulse">
+                  {reopenError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-800">
+              <button
+                onClick={() => {
+                  setShowReopenModal(false);
+                  setReopenPassword("");
+                  setReopenError("");
+                }}
+                className="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleReopenConfirm}
+                className="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition-colors"
+              >
+                Desbloquear y Reabrir
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
