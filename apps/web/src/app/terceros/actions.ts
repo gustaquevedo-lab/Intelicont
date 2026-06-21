@@ -3,7 +3,7 @@
 import { eq, and, ilike, or, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
-import { terceros, entities, type Tercero } from "@/lib/db/schema";
+import { partners, entities } from "@/lib/db/schema";
 import { validateRUC } from "@/lib/ruc";
 
 export type ActionResult<T = void> =
@@ -12,8 +12,20 @@ export type ActionResult<T = void> =
 
 // ─── List terceros ────────────────────────────────────────────────────────────
 
-export interface TerceroRow extends Tercero {
+export interface TerceroRow {
+  id: string;
+  entityId: string;
   entityName: string;
+  ruc: string;
+  name: string;
+  kind: "cliente" | "proveedor" | "ambos";
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export async function loadTerceros(filters?: {
@@ -26,43 +38,59 @@ export async function loadTerceros(filters?: {
     const conditions = [];
 
     if (filters?.entityId) {
-      conditions.push(eq(terceros.entityId, filters.entityId));
+      conditions.push(eq(partners.entityId, filters.entityId));
     }
     if (filters?.kind && filters.kind !== "todos") {
-      conditions.push(eq(terceros.kind, filters.kind as "cliente" | "proveedor" | "ambos"));
+      const dbKind = filters.kind === "cliente" ? "customer" : filters.kind === "proveedor" ? "supplier" : "both";
+      conditions.push(eq(partners.kind, dbKind));
     }
     if (filters?.search?.trim()) {
       const q = `%${filters.search.trim()}%`;
       conditions.push(or(
-        ilike(terceros.name, q),
-        ilike(terceros.ruc,  q),
-        ilike(terceros.email ?? "", q),
+        ilike(partners.legalName, q),
+        ilike(partners.ruc,  q),
       ));
     }
 
     const rows = await db
       .select({
-        id:        terceros.id,
-        entityId:  terceros.entityId,
+        id:        partners.id,
+        entityId:  partners.entityId,
         entityName: entities.legalName,
-        ruc:       terceros.ruc,
-        name:      terceros.name,
-        kind:      terceros.kind,
-        email:     terceros.email,
-        phone:     terceros.phone,
-        address:   terceros.address,
-        notes:     terceros.notes,
-        isActive:  terceros.isActive,
-        createdAt: terceros.createdAt,
-        updatedAt: terceros.updatedAt,
+        ruc:       partners.ruc,
+        legalName: partners.legalName,
+        tradeName: partners.tradeName,
+        kind:      partners.kind,
+        contacts:  partners.contacts,
+        createdAt: partners.createdAt,
+        updatedAt: partners.updatedAt,
       })
-      .from(terceros)
-      .innerJoin(entities, eq(terceros.entityId, entities.id))
+      .from(partners)
+      .innerJoin(entities, eq(partners.entityId, entities.id))
       .where(conditions.length ? and(...conditions) : undefined)
-      .orderBy(desc(terceros.createdAt))
+      .orderBy(desc(partners.createdAt))
       .limit(300);
 
-    return { ok: true, data: rows as TerceroRow[] };
+    const mapped: TerceroRow[] = rows.map((r) => {
+      const contacts = (r.contacts as any) || {};
+      return {
+        id: r.id,
+        entityId: r.entityId,
+        entityName: r.entityName,
+        ruc: r.ruc,
+        name: r.legalName || r.tradeName || "",
+        kind: r.kind === "customer" ? "cliente" : r.kind === "supplier" ? "proveedor" : "ambos",
+        email: contacts.email || null,
+        phone: contacts.phone || null,
+        address: contacts.address || null,
+        notes: contacts.notes || null,
+        isActive: contacts.isActive !== false,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      };
+    });
+
+    return { ok: true, data: mapped };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Error al cargar terceros" };
   }
@@ -70,7 +98,7 @@ export async function loadTerceros(filters?: {
 
 // ─── Create tercero ───────────────────────────────────────────────────────────
 
-export async function createTercero(formData: FormData): Promise<ActionResult<Tercero>> {
+export async function createTercero(formData: FormData): Promise<ActionResult<any>> {
   const entityId = (formData.get("entityId") as string | null)?.trim() ?? "";
   if (!entityId) return { ok: false, error: "Seleccioná una empresa" };
 
@@ -84,6 +112,8 @@ export async function createTercero(formData: FormData): Promise<ActionResult<Te
     const check = validateRUC(rawRuc);
     if (!check.valid) return { ok: false, error: check.error! };
     ruc = check.normalized!;
+  } else {
+    return { ok: false, error: "El RUC es requerido" };
   }
 
   const kind    = (formData.get("kind")    as "cliente" | "proveedor" | "ambos" | null) ?? "ambos";
@@ -92,15 +122,42 @@ export async function createTercero(formData: FormData): Promise<ActionResult<Te
   const address = (formData.get("address") as string | null)?.trim() || null;
   const notes   = (formData.get("notes")   as string | null)?.trim() || null;
 
+  const contacts = { email, phone, address, notes, isActive: true };
+  const kindMapped = kind === "cliente" ? "customer" : kind === "proveedor" ? "supplier" : "both";
+
   try {
     const db = getDb();
     const [created] = await db
-      .insert(terceros)
-      .values({ entityId, ruc, name, kind, email, phone, address, notes })
+      .insert(partners)
+      .values({
+        entityId,
+        ruc,
+        legalName: name,
+        kind: kindMapped,
+        contacts,
+      })
       .returning();
 
     revalidatePath("/terceros");
-    return { ok: true, data: created };
+    
+    // Map back to TerceroRow structure
+    return {
+      ok: true,
+      data: {
+        id: created.id,
+        entityId: created.entityId,
+        ruc: created.ruc,
+        name: created.legalName,
+        kind: kind,
+        email,
+        phone,
+        address,
+        notes,
+        isActive: true,
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      }
+    };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Error al crear tercero" };
   }
@@ -108,7 +165,7 @@ export async function createTercero(formData: FormData): Promise<ActionResult<Te
 
 // ─── Update tercero ───────────────────────────────────────────────────────────
 
-export async function updateTercero(id: string, formData: FormData): Promise<ActionResult<Tercero>> {
+export async function updateTercero(id: string, formData: FormData): Promise<ActionResult<any>> {
   const name = (formData.get("name") as string | null)?.trim() ?? "";
   if (!name) return { ok: false, error: "El nombre es requerido" };
 
@@ -118,6 +175,8 @@ export async function updateTercero(id: string, formData: FormData): Promise<Act
     const check = validateRUC(rawRuc);
     if (!check.valid) return { ok: false, error: check.error! };
     ruc = check.normalized!;
+  } else {
+    return { ok: false, error: "El RUC es requerido" };
   }
 
   const kind    = (formData.get("kind")    as "cliente" | "proveedor" | "ambos" | null) ?? "ambos";
@@ -126,17 +185,51 @@ export async function updateTercero(id: string, formData: FormData): Promise<Act
   const address = (formData.get("address") as string | null)?.trim() || null;
   const notes   = (formData.get("notes")   as string | null)?.trim() || null;
 
+  const kindMapped = kind === "cliente" ? "customer" : kind === "proveedor" ? "supplier" : "both";
+
   try {
     const db = getDb();
+    const [existing] = await db.select({ contacts: partners.contacts }).from(partners).where(eq(partners.id, id)).limit(1);
+    const existingContacts = (existing?.contacts as any) || {};
+    const contacts = { 
+      email, 
+      phone, 
+      address, 
+      notes, 
+      isActive: existingContacts.isActive !== false 
+    };
+
     const [updated] = await db
-      .update(terceros)
-      .set({ ruc, name, kind, email, phone, address, notes })
-      .where(eq(terceros.id, id))
+      .update(partners)
+      .set({
+        ruc,
+        legalName: name,
+        kind: kindMapped,
+        contacts,
+      })
+      .where(eq(partners.id, id))
       .returning();
 
     if (!updated) return { ok: false, error: "Tercero no encontrado" };
     revalidatePath("/terceros");
-    return { ok: true, data: updated };
+
+    return {
+      ok: true,
+      data: {
+        id: updated.id,
+        entityId: updated.entityId,
+        ruc: updated.ruc,
+        name: updated.legalName,
+        kind: kind,
+        email,
+        phone,
+        address,
+        notes,
+        isActive: contacts.isActive,
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+      }
+    };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Error al actualizar tercero" };
   }
@@ -147,7 +240,11 @@ export async function updateTercero(id: string, formData: FormData): Promise<Act
 export async function toggleTerceroActive(id: string, isActive: boolean): Promise<ActionResult<void>> {
   try {
     const db = getDb();
-    await db.update(terceros).set({ isActive }).where(eq(terceros.id, id));
+    const [existing] = await db.select({ contacts: partners.contacts }).from(partners).where(eq(partners.id, id)).limit(1);
+    const contacts = (existing?.contacts as any) || {};
+    contacts.isActive = isActive;
+    
+    await db.update(partners).set({ contacts }).where(eq(partners.id, id));
     revalidatePath("/terceros");
     return { ok: true, data: undefined };
   } catch (err) {

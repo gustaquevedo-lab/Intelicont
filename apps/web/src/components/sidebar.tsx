@@ -20,6 +20,15 @@ import {
   LogOut,
   Menu,
   Sparkles,
+  Package,
+  Lock,
+  Coins,
+  Wallet,
+  FileSearch,
+  Shield,
+  TrendingUp,
+  Files,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
@@ -31,6 +40,7 @@ const navGroups = [
       { path: "/", icon: LayoutDashboard, label: "Panel General" },
       { path: "/sifen", icon: FileCode, label: "Carga SIFEN", highlight: true },
       { path: "/sifen/historial", icon: FileCode, label: "Historial SIFEN" },
+      { path: "/comprobantes", icon: Files, label: "Bandeja Comprobantes" },
       { path: "/empresas", icon: Building2, label: "Empresas" },
     ],
   },
@@ -39,22 +49,36 @@ const navGroups = [
     items: [
       { path: "/asientos", icon: FileText, label: "Asientos Contables" },
       { path: "/cuentas", icon: Hash, label: "Plan de Cuentas" },
-      { path: "/libros", icon: BookOpen, label: "Libros" },
+      { path: "/libros", icon: BookOpen, label: "Libros Diarios/Mayores" },
+      { path: "/activos", icon: Package, label: "Bienes de Uso" },
+      { path: "/cierre", icon: Lock, label: "Cierre de Períodos" },
+      { path: "/estados-financieros", icon: TrendingUp, label: "Estados Financieros" },
       { path: "/terceros", icon: Users, label: "Clientes / Proveedores" },
     ],
   },
   {
-    title: "Finanzas y Fiscal",
+    title: "Tesorería y Finanzas",
     items: [
       { path: "/banco", icon: CreditCard, label: "Conciliación Bancaria" },
-      { path: "/calendario", icon: Calendar, label: "Calendario Fiscal" },
-      { path: "/impuestos", icon: Calculator, label: "Impuestos" },
-      { path: "/reportes", icon: BarChart3, label: "Reportes" },
+      { path: "/caja-chica", icon: Wallet, label: "Caja Chica" },
+      { path: "/tesoreria", icon: Coins, label: "Órdenes de Pago" },
     ],
   },
   {
-    title: "Configuración",
+    title: "Gestión Fiscal",
     items: [
+      { path: "/calendario", icon: Calendar, label: "Calendario Fiscal" },
+      { path: "/rg90", icon: FileSearch, label: "Libro IVA / RG90" },
+      { path: "/impuestos", icon: Calculator, label: "Liquidación Impuestos" },
+      { path: "/tesaka", icon: Shield, label: "Retenciones Tesakã" },
+      { path: "/timbrados", icon: Settings, label: "Timbrados y Autoimp." },
+    ],
+  },
+  {
+    title: "Soporte y Configuración",
+    items: [
+      { path: "/reportes", icon: BarChart3, label: "Reportes Varios" },
+      { path: "/auditoria", icon: Activity, label: "Auditoría Contable" },
       { path: "/configuracion", icon: Settings, label: "Mi Estudio" },
     ],
   },

@@ -130,27 +130,6 @@ export const journalLines = pgTable("journal_lines", {
 export type JournalLine    = typeof journalLines.$inferSelect;
 export type NewJournalLine = typeof journalLines.$inferInsert;
 
-// ─── Terceros (clientes / proveedores) ───────────────────────────────────────
-
-export const terceroKindEnum = pgEnum("tercero_kind", ["cliente", "proveedor", "ambos"]);
-
-export const terceros = pgTable("terceros", {
-  id:        uuid("id").primaryKey().defaultRandom(),
-  entityId:  uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
-  ruc:       varchar("ruc", { length: 20 }),
-  name:      text("name").notNull(),
-  kind:      terceroKindEnum("kind").default("ambos"),
-  email:     text("email"),
-  phone:     text("phone"),
-  address:   text("address"),
-  notes:     text("notes"),
-  isActive:  boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export type Tercero    = typeof terceros.$inferSelect;
-export type NewTercero = typeof terceros.$inferInsert;
 
 // ─── Tax Documents (comprobantes SIFEN) ──────────────────────────────────────
 
