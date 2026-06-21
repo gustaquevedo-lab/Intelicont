@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -26,6 +27,9 @@ export function Logo({
   className,
 }: LogoProps) {
   const s = sizes[size];
+  // Unique id per instance — multiple <Logo /> on the same page would otherwise
+  // share `loopGrad`, and url(#…) collisions break the gradient in all but one.
+  const gradId = `loopGrad-${useId().replace(/:/g, "")}`;
   const inteliColor = dark ? "text-[#60a5fa]" : "text-[#104c91] dark:text-[#60a5fa]";
   const contColor = dark ? "text-[#34d399]" : "text-[#08a14b] dark:text-[#34d399]";
   const sloganColor = dark
@@ -42,9 +46,18 @@ export function Logo({
           fill="none"
           className="shrink-0 drop-shadow-md relative z-10 transition-transform duration-500 group-hover:scale-105"
         >
+          <defs>
+            <linearGradient id={gradId} x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#1b63c4" />
+              <stop offset="35%" stopColor="#2f80ed" />
+              <stop offset="50%" stopColor="#33c1cc" />
+              <stop offset="70%" stopColor="#1bbb75" />
+              <stop offset="100%" stopColor="#08a14b" />
+            </linearGradient>
+          </defs>
           <path
             d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z"
-            stroke="url(#loopGrad)"
+            stroke={`url(#${gradId})`}
             strokeWidth="6"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -54,15 +67,6 @@ export function Logo({
             d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z"
             fill="#ffffff"
           />
-          <defs>
-            <linearGradient id="loopGrad" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#1b63c4" />
-              <stop offset="35%" stopColor="#2f80ed" />
-              <stop offset="50%" stopColor="#33c1cc" />
-              <stop offset="70%" stopColor="#1bbb75" />
-              <stop offset="100%" stopColor="#08a14b" />
-            </linearGradient>
-          </defs>
         </svg>
 
         {!hideText && (
