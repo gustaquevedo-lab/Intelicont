@@ -20,6 +20,14 @@ function isPublic(pathname: string): boolean {
   );
 }
 
+function isRSCRequest(request: NextRequest): boolean {
+  return (
+    request.headers.has("RSC") ||
+    request.nextUrl.searchParams.has("_rsc") ||
+    request.headers.get("x-middleware-prefetch") === "1"
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -34,6 +42,10 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     if (pathname === "/") {
+      if (isRSCRequest(request)) {
+        console.log("[Middleware] No user, RSC request for '/', redirecting to /login");
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
       console.log("[Middleware] No user, rewriting '/' to serve landing page");
       return NextResponse.rewrite(new URL("/landing/index.html", request.url));
     }
