@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+function sanitizeEnv(val: string | undefined): string {
+  if (!val) return "";
+  return val.replace(/^\uFEFF/, "").trim();
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -24,9 +29,12 @@ export async function GET(request: NextRequest) {
 
   const response = NextResponse.redirect(new URL(next, origin));
 
+  const supabaseUrl = sanitizeEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseKey = sanitizeEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),

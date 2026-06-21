@@ -1,12 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+function sanitizeEnv(val: string | undefined): string {
+  if (!val) return "";
+  return val.replace(/^\uFEFF/, "").trim();
+}
+
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
 
+  const supabaseUrl = sanitizeEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseKey = sanitizeEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {
