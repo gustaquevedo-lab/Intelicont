@@ -2,6 +2,8 @@
 
 import { useState, useTransition, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import {
   Users, Plus, Search, X, Edit, Loader2,
   CheckCircle2, AlertCircle, ChevronDown,
@@ -51,6 +53,11 @@ interface FormProps {
 }
 
 function TerceroForm({ initial, entities, onClose, onSuccess }: FormProps) {
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const entityId = selectedEntity?.id || "";
+
   const formRef                      = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError]    = useState<string | null>(null);
@@ -81,7 +88,7 @@ function TerceroForm({ initial, entities, onClose, onSuccess }: FormProps) {
       } else {
         setSuccess(true);
         setTimeout(() => {
-          onSuccess({ ...result.data, entityName: initial?.entityName ?? entities.find((e) => e.id === result.data.entityId)?.legalName ?? "" } as TerceroRow);
+          onSuccess({ ...result.data, entityName: initial?.entityName ?? entities.find((e) => e.id === result.data.entityId)?.legalName ?? selectedEntity?.legalName ?? "" } as TerceroRow);
           onClose();
         }, 500);
       }
@@ -105,15 +112,14 @@ function TerceroForm({ initial, entities, onClose, onSuccess }: FormProps) {
         {!isEdit && (
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
-              Empresa <span className="text-red-500">*</span>
+              Empresa Activa
             </label>
-            <div className="relative">
-              <select name="entityId" required defaultValue="" className="appearance-none input-field pr-8">
-                <option value="" disabled>Seleccioná la empresa</option>
-                {entities.map((e) => <option key={e.id} value={e.id}>{e.legalName}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <span className="uppercase truncate">
+                {selectedEntity?.tradeName || selectedEntity?.legalName || "Cargando..."}
+              </span>
             </div>
+            <input type="hidden" name="entityId" value={entityId} />
           </div>
         )}
 
@@ -214,13 +220,16 @@ interface Props {
 
 export function TercerosClient({ initialData, entities, dbError }: Props) {
   const router = useRouter();
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const entityId = selectedEntity?.id || "";
 
   const [data,        setData]        = useState<TerceroRow[]>(initialData);
   const [showCreate,  setShowCreate]  = useState(false);
   const [editTarget,  setEditTarget]  = useState<TerceroRow | null>(null);
   const [searchTerm,  setSearchTerm]  = useState("");
   const [filterKind,  setFilterKind]  = useState("todos");
-  const [filterEntity,setFilterEntity]= useState("todos");
   const [menuOpenId,  setMenuOpenId]  = useState<string | null>(null);
   const [, startTransition]           = useTransition();
 
@@ -228,7 +237,7 @@ export function TercerosClient({ initialData, entities, dbError }: Props) {
     const q   = searchTerm.toLowerCase();
     const mQ  = !q || t.name.toLowerCase().includes(q) || (t.ruc ?? "").includes(q) || (t.email ?? "").toLowerCase().includes(q);
     const mK  = filterKind   === "todos" || t.kind   === filterKind;
-    const mE  = filterEntity === "todos" || t.entityId === filterEntity;
+    const mE  = !entityId || t.entityId === entityId;
     return mQ && mK && mE;
   });
 
@@ -324,17 +333,7 @@ export function TercerosClient({ initialData, entities, dbError }: Props) {
             ))}
           </div>
 
-          {/* Entity filter */}
-          {entities.length > 1 && (
-            <div className="relative">
-              <select value={filterEntity} onChange={(e) => setFilterEntity(e.target.value)}
-                className="appearance-none input-field py-2 pr-8 text-xs cursor-pointer">
-                <option value="todos">Todas las empresas</option>
-                {entities.map((e) => <option key={e.id} value={e.id}>{e.legalName}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-            </div>
-          )}
+
         </div>
 
         {/* Rows */}

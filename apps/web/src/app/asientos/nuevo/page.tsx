@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import {
   ArrowLeft,
   Plus,
@@ -81,12 +83,17 @@ function formatInputGs(value: string) {
 
 export default function NuevoAsientoPage() {
   const router = useRouter();
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const empresa = selectedEntity?.id || "";
+  const activeEmpresaName = selectedEntity?.legalName || selectedEntity?.tradeName || "";
+
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const [fecha, setFecha] = useState(new Date().toISOString().split("T")[0]);
   const [descripcion, setDescripcion] = useState("");
-  const [empresa, setEmpresa] = useState("");
   const [lineas, setLineas] = useState<Linea[]>([
     { id: uid(), cuenta: "", cuentaNombre: "", descripcion: "", debito: "", credito: "" },
     { id: uid(), cuenta: "", cuentaNombre: "", descripcion: "", debito: "", credito: "" },
@@ -284,20 +291,11 @@ export default function NuevoAsientoPage() {
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-300 mb-1.5">
               <Building2 className="h-3.5 w-3.5 text-gray-500" />
-              Empresa *
+              Empresa Activa
             </label>
-            <select
-              value={empresa}
-              onChange={(e) => setEmpresa(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            >
-              <option value="">Seleccionar empresa</option>
-              <option value="mock-1">Importadora del Este S.A.</option>
-              <option value="mock-2">Tecnología Asunción SRL</option>
-              <option value="mock-3">Distribuciones Ñandutí SA</option>
-              <option value="mock-4">Consultora Guaraní SRL</option>
-              <option value="mock-5">Frigorífico Central SA</option>
-            </select>
+            <div className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-sm text-gray-300 font-semibold truncate">
+              {activeEmpresaName || "Cargando..."}
+            </div>
           </div>
           <div>
             <label className="flex items-center gap-1.5 text-sm font-medium text-gray-300 mb-1.5">

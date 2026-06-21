@@ -232,11 +232,19 @@ function NuevaRetencionForm({
 
 interface Props {
   entities: Array<{ id: string; legalName: string; ruc: string }>;
+  defaultEntityId?: string;
   dbError?: string;
 }
 
-export function TesakaClient({ entities, dbError }: Props) {
-  const [entityId, setEntityId]         = useState("");
+import { useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
+
+export function TesakaClient({ entities, defaultEntityId, dbError }: Props) {
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+  const activeEntityId = selectedEntity?.id || defaultEntityId || "";
+
   const [periodos, setPeriodos]         = useState<ResumenPeriodo[]>([]);
   const [selected, setSelected]         = useState<{ year: number; month: number } | null>(null);
   const [retenciones, setRetenciones]   = useState<RetencionRow[]>([]);
@@ -247,31 +255,37 @@ export function TesakaClient({ entities, dbError }: Props) {
 
   const { year: curYear, month: curMonth } = getCurrentPeriod();
 
-  // ─── Load entity periods ────────────────────────────────────────────────────
-  function handleEntityChange(id: string) {
-    setEntityId(id);
-    setSelected(null);
-    setRetenciones([]);
-    startLoad(async () => {
-      const r = await loadResumenPeriodos(id);
-      if (r.ok) setPeriodos(r.data);
-    });
-  }
+  // ─── Load entity periods when activeEntityId changes ──────────────────────
+  useEffect(() => {
+    if (activeEntityId) {
+      setSelected(null);
+      setRetenciones([]);
+      startLoad(async () => {
+        const r = await loadResumenPeriodos(activeEntityId);
+        if (r.ok) setPeriodos(r.data);
+      });
+    } else {
+      setPeriodos([]);
+      setSelected(null);
+      setRetenciones([]);
+    }
+  }, [activeEntityId]);
 
   // ─── Select period ──────────────────────────────────────────────────────────
   function handleSelectPeriodo(year: number, month: number) {
+    if (!activeEntityId) return;
     setSelected({ year, month });
     startLoad(async () => {
-      const r = await loadRetenciones(entityId, year, month);
+      const r = await loadRetenciones(activeEntityId, year, month);
       if (r.ok) setRetenciones(r.data);
     });
   }
 
   // ─── Declare period ─────────────────────────────────────────────────────────
   function handleDeclarar() {
-    if (!selected || !entityId) return;
+    if (!selected || !activeEntityId) return;
     startAction(async () => {
-      const r = await marcarDeclarado(entityId, selected.year, selected.month);
+      const r = await marcarDeclarado(activeEntityId, selected.year, selected.month);
       if (!r.ok) { setError(r.error); return; }
       setRetenciones((prev) => prev.map((x) => ({ ...x, status: "declarado" })));
       setPeriodos((prev) =>
@@ -286,12 +300,13 @@ export function TesakaClient({ entities, dbError }: Props) {
 
   // ─── Delete ─────────────────────────────────────────────────────────────────
   function handleDelete(id: string) {
+    if (!activeEntityId) return;
     startAction(async () => {
       const r = await deleteRetencion(id);
       if (!r.ok) { setError(r.error); return; }
       setRetenciones((prev) => prev.filter((x) => x.id !== id));
       if (selected) {
-        const r2 = await loadResumenPeriodos(entityId);
+        const r2 = await loadResumenPeriodos(activeEntityId);
         if (r2.ok) setPeriodos(r2.data);
       }
     });
@@ -299,9 +314,9 @@ export function TesakaClient({ entities, dbError }: Props) {
 
   // ─── Export CSV ─────────────────────────────────────────────────────────────
   function handleExport() {
-    if (!selected || !entityId) return;
+    if (!selected || !activeEntityId) return;
     startAction(async () => {
-      const r = await exportCsvTesaka(entityId, selected.year, selected.month);
+      const r = await exportCsvTesaka(activeEntityId, selected.year, selected.month);
       if (!r.ok) { setError(r.error); return; }
       const blob = new Blob(["﻿" + r.data], { type: "text/csv;charset=utf-8;" });
       const url  = URL.createObjectURL(blob);
@@ -321,6 +336,8 @@ export function TesakaClient({ entities, dbError }: Props) {
   const periodoDeclarado = selected
     ? periodos.find((p) => p.periodoYear === selected.year && p.periodoMonth === selected.month)?.declarado ?? false
     : false;
+
+  const entity = selectedEntity || entities.find((e) => e.id === activeEntityId);
 
   return (
     <div className="container mx-auto max-w-6xl space-y-6 py-6">
@@ -344,27 +361,16 @@ export function TesakaClient({ entities, dbError }: Props) {
       )}
 
       {/* Entity selector */}
-      <div className="flex gap-3 flex-wrap items-end">
-        <div className="w-80 space-y-1">
-          <Label>Empresa</Label>
-          <Select value={entityId} onValueChange={handleEntityChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccioná empresa" />
-            </SelectTrigger>
-            <SelectContent>
-              {entities.map((e) => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.legalName} — {e.ruc}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="flex gap-3 flex-wrap items-center">
+        <div className="min-w-[240px] px-3 py-1.5 border border-input rounded-md bg-muted/50 text-sm flex items-center justify-between">
+          <span className="font-medium text-foreground">{entity?.legalName || "No seleccionada"}</span>
+          <span className="text-xs text-muted-foreground font-mono">{entity?.ruc || ""}</span>
         </div>
         {loadPending && <span className="text-sm text-muted-foreground">Cargando…</span>}
       </div>
 
       {/* Main layout: periods list + detail */}
-      {entityId && (
+      {activeEntityId && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* ─── Periodos sidebar ─────────────────────────────────────────── */}
           <Card className="md:col-span-1">
@@ -447,13 +453,13 @@ export function TesakaClient({ entities, dbError }: Props) {
                           <DialogTitle>Registrar retención</DialogTitle>
                         </DialogHeader>
                         <NuevaRetencionForm
-                          entityId={entityId}
+                          entityId={activeEntityId}
                           year={selected.year}
                           month={selected.month}
                           onCreated={(r) => {
                             setRetenciones((prev) => [...prev, r]);
                             // refresh periods
-                            loadResumenPeriodos(entityId).then((res) => {
+                            loadResumenPeriodos(activeEntityId).then((res) => {
                               if (res.ok) setPeriodos(res.data);
                             });
                           }}

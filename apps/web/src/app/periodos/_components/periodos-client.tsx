@@ -7,10 +7,10 @@ import {
   AlertTriangle, Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  loadPeriodos, openPeriod, closePeriod, reopenPeriod,
-  type PeriodoRow,
-} from "../actions";
+import { loadPeriodos, openPeriod, closePeriod, reopenPeriod, type PeriodoRow } from "../actions";
+import { useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,15 +30,19 @@ const STATUS_META: Record<string, { label: string; cls: string; icon: React.Elem
 
 interface Props {
   entities: Array<{ id: string; legalName: string; ruc: string }>;
+  defaultEntityId?: string;
   dbError?: string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function PeriodosClient({ entities, dbError }: Props) {
+export function PeriodosClient({ entities, defaultEntityId, dbError }: Props) {
   const now = new Date();
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+  const activeEntityId = selectedEntity?.id || defaultEntityId || "";
+  const entity = selectedEntity || entities.find((e) => e.id === activeEntityId);
 
-  const [entityId,      setEntityId]      = useState(entities[0]?.id ?? "");
   const [periodos,      setPeriodos]      = useState<PeriodoRow[] | null>(null);
   const [loadError,     setLoadError]     = useState<string | null>(null);
   const [actionMsg,     setActionMsg]     = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -54,20 +58,36 @@ export function PeriodosClient({ entities, dbError }: Props) {
   const [closeTarget,   setCloseTarget]   = useState<PeriodoRow | null>(null);
   const [genCierre,     setGenCierre]     = useState(true);
 
+  // ─── Auto load periods when activeEntityId changes ──────────────────────
+  useEffect(() => {
+    if (activeEntityId) {
+      setLoadError(null);
+      setPeriodos(null);
+      startLoad(async () => {
+        const r = await loadPeriodos(activeEntityId);
+        if (r.ok) setPeriodos(r.data);
+        else setLoadError(r.error);
+      });
+    } else {
+      setPeriodos([]);
+    }
+  }, [activeEntityId]);
+
   function handleLoad() {
-    if (!entityId) return;
+    if (!activeEntityId) return;
     setLoadError(null);
     setPeriodos(null);
     startLoad(async () => {
-      const r = await loadPeriodos(entityId);
+      const r = await loadPeriodos(activeEntityId);
       if (r.ok) setPeriodos(r.data);
       else setLoadError(r.error);
     });
   }
 
   function handleOpenPeriod() {
+    if (!activeEntityId) return;
     startAction(async () => {
-      const r = await openPeriod(entityId, newYear, newMonth);
+      const r = await openPeriod(activeEntityId, newYear, newMonth);
       if (r.ok) {
         setActionMsg({ type: "success", text: `Período ${MONTHS[newMonth - 1]} ${newYear} abierto` });
         setShowNewForm(false);
@@ -143,24 +163,20 @@ export function PeriodosClient({ entities, dbError }: Props) {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa</label>
-            <div className="relative">
-              <select value={entityId} onChange={(e) => setEntityId(e.target.value)}
-                className="appearance-none input-field pr-8 cursor-pointer">
-                <option value="">Seleccioná una empresa</option>
-                {entities.map((e) => <option key={e.id} value={e.id}>{e.legalName}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <div className="input-field bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 flex items-center justify-between min-h-[42px] px-3 border border-gray-200 dark:border-slate-700 rounded-lg">
+              <span className="font-medium">{entity?.legalName || "No seleccionada"}</span>
+              <span className="text-xs text-gray-400 font-mono">{entity?.ruc || ""}</span>
             </div>
           </div>
           <div className="flex items-end gap-2">
-            <button onClick={handleLoad} disabled={!entityId || isPending}
+            <button onClick={handleLoad} disabled={!activeEntityId || isPending}
               className="btn-secondary flex items-center gap-2">
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
-              {isPending ? "Cargando…" : "Cargar períodos"}
+              {isPending ? "Actualizando…" : "Actualizar"}
             </button>
             {periodos !== null && (
               <button onClick={() => setShowNewForm((v) => !v)}
-                className="btn-ghost flex items-center gap-2">
+                className="btn-ghost flex items-center gap-2" disabled={!activeEntityId}>
                 <Plus className="h-4 w-4" /> Nuevo período
               </button>
             )}

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import {
   BookOpen, ChevronDown, ChevronRight, Search,
   AlertCircle, Loader2, Download, Layers, Settings2, X,
@@ -208,7 +210,11 @@ interface Props {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function CuentasClient({ entities, dbError }: Props) {
-  const [entityId,    setEntityId]    = useState(entities[0]?.id ?? "");
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const entityId = selectedEntity?.id || "";
+
   const [tree,        setTree]        = useState<AccountNode[] | null>(null);
   const [error,       setError]       = useState<string | null>(null);
   const [isPending,   startLoad]      = useTransition();
@@ -225,9 +231,10 @@ export function CuentasClient({ entities, dbError }: Props) {
   const [draftFX,  setDraftFX]  = useState(false);
   const [draftND,  setDraftND]  = useState(false);
 
-  const entity = entities.find((e) => e.id === entityId);
+  const entity = entities.find((e) => e.id === entityId) || selectedEntity;
 
-  function handleLoad() {
+  // Auto-load Plan de Cuentas when entity changes
+  useEffect(() => {
     if (!entityId) return;
     setError(null);
     setTree(null);
@@ -245,6 +252,10 @@ export function CuentasClient({ entities, dbError }: Props) {
         setError(result.error);
       }
     });
+  }, [entityId]);
+
+  function handleLoad() {
+    // Left for backward compatibility if called elsewhere, but useEffect handles it now.
   }
 
   function toggleExpanded(id: string) {
@@ -353,32 +364,15 @@ export function CuentasClient({ entities, dbError }: Props) {
       <div className="card p-5">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa</label>
-            <div className="relative">
-              <select
-                value={entityId}
-                onChange={(e) => setEntityId(e.target.value)}
-                className="appearance-none input-field pr-8 cursor-pointer"
-              >
-                <option value="">Seleccioná una empresa</option>
-                {entities.map((e) => (
-                  <option key={e.id} value={e.id}>{e.legalName}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa Activa</label>
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <span className="uppercase truncate">
+                {selectedEntity?.tradeName || selectedEntity?.legalName || "Cargando..."}
+              </span>
             </div>
           </div>
 
-          <div className="flex items-end gap-2">
-            <button
-              onClick={handleLoad}
-              disabled={!entityId || isPending}
-              className="btn-secondary flex items-center gap-2"
-            >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Layers className="h-4 w-4" />}
-              {isPending ? "Cargando…" : "Ver plan de cuentas"}
-            </button>
-          </div>
+
         </div>
       </div>
 

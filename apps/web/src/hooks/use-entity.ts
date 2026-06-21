@@ -24,7 +24,15 @@ export function useEntity(userId: string | null | undefined) {
       return;
     }
 
-    const saved = localStorage.getItem("intelicont_selected_entity");
+    const getCookie = (name: string) => {
+      if (typeof document === "undefined") return null;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift() ?? null;
+      return null;
+    };
+
+    const saved = localStorage.getItem("intelicont_selected_entity") || getCookie("intelicont_selected_entity");
     if (saved) setSelectedEntityId(saved);
 
     getUserMemberships(userId).then((result) => {
@@ -37,6 +45,14 @@ export function useEntity(userId: string | null | undefined) {
           role: m.role,
         }));
         setEntities(mapped);
+
+        // If no selected entity but we have entities, select the first one
+        const activeId = saved || (mapped[0]?.id ?? null);
+        if (activeId && activeId !== saved) {
+          setSelectedEntityId(activeId);
+          localStorage.setItem("intelicont_selected_entity", activeId);
+          document.cookie = `intelicont_selected_entity=${activeId}; path=/; max-age=31536000; SameSite=Lax`;
+        }
       }
       setIsLoading(false);
     });
@@ -45,6 +61,8 @@ export function useEntity(userId: string | null | undefined) {
   const selectEntity = useCallback((entityId: string) => {
     setSelectedEntityId(entityId);
     localStorage.setItem("intelicont_selected_entity", entityId);
+    document.cookie = `intelicont_selected_entity=${entityId}; path=/; max-age=31536000; SameSite=Lax`;
+    window.location.reload();
   }, []);
 
   const selectedEntity = selectedEntityId
@@ -55,3 +73,4 @@ export function useEntity(userId: string | null | undefined) {
 
   return { entities, selectedEntity, selectEntity, isLoading };
 }
+

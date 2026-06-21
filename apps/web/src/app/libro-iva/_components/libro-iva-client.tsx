@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import {
   BookMarked, ChevronDown, Download, Search,
   Loader2, AlertCircle, RefreshCw, Receipt,
@@ -139,7 +141,11 @@ interface Props {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function LibroIVAClient({ entities, defaultYear, defaultMonth, dbError }: Props) {
-  const [entityId, setEntityId] = useState(entities[0]?.id ?? "");
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const entityId = selectedEntity?.id || "";
+
   const [year,     setYear]     = useState(defaultYear);
   const [month,    setMonth]    = useState(defaultMonth);
   const [data,     setData]     = useState<LibroIVASummary | null>(null);
@@ -148,7 +154,7 @@ export function LibroIVAClient({ entities, defaultYear, defaultMonth, dbError }:
   const [, startTransition]     = useTransition();
 
   const years = Array.from({ length: 5 }, (_, i) => defaultYear - 2 + i);
-  const entity = entities.find((e) => e.id === entityId);
+  const entity = entities.find((e) => e.id === entityId) || selectedEntity;
 
   function handleConsultar() {
     if (!entityId) { setError("Seleccioná una empresa"); return; }
@@ -211,14 +217,11 @@ export function LibroIVAClient({ entities, defaultYear, defaultMonth, dbError }:
       <div className="card p-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
         {/* Entity */}
         <div className="sm:col-span-2">
-          <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa *</label>
-          <div className="relative">
-            <select value={entityId} onChange={(e) => { setEntityId(e.target.value); setData(null); }}
-              className="appearance-none input-field py-2 pr-8 text-sm cursor-pointer w-full">
-              <option value="">Seleccioná empresa</option>
-              {entities.map((e) => <option key={e.id} value={e.id}>{e.legalName} — {e.ruc}</option>)}
-            </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa Activa</label>
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <span className="uppercase truncate">
+              {selectedEntity?.tradeName || selectedEntity?.legalName || "Cargando..."} — {selectedEntity?.ruc}
+            </span>
           </div>
         </div>
 

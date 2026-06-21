@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import {
   FileSearch, CheckCircle2, AlertCircle, Download,
   Search, Clock, TrendingUp, TrendingDown,
@@ -229,7 +231,11 @@ export default function RG90Page() {
   const defaultFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const defaultTo   = now.toISOString().slice(0, 10);
 
-  const [entityId,  setEntityId]  = useState("");
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const entityId = selectedEntity?.id || "";
+
   const [entities,  setEntities]  = useState<Array<{ id: string; legalName: string; ruc: string }>>([]);
   const [from,      setFrom]      = useState(defaultFrom);
   const [to,        setTo]        = useState(defaultTo);
@@ -242,15 +248,26 @@ export default function RG90Page() {
   const [initDone,  setInitDone]  = useState(false);
 
   // Load entities on mount
-  if (!initDone) {
-    setInitDone(true);
+  useEffect(() => {
     loadEntidadesParaRG90().then((r) => {
       if (r.ok && r.data.length > 0) {
         setEntities(r.data);
-        setEntityId(r.data[0].id);
       }
     });
-  }
+  }, []);
+
+  // Auto-load RG90 data when entity changes
+  useEffect(() => {
+    if (entityId) {
+      setError("");
+      setData(null);
+      startLoad(async () => {
+        const res = await loadRG90Data(entityId, from, to);
+        if (res.ok) setData(res.data);
+        else setError(res.error);
+      });
+    }
+  }, [entityId, from, to]);
 
   function handleLoad() {
     if (!entityId) { setError("Seleccioná una empresa"); return; }
@@ -325,12 +342,10 @@ export default function RG90Page() {
       <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-4">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="sm:col-span-2">
-            <label className="block text-xs text-gray-400 mb-1">Empresa</label>
-            <select value={entityId} onChange={(e) => setEntityId(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">
-              <option value="">— Seleccioná empresa —</option>
-              {entities.map((e) => <option key={e.id} value={e.id}>{e.legalName} ({e.ruc})</option>)}
-            </select>
+            <label className="block text-xs text-gray-400 mb-1">Empresa Activa</label>
+            <div className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-sm text-gray-300 font-semibold truncate uppercase">
+              {selectedEntity?.tradeName || selectedEntity?.legalName || "Cargando..."} ({selectedEntity?.ruc})
+            </div>
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Desde</label>

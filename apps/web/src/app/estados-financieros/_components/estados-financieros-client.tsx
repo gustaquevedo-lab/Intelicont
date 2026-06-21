@@ -480,6 +480,7 @@ function FlujoView({ data }: { data: FlujoCaja }) {
 
 interface Props {
   entities:    Array<{ id: string; legalName: string; ruc: string }>;
+  defaultEntityId?: string;
   defaultFrom: string;
   defaultTo:   string;
   dbError?:    string;
@@ -491,9 +492,16 @@ const TABS = [
   { id: "flujo",   label: "Flujo de Caja"        },
 ] as const;
 
-export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbError }: Props) {
+import { useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
+
+export function EstadosFinancierosClient({ entities, defaultEntityId, defaultFrom, defaultTo, dbError }: Props) {
   const [tab,      setTab]      = useState<"balance" | "eerr" | "flujo">("balance");
-  const [entityId, setEntityId] = useState(entities[0]?.id ?? "");
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+  const activeEntityId = selectedEntity?.id || defaultEntityId || "";
+
   const [asOf,     setAsOf]     = useState(defaultTo);
   const [from,     setFrom]     = useState(defaultFrom);
   const [to,       setTo]       = useState(defaultTo);
@@ -503,8 +511,35 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
   const [flujoData, setFlujoData] = useState<FlujoCaja | null>(null);
   const [error,    setError]    = useState<string | null>(null);
 
+  const entity = selectedEntity || entities.find((e) => e.id === activeEntityId);
+
+  useEffect(() => {
+    if (activeEntityId) {
+      setError(null);
+      setBalData(null);
+      setEerrData(null);
+      setFlujoData(null);
+
+      startLoad(async () => {
+        if (tab === "balance") {
+          const r = await loadBalanceGeneral(activeEntityId, asOf);
+          if (r.ok) setBalData(r.data);
+          else setError(r.error);
+        } else if (tab === "eerr") {
+          const r = await loadEstadoResultados(activeEntityId, from, to);
+          if (r.ok) setEerrData(r.data);
+          else setError(r.error);
+        } else {
+          const r = await loadFlujoCaja(activeEntityId, from, to);
+          if (r.ok) setFlujoData(r.data);
+          else setError(r.error);
+        }
+      });
+    }
+  }, [activeEntityId, tab, asOf, from, to]);
+
   function handleGenerar() {
-    if (!entityId) return;
+    if (!activeEntityId) return;
     setError(null);
     setBalData(null);
     setEerrData(null);
@@ -512,15 +547,15 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
 
     startLoad(async () => {
       if (tab === "balance") {
-        const r = await loadBalanceGeneral(entityId, asOf);
+        const r = await loadBalanceGeneral(activeEntityId, asOf);
         if (r.ok) setBalData(r.data);
         else setError(r.error);
       } else if (tab === "eerr") {
-        const r = await loadEstadoResultados(entityId, from, to);
+        const r = await loadEstadoResultados(activeEntityId, from, to);
         if (r.ok) setEerrData(r.data);
         else setError(r.error);
       } else {
-        const r = await loadFlujoCaja(entityId, from, to);
+        const r = await loadFlujoCaja(activeEntityId, from, to);
         if (r.ok) setFlujoData(r.data);
         else setError(r.error);
       }
@@ -658,18 +693,9 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa</label>
-            <div className="relative">
-              <select
-                value={entityId}
-                onChange={(e) => setEntityId(e.target.value)}
-                className="appearance-none input-field pr-8 cursor-pointer"
-              >
-                <option value="">Seleccioná una empresa</option>
-                {entities.map((e) => (
-                  <option key={e.id} value={e.id}>{e.legalName}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <div className="input-field bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 flex items-center justify-between min-h-[42px] px-3 border border-gray-200 dark:border-slate-700 rounded-lg">
+              <span className="font-medium">{entity?.legalName || "No seleccionada"}</span>
+              <span className="text-xs text-gray-400 font-mono">{entity?.ruc || ""}</span>
             </div>
           </div>
 
@@ -695,11 +721,11 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
         <div className="flex gap-2 mt-4">
           <button
             onClick={handleGenerar}
-            disabled={!entityId || isPending}
+            disabled={!activeEntityId || isPending}
             className="btn-secondary flex items-center gap-2"
           >
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
-            {isPending ? "Calculando…" : `Generar ${tab === "balance" ? "Balance General" : tab === "eerr" ? "Estado de Resultados" : "Flujo de Caja"}`}
+            {isPending ? "Calculando…" : `Actualizar ${tab === "balance" ? "Balance" : tab === "eerr" ? "Resultados" : "Flujo"}`}
           </button>
 
           {hasData && (
@@ -714,7 +740,6 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
           )}
         </div>
       </div>
-
       {/* Error */}
       {error && (
         <div className="flex items-start gap-2 p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">

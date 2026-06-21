@@ -39,6 +39,7 @@ const REGIMENES = [
 
 interface Props {
   entities: Array<{ id: string; legalName: string; ruc: string }>;
+  defaultEntityId?: string;
   defaultYear: number;
   dbError?: string;
 }
@@ -86,8 +87,15 @@ function PrintView({ data }: { data: Formulario501 }) {
 
 // ─── Main client ──────────────────────────────────────────────────────────────
 
-export function Formulario501Client({ entities, defaultYear, dbError }: Props) {
-  const [entityId, setEntityId] = useState("");
+import { useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
+
+export function Formulario501Client({ entities, defaultEntityId, defaultYear, dbError }: Props) {
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+  const activeEntityId = selectedEntity?.id || defaultEntityId || "";
+
   const [year, setYear]         = useState(String(defaultYear));
   const [regimen, setRegimen]   = useState<"general" | "simple" | "resimple">("general");
   const [result, setResult]     = useState<Formulario501 | null>(null);
@@ -95,12 +103,24 @@ export function Formulario501Client({ entities, defaultYear, dbError }: Props) {
   const [pending, startCalc]    = useTransition();
 
   const yearOptions = buildYearOptions(defaultYear);
+  const entity = selectedEntity || entities.find((e) => e.id === activeEntityId);
+
+  useEffect(() => {
+    if (activeEntityId) {
+      setError(null);
+      startCalc(async () => {
+        const r = await calcularIRE501(activeEntityId, parseInt(year), regimen);
+        if (!r.ok) { setError(r.error); return; }
+        setResult(r.data);
+      });
+    }
+  }, [activeEntityId, year, regimen]);
 
   function handleCalcular() {
-    if (!entityId) { setError("Seleccioná una empresa"); return; }
+    if (!activeEntityId) { setError("Seleccioná una empresa"); return; }
     setError(null);
     startCalc(async () => {
-      const r = await calcularIRE501(entityId, parseInt(year), regimen);
+      const r = await calcularIRE501(activeEntityId, parseInt(year), regimen);
       if (!r.ok) { setError(r.error); return; }
       setResult(r.data);
     });
@@ -137,18 +157,10 @@ export function Formulario501Client({ entities, defaultYear, dbError }: Props) {
             {/* Empresa */}
             <div className="col-span-2 space-y-1">
               <Label>Empresa</Label>
-              <Select value={entityId} onValueChange={setEntityId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccioná empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {entities.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.legalName} — {e.ruc}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between min-h-[40px] px-3 border border-input rounded-md bg-muted/50 text-sm">
+                <span className="font-medium text-foreground">{entity?.legalName || "No seleccionada"}</span>
+                <span className="text-xs text-muted-foreground font-mono">{entity?.ruc || ""}</span>
+              </div>
             </div>
 
             {/* Ejercicio */}
@@ -192,7 +204,7 @@ export function Formulario501Client({ entities, defaultYear, dbError }: Props) {
           <div className="mt-4">
             <Button onClick={handleCalcular} disabled={pending} className="gap-2">
               <Calculator className="h-4 w-4" />
-              {pending ? "Calculando…" : "Calcular IRE"}
+              {pending ? "Calculando…" : "Actualizar Formulario"}
             </Button>
           </div>
         </CardContent>

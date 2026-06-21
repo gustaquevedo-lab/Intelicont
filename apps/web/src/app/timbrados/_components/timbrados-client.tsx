@@ -37,6 +37,7 @@ import {
 
 interface Props {
   entities: Array<{ id: string; legalName: string; ruc: string }>;
+  defaultEntityId?: string;
   initialTimbrados: TimbradoRow[];
   dbError?: string;
 }
@@ -127,17 +128,19 @@ const TIPOS = [
 
 function NuevoTimbradoForm({
   entities,
+  activeEntityId,
   onCreated,
   onClose,
 }: {
   entities: Props["entities"];
+  activeEntityId: string;
   onCreated: (t: TimbradoRow) => void;
   onClose: () => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<TimbradoInput>({
-    entityId:        "",
+    entityId:        activeEntityId,
     numero:          "",
     tipo:            "factura",
     puntoEmision:    "",
@@ -148,6 +151,8 @@ function NuevoTimbradoForm({
     validoHasta:     "",
     notas:           "",
   });
+
+  const selectedEntity = entities.find(e => e.id === activeEntityId);
 
   function set(key: keyof TimbradoInput, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -175,19 +180,11 @@ function NuevoTimbradoForm({
       <div className="grid grid-cols-2 gap-4">
         {/* Empresa */}
         <div className="col-span-2 space-y-1">
-          <Label>Empresa *</Label>
-          <Select value={form.entityId} onValueChange={(v) => set("entityId", v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccioná empresa" />
-            </SelectTrigger>
-            <SelectContent>
-              {entities.map((e) => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.legalName} — {e.ruc}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Empresa</Label>
+          <div className="flex items-center justify-between min-h-[40px] px-3 border border-input rounded-md bg-muted/50 text-sm">
+            <span className="font-medium text-foreground">{selectedEntity?.legalName || "No seleccionada"}</span>
+            <span className="text-xs text-muted-foreground font-mono">{selectedEntity?.ruc || ""}</span>
+          </div>
         </div>
 
         {/* Número */}
@@ -299,23 +296,30 @@ function NuevoTimbradoForm({
 
 // ─── Main client ──────────────────────────────────────────────────────────────
 
-export function TimbradosClient({ entities, initialTimbrados, dbError }: Props) {
+import { useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
+
+export function TimbradosClient({ entities, defaultEntityId, initialTimbrados, dbError }: Props) {
   const [timbrados, setTimbrados] = useState<TimbradoRow[]>(initialTimbrados);
-  const [filterEntity, setFilterEntity] = useState<string>("all");
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+  const activeEntityId = selectedEntity?.id || defaultEntityId || "";
+
   const [filterStatus, setFilterStatus]  = useState<string>("all");
   const [dialogOpen, setDialogOpen]      = useState(false);
   const [toggling, startToggle]          = useTransition();
+  const [loadPending, startLoad]         = useTransition();
 
   // ─── Reload after entity filter change ──────────────────────────────────────
-  const [loadPending, startLoad] = useTransition();
-
-  function handleEntityFilter(entityId: string) {
-    setFilterEntity(entityId);
-    startLoad(async () => {
-      const r = await loadTimbrados(entityId === "all" ? undefined : entityId);
-      if (r.ok) setTimbrados(r.data);
-    });
-  }
+  useEffect(() => {
+    if (activeEntityId) {
+      startLoad(async () => {
+        const r = await loadTimbrados(activeEntityId);
+        if (r.ok) setTimbrados(r.data);
+      });
+    }
+  }, [activeEntityId]);
 
   // ─── Toggle active ───────────────────────────────────────────────────────────
   function handleToggle(id: string, current: boolean) {
@@ -355,7 +359,7 @@ export function TimbradosClient({ entities, initialTimbrados, dbError }: Props) 
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2" disabled={!activeEntityId}>
               <Plus className="h-4 w-4" />
               Nuevo timbrado
             </Button>
@@ -366,6 +370,7 @@ export function TimbradosClient({ entities, initialTimbrados, dbError }: Props) 
             </DialogHeader>
             <NuevoTimbradoForm
               entities={entities}
+              activeEntityId={activeEntityId}
               onCreated={(t) => setTimbrados((prev) => [t, ...prev])}
               onClose={() => setDialogOpen(false)}
             />
@@ -400,19 +405,10 @@ export function TimbradosClient({ entities, initialTimbrados, dbError }: Props) 
       <SummaryCards timbrados={timbrados.filter((t) => t.isActive)} />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="w-64">
-          <Select value={filterEntity} onValueChange={handleEntityFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todas las empresas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las empresas</SelectItem>
-              {entities.map((e) => (
-                <SelectItem key={e.id} value={e.id}>{e.legalName}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="min-w-[240px] px-3 py-1.5 border border-input rounded-md bg-muted/50 text-sm flex items-center justify-between">
+          <span className="font-medium text-foreground">{selectedEntity?.legalName || "No seleccionada"}</span>
+          <span className="text-xs text-muted-foreground font-mono">{selectedEntity?.ruc || ""}</span>
         </div>
         <div className="w-48">
           <Select value={filterStatus} onValueChange={setFilterStatus}>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition, useRef, useCallback } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import {
   Receipt, Upload, CheckCircle2, Clock, AlertCircle,
   X, ChevronDown, Loader2, Sparkles, ThumbsUp, ThumbsDown,
@@ -8,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ComprobanteRow } from "../actions";
+
 import {
   ingestXML, loadProposal, approveProposal, rejectProposal,
 } from "../actions";
@@ -309,9 +312,12 @@ interface Props {
 
 export function ComprobantesClient({ initialData, entities, dbError }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const entityId = selectedEntity?.id || "";
 
   const [data,         setData]         = useState<ComprobanteRow[]>(initialData);
-  const [entityId,     setEntityId]     = useState(entities[0]?.id ?? "");
   const [perspective,  setPerspective]  = useState<"buyer" | "seller">("buyer");
   const [filterStatus, setFilterStatus] = useState("todos");
   const [filterEntity, setFilterEntity] = useState("todos");
@@ -400,19 +406,13 @@ export function ComprobantesClient({ initialData, entities, dbError }: Props) {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Entity */}
+          {/* Entity (Read-only Context badge) */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa *</label>
-            <div className="relative">
-              <select
-                value={entityId}
-                onChange={(e) => setEntityId(e.target.value)}
-                className="appearance-none input-field py-2 pr-8 text-sm cursor-pointer"
-              >
-                <option value="">Seleccioná empresa</option>
-                {entities.map((e) => <option key={e.id} value={e.id}>{e.legalName}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa Activa</label>
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <span className="uppercase truncate max-w-[200px]">
+                {selectedEntity?.tradeName || selectedEntity?.legalName || "Cargando..."}
+              </span>
             </div>
           </div>
 
@@ -460,6 +460,7 @@ export function ComprobantesClient({ initialData, entities, dbError }: Props) {
             </label>
           </div>
         </div>
+
 
         {/* Feedback */}
         {uploadError && (
@@ -510,16 +511,7 @@ export function ComprobantesClient({ initialData, entities, dbError }: Props) {
             ))}
           </div>
 
-          {entities.length > 1 && (
-            <div className="relative ml-auto">
-              <select value={filterEntity} onChange={(e) => setFilterEntity(e.target.value)}
-                className="appearance-none input-field py-2 pr-8 text-xs cursor-pointer">
-                <option value="todos">Todas las empresas</option>
-                {entities.map((e) => <option key={e.id} value={e.id}>{e.legalName}</option>)}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-            </div>
-          )}
+
         </div>
 
         {/* Rows */}

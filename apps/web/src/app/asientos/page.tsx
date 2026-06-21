@@ -3,6 +3,8 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import {
   FileText,
   Plus,
@@ -90,10 +92,14 @@ const mockAsientos: Asiento[] = [
 
 export default function AsientosPage() {
   const router = useRouter();
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const activeEmpresaName = selectedEntity?.legalName || selectedEntity?.tradeName || "";
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [filtroOrigen, setFiltroOrigen] = useState<string>("todos");
-  const [filtroEmpresa, setFiltroEmpresa] = useState<string>("todas");
   const [periodoDesde, setPeriodoDesde] = useState("2026-05-01");
   const [periodoHasta, setPeriodoHasta] = useState("2026-05-31");
   const [selectedAsiento, setSelectedAsiento] = useState<Asiento | null>(null);
@@ -103,8 +109,6 @@ export default function AsientosPage() {
   const [listIndex, setListIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const empresas = useMemo(() => [...new Set(asientos.map((a) => a.empresa))], [asientos]);
-
   const asientosFiltrados = useMemo(() => {
     return asientos.filter((a) => {
       const matchesSearch =
@@ -113,11 +117,16 @@ export default function AsientosPage() {
         a.empresa.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesEstado = filtroEstado === "todos" || a.estado === filtroEstado;
       const matchesOrigen = filtroOrigen === "todos" || a.origen === filtroOrigen;
-      const matchesEmpresa = filtroEmpresa === "todas" || a.empresa === filtroEmpresa;
+      
+      // Filter mock data by active company context if one is set
+      const matchesEmpresa = !activeEmpresaName || 
+        a.empresa.toLowerCase().includes(activeEmpresaName.toLowerCase()) || 
+        activeEmpresaName.toLowerCase().includes(a.empresa.toLowerCase());
+        
       const matchesFecha = a.fecha >= periodoDesde && a.fecha <= periodoHasta;
       return matchesSearch && matchesEstado && matchesOrigen && matchesEmpresa && matchesFecha;
     });
-  }, [asientos, searchTerm, filtroEstado, filtroOrigen, filtroEmpresa, periodoDesde, periodoHasta]);
+  }, [asientos, searchTerm, filtroEstado, filtroOrigen, activeEmpresaName, periodoDesde, periodoHasta]);
 
   const stats = useMemo(() => ({
     total: asientos.length,
@@ -195,7 +204,6 @@ export default function AsientosPage() {
   const activeFiltersCount = [
     filtroEstado !== "todos",
     filtroOrigen !== "todos",
-    filtroEmpresa !== "todas",
   ].filter(Boolean).length;
 
   return (
@@ -286,13 +294,10 @@ export default function AsientosPage() {
               </select>
             </div>
             <div>
-              <label className="block text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1">Empresa</label>
-              <select value={filtroEmpresa} onChange={(e) => setFiltroEmpresa(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight">
-                <option value="todas">Todas</option>
-                {empresas.map((e) => (
-                  <option key={e} value={e}>{e}</option>
-                ))}
-              </select>
+              <label className="block text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1">Empresa Activa</label>
+              <div className="w-full px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-semibold truncate">
+                {activeEmpresaName || "Cargando..."}
+              </div>
             </div>
             <div>
               <label className="block text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-1">Período</label>
@@ -308,7 +313,6 @@ export default function AsientosPage() {
                   onClick={() => {
                     setFiltroEstado("todos");
                     setFiltroOrigen("todos");
-                    setFiltroEmpresa("todas");
                     setPeriodoDesde("2026-05-01");
                     setPeriodoHasta("2026-05-31");
                   }}

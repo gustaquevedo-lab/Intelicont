@@ -1,10 +1,12 @@
 import { loadEntidadesParaEF } from "./actions";
 import { EstadosFinancierosClient } from "./_components/estados-financieros-client";
+import { getSelectedEntityId } from "@/lib/cookie-context";
 
 export const metadata = { title: "Estados Financieros — InteliCont" };
 
 export default async function EstadosFinancierosPage() {
   const result = await loadEntidadesParaEF();
+  const activeEntityId = await getSelectedEntityId();
   const now    = new Date();
 
   // Default: current year
@@ -14,6 +16,7 @@ export default async function EstadosFinancierosPage() {
   return (
     <EstadosFinancierosClient
       entities={result.ok ? result.data : []}
+      defaultEntityId={activeEntityId || undefined}
       defaultFrom={defaultFrom}
       defaultTo={defaultTo}
       dbError={result.ok ? undefined : result.error}

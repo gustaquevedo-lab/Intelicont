@@ -61,30 +61,53 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  entities:     Array<{ id: string; legalName: string; ruc: string }>;
-  defaultYear:  number;
-  defaultMonth: number;
-  dbError?:     string;
+  entities:        Array<{ id: string; legalName: string; ruc: string }>;
+  defaultEntityId?: string;
+  defaultYear:     number;
+  defaultMonth:    number;
+  dbError?:        string;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function Formulario104Client({ entities, defaultYear, defaultMonth, dbError }: Props) {
-  const [entityId,  setEntityId]  = useState(entities[0]?.id ?? "");
+import { useEffect } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
+
+export function Formulario104Client({ entities, defaultEntityId, defaultYear, defaultMonth, dbError }: Props) {
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+  const activeEntityId = selectedEntity?.id || defaultEntityId || "";
+
   const [year,      setYear]      = useState(defaultYear);
   const [month,     setMonth]     = useState(defaultMonth);
   const [data,      setData]      = useState<LibroIVASummary | null>(null);
   const [error,     setError]     = useState<string | null>(null);
   const [isPending, startLoad]    = useTransition();
 
-  const entity = entities.find((e) => e.id === entityId);
+  const entity = selectedEntity || entities.find((e) => e.id === activeEntityId);
+
+  useEffect(() => {
+    if (activeEntityId) {
+      setError(null);
+      setData(null);
+      startLoad(async () => {
+        const result = await loadLibroIVA(activeEntityId, year, month);
+        if (result.ok) {
+          setData(result.data);
+        } else {
+          setError(result.error);
+        }
+      });
+    }
+  }, [activeEntityId, year, month]);
 
   function handleConsultar() {
-    if (!entityId) return;
+    if (!activeEntityId) return;
     setError(null);
     setData(null);
     startLoad(async () => {
-      const result = await loadLibroIVA(entityId, year, month);
+      const result = await loadLibroIVA(activeEntityId, year, month);
       if (result.ok) {
         setData(result.data);
       } else {
@@ -147,18 +170,9 @@ export function Formulario104Client({ entities, defaultYear, defaultMonth, dbErr
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">Empresa</label>
-            <div className="relative">
-              <select
-                value={entityId}
-                onChange={(e) => setEntityId(e.target.value)}
-                className="appearance-none input-field pr-8 cursor-pointer"
-              >
-                <option value="">Seleccioná una empresa</option>
-                {entities.map((e) => (
-                  <option key={e.id} value={e.id}>{e.legalName}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <div className="input-field bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 flex items-center justify-between min-h-[42px] px-3 border border-gray-200 dark:border-slate-700 rounded-lg">
+              <span className="font-medium">{entity?.legalName || "No seleccionada"}</span>
+              <span className="text-xs text-gray-400 font-mono">{entity?.ruc || ""}</span>
             </div>
           </div>
 
@@ -194,11 +208,11 @@ export function Formulario104Client({ entities, defaultYear, defaultMonth, dbErr
         <div className="flex gap-2 mt-4">
           <button
             onClick={handleConsultar}
-            disabled={!entityId || isPending}
+            disabled={!activeEntityId || isPending}
             className="btn-secondary flex items-center gap-2"
           >
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-            {isPending ? "Calculando…" : "Generar Formulario 104"}
+            {isPending ? "Calculando…" : "Actualizar Formulario"}
           </button>
 
           {data && (

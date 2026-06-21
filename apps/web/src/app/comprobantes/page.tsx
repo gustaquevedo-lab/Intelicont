@@ -1,11 +1,13 @@
 import { loadComprobantes, loadEntidadesParaComprobantes } from "./actions";
 import { ComprobantesClient } from "./_components/comprobantes-client";
+import { getSelectedEntityId } from "@/lib/cookie-context";
 
 export const metadata = { title: "Comprobantes SIFEN" };
 
 export default async function ComprobantesPage() {
+  const activeEntityId = await getSelectedEntityId();
   const [compResult, entResult] = await Promise.all([
-    loadComprobantes(),
+    loadComprobantes(activeEntityId ? { entityId: activeEntityId } : undefined),
     loadEntidadesParaComprobantes(),
   ]);
 
@@ -17,3 +19,4 @@ export default async function ComprobantesPage() {
     />
   );
 }
+

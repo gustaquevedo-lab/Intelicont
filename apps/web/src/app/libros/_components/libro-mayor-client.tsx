@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition, useEffect, useCallback, useRef } from "react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import { BookOpen, Search, Download, ChevronDown, AlertCircle, Loader2 } from "lucide-react";
 import {
   loadCuentasParaLibro,
@@ -165,8 +167,12 @@ interface LibroMayorClientProps {
 }
 
 export function LibroMayorClient({ entities, dbError }: LibroMayorClientProps) {
+  const { user } = useUser();
+  const { selectedEntity } = useEntity(user?.id);
+
+  const entityId = selectedEntity?.id || "";
+
   // Filters
-  const [entityId,  setEntityId]  = useState(entities.length === 1 ? entities[0].id : "");
   const [accountId, setAccountId] = useState("");
   const [dateFrom,  setDateFrom]  = useState(firstOfYearISO());
   const [dateTo,    setDateTo]    = useState(todayISO());
@@ -245,17 +251,10 @@ export function LibroMayorClient({ entities, dbError }: LibroMayorClientProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Empresa */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-zinc-400">Empresa</label>
-            <select
-              value={entityId}
-              onChange={(e) => setEntityId(e.target.value)}
-              className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-violet-500 transition-colors"
-            >
-              <option value="">Seleccioná empresa…</option>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>{e.legalName}</option>
-              ))}
-            </select>
+            <label className="text-xs font-medium text-zinc-400">Empresa Activa</label>
+            <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-300 font-semibold truncate uppercase">
+              {selectedEntity?.tradeName || selectedEntity?.legalName || "Cargando..."}
+            </div>
           </div>
 
           {/* Cuenta */}
