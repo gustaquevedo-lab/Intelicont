@@ -34,8 +34,8 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     if (pathname === "/") {
-      console.log("[Middleware] No user, redirecting '/' to landing page");
-      return NextResponse.redirect(new URL("/landing/index.html", request.url));
+      console.log("[Middleware] No user, rewriting '/' to serve landing page");
+      return NextResponse.rewrite(new URL("/landing/index.html", request.url));
     }
     console.log("[Middleware] No user, redirecting to /login from:", pathname);
     const loginUrl = new URL("/login", request.url);
