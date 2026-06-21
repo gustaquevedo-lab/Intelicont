@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   "/auth/signout",
   "/opengraph-image",
   "/twitter-image",
+  "/brand",
 ];
 
 function isPublic(pathname: string): boolean {

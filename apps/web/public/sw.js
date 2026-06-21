@@ -175,8 +175,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'InteliCont', {
       body: data.body || '',
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      icon: '/api/brand/icon/192',
+      badge: '/api/brand/icon/72',
       data: data.url || '/',
       vibrate: [200, 100, 200],
     })

@@ -76,11 +76,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/api/brand/icon/192", sizes: "192x192", type: "image/png" },
+      { url: "/api/brand/icon/512", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
+      { url: "/api/brand/icon/152", sizes: "152x152", type: "image/png" },
     ],
   },
 };
@@ -107,7 +108,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="InteliCont" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" href="/api/brand/icon/152" />
       </head>
       <body className={`${inter.className} bg-background text-foreground antialiased`}>
         <Providers>{children}</Providers>

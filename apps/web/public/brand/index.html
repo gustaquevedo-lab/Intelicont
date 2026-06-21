@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>InteliCont — Identidad de marca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --primary-dark: #0a2244;
+    --primary: #104c91;
+    --primary-light: #256ebf;
+    --secondary: #00a651;
+    --secondary-dark: #00823e;
+    --secondary-light: #00d46a;
+    --ink: #0f172a;
+    --ink-2: #334155;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 56px 32px 96px; }
+  header { padding-bottom: 32px; border-bottom: 1px solid var(--line); margin-bottom: 56px; }
+  header h1 { font-size: 40px; font-weight: 800; letter-spacing: -1.2px; margin: 0 0 8px; }
+  header p { color: var(--muted); margin: 0; font-size: 16px; }
+  header .crumb { color: var(--primary); font-weight: 700; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+  section { margin-bottom: 64px; }
+  h2 { font-size: 26px; font-weight: 800; letter-spacing: -.7px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 15px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 28px; }
+  .grid { display: grid; gap: 20px; }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Logo variants */
+  .logo-row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+  .logo-row.dark { background: linear-gradient(135deg, #051125, #104c91); border: none; color: white; }
+  .logo-sample { display: flex; align-items: center; gap: 12px; }
+  .logo-sample svg { display: block; }
+  .wm { display: flex; align-items: baseline; line-height: 1; font-weight: 800; letter-spacing: -.04em; }
+  .wm .a { color: var(--primary); }
+  .wm .b { color: var(--secondary-dark); }
+  .dark .wm .a { color: #60a5fa; }
+  .dark .wm .b { color: #34d399; }
+
+  /* Color swatches */
+  .swatch { border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 6px; min-height: 110px; justify-content: flex-end; border: 1px solid var(--line); }
+  .swatch .name { font-weight: 700; font-size: 14px; }
+  .swatch .hex { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 13px; opacity: .85; }
+  .swatch .role { font-size: 12px; opacity: .7; }
+  .swatch.light { color: var(--ink); }
+  .swatch.dark { color: white; }
+
+  /* Type specimen */
+  .type-row { display: flex; align-items: baseline; gap: 18px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .type-row:first-child { border-top: 0; }
+  .type-row .label { width: 130px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+  .type-row .sample { flex: 1; color: var(--ink); }
+
+  /* Do / Don't */
+  .rule { padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: white; }
+  .rule.ok { border-left: 4px solid var(--secondary); }
+  .rule.no { border-left: 4px solid #dc2626; }
+  .rule h4 { margin: 0 0 6px; font-size: 14px; font-weight: 800; }
+  .rule p { margin: 0; font-size: 14px; color: var(--ink-2); }
+
+  /* PWA icons */
+  .icons { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+  .icon-box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .icon-box img { border-radius: 18%; box-shadow: 0 4px 14px rgba(15,23,42,.12); }
+  .icon-box .lbl { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+  /* OG preview */
+  .og-frame { aspect-ratio: 1200/630; width: 100%; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(15,23,42,.15); background: var(--bg); }
+  .og-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="crumb">Brand Guide</div>
+    <h1>Identidad InteliCont</h1>
+    <p>Vista única de los activos canónicos. Cualquier touchpoint nuevo se construye desde acá.</p>
+  </header>
+
+  <!-- LOGO -->
+  <section>
+    <h2>1 · Logo</h2>
+    <p class="sub">Símbolo (loop ∞ + chispa) y wordmark bicolor. Versiones para fondo claro y oscuro.</p>
+
+    <div class="card">
+      <h3 style="margin:0 0 16px; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted)">Sobre fondo claro</h3>
+      <div class="logo-row">
+        <div class="logo-sample">
+          <svg width="180" height="90" viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#g1)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="g1" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1b63c4"/><stop offset="35%" stop-color="#2f80ed"/><stop offset="50%" stop-color="#33c1cc"/><stop offset="70%" stop-color="#1bbb75"/><stop offset="100%" stop-color="#08a14b"/></linearGradient></defs></svg>
+          <div class="wm" style="font-size:54px"><span class="a">Inteli</span><span class="b">Cont</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card dark logo-row" style="margin-top:16px; padding:36px; background:linear-gradient(135deg,#051125,#104c91); color:white">
+      <div class="logo-sample">
+        <svg width="180" height="90" viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#g2)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="g2" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60a5fa"/><stop offset="35%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="70%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs></svg>
+        <div class="wm" style="font-size:54px"><span class="a" style="color:#60a5fa">Inteli</span><span class="b" style="color:#34d399">Cont</span></div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:48px; align-items:center; padding:28px; background:white; border:1px solid var(--line); border-radius:16px; margin-top:16px; flex-wrap:wrap">
+      <div style="display:flex; gap:36px; align-items:center; flex-wrap:wrap">
+        <!-- xl -->
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
+          <svg width="128" height="64" viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#g3a)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="g3a" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1b63c4"/><stop offset="35%" stop-color="#2f80ed"/><stop offset="50%" stop-color="#33c1cc"/><stop offset="70%" stop-color="#1bbb75"/><stop offset="100%" stop-color="#08a14b"/></linearGradient></defs></svg>
+          <span style="font-size:11px; color:var(--muted); font-weight:700; letter-spacing:1px">XL · 64px</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
+          <svg width="84" height="42" viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#g3b)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="g3b" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1b63c4"/><stop offset="35%" stop-color="#2f80ed"/><stop offset="50%" stop-color="#33c1cc"/><stop offset="70%" stop-color="#1bbb75"/><stop offset="100%" stop-color="#08a14b"/></linearGradient></defs></svg>
+          <span style="font-size:11px; color:var(--muted); font-weight:700; letter-spacing:1px">LG · 42px</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
+          <svg width="64" height="32" viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#g3c)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="g3c" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1b63c4"/><stop offset="35%" stop-color="#2f80ed"/><stop offset="50%" stop-color="#33c1cc"/><stop offset="70%" stop-color="#1bbb75"/><stop offset="100%" stop-color="#08a14b"/></linearGradient></defs></svg>
+          <span style="font-size:11px; color:var(--muted); font-weight:700; letter-spacing:1px">MD · 32px</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
+          <svg width="48" height="24" viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#g3d)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="g3d" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1b63c4"/><stop offset="35%" stop-color="#2f80ed"/><stop offset="50%" stop-color="#33c1cc"/><stop offset="70%" stop-color="#1bbb75"/><stop offset="100%" stop-color="#08a14b"/></linearGradient></defs></svg>
+          <span style="font-size:11px; color:var(--muted); font-weight:700; letter-spacing:1px">SM · 24px</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLORS -->
+  <section>
+    <h2>2 · Paleta</h2>
+    <p class="sub">Gradiente del loop, colores de marca para UI y acentos.</p>
+
+    <h3 style="font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin:0 0 12px">Gradiente del loop</h3>
+    <div style="height:84px; border-radius:14px; background:linear-gradient(90deg, #1b63c4 0%, #2f80ed 35%, #33c1cc 50%, #1bbb75 70%, #08a14b 100%); margin-bottom:8px; box-shadow: 0 6px 18px rgba(15,23,42,.08)"></div>
+    <div style="display:flex; justify-content:space-between; font-family:ui-monospace,monospace; font-size:12px; color:var(--ink-2); margin-bottom:32px">
+      <span>#1b63c4</span><span>#2f80ed</span><span>#33c1cc</span><span>#1bbb75</span><span>#08a14b</span>
+    </div>
+
+    <h3 style="font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin:0 0 12px">Colores UI</h3>
+    <div class="grid grid-3">
+      <div class="swatch dark" style="background:#0a2244"><span class="role">Fondo oscuro principal</span><span class="name">primary-dark</span><span class="hex">#0a2244</span></div>
+      <div class="swatch dark" style="background:#104c91"><span class="role">Marca primario / theme_color</span><span class="name">primary</span><span class="hex">#104c91</span></div>
+      <div class="swatch dark" style="background:#256ebf"><span class="role">Hover / acento</span><span class="name">primary-light</span><span class="hex">#256ebf</span></div>
+      <div class="swatch dark" style="background:#00a651"><span class="role">Confirmación / Cont light</span><span class="name">secondary</span><span class="hex">#00a651</span></div>
+      <div class="swatch dark" style="background:#00823e"><span class="role">Hover verde</span><span class="name">secondary-dark</span><span class="hex">#00823e</span></div>
+      <div class="swatch light" style="background:#00d46a"><span class="role">Acento brillante</span><span class="name">secondary-light</span><span class="hex">#00d46a</span></div>
+      <div class="swatch light" style="background:#a3e635"><span class="role">Chip IA · texto #052e16</span><span class="name">ai-chip</span><span class="hex">#a3e635</span></div>
+      <div class="swatch light" style="background:#f1f5f9; border-color:#cbd5e1"><span class="role">Superficie clara</span><span class="name">surface</span><span class="hex">#f1f5f9</span></div>
+      <div class="swatch dark" style="background:#0f172a"><span class="role">Texto principal</span><span class="name">ink</span><span class="hex">#0f172a</span></div>
+    </div>
+  </section>
+
+  <!-- TYPOGRAPHY -->
+  <section>
+    <h2>3 · Tipografía — Inter</h2>
+    <p class="sub">Pesos 500, 600, 700, 800. Sin otras familias salvo monoespaciada para datos tabulares.</p>
+    <div class="card">
+      <div class="type-row"><span class="label">Wordmark · 800</span><span class="sample" style="font-size:48px; font-weight:800; letter-spacing:-.04em"><span style="color:#104c91">Inteli</span><span style="color:#08a14b">Cont</span></span></div>
+      <div class="type-row"><span class="label">Headline · 700</span><span class="sample" style="font-size:34px; font-weight:700; letter-spacing:-.02em">Contabilidad inteligente para Paraguay</span></div>
+      <div class="type-row"><span class="label">Subtítulo · 600</span><span class="sample" style="font-size:20px; font-weight:600">Factura electrónica 001-001-0012345</span></div>
+      <div class="type-row"><span class="label">Cuerpo · 500</span><span class="sample" style="font-size:16px; font-weight:500; color:var(--ink-2)">Carga facturas SIFEN, sugerencias de asiento con IA, cierre en horas.</span></div>
+      <div class="type-row"><span class="label">Eslogan · 800 caps</span><span class="sample" style="font-size:13px; font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:var(--muted)">Contabilidad Inteligente</span></div>
+    </div>
+  </section>
+
+  <!-- FAVICON / PWA -->
+  <section>
+    <h2>4 · Favicon &amp; PWA icons</h2>
+    <p class="sub">Una sola fuente: <code>/api/brand/icon/[size]</code> — generación dinámica desde el SVG canónico.</p>
+    <div class="card">
+      <div class="icons">
+        <div class="icon-box"><img src="/api/brand/icon/72"  width="72"  height="72"  alt="72px" /><span class="lbl">72</span></div>
+        <div class="icon-box"><img src="/api/brand/icon/96"  width="96"  height="96"  alt="96px" /><span class="lbl">96</span></div>
+        <div class="icon-box"><img src="/api/brand/icon/128" width="128" height="128" alt="128px" /><span class="lbl">128</span></div>
+        <div class="icon-box"><img src="/api/brand/icon/144" width="144" height="144" alt="144px" /><span class="lbl">144</span></div>
+        <div class="icon-box"><img src="/api/brand/icon/192" width="160" height="160" alt="192px" /><span class="lbl">192 · maskable</span></div>
+        <div class="icon-box"><img src="/api/brand/icon/512" width="180" height="180" alt="512px" /><span class="lbl">512 · maskable</span></div>
+      </div>
+      <p style="margin:20px 0 0; font-size:13px; color:var(--muted)">Favicon SVG: <code>/favicon.svg</code> — mismo dibujo, sin fondo.</p>
+    </div>
+  </section>
+
+  <!-- OG -->
+  <section>
+    <h2>5 · Open Graph</h2>
+    <p class="sub">Previsualización para WhatsApp, Twitter/X, LinkedIn, Facebook.</p>
+    <div class="og-frame"><img src="/opengraph-image" alt="OG image preview" /></div>
+  </section>
+
+  <!-- DO / DON'T -->
+  <section>
+    <h2>6 · Reglas</h2>
+    <p class="sub">Lo que sí se hace y lo que no.</p>
+    <div class="grid grid-2">
+      <div class="rule ok"><h4>✅ Wordmark bicolor</h4><p>"Inteli" azul, "Cont" verde. Siempre, en cualquier touchpoint.</p></div>
+      <div class="rule no"><h4>❌ Un solo color</h4><p>El wordmark monocromático queda obsoleto.</p></div>
+      <div class="rule ok"><h4>✅ Loop gradiente original</h4><p>5 stops: #1b63c4 → #08a14b. Horizontal.</p></div>
+      <div class="rule no"><h4>❌ Recolorear el loop</h4><p>No invertir, no aplicar filtros, no rotar.</p></div>
+      <div class="rule ok"><h4>✅ Chispa blanca al centro</h4><p>Cuatro puntas, fill #ffffff. Es la marca de IA.</p></div>
+      <div class="rule no"><h4>❌ Otros símbolos al centro</h4><p>Nada de estrellas, cruces, "+" — solo la chispa.</p></div>
+      <div class="rule ok"><h4>✅ Inter 500/600/700/800</h4><p>Únicas familias para UI y comunicaciones.</p></div>
+      <div class="rule no"><h4>❌ Pesos &lt; 500</h4><p>Light/Thin no se usan — la marca habla con autoridad.</p></div>
+    </div>
+  </section>
+
+  <!-- USAGE -->
+  <section>
+    <h2>7 · Uso en código</h2>
+    <p class="sub">El componente <code>&lt;Logo /&gt;</code> es la única forma de meter el logo en una pantalla nueva.</p>
+    <div class="card" style="font-family:ui-monospace,monospace; font-size:13px; line-height:1.7; color:var(--ink-2); background:#f8fafc">
+      <span style="color:#64748b">// apps/web/src/components/&lt;PaginaNueva&gt;.tsx</span><br/>
+      <span style="color:#c026d3">import</span> { <span style="color:#0ea5e9">Logo</span> } <span style="color:#c026d3">from</span> <span style="color:#16a34a">"@/components/logo"</span>;<br/><br/>
+      &lt;<span style="color:#0ea5e9">Logo</span> <span style="color:#7c3aed">size</span>=<span style="color:#16a34a">"lg"</span> <span style="color:#7c3aed">dark</span>=<span style="color:#1e40af">{false}</span> <span style="color:#7c3aed">showSlogan</span> /&gt;
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

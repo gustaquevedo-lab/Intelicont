@@ -35,27 +35,37 @@ export default async function OpengraphImage() {
           padding: 44,
         }}
       >
-        {/* Logo + Wordmark row */}
+        {/* Canonical logo: loop + spark with brand gradient */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 24,
+            gap: 26,
             marginBottom: 14,
           }}
         >
-          <svg width="150" height="78" viewBox="0 0 200 100">
+          <svg width="180" height="90" viewBox="0 0 72 36" fill="none">
             <path
-              d="M 32 50 a 28 28 0 1 0 56 0 a 28 28 0 1 0 -56 0 Z M 48 50 a 12 12 0 1 1 24 0 a 12 12 0 1 1 -24 0 Z"
-              fill="#3b82f6"
-              fillRule="evenodd"
+              d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z"
+              stroke="url(#og-loop)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
             />
             <path
-              d="M 112 50 a 28 28 0 1 0 56 0 a 28 28 0 1 0 -56 0 Z M 128 50 a 12 12 0 1 1 24 0 a 12 12 0 1 1 -24 0 Z"
-              fill="#10b981"
-              fillRule="evenodd"
+              d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z"
+              fill="#ffffff"
             />
-            <circle cx="100" cy="50" r="7" fill="#ffffff" />
+            <defs>
+              <linearGradient id="og-loop" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#60a5fa" />
+                <stop offset="35%" stopColor="#3b82f6" />
+                <stop offset="50%" stopColor="#22d3ee" />
+                <stop offset="70%" stopColor="#34d399" />
+                <stop offset="100%" stopColor="#10b981" />
+              </linearGradient>
+            </defs>
           </svg>
           <div
             style={{
@@ -83,7 +93,6 @@ export default async function OpengraphImage() {
           SaaS contable con IA para Paraguay
         </div>
 
-        {/* Mock asiento contable */}
         <div
           style={{
             display: "flex",
@@ -142,78 +151,28 @@ export default async function OpengraphImage() {
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "12px 0",
-              borderTop: "1px solid rgba(148,163,184,0.2)",
-            }}
-          >
+          {[
+            { label: "Compras de mercaderías", amount: "Gs. 7.050.000", color: "#60a5fa" },
+            { label: "IVA crédito fiscal 10%", amount: "Gs. 705.000", color: "#60a5fa" },
+            { label: "Proveedores locales", amount: "Gs. 7.755.000", color: "#34d399" },
+          ].map((row) => (
             <div
-              style={{ display: "flex", fontSize: 22, color: "#cbd5e1", fontWeight: 500 }}
-            >
-              Compras de mercaderías
-            </div>
-            <div
+              key={row.label}
               style={{
                 display: "flex",
-                fontSize: 22,
-                color: "#60a5fa",
-                fontWeight: 800,
+                justifyContent: "space-between",
+                padding: "12px 0",
+                borderTop: "1px solid rgba(148,163,184,0.2)",
               }}
             >
-              Gs. 7.050.000
+              <div style={{ display: "flex", fontSize: 22, color: "#cbd5e1", fontWeight: 500 }}>
+                {row.label}
+              </div>
+              <div style={{ display: "flex", fontSize: 22, color: row.color, fontWeight: 800 }}>
+                {row.amount}
+              </div>
             </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "12px 0",
-              borderTop: "1px solid rgba(148,163,184,0.2)",
-            }}
-          >
-            <div
-              style={{ display: "flex", fontSize: 22, color: "#cbd5e1", fontWeight: 500 }}
-            >
-              IVA crédito fiscal 10%
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 22,
-                color: "#60a5fa",
-                fontWeight: 800,
-              }}
-            >
-              Gs. 705.000
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "12px 0",
-              borderTop: "1px solid rgba(148,163,184,0.2)",
-            }}
-          >
-            <div
-              style={{ display: "flex", fontSize: 22, color: "#cbd5e1", fontWeight: 500 }}
-            >
-              Proveedores locales
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 22,
-                color: "#34d399",
-                fontWeight: 800,
-              }}
-            >
-              Gs. 7.755.000
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     ),
