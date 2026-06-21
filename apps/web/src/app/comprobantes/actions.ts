@@ -560,6 +560,7 @@ export interface ManualComprobanteInput {
   lines: ManualLineInput[];
   paymentMethod: "cash" | "bank" | "card" | "credit";
   bankAccountId?: string;
+  documentOrigenId?: string; // NC/ND: UUID of the originating tax document
 }
 
 export async function createManualComprobante(
@@ -568,7 +569,8 @@ export async function createManualComprobante(
   const {
     entityId, direction, docType, number, timbrado, issueDate,
     partnerRuc, partnerName, condition, gravado10, gravado5,
-    exento, iva10, iva5, total, lines, paymentMethod, bankAccountId
+    exento, iva10, iva5, total, lines, paymentMethod, bankAccountId,
+    documentOrigenId,
   } = input;
 
   if (!entityId) return { ok: false, error: "Falta empresa" };
@@ -633,6 +635,7 @@ export async function createManualComprobante(
         iva5: String(iva5),
         total: String(total),
         status: "posted",
+        ...(documentOrigenId ? { documentOrigenId } : {}),
       }).returning();
 
       // Insert Tax Document Lines
@@ -1049,5 +1052,44 @@ export async function loadFixedAssets(entityId: string): Promise<ActionResult<Ar
     return { ok: false, error: err instanceof Error ? err.message : "Error al cargar activos fijos" };
   }
 }
+// ─── Load recent documents for NC/ND origin linking ─────────────────────────────────
 
-
+export async function loadRecentDocuments(
+  entityId: string,
+  direction: "issued" | "received",
+): Promise<ActionResult<Array<{ id: string; number: string; docType: string; issueDate: string; total: number; partnerName: string }>>> {
+  if (!entityId) return { ok: false, error: "entityId requerido" };
+  try {
+    const db = getDb();
+    const rows = await db
+      .select({
+        id:          taxDocuments.id,
+        docNumber:   taxDocuments.docNumber,
+        docType:     taxDocuments.docType,
+        issueDate:   taxDocuments.issueDate,
+        total:       taxDocuments.total,
+        partnerName: partners.legalName,
+      })
+      .from(taxDocuments)
+      .leftJoin(partners, eq(taxDocuments.partnerId, partners.id))
+      .where(and(
+        eq(taxDocuments.entityId, entityId),
+        eq(taxDocuments.direction, direction),
+      ))
+      .orderBy(desc(taxDocuments.updatedAt))
+      .limit(50);
+    return {
+      ok: true,
+      data: rows.map((r) => ({
+        id:          r.id,
+        number:      r.docNumber ?? "",
+        docType:     r.docType   ?? "",
+        issueDate:   r.issueDate ? String(r.issueDate).slice(0, 10) : "",
+        total:       Number(r.total),
+        partnerName: r.partnerName ?? "",
+      })),
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al cargar documentos" };
+  }
+}

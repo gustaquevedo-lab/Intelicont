@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  loadBalanceGeneral, loadEstadoResultados,
-  type BalanceGeneral, type EstadoResultados, type AccountBalance,
+  loadBalanceGeneral, loadEstadoResultados, loadFlujoCaja,
+  type BalanceGeneral, type EstadoResultados, type AccountBalance, type FlujoCaja,
 } from "../actions";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -378,6 +378,106 @@ function EERRView({ data }: { data: EstadoResultados }) {
 
 // ─── Props + Main component ───────────────────────────────────────────────────
 
+// ─── Flujo de Caja view ───────────────────────────────────────────────────────
+
+function FlujoView({ data }: { data: FlujoCaja }) {
+  const isPositive = data.variacionNeta >= 0;
+
+  return (
+    <div className="space-y-4 max-w-2xl mx-auto print:space-y-2">
+      {/* Print header */}
+      <div className="hidden print:block text-center mb-4">
+        <h1 className="text-lg font-bold">ESTADO DE FLUJO DE CAJA</h1>
+        <p className="text-sm">{data.entityName} — RUC {data.ruc}</p>
+        <p className="text-sm">{fmtDate(data.fromDate)} al {fmtDate(data.toDate)}</p>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-2 flex items-center justify-between border-b border-blue-100 dark:border-blue-800">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-200">Actividades Operativas</span>
+          <span className="font-mono font-bold text-sm text-blue-900 dark:text-blue-100">₲ {gs(data.totalOperativo)}</span>
+        </div>
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+            <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10">
+              <td className="py-2.5 px-4 text-gray-700 dark:text-gray-300">Resultado del ejercicio (Utilidad/Pérdida)</td>
+              <td className="py-2.5 px-4 text-right font-mono text-gray-950 dark:text-white">₲ {gs(data.resultadoEjercicio)}</td>
+            </tr>
+            <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10">
+              <td className="py-2.5 px-4 text-gray-700 dark:text-gray-300">(+) Depreciaciones y Amortizaciones</td>
+              <td className="py-2.5 px-4 text-right font-mono text-gray-950 dark:text-white">₲ {gs(data.depreciaciones)}</td>
+            </tr>
+            <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10">
+              <td className="py-2.5 px-4 text-gray-700 dark:text-gray-300">(+/-) Cambio en Cuentas por Cobrar (Clientes)</td>
+              <td className="py-2.5 px-4 text-right font-mono text-gray-950 dark:text-white">₲ {gs(data.cambioClientes)}</td>
+            </tr>
+            <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10">
+              <td className="py-2.5 px-4 text-gray-700 dark:text-gray-300">(+/-) Cambio en Inventarios (Mercaderías)</td>
+              <td className="py-2.5 px-4 text-right font-mono text-gray-950 dark:text-white">₲ {gs(data.cambioInventario)}</td>
+            </tr>
+            <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10">
+              <td className="py-2.5 px-4 text-gray-700 dark:text-gray-300">(+/-) Cambio en Cuentas por Pagar (Proveedores)</td>
+              <td className="py-2.5 px-4 text-right font-mono text-gray-950 dark:text-white">₲ {gs(data.cambioProveedores)}</td>
+            </tr>
+            <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10">
+              <td className="py-2.5 px-4 text-gray-700 dark:text-gray-300">(+/-) Cambio en Otros Pasivos Operativos</td>
+              <td className="py-2.5 px-4 text-right font-mono text-gray-950 dark:text-white">₲ {gs(data.cambioOtrosPasivos)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="bg-amber-50 dark:bg-amber-900/20 px-4 py-2 flex items-center justify-between border-b border-amber-100 dark:border-amber-800">
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">Actividades de Inversión</span>
+          <span className="font-mono font-bold text-sm text-amber-900 dark:text-amber-100">₲ {gs(data.totalInversion)}</span>
+        </div>
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+            <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10">
+              <td className="py-2.5 px-4 text-gray-700 dark:text-gray-300">Adquisición / Venta de Propiedad, Planta y Equipo</td>
+              <td className="py-2.5 px-4 text-right font-mono text-gray-950 dark:text-white">₲ {gs(data.inversionActivos)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="bg-purple-50 dark:bg-purple-900/20 px-4 py-2 flex items-center justify-between border-b border-purple-100 dark:border-purple-800">
+          <span className="text-xs font-bold uppercase tracking-wider text-purple-800 dark:text-purple-200">Actividades de Financiación</span>
+          <span className="font-mono font-bold text-sm text-purple-900 dark:text-purple-100">₲ {gs(data.totalFinanciamiento)}</span>
+        </div>
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-gray-50 dark:divide-slate-800/50">
+            <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-800/10">
+              <td className="py-2.5 px-4 text-gray-700 dark:text-gray-300">Obtención / Pago de Préstamos y Cambios Patrimoniales</td>
+              <td className="py-2.5 px-4 text-right font-mono text-gray-950 dark:text-white">₲ {gs(data.financiamientoPrestamos)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Resumen Final */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
+          <span className="text-sm font-bold text-gray-800 dark:text-gray-200">Variación Neta de Efectivo</span>
+          <span className={cn("font-mono font-black text-lg", isPositive ? "text-green-500" : "text-red-500")}>
+            {isPositive ? "+" : ""} ₲ {gs(data.variacionNeta)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-600 dark:text-gray-400">Efectivo al Inicio del Período</span>
+          <span className="font-mono font-semibold text-gray-900 dark:text-white">₲ {gs(data.efectivoInicio)}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm pt-1">
+          <span className="text-gray-600 dark:text-gray-400">Efectivo al Final del Período</span>
+          <span className="font-mono font-bold text-gray-900 dark:text-white">₲ {gs(data.efectivoFin)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   entities:    Array<{ id: string; legalName: string; ruc: string }>;
   defaultFrom: string;
@@ -388,10 +488,11 @@ interface Props {
 const TABS = [
   { id: "balance", label: "Balance General"      },
   { id: "eerr",    label: "Estado de Resultados" },
+  { id: "flujo",   label: "Flujo de Caja"        },
 ] as const;
 
 export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbError }: Props) {
-  const [tab,      setTab]      = useState<"balance" | "eerr">("balance");
+  const [tab,      setTab]      = useState<"balance" | "eerr" | "flujo">("balance");
   const [entityId, setEntityId] = useState(entities[0]?.id ?? "");
   const [asOf,     setAsOf]     = useState(defaultTo);
   const [from,     setFrom]     = useState(defaultFrom);
@@ -399,6 +500,7 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
   const [isPending, startLoad]  = useTransition();
   const [balData,  setBalData]  = useState<BalanceGeneral | null>(null);
   const [eerrData, setEerrData] = useState<EstadoResultados | null>(null);
+  const [flujoData, setFlujoData] = useState<FlujoCaja | null>(null);
   const [error,    setError]    = useState<string | null>(null);
 
   function handleGenerar() {
@@ -406,21 +508,115 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
     setError(null);
     setBalData(null);
     setEerrData(null);
+    setFlujoData(null);
 
     startLoad(async () => {
       if (tab === "balance") {
         const r = await loadBalanceGeneral(entityId, asOf);
         if (r.ok) setBalData(r.data);
         else setError(r.error);
-      } else {
+      } else if (tab === "eerr") {
         const r = await loadEstadoResultados(entityId, from, to);
         if (r.ok) setEerrData(r.data);
+        else setError(r.error);
+      } else {
+        const r = await loadFlujoCaja(entityId, from, to);
+        if (r.ok) setFlujoData(r.data);
         else setError(r.error);
       }
     });
   }
 
-  const hasData = tab === "balance" ? !!balData : !!eerrData;
+  function downloadCsv() {
+    let csvContent = "";
+    let filename = "";
+
+    if (tab === "balance" && balData) {
+      filename = `Balance_General_${balData.entityName.replace(/\s+/g, "_")}_al_${balData.asOfDate}.csv`;
+      csvContent = "Codigo;Cuenta;Saldo\n";
+      
+      const flattenNode = (node: AccountBalance, lines: string[]) => {
+        if (node.subtotal !== 0) {
+          lines.push(`${node.code};"${node.name}";${Math.round(node.subtotal)}`);
+        }
+        node.children.forEach(c => flattenNode(c, lines));
+      };
+
+      csvContent += "ACTIVO\n";
+      const activoLines: string[] = [];
+      balData.activo.forEach(n => flattenNode(n, activoLines));
+      csvContent += activoLines.join("\n") + `\nTotal Activo;;${Math.round(balData.totalActivo)}\n\n`;
+
+      csvContent += "PASIVO\n";
+      const pasivoLines: string[] = [];
+      balData.pasivo.forEach(n => flattenNode(n, pasivoLines));
+      csvContent += pasivoLines.join("\n") + `\nTotal Pasivo;;${Math.round(balData.totalPasivo)}\n\n`;
+
+      csvContent += "PATRIMONIO NETO\n";
+      const patLines: string[] = [];
+      balData.patrimonio.forEach(n => flattenNode(n, patLines));
+      csvContent += patLines.join("\n") + `\nResultado del Ejercicio;;${Math.round(balData.resultadoEjercicio)}\n`;
+      csvContent += `Total Patrimonio;;${Math.round(balData.totalPatrimonio)}\n\n`;
+      csvContent += `TOTAL PASIVO + PATRIMONIO;;${Math.round(balData.totalPasivo + balData.totalPatrimonio)}\n`;
+    } 
+    
+    else if (tab === "eerr" && eerrData) {
+      filename = `Estado_Resultados_${eerrData.entityName.replace(/\s+/g, "_")}_desde_${eerrData.fromDate}_hasta_${eerrData.toDate}.csv`;
+      csvContent = "Codigo;Cuenta;Saldo\n";
+      
+      const flattenNode = (node: AccountBalance, lines: string[]) => {
+        if (node.subtotal !== 0) {
+          lines.push(`${node.code};"${node.name}";${Math.round(node.subtotal)}`);
+        }
+        node.children.forEach(c => flattenNode(c, lines));
+      };
+
+      csvContent += "INGRESOS\n";
+      const ingresosLines: string[] = [];
+      eerrData.ingresos.forEach(n => flattenNode(n, ingresosLines));
+      csvContent += ingresosLines.join("\n") + `\nTotal Ingresos;;${Math.round(eerrData.totalIngresos)}\n\n`;
+
+      csvContent += "EGRESOS\n";
+      const egresosLines: string[] = [];
+      eerrData.egresos.forEach(n => flattenNode(n, egresosLines));
+      csvContent += egresosLines.join("\n") + `\nTotal Egresos;;${Math.round(eerrData.totalEgresos)}\n\n`;
+
+      csvContent += `RESULTADO DEL EJERCICIO;;${Math.round(eerrData.resultado)}\n`;
+    } 
+    
+    else if (tab === "flujo" && flujoData) {
+      filename = `Flujo_Caja_${flujoData.entityName.replace(/\s+/g, "_")}_desde_${flujoData.fromDate}_hasta_${flujoData.toDate}.csv`;
+      csvContent = "Concepto;Monto\n";
+      csvContent += `Resultado Neto del Ejercicio;${Math.round(flujoData.resultadoEjercicio)}\n`;
+      csvContent += `(+) Depreciaciones y Amortizaciones;${Math.round(flujoData.depreciaciones)}\n`;
+      csvContent += `(+/-) Cambio en Cuentas por Cobrar (Clientes);${Math.round(flujoData.cambioClientes)}\n`;
+      csvContent += `(+/-) Cambio en Inventarios;${Math.round(flujoData.cambioInventario)}\n`;
+      csvContent += `(+/-) Cambio en Proveedores;${Math.round(flujoData.cambioProveedores)}\n`;
+      csvContent += `(+/-) Cambio en Otros Pasivos;${Math.round(flujoData.cambioOtrosPasivos)}\n`;
+      csvContent += `FLUJO NETO DE ACTIVIDADES OPERATIVAS;${Math.round(flujoData.totalOperativo)}\n\n`;
+      csvContent += `Adquisicion de Activos Fijos;${Math.round(flujoData.inversionActivos)}\n`;
+      csvContent += `FLUJO NETO DE ACTIVIDADES DE INVERSION;${Math.round(flujoData.totalInversion)}\n\n`;
+      csvContent += `Prestamos y Cambios Patrimoniales;${Math.round(flujoData.financiamientoPrestamos)}\n`;
+      csvContent += `FLUJO NETO DE ACTIVIDADES DE FINANCIACION;${Math.round(flujoData.totalFinanciamiento)}\n\n`;
+      csvContent += `Variacion Neta de Efectivo y Equivalentes;${Math.round(flujoData.variacionNeta)}\n`;
+      csvContent += `Efectivo al Inicio del Periodo;${Math.round(flujoData.efectivoInicio)}\n`;
+      csvContent += `Efectivo al Final del Periodo;${Math.round(flujoData.efectivoFin)}\n`;
+    }
+
+    if (!csvContent) return;
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  const hasData = tab === "balance" ? !!balData : tab === "eerr" ? !!eerrData : !!flujoData;
 
   return (
     <div className="page-container max-w-6xl">
@@ -436,7 +632,7 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
         <h1 className="section-title text-2xl lg:text-3xl flex items-center gap-3">
           <BarChart3 className="h-7 w-7 text-primary" /> Estados Financieros
         </h1>
-        <p className="section-subtitle">Balance General y Estado de Resultados conforme NIIF / PGC</p>
+        <p className="section-subtitle">Balance General, Estado de Resultados y Flujo de Caja conforme NIIF / PGC</p>
       </div>
 
       {/* Tabs */}
@@ -444,7 +640,7 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
         {TABS.map((t) => (
           <button
             key={t.id}
-            onClick={() => { setTab(t.id); setBalData(null); setEerrData(null); setError(null); }}
+            onClick={() => { setTab(t.id); setBalData(null); setEerrData(null); setFlujoData(null); setError(null); }}
             className={cn(
               "flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all",
               tab === t.id
@@ -503,13 +699,18 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
             className="btn-secondary flex items-center gap-2"
           >
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
-            {isPending ? "Calculando…" : `Generar ${tab === "balance" ? "Balance General" : "Estado de Resultados"}`}
+            {isPending ? "Calculando…" : `Generar ${tab === "balance" ? "Balance General" : tab === "eerr" ? "Estado de Resultados" : "Flujo de Caja"}`}
           </button>
 
           {hasData && (
-            <button onClick={() => window.print()} className="btn-ghost flex items-center gap-2">
-              <Printer className="h-4 w-4" /> Imprimir / PDF
-            </button>
+            <>
+              <button onClick={() => window.print()} className="btn-ghost flex items-center gap-2">
+                <Printer className="h-4 w-4" /> Imprimir / PDF
+              </button>
+              <button onClick={downloadCsv} className="btn-ghost flex items-center gap-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/20">
+                <Download className="h-4 w-4" /> Exportar CSV
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -524,6 +725,7 @@ export function EstadosFinancierosClient({ entities, defaultFrom, defaultTo, dbE
       {/* Content */}
       {tab === "balance" && balData && <BalanceView data={balData} />}
       {tab === "eerr"    && eerrData && <EERRView data={eerrData} />}
+      {tab === "flujo"   && flujoData && <FlujoView data={flujoData} />}
 
       <style>{`
         @media print {

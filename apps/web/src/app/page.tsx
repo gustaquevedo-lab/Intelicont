@@ -7,7 +7,7 @@ import {
   Clock, Search, ArrowUpRight, Sparkles, FileText,
   Receipt, Calculator, ArrowRight, Calendar, CreditCard,
   CheckCircle2, Upload, BarChart3, DollarSign,
-  Zap, X, ChevronRight, BookOpen,
+  Zap, X, ChevronRight, BookOpen, Wallet, Ship, Coins
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/use-user";
@@ -228,11 +228,14 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Shortcuts */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
             <ShortcutCard icon={Receipt} label="Facturación" href="/sifen" color="primary" />
             <ShortcutCard icon={BookOpen} label="Libros IVA" href="/libros" color="secondary" />
             <ShortcutCard icon={Calculator} label="Impuestos" href="/impuestos" color="amber" />
             <ShortcutCard icon={CreditCard} label="Bancos" href="/banco" color="primary" />
+            <ShortcutCard icon={Wallet} label="Caja Chica" href="/caja-chica" color="secondary" />
+            <ShortcutCard icon={Ship} label="Importación" href="/importaciones" color="primary" />
+            <ShortcutCard icon={Coins} label="Tesorería" href="/tesoreria" color="amber" />
           </div>
         </div>
 

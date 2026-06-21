@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Calculator, ArrowLeft } from "lucide-react";
+import { FileText, Calculator, ArrowLeft, FileUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/fiscal/formulario-104", label: "Formulario 104", icon: Calculator },
-  { href: "/fiscal/hechauka", label: "Hechauka", icon: FileText },
+  { href: "/fiscal/formularios", label: "Declaraciones Juradas", icon: Calculator },
+  { href: "/fiscal/hechauka", label: "Libro IVA / RG90", icon: FileText },
+  { href: "/fiscal/importar", label: "Importador XML/CSV", icon: FileUp },
 ];
 
 export default function FiscalLayout({ children }: { children: React.ReactNode }) {

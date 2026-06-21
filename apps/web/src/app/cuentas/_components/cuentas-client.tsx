@@ -3,11 +3,13 @@
 import { useState, useTransition, useMemo } from "react";
 import {
   BookOpen, ChevronDown, ChevronRight, Search,
-  AlertCircle, Loader2, Download, Layers,
+  AlertCircle, Loader2, Download, Layers, Settings2, X,
+  ToggleLeft, ToggleRight, DollarSign, Percent, Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   loadPlanDeCuentas,
+  updateAccountFlags,
   type AccountNode,
 } from "../actions";
 
@@ -38,17 +40,20 @@ function exportCSV(nodes: AccountNode[], entityName: string) {
   const rows = [
     ["Plan de Cuentas", entityName],
     [],
-    ["Código", "Nombre", "Naturaleza", "Nivel", "Imputable"],
+    ["Código", "Nombre", "Naturaleza", "Nivel", "Imputable", "Req.CC", "Ajuste FX", "No Deducible IRE"],
     ...flat.map((n) => [
       n.code,
       n.name,
       NATURE_META[n.nature ?? ""]?.label ?? n.nature ?? "",
       String(n.level + 1),
       n.allowsPosting ? "Sí" : "No",
+      n.costCenterRequired ? "Sí" : "No",
+      n.admitsFxAdjustment ? "Sí" : "No",
+      n.nonDeductibleIre   ? "Sí" : "No",
     ]),
   ];
   const csv = rows.map((r) => r.join(",")).join("\n");
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url  = URL.createObjectURL(blob);
   const a    = Object.assign(document.createElement("a"), { href: url, download: `plan_cuentas_${Date.now()}.csv` });
   a.click();
@@ -62,15 +67,20 @@ function TreeNode({
   expandedIds,
   onToggle,
   searchMatch,
+  selectedId,
+  onSelect,
 }: {
   node:        AccountNode;
   expandedIds: Set<string>;
   onToggle:    (id: string) => void;
   searchMatch: Set<string>;
+  selectedId:  string | null;
+  onSelect:    (node: AccountNode) => void;
 }) {
   const isExpanded = expandedIds.has(node.id);
   const hasChildren = node.children.length > 0;
   const isMatch    = searchMatch.size > 0 && searchMatch.has(node.id);
+  const isSelected = selectedId === node.id;
 
   // Show node if it matches or has matching descendants
   if (searchMatch.size > 0 && !searchMatch.has(node.id) && !node.children.some((c) => searchMatch.has(c.id))) {
@@ -88,10 +98,15 @@ function TreeNode({
       <div
         className={cn(
           "flex items-center gap-2 py-1.5 px-3 rounded-lg transition-colors group cursor-pointer",
-          isMatch ? "bg-yellow-50 dark:bg-yellow-900/10" : "hover:bg-gray-50 dark:hover:bg-slate-800/50"
+          isSelected  ? "bg-primary/10 ring-1 ring-primary/30" :
+          isMatch     ? "bg-yellow-50 dark:bg-yellow-900/10" :
+                        "hover:bg-gray-50 dark:hover:bg-slate-800/50"
         )}
         style={{ paddingLeft: `${indent + 12}px` }}
-        onClick={() => hasChildren && onToggle(node.id)}
+        onClick={() => {
+          if (hasChildren) onToggle(node.id);
+          if (node.allowsPosting) onSelect(node);
+        }}
       >
         {/* Expand toggle */}
         <span className="shrink-0 w-4 h-4 flex items-center justify-center text-gray-400">
@@ -131,6 +146,30 @@ function TreeNode({
           </span>
         )}
 
+        {/* Fiscal flags badges (only if postable) */}
+        {node.allowsPosting && (
+          <>
+            {node.costCenterRequired && (
+              <span title="Requiere Centro de Costo" className="hidden sm:inline-flex text-[9px] font-bold px-1 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/20 dark:text-violet-300 dark:border-violet-800 shrink-0">
+                CC
+              </span>
+            )}
+            {node.admitsFxAdjustment && (
+              <span title="Admite ajuste por tipo de cambio" className="hidden sm:inline-flex text-[9px] font-bold px-1 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-800 shrink-0">
+                FX
+              </span>
+            )}
+            {node.nonDeductibleIre && (
+              <span title="No deducible IRE" className="hidden sm:inline-flex text-[9px] font-bold px-1 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800 shrink-0">
+                ND
+              </span>
+            )}
+            <span title="Editar flags fiscales" className="hidden group-hover:inline-flex items-center text-[10px] text-primary shrink-0">
+              <Settings2 className="h-3 w-3" />
+            </span>
+          </>
+        )}
+
         {/* Children count */}
         {hasChildren && (
           <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">
@@ -149,6 +188,8 @@ function TreeNode({
               expandedIds={expandedIds}
               onToggle={onToggle}
               searchMatch={searchMatch}
+              selectedId={selectedId}
+              onSelect={onSelect}
             />
           ))}
         </div>
@@ -174,6 +215,16 @@ export function CuentasClient({ entities, dbError }: Props) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [search,      setSearch]      = useState("");
 
+  // Flags panel
+  const [selectedAccount, setSelectedAccount] = useState<AccountNode | null>(null);
+  const [flagPending,     startFlagSave]       = useTransition();
+  const [flagSuccess,     setFlagSuccess]      = useState(false);
+
+  // Local editable flags (draft until saved)
+  const [draftCC,  setDraftCC]  = useState(false);
+  const [draftFX,  setDraftFX]  = useState(false);
+  const [draftND,  setDraftND]  = useState(false);
+
   const entity = entities.find((e) => e.id === entityId);
 
   function handleLoad() {
@@ -182,6 +233,7 @@ export function CuentasClient({ entities, dbError }: Props) {
     setTree(null);
     setExpandedIds(new Set());
     setSearch("");
+    setSelectedAccount(null);
     startLoad(async () => {
       const result = await loadPlanDeCuentas(entityId);
       if (result.ok) {
@@ -247,6 +299,39 @@ export function CuentasClient({ entities, dbError }: Props) {
   const flatCount = tree ? flattenTree(tree).length : 0;
   const postingCount = tree ? flattenTree(tree).filter((n) => n.allowsPosting).length : 0;
 
+  function handleSelectAccount(node: AccountNode) {
+    setSelectedAccount(node);
+    setDraftCC(node.costCenterRequired ?? false);
+    setDraftFX(node.admitsFxAdjustment ?? false);
+    setDraftND(node.nonDeductibleIre   ?? false);
+    setFlagSuccess(false);
+  }
+
+  function handleSaveFlags() {
+    if (!selectedAccount) return;
+    startFlagSave(async () => {
+      const res = await updateAccountFlags(selectedAccount.id, {
+        costCenterRequired: draftCC,
+        admitsFxAdjustment: draftFX,
+        nonDeductibleIre:   draftND,
+      });
+      if (res.ok) {
+        setFlagSuccess(true);
+        // Patch tree in place
+        if (tree) {
+          const flat = flattenTree(tree);
+          const found = flat.find((n) => n.id === selectedAccount.id);
+          if (found) {
+            found.costCenterRequired = draftCC;
+            found.admitsFxAdjustment = draftFX;
+            found.nonDeductibleIre   = draftND;
+          }
+          setTree([...tree]);
+        }
+      }
+    });
+  }
+
   return (
     <div className="page-container max-w-5xl">
 
@@ -306,60 +391,170 @@ export function CuentasClient({ entities, dbError }: Props) {
 
       {/* Tree */}
       {tree && (
-        <div className="card overflow-hidden">
-          {/* Toolbar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 border-b border-gray-100 dark:border-slate-700">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar cuenta…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="input-field pl-9 py-2 text-sm"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 ml-auto text-xs text-gray-500 dark:text-gray-400">
-              <span>{flatCount} cuentas · {postingCount} imputables</span>
-              <button onClick={expandAll}   className="px-2 py-1 rounded bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Expandir</button>
-              <button onClick={collapseAll} className="px-2 py-1 rounded bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Colapsar</button>
-              <button
-                onClick={() => entity && exportCSV(tree, entity.legalName)}
-                className="flex items-center gap-1 px-2 py-1 rounded bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
-              >
-                <Download className="h-3.5 w-3.5" /> CSV
-              </button>
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="flex flex-wrap gap-2 px-4 py-2 border-b border-gray-50 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30">
-            {Object.entries(NATURE_META).map(([, meta]) => (
-              <span key={meta.label} className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border", meta.cls)}>
-                {meta.label}
-              </span>
-            ))}
-            <span className="text-[10px] text-gray-400 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Cabecera</span>
-            <span className="text-xs text-gray-400 ml-auto">Click para expandir/colapsar</span>
-          </div>
-
-          {/* Tree */}
-          <div className="p-2 max-h-[600px] overflow-y-auto">
-            {search.trim() && searchMatch.size === 0 ? (
-              <p className="text-center text-sm text-gray-400 py-8">Sin resultados para "{search}"</p>
-            ) : (
-              tree.map((node) => (
-                <TreeNode
-                  key={node.id}
-                  node={node}
-                  expandedIds={expandedIds}
-                  onToggle={toggleExpanded}
-                  searchMatch={searchMatch}
+        <div className="flex gap-4">
+          {/* Tree panel */}
+          <div className="flex-1 card overflow-hidden">
+            {/* Toolbar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 border-b border-gray-100 dark:border-slate-700">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar cuenta…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="input-field pl-9 py-2 text-sm"
                 />
-              ))
-            )}
+              </div>
+
+              <div className="flex items-center gap-2 ml-auto text-xs text-gray-500 dark:text-gray-400">
+                <span>{flatCount} cuentas · {postingCount} imputables</span>
+                <button onClick={expandAll}   className="px-2 py-1 rounded bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Expandir</button>
+                <button onClick={collapseAll} className="px-2 py-1 rounded bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Colapsar</button>
+                <button
+                  onClick={() => entity && exportCSV(tree, entity.legalName)}
+                  className="flex items-center gap-1 px-2 py-1 rounded bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5" /> CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-2 px-4 py-2 border-b border-gray-50 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/30">
+              {Object.entries(NATURE_META).map(([, meta]) => (
+                <span key={meta.label} className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border", meta.cls)}>
+                  {meta.label}
+                </span>
+              ))}
+              <span className="text-[10px] text-gray-400 px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-700">Cabecera</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/20 dark:text-violet-300 dark:border-violet-800">CC</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-800">FX</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800">ND</span>
+              <span className="text-xs text-gray-400 ml-auto">Click en imputable para editar flags</span>
+            </div>
+
+            {/* Tree */}
+            <div className="p-2 max-h-[600px] overflow-y-auto">
+              {search.trim() && searchMatch.size === 0 ? (
+                <p className="text-center text-sm text-gray-400 py-8">Sin resultados para "{search}"</p>
+              ) : (
+                tree.map((node) => (
+                  <TreeNode
+                    key={node.id}
+                    node={node}
+                    expandedIds={expandedIds}
+                    onToggle={toggleExpanded}
+                    searchMatch={searchMatch}
+                    selectedId={selectedAccount?.id ?? null}
+                    onSelect={handleSelectAccount}
+                  />
+                ))
+              )}
+            </div>
           </div>
+
+          {/* Flags side panel */}
+          {selectedAccount && (
+            <div className="w-72 shrink-0 card p-5 flex flex-col gap-4 animate-in fade-in slide-in-from-right-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  <Settings2 className="h-4 w-4 text-primary" /> Flags Fiscales
+                </h3>
+                <button onClick={() => setSelectedAccount(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs font-mono text-primary">{selectedAccount.code}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">{selectedAccount.name}</p>
+              </div>
+
+              <div className="space-y-3">
+                {/* Flag 1: Requiere Centro de Costo */}
+                <button
+                  onClick={() => setDraftCC(!draftCC)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-3 rounded-xl border transition-all text-left",
+                    draftCC
+                      ? "bg-violet-50 border-violet-300 dark:bg-violet-900/20 dark:border-violet-700"
+                      : "bg-gray-50 border-gray-200 dark:bg-slate-800/50 dark:border-slate-700"
+                  )}
+                >
+                  {draftCC
+                    ? <ToggleRight className="h-5 w-5 text-violet-600 dark:text-violet-400 shrink-0" />
+                    : <ToggleLeft  className="h-5 w-5 text-gray-400 shrink-0" />
+                  }
+                  <div>
+                    <p className={cn("text-xs font-bold", draftCC ? "text-violet-700 dark:text-violet-300" : "text-gray-600 dark:text-gray-400")}>
+                      <Building2 className="inline h-3 w-3 mr-1" />Req. Centro de Costo
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Bloquea asientos sin CC asignado</p>
+                  </div>
+                </button>
+
+                {/* Flag 2: Admite Ajuste FX */}
+                <button
+                  onClick={() => setDraftFX(!draftFX)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-3 rounded-xl border transition-all text-left",
+                    draftFX
+                      ? "bg-teal-50 border-teal-300 dark:bg-teal-900/20 dark:border-teal-700"
+                      : "bg-gray-50 border-gray-200 dark:bg-slate-800/50 dark:border-slate-700"
+                  )}
+                >
+                  {draftFX
+                    ? <ToggleRight className="h-5 w-5 text-teal-600 dark:text-teal-400 shrink-0" />
+                    : <ToggleLeft  className="h-5 w-5 text-gray-400 shrink-0" />
+                  }
+                  <div>
+                    <p className={cn("text-xs font-bold", draftFX ? "text-teal-700 dark:text-teal-300" : "text-gray-600 dark:text-gray-400")}>
+                      <DollarSign className="inline h-3 w-3 mr-1" />Admite Ajuste FX
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Revaloriza al cierre (Caja USD, etc.)</p>
+                  </div>
+                </button>
+
+                {/* Flag 3: No Deducible IRE */}
+                <button
+                  onClick={() => setDraftND(!draftND)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-3 rounded-xl border transition-all text-left",
+                    draftND
+                      ? "bg-orange-50 border-orange-300 dark:bg-orange-900/20 dark:border-orange-700"
+                      : "bg-gray-50 border-gray-200 dark:bg-slate-800/50 dark:border-slate-700"
+                  )}
+                >
+                  {draftND
+                    ? <ToggleRight className="h-5 w-5 text-orange-600 dark:text-orange-400 shrink-0" />
+                    : <ToggleLeft  className="h-5 w-5 text-gray-400 shrink-0" />
+                  }
+                  <div>
+                    <p className={cn("text-xs font-bold", draftND ? "text-orange-700 dark:text-orange-300" : "text-gray-600 dark:text-gray-400")}>
+                      <Percent className="inline h-3 w-3 mr-1" />No Deducible IRE
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Excluye de la base imponible IRE</p>
+                  </div>
+                </button>
+              </div>
+
+              <button
+                onClick={handleSaveFlags}
+                disabled={flagPending}
+                className="btn-primary flex items-center justify-center gap-2 w-full"
+              >
+                {flagPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {flagPending ? "Guardando…" : "Guardar Flags"}
+              </button>
+
+              {flagSuccess && (
+                <p className="text-xs text-center text-green-600 dark:text-green-400 font-semibold animate-in fade-in">
+                  ✓ Flags guardados correctamente
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

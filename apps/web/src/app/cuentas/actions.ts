@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, and, asc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { entities, chartOfAccounts, accounts } from "@/lib/db/schema";
 
@@ -27,14 +27,17 @@ export async function loadEntidadesParaCuentas(): Promise<ActionResult<Array<{ i
 // ─── Account tree node ────────────────────────────────────────────────────────
 
 export interface AccountNode {
-  id:           string;
-  code:         string;
-  name:         string;
-  nature:       string | null;
-  allowsPosting:boolean | null;
-  parentId:     string | null;
-  children:     AccountNode[];
-  level:        number;
+  id:                 string;
+  code:               string;
+  name:               string;
+  nature:             string | null;
+  allowsPosting:      boolean | null;
+  costCenterRequired: boolean | null;
+  admitsFxAdjustment: boolean | null;
+  nonDeductibleIre:   boolean | null;
+  parentId:           string | null;
+  children:           AccountNode[];
+  level:              number;
 }
 
 export async function loadPlanDeCuentas(entityId: string): Promise<ActionResult<AccountNode[]>> {
@@ -55,12 +58,15 @@ export async function loadPlanDeCuentas(entityId: string): Promise<ActionResult<
 
     const rows = await db
       .select({
-        id:           accounts.id,
-        code:         accounts.code,
-        name:         accounts.name,
-        nature:       accounts.nature,
-        allowsPosting:accounts.allowsPosting,
-        parentId:     accounts.parentId,
+        id:                 accounts.id,
+        code:               accounts.code,
+        name:               accounts.name,
+        nature:             accounts.nature,
+        allowsPosting:      accounts.allowsPosting,
+        costCenterRequired: accounts.costCenterRequired,
+        admitsFxAdjustment: accounts.admitsFxAdjustment,
+        nonDeductibleIre:   accounts.nonDeductibleIre,
+        parentId:           accounts.parentId,
       })
       .from(accounts)
       .where(eq(accounts.coaId, coa.id))
@@ -70,14 +76,17 @@ export async function loadPlanDeCuentas(entityId: string): Promise<ActionResult<
     const map = new Map<string, AccountNode>();
     rows.forEach((r) => {
       map.set(r.id, {
-        id:           r.id,
-        code:         r.code,
-        name:         r.name,
-        nature:       r.nature,
-        allowsPosting:r.allowsPosting,
-        parentId:     r.parentId,
-        children:     [],
-        level:        0,
+        id:                 r.id,
+        code:               r.code,
+        name:               r.name,
+        nature:             r.nature,
+        allowsPosting:      r.allowsPosting,
+        costCenterRequired: r.costCenterRequired,
+        admitsFxAdjustment: r.admitsFxAdjustment,
+        nonDeductibleIre:   r.nonDeductibleIre,
+        parentId:           r.parentId,
+        children:           [],
+        level:              0,
       });
     });
 
@@ -100,5 +109,32 @@ export async function loadPlanDeCuentas(entityId: string): Promise<ActionResult<
     return { ok: true, data: roots };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Error al cargar cuentas" };
+  }
+}
+
+// ─── Update account fiscal flags ──────────────────────────────────────────────
+
+export async function updateAccountFlags(
+  accountId: string,
+  flags: {
+    costCenterRequired?: boolean;
+    admitsFxAdjustment?: boolean;
+    nonDeductibleIre?:   boolean;
+  }
+): Promise<ActionResult<void>> {
+  if (!accountId) return { ok: false, error: "accountId requerido" };
+  try {
+    const db = getDb();
+    await db
+      .update(accounts)
+      .set({
+        ...(flags.costCenterRequired !== undefined && { costCenterRequired: flags.costCenterRequired }),
+        ...(flags.admitsFxAdjustment !== undefined && { admitsFxAdjustment: flags.admitsFxAdjustment }),
+        ...(flags.nonDeductibleIre   !== undefined && { nonDeductibleIre:   flags.nonDeductibleIre }),
+      })
+      .where(eq(accounts.id, accountId));
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al guardar" };
   }
 }

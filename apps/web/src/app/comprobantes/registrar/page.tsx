@@ -17,7 +17,8 @@ import {
   createInlineProduct,
   createInlineFixedAsset,
   loadInventoryItems,
-  loadFixedAssets
+  loadFixedAssets,
+  loadRecentDocuments,
 } from "../actions";
 import { validateRUC } from "@/lib/ruc";
 
@@ -67,6 +68,10 @@ export default function RegistrarComprobantePage() {
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank" | "card" | "credit">("credit");
   const [bankAccountId, setBankAccountId] = useState("");
 
+  // ── Documento de Origen (NC/ND) ──
+  const [documentOrigenId, setDocumentOrigenId] = useState("");
+  const [recentDocs, setRecentDocs] = useState<Array<{ id: string; number: string; docType: string; issueDate: string; total: number; partnerName: string }>>([]);
+
   // ── Multimoneda ──
   const [currency, setCurrency] = useState<"PYG" | "USD" | "EUR" | "BRL" | "ARS">("PYG");
   const [tcSource, setTcSource] = useState<ExchangeRateSource>("manual");
@@ -115,6 +120,19 @@ export default function RegistrarComprobantePage() {
     if (invRes.ok) setInventoryList(invRes.data);
     if (assetRes.ok) setFixedAssetsList(assetRes.data);
   };
+
+  // Load recent docs when NC/ND selected
+  useEffect(() => {
+    if ((docType === "nota_credito" || docType === "nota_debito") && entityId) {
+      loadRecentDocuments(entityId, direction).then((r) => {
+        if (r.ok) setRecentDocs(r.data);
+      });
+    } else {
+      setRecentDocs([]);
+      setDocumentOrigenId("");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docType, entityId, direction]);
 
   useEffect(() => {
     if (entityId) refreshInventoryAndAssets(entityId);
@@ -364,7 +382,8 @@ export default function RegistrarComprobantePage() {
           usefulLifeMonths: l.usefulLifeMonths
         })),
         paymentMethod,
-        bankAccountId: bankAccountId || undefined
+        bankAccountId: bankAccountId || undefined,
+        documentOrigenId: documentOrigenId || undefined,
       });
 
       if (result.ok) {
@@ -517,6 +536,39 @@ export default function RegistrarComprobantePage() {
                 </select>
               </div>
             </div>
+
+            {/* Documento de Origen — solo visible para NC y ND */}
+            {(docType === "nota_credito" || docType === "nota_debito") && (
+              <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-800/40">
+                <label className="block text-xs font-semibold text-amber-400 mb-1.5">
+                  📎 Comprobante de Origen (Factura que genera la NC/ND)
+                </label>
+                {recentDocs.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic">No se encontraron facturas previas para esta empresa/perspectiva.</p>
+                ) : (
+                  <select
+                    value={documentOrigenId}
+                    onChange={(e) => setDocumentOrigenId(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-amber-700/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all"
+                  >
+                    <option value="">— Sin vincular (opcional) —</option>
+                    {recentDocs
+                      .filter((d) => d.docType === "factura" || d.docType === "invoice")
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.number} · {d.partnerName} · Gs. {Number(d.total).toLocaleString("es-PY")} · {d.issueDate}
+                        </option>
+                      ))
+                    }
+                  </select>
+                )}
+                {documentOrigenId && (
+                  <p className="mt-1 text-[10px] text-amber-400">
+                    ✓ Esta nota quedará vinculada a la factura seleccionada.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div className="sm:col-span-2">

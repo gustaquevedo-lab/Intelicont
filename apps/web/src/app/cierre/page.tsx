@@ -108,6 +108,13 @@ export default function CierreMensualPage() {
       description: "Generar el costo promedio ponderado de stock mensual",
       status: "done",
       link: "/comprobantes"
+    },
+    {
+      id: "m6",
+      label: "Declaración Informativa RG90 (DNIT)",
+      description: "Verificar el Libro de Compras y Ventas e IVA de este período",
+      status: "done",
+      link: "/rg90"
     }
   ] : [
     {

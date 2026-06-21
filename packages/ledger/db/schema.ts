@@ -90,6 +90,8 @@ export const accounts = pgTable("accounts", {
   parentId: uuid("parent_id"),
   allowsPosting: boolean("allows_posting").default(true),
   costCenterRequired: boolean("cost_center_required").default(false),
+  admitsFxAdjustment: boolean("admits_fx_adjustment").default(false),
+  nonDeductibleIre: boolean("non_deductible_ire").default(false),
   taxMappings: jsonb("tax_mappings"),
   eefLineId: varchar("eef_line_id", { length: 50 }),
 });
@@ -187,6 +189,7 @@ export const taxDocuments = pgTable("tax_documents", {
   total: numeric("total", { precision: 20, scale: 4 }).notNull(),
   ivaBookPeriod: uuid("iva_book_period").references(() => fiscalPeriods.id, { onDelete: "set null" }),
   journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id, { onDelete: "set null" }),
+  documentOrigenId: uuid("document_origen_id").references((): any => taxDocuments.id, { onDelete: "set null" }),
   metadata: jsonb("metadata"),
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
@@ -370,6 +373,92 @@ export const fixedAssets = pgTable("fixed_assets", {
   depreciationAccountId: uuid("depreciation_account_id").references(() => accounts.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// ─── Fondo Fijo (Caja Chica) ──────────────────────────────────────────────────
+export const pettyCashFunds = pgTable("petty_cash_funds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  custodian: text("custodian").notNull(),
+  maxAmount: numeric("max_amount", { precision: 20, scale: 4 }).notNull(),
+  glAccountId: uuid("gl_account_id").references(() => accounts.id, { onDelete: "set null" }),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const pettyCashReimbursements = pgTable("petty_cash_reimbursements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fundId: uuid("fund_id").references(() => pettyCashFunds.id, { onDelete: "cascade" }).notNull(),
+  date: timestamp("date").notNull(),
+  totalAmount: numeric("total_amount", { precision: 20, scale: 4 }).notNull(),
+  journalEntryId: uuid("journal_entry_id"),
+  status: varchar("status", { length: 20 }).default("pending"), // pending, posted
+});
+
+export const pettyCashExpenses = pgTable("petty_cash_expenses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reimbursementId: uuid("reimbursement_id").references(() => pettyCashReimbursements.id, { onDelete: "cascade" }),
+  fundId: uuid("fund_id").references(() => pettyCashFunds.id, { onDelete: "cascade" }).notNull(),
+  date: timestamp("date").notNull(),
+  partnerName: text("partner_name").notNull(),
+  partnerRuc: varchar("partner_ruc", { length: 20 }).notNull(),
+  invoiceNumber: varchar("invoice_number", { length: 20 }).notNull(),
+  total: numeric("total", { precision: 20, scale: 4 }).notNull(),
+  iva10: numeric("iva_10", { precision: 20, scale: 4 }).default("0"),
+  iva5: numeric("iva_5", { precision: 20, scale: 4 }).default("0"),
+  exento: numeric("exento", { precision: 20, scale: 4 }).default("0"),
+  glAccountId: uuid("gl_account_id").references(() => accounts.id, { onDelete: "set null" }),
+});
+
+// ─── Despachos de Importacion ─────────────────────────────────────────────────
+export const importClearances = pgTable("import_clearances", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  clearanceNumber: varchar("clearance_number", { length: 50 }).notNull(),
+  date: timestamp("date").notNull(),
+  fobValue: numeric("fob_value", { precision: 20, scale: 4 }).notNull(),
+  freightValue: numeric("freight_value", { precision: 20, scale: 4 }).default("0"),
+  insuranceValue: numeric("insurance_value", { precision: 20, scale: 4 }).default("0"),
+  customsTax: numeric("customs_tax", { precision: 20, scale: 4 }).default("0"),
+  ivaAduana: numeric("iva_aduana", { precision: 20, scale: 4 }).default("0"),
+  totalGastoLocal: numeric("total_gasto_local", { precision: 20, scale: 4 }).default("0"),
+  status: varchar("status", { length: 20 }).default("draft"), // draft, processed
+});
+
+export const importClearanceExpenses = pgTable("import_clearance_expenses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clearanceId: uuid("clearance_id").references(() => importClearances.id, { onDelete: "cascade" }).notNull(),
+  taxDocumentId: uuid("tax_document_id").references(() => taxDocuments.id, { onDelete: "cascade" }).notNull(),
+  allocatedAmount: numeric("allocated_amount", { precision: 20, scale: 4 }).notNull(),
+});
+
+// ─── OPs y Cheques (Tesoreria) ─────────────────────────────────────────────────
+export const paymentOrders = pgTable("payment_orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  date: timestamp("date").notNull(),
+  number: varchar("number", { length: 50 }).notNull(),
+  partnerId: uuid("partner_id").references(() => partners.id, { onDelete: "set null" }),
+  totalAmount: numeric("total_amount", { precision: 20, scale: 4 }).notNull(),
+  paymentMethod: varchar("payment_method", { length: 30 }).notNull(), // "cash", "check", "bank_transfer"
+  bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, { onDelete: "set null" }),
+  journalEntryId: uuid("journal_entry_id"),
+  status: varchar("status", { length: 20 }).default("draft"), // draft, approved, paid
+});
+
+export const bankChecks = pgTable("bank_checks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, { onDelete: "cascade" }).notNull(),
+  checkNumber: varchar("check_number", { length: 50 }).notNull(),
+  amount: numeric("amount", { precision: 20, scale: 4 }).notNull(),
+  checkType: varchar("check_type", { length: 20 }).default("vista"), // vista, diferido
+  issueDate: timestamp("issue_date", { withTimezone: true }).defaultNow().notNull(),
+  dueDate: timestamp("due_date"),
+  payeeName: text("payee_name").notNull(),
+  paymentOrderId: uuid("payment_order_id").references(() => paymentOrders.id, { onDelete: "set null" }),
+  status: varchar("status", { length: 20 }).default("issued"), // issued, cleared, voided
 });
 
 // ─── Relations ────────────────────────────────────────────────────────────
