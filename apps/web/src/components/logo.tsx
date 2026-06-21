@@ -84,3 +84,19 @@ export function Logo({
     </div>
   );
 }
+
+/**
+ * Inline bicolor wordmark for use inside headings / body copy.
+ * Inherits font-size and base styles from the parent — only sets colors.
+ * Example:  <h1 className="text-2xl font-bold">Bienvenido a <Wordmark /></h1>
+ */
+export function Wordmark({ dark = false }: { dark?: boolean }) {
+  const a = dark ? "text-blue-300" : "text-[#104c91] dark:text-blue-300";
+  const b = dark ? "text-emerald-300" : "text-[#08a14b] dark:text-emerald-300";
+  return (
+    <>
+      <span className={a}>Inteli</span>
+      <span className={b}>Cont</span>
+    </>
+  );
+}

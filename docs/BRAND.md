@@ -157,6 +157,19 @@ import { Logo } from "@/components/logo";
 
 No copies/pegues SVG en componentes — usá `<Logo />`.
 
+### Wordmark inline en headings o copy
+
+Cuando "InteliCont" aparece **adentro de un heading o un párrafo**, no metas el símbolo — usá el helper `<Wordmark />` para mantener el split bicolor:
+
+```tsx
+import { Wordmark } from "@/components/logo";
+
+<h1 className="text-2xl font-bold">Bienvenido a <Wordmark /></h1>
+<p>... <Wordmark dark /> está listo para vos.</p>
+```
+
+Hereda `font-size`, `font-weight`, `letter-spacing` del padre — solo aplica los dos colores. **No** usar `<span>Inteli</span><span>Cont</span>` a mano: si cambiamos los hex de marca, hay que poder hacerlo en un solo archivo.
+
 ---
 
 ## 6. Voz (resumen)

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/logo";
 import {
   Mail, Lock, Eye, EyeOff, Sparkles, AlertCircle,
   CheckCircle2, ArrowRight, Loader2,
@@ -112,24 +113,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative">
-          <div className="flex items-center gap-3">
-            <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-              <defs>
-                <linearGradient id="lg1" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#104c91"/>
-                  <stop offset="100%" stopColor="#0a2244"/>
-                </linearGradient>
-              </defs>
-              <rect width="44" height="44" rx="12" fill="url(#lg1)"/>
-              <path d="M13 22 C13 16, 19 16, 22 22 C25 28, 31 28, 31 22 C31 16, 25 16, 22 22 C19 28, 13 28, 13 22 Z" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              <path d="M22 19 L22 25 M19 22 L25 22" stroke="#00d46a" strokeWidth="2.5" strokeLinecap="round" />
-              <circle cx="22" cy="22" r="1.5" fill="white" />
-            </svg>
-            <div>
-              <span className="text-white font-black text-2xl leading-none">Inteli</span>
-              <span className="text-[#00d46a] font-light text-2xl leading-none">Cont</span>
-            </div>
-          </div>
+          <Logo size="lg" dark />
           <p className="text-white/50 text-sm mt-2 font-medium">Ecosistema Inteli* · IntelliHouse E.A.S.</p>
         </div>
 

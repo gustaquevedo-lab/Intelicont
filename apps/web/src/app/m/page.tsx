@@ -16,6 +16,7 @@ import { useGestures, useHaptic } from "@/lib/pwa/gestures";
 import { useUser } from "@/hooks/use-user";
 import { useEntity } from "@/hooks/use-entity";
 import { useToast } from "@/components/ui/toast";
+import { Logo } from "@/components/logo";
 
 type View = "home" | "capture" | "review" | "queue" | "preview";
 
@@ -274,23 +275,8 @@ function HomeView({
   return (
     <div className="px-4 pt-6 pb-24 max-w-lg mx-auto space-y-6">
       {/* Logo + Greeting */}
-      <div className="flex items-center gap-3 mb-2">
-        <svg width="40" height="40" viewBox="0 0 44 44" fill="none" className="shrink-0">
-          <defs>
-            <linearGradient id="lg1" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#104c91"/>
-              <stop offset="100%" stopColor="#0a2244"/>
-            </linearGradient>
-          </defs>
-          <rect width="44" height="44" rx="12" fill="url(#lg1)"/>
-          <path d="M13 22 C13 16, 19 16, 22 22 C25 28, 31 28, 31 22 C31 16, 25 16, 22 22 C19 28, 13 28, 13 22 Z" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <path d="M22 19 L22 25 M19 22 L25 22" stroke="#00d46a" strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="22" cy="22" r="1.5" fill="white" />
-        </svg>
-        <div className="flex flex-col">
-          <span className="font-black text-2xl leading-none text-gray-900 dark:text-white">Inteli</span>
-          <span className="font-light text-2xl leading-none text-secondary -ml-1">Cont</span>
-        </div>
+      <div className="mb-2">
+        <Logo size="md" />
       </div>
       {/* Greeting */}
       <div>

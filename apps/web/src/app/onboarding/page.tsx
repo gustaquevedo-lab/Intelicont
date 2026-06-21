@@ -8,6 +8,7 @@ import {
   Globe, BarChart3, CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Wordmark } from "@/components/logo";
 
 interface OnboardingStep {
   id: string;
@@ -442,7 +443,7 @@ function CompleteStep() {
         </div>
       </div>
       <div>
-        <h3 className="text-xl font-bold text-white mb-2">¡InteliCont está listo!</h3>
+        <h3 className="text-xl font-bold mb-2">¡<Wordmark dark /> está listo!</h3>
         <p className="text-gray-400 text-sm max-w-sm mx-auto">
           Ya podés empezar a subir facturas, crear asientos y generar reportes. 
           La IA sugerirá asientos automáticamente.

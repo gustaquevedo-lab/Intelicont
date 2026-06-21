@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { WifiOff, Camera, RefreshCw } from "lucide-react";
+import { Wordmark } from "@/components/logo";
 
 export default function OfflinePage() {
   return (
@@ -15,7 +16,7 @@ export default function OfflinePage() {
           Sin conexión
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-sm mb-8">
-          No tenés internet. Pero no te preocupes — InteliCont PWA funciona offline. 
+          No tenés internet. Pero no te preocupes — <Wordmark /> PWA funciona offline.
           Tus facturas capturadas se guardan localmente y se sincronizan automáticamente.
         </p>
 
