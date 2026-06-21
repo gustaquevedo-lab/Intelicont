@@ -75,9 +75,21 @@
   .icon-box img { border-radius: 18%; box-shadow: 0 4px 14px rgba(15,23,42,.12); }
   .icon-box .lbl { font-size: 11px; color: var(--muted); font-weight: 600; }
 
-  /* OG preview */
-  .og-frame { aspect-ratio: 1200/630; width: 100%; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(15,23,42,.15); background: var(--bg); }
-  .og-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* PWA icon mock (replicates what /api/brand/icon/[size] renders) */
+  .pwa-icon { display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #051125 0%, #0a2244 55%, #104c91 100%); border-radius: 18%; box-shadow: 0 4px 14px rgba(15,23,42,.18); }
+  .pwa-icon svg { width: 66%; height: auto; }
+
+  /* OG preview mock */
+  .og-frame { aspect-ratio: 1200/630; width: 100%; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(15,23,42,.15); background: linear-gradient(135deg, #051125 0%, #0a2244 45%, #104c91 100%); }
+  .og-mock { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; box-sizing: border-box; color: white; font-family: Inter, system-ui, sans-serif; }
+  .og-header { display: flex; align-items: center; gap: 18px; margin-bottom: 8px; }
+  .og-wm { font-size: 78px; font-weight: 800; letter-spacing: -3px; line-height: 1; display: flex; }
+  .og-tag { font-size: 22px; font-weight: 500; color: #cbd5e1; margin: 0 0 18px; text-align: center; }
+  .og-card { width: 78%; max-width: 660px; background: rgba(255,255,255,0.06); border: 1px solid rgba(148,163,184,0.28); border-radius: 14px; padding: 14px 20px; }
+  .og-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .og-chip { background: #a3e635; color: #052e16; font-weight: 800; font-size: 11px; padding: 3px 10px; border-radius: 999px; letter-spacing: 1px; }
+  .og-row { display: flex; justify-content: space-between; font-size: 14px; color: #cbd5e1; padding: 6px 0; border-top: 1px solid rgba(148,163,184,0.18); }
+  .og-row b { font-weight: 800; }
 
   code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 13px; }
 </style>
@@ -176,15 +188,29 @@
   <!-- FAVICON / PWA -->
   <section>
     <h2>4 · Favicon &amp; PWA icons</h2>
-    <p class="sub">Una sola fuente: <code>/api/brand/icon/[size]</code> — generación dinámica desde el SVG canónico.</p>
+    <p class="sub">Una sola fuente: <code>/api/brand/icon/[size]</code> — generación dinámica desde el SVG canónico, fondo gradiente azul→azul-claro.</p>
     <div class="card">
       <div class="icons">
-        <div class="icon-box"><img src="/api/brand/icon/72"  width="72"  height="72"  alt="72px" /><span class="lbl">72</span></div>
-        <div class="icon-box"><img src="/api/brand/icon/96"  width="96"  height="96"  alt="96px" /><span class="lbl">96</span></div>
-        <div class="icon-box"><img src="/api/brand/icon/128" width="128" height="128" alt="128px" /><span class="lbl">128</span></div>
-        <div class="icon-box"><img src="/api/brand/icon/144" width="144" height="144" alt="144px" /><span class="lbl">144</span></div>
-        <div class="icon-box"><img src="/api/brand/icon/192" width="160" height="160" alt="192px" /><span class="lbl">192 · maskable</span></div>
-        <div class="icon-box"><img src="/api/brand/icon/512" width="180" height="180" alt="512px" /><span class="lbl">512 · maskable</span></div>
+        <div class="icon-box">
+          <div class="pwa-icon" style="width:72px;height:72px"><svg viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#i1)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="i1" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60a5fa"/><stop offset="35%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="70%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs></svg></div>
+          <span class="lbl">72</span>
+        </div>
+        <div class="icon-box">
+          <div class="pwa-icon" style="width:96px;height:96px"><svg viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#i2)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="i2" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60a5fa"/><stop offset="35%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="70%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs></svg></div>
+          <span class="lbl">96</span>
+        </div>
+        <div class="icon-box">
+          <div class="pwa-icon" style="width:128px;height:128px"><svg viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#i3)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="i3" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60a5fa"/><stop offset="35%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="70%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs></svg></div>
+          <span class="lbl">128</span>
+        </div>
+        <div class="icon-box">
+          <div class="pwa-icon" style="width:160px;height:160px"><svg viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#i4)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="i4" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60a5fa"/><stop offset="35%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="70%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs></svg></div>
+          <span class="lbl">192 · maskable</span>
+        </div>
+        <div class="icon-box">
+          <div class="pwa-icon" style="width:180px;height:180px"><svg viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#i5)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="i5" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60a5fa"/><stop offset="35%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="70%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs></svg></div>
+          <span class="lbl">512 · maskable</span>
+        </div>
       </div>
       <p style="margin:20px 0 0; font-size:13px; color:var(--muted)">Favicon SVG: <code>/favicon.svg</code> — mismo dibujo, sin fondo.</p>
     </div>
@@ -193,8 +219,28 @@
   <!-- OG -->
   <section>
     <h2>5 · Open Graph</h2>
-    <p class="sub">Previsualización para WhatsApp, Twitter/X, LinkedIn, Facebook.</p>
-    <div class="og-frame"><img src="/opengraph-image" alt="OG image preview" /></div>
+    <p class="sub">Mock visual de lo que devuelve <code>/opengraph-image</code> (PNG generado en edge a partir del mismo SVG canónico + Inter + bicolor).</p>
+    <div class="og-frame">
+      <div class="og-mock">
+        <div class="og-header">
+          <svg width="120" height="60" viewBox="0 0 72 36" fill="none"><path d="M 36 18 C 18 2, 4 9, 4 18 C 4 27, 18 34, 36 18 C 54 2, 68 9, 68 18 C 68 27, 54 34, 36 18 Z" stroke="url(#og1)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M 36 11 Q 36 18 43 18 Q 36 18 36 25 Q 36 18 29 18 Q 36 18 36 11 Z" fill="#fff"/><defs><linearGradient id="og1" x1="4" y1="18" x2="68" y2="18" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#60a5fa"/><stop offset="35%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="70%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs></svg>
+          <div class="og-wm"><span style="color:#60a5fa">Inteli</span><span style="color:#34d399">Cont</span></div>
+        </div>
+        <p class="og-tag">SaaS contable con IA para Paraguay</p>
+        <div class="og-card">
+          <div class="og-card-head">
+            <div style="display:flex; align-items:center; gap:10px">
+              <span class="og-chip">IA · 98%</span>
+              <span style="color:#f1f5f9; font-weight:700; font-size:13px">Factura 001-001-0012345</span>
+            </div>
+            <span style="color:#34d399; font-weight:700; font-size:11px; letter-spacing:1.5px">SIFEN ✓</span>
+          </div>
+          <div class="og-row"><span>Compras de mercaderías</span><b style="color:#60a5fa">Gs. 7.050.000</b></div>
+          <div class="og-row"><span>IVA crédito fiscal 10%</span><b style="color:#60a5fa">Gs. 705.000</b></div>
+          <div class="og-row"><span>Proveedores locales</span><b style="color:#34d399">Gs. 7.755.000</b></div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- DO / DON'T -->
