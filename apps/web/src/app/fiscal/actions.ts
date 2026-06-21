@@ -73,8 +73,8 @@ export async function loadLiquidacionIVA(
         and(
           eq(taxDocuments.entityId, entityId),
           eq(taxDocuments.status, "posted"),
-          gte(taxDocuments.issueDate, from),
-          lte(taxDocuments.issueDate, to)
+          gte(taxDocuments.issueDate, from.toISOString().split("T")[0]),
+          lte(taxDocuments.issueDate, to.toISOString().split("T")[0])
         )
       );
 
@@ -388,7 +388,7 @@ export async function importMarangatuCsv(
           .where(
             and(
               eq(taxDocuments.entityId, entityId),
-              eq(taxDocuments.docNumber, numero),
+              eq(taxDocuments.number, numero),
               eq(taxDocuments.timbrado, timbrado)
             )
           )
@@ -422,15 +422,12 @@ export async function importMarangatuCsv(
         await db.insert(taxDocuments).values({
           entityId,
           direction: tipo === "compras" ? "received" : "issued",
+          docType: "invoice",
           condition: "cash",
-          docNumber: numero,
+          number: numero,
           timbrado,
           cdc,
-          issueDate: dateObj,
-          issuerRuc: tipo === "compras" ? ruc : "80012345-1", // mock entity ruc for sales
-          issuerName: tipo === "compras" ? nombre : "Nuestra Empresa",
-          receiverRuc: tipo === "compras" ? "80012345-1" : ruc,
-          receiverName: tipo === "compras" ? "Nuestra Empresa" : nombre,
+          issueDate: dateObj.toISOString().split("T")[0],
           gravado10: String(gravado10),
           gravado5: String(gravado5),
           exento: String(exento),
@@ -568,15 +565,12 @@ export async function importSifenXml(
     await db.insert(taxDocuments).values({
       entityId,
       direction: "received",
+      docType: "invoice",
       condition: "credit",
-      docNumber: numDoc,
+      number: numDoc,
       timbrado: timbrado ?? "12345678",
       cdc,
-      issueDate,
-      issuerRuc: rucEm,
-      issuerName: nomEmi ?? "Proveedor SIFEN",
-      receiverRuc: "80012345-1",
-      receiverName: "Nuestra Empresa",
+      issueDate: issueDate.toISOString().split("T")[0],
       gravado10: String(gravado10),
       gravado5: "0",
       exento: "0",
@@ -585,8 +579,10 @@ export async function importSifenXml(
       total: String(total),
       status: "posted",
       partnerId: partner.id,
-      sourceFilename: "sifen_import.xml",
-      sourceXml: xmlContent,
+      metadata: {
+        sourceFilename: "sifen_import.xml",
+        sourceXml: xmlContent,
+      },
     });
 
     return { ok: true, data: `Factura Electrónica ${numDoc} de ${nomEmi} importada y asentada con éxito.` };

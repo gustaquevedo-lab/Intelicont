@@ -133,41 +133,38 @@ export type NewJournalLine = typeof journalLines.$inferInsert;
 
 // ─── Tax Documents (comprobantes SIFEN) ──────────────────────────────────────
 
-export const taxDocTypeEnum   = pgEnum("tax_doc_type",   ["factura","nota_credito","nota_debito","autofactura","nota_remision","retencion"]);
-export const taxDocStatusEnum = pgEnum("tax_doc_status", ["pending_review","proposed","approved","rejected","posted"]);
+export const docTypeEnum = pgEnum("doc_type", [
+  "invoice", "credit_note", "debit_note", "receipt", "self_invoice", "remito", "import",
+]);
 
 export const taxDocuments = pgTable("tax_documents", {
   id:             uuid("id").primaryKey().defaultRandom(),
   entityId:       uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
-  direction:      docDirectionEnum("direction").default("received").notNull(),
-  condition:      docConditionEnum("condition").default("credit"),
-  cdc:            varchar("cdc",         { length: 44 }),
+  direction:      docDirectionEnum("direction").notNull(),
+  docType:        docTypeEnum("doc_type").notNull(),
+  number:         varchar("number",  { length: 100 }).notNull(),
   timbrado:       varchar("timbrado",    { length: 20 }),
-  docType:        taxDocTypeEnum("doc_type").default("factura"),
-  docNumber:      varchar("doc_number",  { length: 20 }),
-  issueDate:      timestamp("issue_date").notNull(),
-  issuerRuc:      varchar("issuer_ruc",  { length: 20 }).notNull(),
-  issuerName:     text("issuer_name").notNull(),
-  receiverRuc:    varchar("receiver_ruc",{ length: 20 }),
-  receiverName:   text("receiver_name"),
+  cdc:            varchar("cdc",         { length: 44 }),
+  issueDate:      date("issue_date").notNull(),
+  partnerId:      uuid("partner_id").references(() => partners.id, { onDelete: "set null" }),
+  currencyCode:   varchar("currency_code",{ length: 3 }).default("PYG"),
+  fxRate:         numeric("fx_rate",     { precision: 20, scale: 6 }).default("1"),
+  condition:      docConditionEnum("condition").default("credit"),
+  status:         varchar("status",       { length: 50 }).default("pending"),
+  sifenStatus:    varchar("sifen_status", { length: 50 }),
   gravado10:      numeric("gravado_10",  { precision: 20, scale: 4 }).default("0"),
   gravado5:       numeric("gravado_5",   { precision: 20, scale: 4 }).default("0"),
   exento:         numeric("exento",      { precision: 20, scale: 4 }).default("0"),
   iva10:          numeric("iva_10",      { precision: 20, scale: 4 }).default("0"),
   iva5:           numeric("iva_5",       { precision: 20, scale: 4 }).default("0"),
   total:          numeric("total",       { precision: 20, scale: 4 }).notNull(),
-  currencyCode:   varchar("currency_code",{ length: 3 }).default("PYG"),
-  status:         taxDocStatusEnum("status").default("pending_review"),
-  aiProvider:     varchar("ai_provider", { length: 50 }),
-  aiConfidence:   numeric("ai_confidence",{ precision: 4, scale: 3 }),
-  aiReasoning:    text("ai_reasoning"),
-  sourceXml:      text("source_xml"),
-  sourceFilename: text("source_filename"),
-  journalEntryId: uuid("journal_entry_id"),
-  partnerId:      uuid("partner_id"),
+  ivaBookPeriod:  uuid("iva_book_period").references(() => fiscalPeriods.id, { onDelete: "set null" }),
+  journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id, { onDelete: "set null" }),
   documentOrigenId: uuid("document_origen_id").references((): any => taxDocuments.id, { onDelete: "set null" }),
+  metadata:       jsonb("metadata"),
+  uploadedAt:     timestamp("uploaded_at", { withTimezone: true }).defaultNow(),
+  processedAt:    timestamp("processed_at", { withTimezone: true }),
   createdAt:      timestamp("created_at").defaultNow(),
-  updatedAt:      timestamp("updated_at").defaultNow(),
 });
 
 export type TaxDocument    = typeof taxDocuments.$inferSelect;
@@ -175,14 +172,17 @@ export type NewTaxDocument = typeof taxDocuments.$inferInsert;
 
 export const taxDocumentLines = pgTable("tax_document_lines", {
   id:          uuid("id").primaryKey().defaultRandom(),
-  docId:       uuid("doc_id").references(() => taxDocuments.id, { onDelete: "cascade" }).notNull(),
-  lineNumber:  integer("line_number").notNull(),
-  description: text("description").notNull(),
+  documentId:  uuid("document_id").references(() => taxDocuments.id, { onDelete: "cascade" }).notNull(),
+  itemCode:    varchar("item_code", { length: 100 }),
+  description: text("description"),
   quantity:    numeric("quantity",   { precision: 20, scale: 4 }).default("1"),
   unitPrice:   numeric("unit_price", { precision: 20, scale: 4 }).notNull(),
   ivaRate:     integer("iva_rate").default(10),
-  ivaAmount:   numeric("iva_amount", { precision: 20, scale: 4 }).default("0"),
-  lineTotal:   numeric("line_total", { precision: 20, scale: 4 }).notNull(),
+  rubroIre:    integer("rubro_ire"),
+  rubroIrp:    integer("rubro_irp"),
+  incisoIva:   integer("inciso_iva"),
+  accountId:   uuid("account_id").references(() => accounts.id, { onDelete: "set null" }),
+  amount:      numeric("amount", { precision: 20, scale: 4 }).notNull(),
 });
 
 export const aiProposals = pgTable("ai_proposals", {

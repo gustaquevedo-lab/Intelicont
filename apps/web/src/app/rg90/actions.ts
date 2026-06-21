@@ -73,8 +73,8 @@ export async function loadRG90Data(
     const conditions: any[] = [
       eq(taxDocuments.entityId, entityId),
       eq(taxDocuments.status, "posted"),
-      gte(taxDocuments.issueDate, from),
-      lte(taxDocuments.issueDate, to),
+      gte(taxDocuments.issueDate, fromDate),
+      lte(taxDocuments.issueDate, toDate),
     ];
     if (direction === "received") conditions.push(eq(taxDocuments.direction, "received"));
     if (direction === "issued")   conditions.push(eq(taxDocuments.direction, "issued"));
@@ -84,13 +84,9 @@ export async function loadRG90Data(
         id:           taxDocuments.id,
         direction:    taxDocuments.direction,
         docType:      taxDocuments.docType,
-        docNumber:    taxDocuments.docNumber,
+        docNumber:    taxDocuments.number,
         timbrado:     taxDocuments.timbrado,
         issueDate:    taxDocuments.issueDate,
-        issuerRuc:    taxDocuments.issuerRuc,
-        issuerName:   taxDocuments.issuerName,
-        receiverRuc:  taxDocuments.receiverRuc,
-        receiverName: taxDocuments.receiverName,
         gravado10:    taxDocuments.gravado10,
         gravado5:     taxDocuments.gravado5,
         exento:       taxDocuments.exento,
@@ -108,10 +104,8 @@ export async function loadRG90Data(
 
     const result: RG90Row[] = rows.map((r) => {
       const isReceived = r.direction === "received";
-      // For received docs: the partner/issuer is the supplier
-      // For issued docs: the partner/receiver is the customer
-      const ruc    = r.partnerRuc   ?? (isReceived ? r.issuerRuc   : r.receiverRuc)   ?? "";
-      const nombre = r.partnerLegal ?? (isReceived ? r.issuerName  : r.receiverName)  ?? "";
+      const ruc    = r.partnerRuc   ?? "";
+      const nombre = r.partnerLegal ?? "General";
 
       return {
         id:        r.id,

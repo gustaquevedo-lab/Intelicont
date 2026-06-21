@@ -52,6 +52,16 @@ function mapDocType(inv: SifenInvoice): "factura" | "nota_credito" | "nota_debit
   return "factura";
 }
 
+function mapToDbDocType(type: string): "invoice" | "credit_note" | "debit_note" | "receipt" | "self_invoice" | "remito" | "import" {
+  if (type === "nota_credito" || type === "credit_note") return "credit_note";
+  if (type === "nota_debito" || type === "debit_note") return "debit_note";
+  if (type === "retencion" || type === "receipt") return "receipt";
+  if (type === "autofactura" || type === "self_invoice") return "self_invoice";
+  if (type === "nota_remision" || type === "remito") return "remito";
+  if (type === "import") return "import";
+  return "invoice";
+}
+
 // ─── Ingest XML → parse → save + AI proposal ─────────────────────────────────
 
 export interface IngestResult {
@@ -173,18 +183,39 @@ export async function ingestXML(
   }));
 
   const result = await db.transaction(async (tx) => {
+    // Find or create Partner
+    const direction = perspective === "buyer" ? "received" : "issued";
+    const partnerRuc = direction === "received" ? issuerRuc : (receiverRuc ?? "44444401-7");
+    const partnerName = direction === "received" ? issuerName : (receiverName ?? "Cliente Innominado");
+
+    let partnerRow = await tx.select()
+      .from(partners)
+      .where(and(eq(partners.entityId, entityId), eq(partners.ruc, partnerRuc)))
+      .limit(1);
+
+    let partnerId: string;
+    if (partnerRow.length === 0) {
+      const [newPartner] = await tx.insert(partners).values({
+        entityId,
+        kind: direction === "received" ? "supplier" : "customer",
+        ruc: partnerRuc,
+        legalName: partnerName,
+      }).returning();
+      partnerId = newPartner.id;
+    } else {
+      partnerId = partnerRow[0].id;
+    }
+
     // Insert tax document
     const [savedDoc] = await tx.insert(taxDocuments).values({
       entityId,
-      cdc:          cdc ?? undefined,
+      direction,
+      docType:      mapToDbDocType(docType),
+      number:       docNumber ?? "",
       timbrado:     timbrado ?? undefined,
-      docType:      docType as "factura" | "nota_credito" | "nota_debito" | "autofactura" | "nota_remision" | "retencion",
-      docNumber:    docNumber ?? undefined,
-      issueDate:    new Date(issueDate + "T12:00:00"),
-      issuerRuc,
-      issuerName,
-      receiverRuc:  receiverRuc ?? undefined,
-      receiverName: receiverName ?? undefined,
+      cdc:          cdc ?? undefined,
+      issueDate:    issueDate,
+      partnerId,
       gravado10:    String(inv.montos.gravado10),
       gravado5:     String(inv.montos.gravado5),
       exento:       String(inv.montos.exento),
@@ -193,25 +224,22 @@ export async function ingestXML(
       total:        String(total),
       currencyCode: currency,
       status:       proposal ? "proposed" : "pending_review",
-      aiProvider:   proposal?.provider ?? undefined,
-      aiConfidence: proposal ? String(proposal.confidence) : undefined,
-      aiReasoning:  proposal?.reasoning ?? undefined,
-      sourceXml:    xmlContent,
-      sourceFilename: filename,
+      metadata:     {
+        sourceXml:    xmlContent,
+        sourceFilename: filename,
+      },
     }).returning();
 
     // Insert lines
     if (mappedLines.length > 0) {
       await tx.insert(taxDocumentLines).values(
         mappedLines.map((l) => ({
-          docId:       savedDoc.id,
-          lineNumber:  l.lineNumber,
+          documentId:  savedDoc.id,
           description: l.description,
           quantity:    String(l.quantity),
           unitPrice:   String(l.unitPrice),
           ivaRate:     l.ivaRate,
-          ivaAmount:   String(l.ivaAmount),
-          lineTotal:   String(l.lineTotal),
+          amount:      String(l.lineTotal),
         }))
       );
     }
@@ -292,46 +320,51 @@ export async function loadComprobantes(filters?: {
         id:           taxDocuments.id,
         entityId:     taxDocuments.entityId,
         entityName:   entities.legalName,
+        entityRuc:    entities.ruc,
+        direction:    taxDocuments.direction,
         docType:      taxDocuments.docType,
-        docNumber:    taxDocuments.docNumber,
-        issuerName:   taxDocuments.issuerName,
-        issuerRuc:    taxDocuments.issuerRuc,
+        docNumber:    taxDocuments.number,
+        partnerName:  partners.legalName,
+        partnerRuc:   partners.ruc,
         issueDate:    taxDocuments.issueDate,
         total:        taxDocuments.total,
         currencyCode: taxDocuments.currencyCode,
         status:       taxDocuments.status,
-        aiProvider:   taxDocuments.aiProvider,
-        aiConfidence: taxDocuments.aiConfidence,
-        createdAt:    taxDocuments.createdAt,
+        aiProvider:   aiProposals.provider,
+        aiConfidence: aiProposals.confidence,
+        createdAt:    taxDocuments.uploadedAt,
       })
       .from(taxDocuments)
       .innerJoin(entities, eq(taxDocuments.entityId, entities.id))
+      .leftJoin(partners, eq(taxDocuments.partnerId, partners.id))
+      .leftJoin(aiProposals, eq(taxDocuments.id, aiProposals.docId))
       .where(conditions.length ? and(...conditions) : undefined)
-      .orderBy(desc(taxDocuments.createdAt))
+      .orderBy(desc(taxDocuments.uploadedAt))
       .limit(200);
 
     return {
       ok: true,
-      data: rows.map((r) => ({
-        id:           r.id,
-        entityId:     r.entityId,
-        entityName:   r.entityName,
-        docType:      r.docType ?? "factura",
-        docNumber:    r.docNumber,
-        issuerName:   r.issuerName,
-        issuerRuc:    r.issuerRuc,
-        issueDate:    r.issueDate instanceof Date
-                        ? r.issueDate.toISOString().split("T")[0]
-                        : String(r.issueDate).slice(0, 10),
-        total:        Number(r.total),
-        currency:     r.currencyCode ?? "PYG",
-        status:       r.status ?? "pending_review",
-        aiProvider:   r.aiProvider,
-        aiConfidence: r.aiConfidence ? Number(r.aiConfidence) : null,
-        createdAt:    r.createdAt instanceof Date
-                        ? r.createdAt.toISOString()
-                        : String(r.createdAt),
-      })),
+      data: rows.map((r) => {
+        const isReceived = r.direction === "received";
+        return {
+          id:           r.id,
+          entityId:     r.entityId,
+          entityName:   r.entityName,
+          docType:      r.docType ?? "factura",
+          docNumber:    r.docNumber,
+          issuerName:   isReceived ? (r.partnerName ?? "Desconocido") : r.entityName,
+          issuerRuc:    isReceived ? (r.partnerRuc ?? "") : r.entityRuc,
+          issueDate:    String(r.issueDate).slice(0, 10),
+          total:        Number(r.total),
+          currency:     r.currencyCode ?? "PYG",
+          status:       r.status ?? "pending_review",
+          aiProvider:   r.aiProvider,
+          aiConfidence: r.aiConfidence ? Number(r.aiConfidence) : null,
+          createdAt:    r.createdAt instanceof Date
+                          ? r.createdAt.toISOString()
+                          : String(r.createdAt),
+        };
+      }),
     };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Error al cargar comprobantes" };
@@ -348,49 +381,65 @@ export async function loadProposal(docId: string): Promise<ActionResult<{
     const db = getDb();
 
     const [doc] = await db
-      .select()
+      .select({
+        id:           taxDocuments.id,
+        entityId:     taxDocuments.entityId,
+        entityName:   entities.legalName,
+        entityRuc:    entities.ruc,
+        direction:    taxDocuments.direction,
+        docType:      taxDocuments.docType,
+        docNumber:    taxDocuments.number,
+        partnerName:  partners.legalName,
+        partnerRuc:   partners.ruc,
+        issueDate:    taxDocuments.issueDate,
+        total:        taxDocuments.total,
+        currencyCode: taxDocuments.currencyCode,
+        status:       taxDocuments.status,
+        createdAt:    taxDocuments.uploadedAt,
+        iva10:        taxDocuments.iva10,
+        iva5:         taxDocuments.iva5,
+        exento:       taxDocuments.exento,
+      })
       .from(taxDocuments)
       .innerJoin(entities, eq(taxDocuments.entityId, entities.id))
+      .leftJoin(partners, eq(taxDocuments.partnerId, partners.id))
       .where(eq(taxDocuments.id, docId));
 
     if (!doc) return { ok: false, error: "Comprobante no encontrado" };
 
     const docLines = await db.select().from(taxDocumentLines)
-      .where(eq(taxDocumentLines.docId, docId))
-      .orderBy(taxDocumentLines.lineNumber);
+      .where(eq(taxDocumentLines.documentId, docId));
 
     const [latestProposal] = await db.select().from(aiProposals)
       .where(and(eq(aiProposals.docId, docId), eq(aiProposals.status, "pending")))
       .orderBy(desc(aiProposals.createdAt))
       .limit(1);
 
-    const td = doc.tax_documents;
-    const en = doc.entities;
-
-    const docRow: ComprobanteRow & { iva10: number; iva5: number; ivaExento: number; lines: Array<{ description: string; quantity: number; unitPrice: number; ivaRate: number; lineTotal: number }> } = {
-      id:           td.id,
-      entityId:     td.entityId,
-      entityName:   en.legalName,
-      docType:      td.docType ?? "factura",
-      docNumber:    td.docNumber,
-      issuerName:   td.issuerName,
-      issuerRuc:    td.issuerRuc,
-      issueDate:    td.issueDate instanceof Date ? td.issueDate.toISOString().split("T")[0] : String(td.issueDate).slice(0, 10),
-      total:        Number(td.total),
-      currency:     td.currencyCode ?? "PYG",
-      status:       td.status ?? "pending_review",
-      aiProvider:   td.aiProvider,
-      aiConfidence: td.aiConfidence ? Number(td.aiConfidence) : null,
-      createdAt:    td.createdAt instanceof Date ? td.createdAt.toISOString() : String(td.createdAt),
-      iva10:        Number(td.iva10 ?? 0),
-      iva5:         Number(td.iva5 ?? 0),
-      ivaExento:    Number(td.exento ?? 0),
+    const isReceived = doc.direction === "received";
+    const docRow = {
+      id:           doc.id,
+      entityId:     doc.entityId,
+      entityName:   doc.entityName,
+      docType:      doc.docType ?? "factura",
+      docNumber:    doc.docNumber,
+      issuerName:   isReceived ? (doc.partnerName ?? "Desconocido") : doc.entityName,
+      issuerRuc:    isReceived ? (doc.partnerRuc ?? "") : doc.entityRuc,
+      issueDate:    String(doc.issueDate).slice(0, 10),
+      total:        Number(doc.total),
+      currency:     doc.currencyCode ?? "PYG",
+      status:       doc.status ?? "pending_review",
+      aiProvider:   latestProposal?.provider ?? null,
+      aiConfidence: latestProposal?.confidence ? Number(latestProposal.confidence) : null,
+      createdAt:    doc.createdAt instanceof Date ? doc.createdAt.toISOString() : String(doc.createdAt),
+      iva10:        Number(doc.iva10 ?? 0),
+      iva5:         Number(doc.iva5 ?? 0),
+      ivaExento:    Number(doc.exento ?? 0),
       lines:        docLines.map((l) => ({
-        description: l.description,
+        description: l.description ?? "",
         quantity:    Number(l.quantity ?? 0),
         unitPrice:   Number(l.unitPrice ?? 0),
         ivaRate:     Number(l.ivaRate ?? 0),
-        lineTotal:   Number(l.lineTotal ?? 0),
+        lineTotal:   Number(l.amount ?? 0),
       })),
     };
 
@@ -618,15 +667,11 @@ export async function createManualComprobante(
       const [savedDoc] = await tx.insert(taxDocuments).values({
         entityId,
         direction,
-        docType,
-        docNumber: number,
+        docType: mapToDbDocType(docType),
+        number,
         timbrado,
-        issueDate: parsedDate,
+        issueDate: issueDate,
         partnerId,
-        issuerRuc,
-        issuerName,
-        receiverRuc,
-        receiverName,
         condition: condition === "cash" ? "cash" : "credit",
         gravado10: String(gravado10),
         gravado5: String(gravado5),
@@ -641,14 +686,13 @@ export async function createManualComprobante(
       // Insert Tax Document Lines
       if (lines.length > 0) {
         await tx.insert(taxDocumentLines).values(
-          lines.map((l, i) => ({
-            docId: savedDoc.id,
-            lineNumber: i + 1,
+          lines.map((l) => ({
+            documentId: savedDoc.id,
             description: l.description,
             quantity: String(l.quantity),
             unitPrice: String(l.unitPrice),
             ivaRate: l.ivaRate,
-            lineTotal: String(l.lineTotal),
+            amount: String(l.lineTotal),
           }))
         );
       }
@@ -1064,7 +1108,7 @@ export async function loadRecentDocuments(
     const rows = await db
       .select({
         id:          taxDocuments.id,
-        docNumber:   taxDocuments.docNumber,
+        docNumber:   taxDocuments.number,
         docType:     taxDocuments.docType,
         issueDate:   taxDocuments.issueDate,
         total:       taxDocuments.total,
@@ -1076,7 +1120,7 @@ export async function loadRecentDocuments(
         eq(taxDocuments.entityId, entityId),
         eq(taxDocuments.direction, direction),
       ))
-      .orderBy(desc(taxDocuments.updatedAt))
+      .orderBy(desc(taxDocuments.uploadedAt))
       .limit(50);
     return {
       ok: true,

@@ -548,28 +548,52 @@ export async function exportArandukaJson(
     const to = new Date(year, 11, 31, 23, 59, 59);
 
     const sales = await db
-      .select()
+      .select({
+        issueDate: taxDocuments.issueDate,
+        docType: taxDocuments.docType,
+        number: taxDocuments.number,
+        timbrado: taxDocuments.timbrado,
+        total: taxDocuments.total,
+        partnerRuc: partners.ruc,
+        partnerName: partners.legalName,
+        entityRuc: entities.ruc,
+        entityName: entities.legalName,
+      })
       .from(taxDocuments)
+      .innerJoin(entities, eq(taxDocuments.entityId, entities.id))
+      .leftJoin(partners, eq(taxDocuments.partnerId, partners.id))
       .where(
         and(
           eq(taxDocuments.entityId, entityId),
           eq(taxDocuments.direction, "issued"),
           eq(taxDocuments.status, "posted"),
-          gte(taxDocuments.issueDate, from),
-          lte(taxDocuments.issueDate, to)
+          gte(taxDocuments.issueDate, from.toISOString().split("T")[0]),
+          lte(taxDocuments.issueDate, to.toISOString().split("T")[0])
         )
       );
 
     const purchases = await db
-      .select()
+      .select({
+        issueDate: taxDocuments.issueDate,
+        docType: taxDocuments.docType,
+        number: taxDocuments.number,
+        timbrado: taxDocuments.timbrado,
+        total: taxDocuments.total,
+        partnerRuc: partners.ruc,
+        partnerName: partners.legalName,
+        entityRuc: entities.ruc,
+        entityName: entities.legalName,
+      })
       .from(taxDocuments)
+      .innerJoin(entities, eq(taxDocuments.entityId, entities.id))
+      .leftJoin(partners, eq(taxDocuments.partnerId, partners.id))
       .where(
         and(
           eq(taxDocuments.entityId, entityId),
           eq(taxDocuments.direction, "received"),
           eq(taxDocuments.status, "posted"),
-          gte(taxDocuments.issueDate, from),
-          lte(taxDocuments.issueDate, to)
+          gte(taxDocuments.issueDate, from.toISOString().split("T")[0]),
+          lte(taxDocuments.issueDate, to.toISOString().split("T")[0])
         )
       );
 
@@ -577,24 +601,24 @@ export async function exportArandukaJson(
       sistema: "aranduka",
       ejercicio: year,
       identificacion: {
-        ruc: "80012345-1", // entity RUC
+        ruc: sales[0]?.entityRuc ?? purchases[0]?.entityRuc ?? "80012345-1",
       },
       ingresos: sales.map((s) => ({
-        fecha: s.issueDate.toISOString().split("T")[0],
+        fecha: new Date(s.issueDate).toISOString().split("T")[0],
         tipoComprobante: s.docType,
-        numero: s.docNumber,
+        numero: s.number,
         timbrado: s.timbrado,
-        rucEmisor: s.issuerRuc,
-        razonSocialEmisor: s.issuerName,
+        rucEmisor: s.entityRuc,
+        razonSocialEmisor: s.entityName,
         totalIngreso: parseFloat(s.total),
       })),
       egresos: purchases.map((p) => ({
-        fecha: p.issueDate.toISOString().split("T")[0],
+        fecha: new Date(p.issueDate).toISOString().split("T")[0],
         tipoComprobante: p.docType,
-        numero: p.docNumber,
+        numero: p.number,
         timbrado: p.timbrado,
-        rucEmisor: p.issuerRuc,
-        razonSocialEmisor: p.issuerName,
+        rucEmisor: p.partnerRuc ?? "",
+        razonSocialEmisor: p.partnerName ?? "",
         totalEgreso: parseFloat(p.total),
         clasificacionEgreso: "gasto_deducible",
       })),
