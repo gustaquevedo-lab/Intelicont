@@ -158,16 +158,8 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12">
 
         {/* Mobile logo */}
-        <div className="lg:hidden flex items-center gap-2 mb-8">
-          <svg width="32" height="32" viewBox="0 0 44 44" fill="none">
-            <rect width="44" height="44" rx="12" fill="#104c91"/>
-            <rect x="8"  y="13" width="28" height="3"   rx="1.5" fill="white"/>
-            <rect x="20" y="13" width="3"  height="19"  rx="1.5" fill="white"/>
-            <rect x="10" y="21" width="7"  height="2.5" rx="1.25" fill="rgba(255,255,255,0.75)"/>
-            <path d="M25.5 22.5 L28.5 26 L34.5 19" stroke="#00d46a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span className="font-black text-xl text-primary">Inteli</span>
-          <span className="font-light text-xl text-secondary -ml-1">Cont</span>
+        <div className="lg:hidden mb-8">
+          <Logo size="md" />
         </div>
 
         <div className="w-full max-w-md">

@@ -26,8 +26,8 @@ export function Logo({
   className,
 }: LogoProps) {
   const s = sizes[size];
-  const inteliColor = dark ? "text-blue-300" : "text-[#104c91] dark:text-blue-300";
-  const contColor = dark ? "text-emerald-300" : "text-[#08a14b] dark:text-emerald-300";
+  const inteliColor = dark ? "text-[#60a5fa]" : "text-[#104c91] dark:text-[#60a5fa]";
+  const contColor = dark ? "text-[#34d399]" : "text-[#08a14b] dark:text-[#34d399]";
   const sloganColor = dark
     ? "text-blue-200/60"
     : "text-gray-400 dark:text-blue-200/60";
@@ -91,8 +91,8 @@ export function Logo({
  * Example:  <h1 className="text-2xl font-bold">Bienvenido a <Wordmark /></h1>
  */
 export function Wordmark({ dark = false }: { dark?: boolean }) {
-  const a = dark ? "text-blue-300" : "text-[#104c91] dark:text-blue-300";
-  const b = dark ? "text-emerald-300" : "text-[#08a14b] dark:text-emerald-300";
+  const a = dark ? "text-[#60a5fa]" : "text-[#104c91] dark:text-[#60a5fa]";
+  const b = dark ? "text-[#34d399]" : "text-[#08a14b] dark:text-[#34d399]";
   return (
     <>
       <span className={a}>Inteli</span>
