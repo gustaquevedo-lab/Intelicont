@@ -23,7 +23,10 @@ function isPublic(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  console.log("[Middleware] Request path:", pathname);
+
   if (isPublic(pathname)) {
+    console.log("[Middleware] Public path, skipping auth check:", pathname);
     return NextResponse.next();
   }
 
@@ -31,13 +34,16 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     if (pathname === "/") {
+      console.log("[Middleware] No user, redirecting '/' to landing page");
       return NextResponse.redirect(new URL("/landing/index.html", request.url));
     }
+    console.log("[Middleware] No user, redirecting to /login from:", pathname);
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
+  console.log("[Middleware] Auth successful, proceeding to:", pathname);
   return response;
 }
 

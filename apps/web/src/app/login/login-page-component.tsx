@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
@@ -33,6 +33,7 @@ function getRedirectTo() {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
+  const router        = useRouter();
   const searchParams  = useSearchParams();
   const redirectTo    = searchParams.get("redirectTo") ?? "/";
   const callbackError = searchParams.get("error");
@@ -94,7 +95,10 @@ export default function LoginPage() {
       } else {
         // Middleware will redirect after session is set
         setFormState({ status: "success", message: "Acceso correcto, redirigiendo…" });
-        window.location.href = redirectTo;
+        router.refresh();
+        setTimeout(() => {
+          window.location.href = redirectTo;
+        }, 150);
       }
     });
   }
