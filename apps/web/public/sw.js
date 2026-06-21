@@ -124,10 +124,7 @@ async function staleWhileRevalidate(request) {
 
 async function navigationStrategy(request) {
   try {
-    const networkResponse = await fetch(request.url, {
-      headers: request.headers,
-      redirect: 'follow',
-    });
+    const networkResponse = await fetch(request);
     if (networkResponse.ok) {
       const cache = await caches.open(STATIC_CACHE);
       cache.put(request, networkResponse.clone());
