@@ -317,11 +317,34 @@ const PROVIDERS = [
 ];
 
 const DEFAULT_MODELS: Record<string, string> = {
-  gemini: "gemini-2.0-flash",
+  gemini: "gemini-2.5-flash",
   openai: "gpt-4o-mini",
   claude: "claude-haiku-4-5",
   ollama: "llama3.2",
   rules:  "",
+};
+
+const PROVIDER_MODELS: Record<string, Array<{ value: string; label: string }>> = {
+  gemini: [
+    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Recomendado - Gratis)" },
+    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+    { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
+    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Avanzado)" },
+  ],
+  openai: [
+    { value: "gpt-4o-mini", label: "GPT-4o-mini (Económico/Recomendado)" },
+    { value: "gpt-4o", label: "GPT-4o (Avanzado)" },
+  ],
+  claude: [
+    { value: "claude-3-5-haiku-latest", label: "Claude 3.5 Haiku (Recomendado)" },
+    { value: "claude-3-5-sonnet-latest", label: "Claude 3.5 Sonnet (Avanzado)" },
+  ],
+  ollama: [
+    { value: "llama3.2", label: "Llama 3.2" },
+    { value: "deepseek-r1:1.5b", label: "DeepSeek R1 1.5B" },
+    { value: "deepseek-r1:8b", label: "DeepSeek R1 8B" },
+    { value: "mistral", label: "Mistral" },
+  ],
 };
 
 function AITab() {
@@ -482,13 +505,27 @@ function AITab() {
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Modelo
               </label>
-              <input
-                type="text"
-                value={settings["ai.model"] ?? DEFAULT_MODELS[provider] ?? ""}
-                onChange={(e) => set("ai.model", e.target.value)}
-                placeholder={DEFAULT_MODELS[provider] ?? "nombre-del-modelo"}
-                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
-              />
+              {PROVIDER_MODELS[provider] ? (
+                <select
+                  value={settings["ai.model"] ?? DEFAULT_MODELS[provider] ?? ""}
+                  onChange={(e) => set("ai.model", e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
+                >
+                  {PROVIDER_MODELS[provider].map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={settings["ai.model"] ?? DEFAULT_MODELS[provider] ?? ""}
+                  onChange={(e) => set("ai.model", e.target.value)}
+                  placeholder={DEFAULT_MODELS[provider] ?? "nombre-del-modelo"}
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
+                />
+              )}
             </div>
 
             {(provider === "ollama" || provider === "openai") && (
