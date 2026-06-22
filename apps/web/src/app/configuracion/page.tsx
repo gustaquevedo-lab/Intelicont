@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   User, Settings, Bell, Shield, Palette, LogOut,
   Mail, Building2, BadgeCheck, ChevronRight, Save,
+  Cpu, CheckCircle2, AlertCircle, Loader2, Eye, EyeOff,
+  ExternalLink, Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/use-user";
 import { useEntity } from "@/hooks/use-entity";
 import { useTheme, type Theme } from "@/lib/theme-context";
+import { loadAISettings, saveAISettings } from "@/app/comprobantes/actions";
 
-type SettingsTab = "profile" | "notifications" | "security" | "appearance";
+type SettingsTab = "profile" | "notifications" | "security" | "appearance" | "ai";
 
 export default function ProfilePage() {
   const { user } = useUser();
@@ -19,8 +22,19 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab") as SettingsTab;
+      if (tab && ["profile", "ai", "notifications", "security", "appearance"].includes(tab)) {
+        setActiveTab(tab);
+      }
+    }
+  }, []);
+
   const tabs: { id: SettingsTab; label: string; icon: any }[] = [
     { id: "profile", label: "Perfil", icon: User },
+    { id: "ai", label: "Inteligencia Artificial", icon: Cpu },
     { id: "notifications", label: "Notificaciones", icon: Bell },
     { id: "security", label: "Seguridad", icon: Shield },
     { id: "appearance", label: "Apariencia", icon: Palette },
@@ -83,6 +97,7 @@ export default function ProfilePage() {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {activeTab === "profile" && <ProfileTab user={user} entity={selectedEntity} />}
+          {activeTab === "ai" && <AITab />}
           {activeTab === "notifications" && <NotificationsTab />}
           {activeTab === "security" && <SecurityTab />}
           {activeTab === "appearance" && <AppearanceTab theme={theme} setTheme={setTheme} />}
@@ -254,6 +269,275 @@ function Toggle({ enabled }: { enabled: boolean }) {
         "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
         enabled ? "left-[18px]" : "left-[2px]"
       )} />
+    </div>
+  );
+}
+
+const PROVIDERS = [
+  {
+    id:    "rules",
+    label: "Reglas (gratis)",
+    desc:  "Motor determinístico basado en el plan de cuentas DNIT. Sin API key. Siempre disponible.",
+    color: "text-emerald-600 dark:text-emerald-400",
+    free:  true,
+    link:  null,
+  },
+  {
+    id:    "gemini",
+    label: "Google Gemini",
+    desc:  "Gemini 1.5 Flash tiene capa gratuita generosa. Ideal para empezar.",
+    color: "text-blue-600 dark:text-blue-400",
+    free:  true,
+    link:  "https://aistudio.google.com/app/apikey",
+  },
+  {
+    id:    "openai",
+    label: "OpenAI",
+    desc:  "GPT-4o-mini es muy económico (~$0.15/1M tokens). Buena calidad.",
+    color: "text-gray-700 dark:text-gray-300",
+    free:  false,
+    link:  "https://platform.openai.com/api-keys",
+  },
+  {
+    id:    "ollama",
+    label: "Ollama (local)",
+    desc:  "Servidor Ollama local con modelos como Llama 3.2. Completamente gratis si tenés el hardware.",
+    color: "text-amber-600 dark:text-amber-400",
+    free:  true,
+    link:  "https://ollama.ai",
+  },
+  {
+    id:    "claude",
+    label: "Claude (Anthropic)",
+    desc:  "Claude Haiku es el más preciso para contabilidad, con razonamiento estructurado.",
+    color: "text-violet-600 dark:text-violet-400",
+    free:  false,
+    link:  "https://console.anthropic.com/settings/keys",
+  },
+];
+
+const DEFAULT_MODELS: Record<string, string> = {
+  gemini: "gemini-1.5-flash",
+  openai: "gpt-4o-mini",
+  claude: "claude-haiku-4-5",
+  ollama: "llama3.2",
+  rules:  "",
+};
+
+function AITab() {
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [showKey, setShowKey] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadAISettings().then((res) => {
+      if (res.ok) {
+        setSettings(res.data);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-6 flex justify-center items-center">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  const provider = settings["ai.provider"] ?? "rules";
+  const info = PROVIDERS.find((p) => p.id === provider);
+
+  function set(key: string, value: string) {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
+  }
+
+  function handleProviderChange(p: string) {
+    setSettings((prev) => ({
+      ...prev,
+      "ai.provider": p,
+      "ai.model": DEFAULT_MODELS[p] ?? "",
+    }));
+    setSaved(false);
+  }
+
+  async function handleSave() {
+    setSaveError(null);
+    setIsPending(true);
+    try {
+      const result = await saveAISettings(settings);
+      if (result.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        setSaveError(result.error);
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Error al guardar");
+    } finally {
+      setIsPending(false);
+    }
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-4 sm:p-6 space-y-6">
+      <div>
+        <h2 className="text-base font-medium text-gray-900 dark:text-white mb-1">Configuración de Inteligencia Artificial</h2>
+        <p className="text-xs text-gray-400">Gestioná el motor de IA para las sugerencias de asientos contables</p>
+      </div>
+
+      <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+        <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+        <p className="text-blue-700 dark:text-blue-300 text-xs leading-relaxed">
+          La IA propone asientos contables automáticamente al ingresar un XML SIFEN. El contador siempre aprueba antes de postear.
+          Podés cambiar el proveedor en cualquier momento sin perder datos.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg">
+        <div>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">Activar propuestas IA</p>
+          <p className="text-[10px] text-gray-400">Deshabilitar usa solo el motor de reglas estático</p>
+        </div>
+        <button
+          onClick={() => set("ai.enabled", settings["ai.enabled"] === "false" ? "true" : "false")}
+          className="no-tap-highlight"
+        >
+          <Toggle enabled={settings["ai.enabled"] !== "false"} />
+        </button>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Proveedor de IA</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {PROVIDERS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => handleProviderChange(p.id)}
+              className={cn(
+                "flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all no-tap-highlight",
+                provider === p.id
+                  ? "border-blue-500 bg-blue-50/50 dark:bg-blue-500/10"
+                  : "border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700"
+              )}
+            >
+              <div className={cn(
+                "h-3 w-3 rounded-full mt-0.5 shrink-0 border-2 transition-colors",
+                provider === p.id ? "border-blue-500 bg-blue-500" : "border-gray-300 dark:border-gray-600"
+              )} />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={cn("text-xs font-semibold", p.color)}>{p.label}</span>
+                  {p.free && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">GRATIS</span>}
+                </div>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{p.desc}</p>
+                {p.link && (
+                  <a href={p.link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                    className="text-[10px] text-blue-500 hover:underline flex items-center gap-1 mt-1 font-medium">
+                    Obtener API Key <ExternalLink className="h-2 w-2" />
+                  </a>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {provider !== "rules" && (
+        <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+          {provider !== "ollama" && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                API Key
+              </label>
+              <div className="relative">
+                <input
+                  type={showKey ? "text" : "password"}
+                  value={settings["ai.api_key"] ?? ""}
+                  onChange={(e) => set("ai.api_key", e.target.value)}
+                  placeholder={`Pegá tu API key de ${info?.label ?? ""}`}
+                  className="w-full px-3 py-2 pr-10 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">
+                ⚠️ La clave se almacena en la base de datos de manera local/segura.
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Modelo
+              </label>
+              <input
+                type="text"
+                value={settings["ai.model"] ?? DEFAULT_MODELS[provider] ?? ""}
+                onChange={(e) => set("ai.model", e.target.value)}
+                placeholder={DEFAULT_MODELS[provider] ?? "nombre-del-modelo"}
+                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
+              />
+            </div>
+
+            {(provider === "ollama" || provider === "openai") && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  URL Base {provider === "ollama" ? "(servidor Ollama)" : "(override)"}
+                </label>
+                <input
+                  type="text"
+                  value={settings["ai.base_url"] ?? ""}
+                  onChange={(e) => set("ai.base_url", e.target.value)}
+                  placeholder={provider === "ollama" ? "http://localhost:11434" : "https://api.openai.com/v1"}
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-400">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" /> {saveError}
+        </div>
+      )}
+
+      {saved && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-400">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Configuración de IA guardada correctamente
+        </div>
+      )}
+
+      <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
+        <button
+          onClick={handleSave}
+          disabled={isPending}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors no-tap-highlight disabled:opacity-50"
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Guardando…
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" /> Guardar Configuración
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

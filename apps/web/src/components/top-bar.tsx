@@ -32,6 +32,8 @@ const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: "system", label: "Sistema", icon: Monitor },
 ];
 
+import Link from "next/link";
+
 export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () => void; onCommandPalette: () => void }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { user } = useUser();
@@ -148,11 +150,11 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className={cn(
-                              "text-sm font-black truncate uppercase tracking-tight",
-                              selectedEntity?.id === entity.id
-                                ? "text-primary"
-                                : "text-gray-900 dark:text-white"
-                            )}>
+                               "text-sm font-black truncate uppercase tracking-tight",
+                               selectedEntity?.id === entity.id
+                                 ? "text-primary"
+                                 : "text-gray-900 dark:text-white"
+                             )}>
                               {entity.tradeName || entity.legalName}
                             </p>
                             <p className="text-[10px] text-gray-400 font-bold">
@@ -323,18 +325,20 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                     </div>
                     <div className="p-1">
                       {[
-                        { icon: User, label: "Mi Perfil" },
-                        { icon: Settings, label: "Configuración" },
-                        { icon: HelpCircle, label: "Ayuda" },
+                        { icon: User, label: "Mi Perfil", href: "/configuracion" },
+                        { icon: Settings, label: "Configuración", href: "/configuracion?tab=ai" },
+                        { icon: HelpCircle, label: "Ayuda", href: "/manual-de-usuario.html", target: "_blank" },
                       ].map((item) => (
-                        <button
+                        <Link
                           key={item.label}
+                          href={item.href}
+                          target={item.target}
                           className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                           onClick={() => setShowUserMenu(false)}
                         >
                           <item.icon className="h-4 w-4" />
                           {item.label}
-                        </button>
+                        </Link>
                       ))}
                     </div>
                     <div className="p-1 border-t border-gray-200 dark:border-gray-800">
