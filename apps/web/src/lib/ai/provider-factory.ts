@@ -30,7 +30,7 @@ class GeminiProvider implements AIProvider {
   readonly model: string;
   private apiKey: string;
 
-  constructor(apiKey: string, model = "gemini-1.5-flash") {
+  constructor(apiKey: string, model = "gemini-2.0-flash") {
     this.name   = "gemini";
     this.model  = model;
     this.apiKey = apiKey;
@@ -240,7 +240,7 @@ export function createAIProvider(config: AIConfig): AIProvider {
   switch (config.provider) {
     case "gemini":
       if (!config.apiKey) return new RulesProvider();
-      return new GeminiProvider(config.apiKey, config.model || "gemini-1.5-flash");
+      return new GeminiProvider(config.apiKey, config.model || "gemini-2.0-flash");
 
     case "openai":
       if (!config.apiKey) return new RulesProvider();

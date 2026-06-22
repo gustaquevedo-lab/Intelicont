@@ -317,7 +317,7 @@ const PROVIDERS = [
 ];
 
 const DEFAULT_MODELS: Record<string, string> = {
-  gemini: "gemini-1.5-flash",
+  gemini: "gemini-2.0-flash",
   openai: "gpt-4o-mini",
   claude: "claude-haiku-4-5",
   ollama: "llama3.2",
