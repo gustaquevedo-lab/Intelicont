@@ -47,21 +47,15 @@ export const metadata: Metadata = {
     title: "InteliCont — SaaS Contable AI-First para Paraguay",
     description:
       "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA, cumple con DNIT/SET.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "InteliCont - Contabilidad Inteligente",
-      },
-    ],
+    // Image auto-resolved from app/opengraph-image.tsx — DO NOT add images here,
+    // it would override the dynamic OG and revert to a stale static file.
   },
   twitter: {
     card: "summary_large_image",
     title: "InteliCont — SaaS Contable AI-First para Paraguay",
     description:
       "Plataforma contable inteligente para Paraguay. Carga facturas SIFEN, genera asientos con IA.",
-    images: ["/og-image.png"],
+    // Image auto-resolved from app/twitter-image.tsx (falls back to OG).
   },
   robots: {
     index: true,
