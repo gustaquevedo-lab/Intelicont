@@ -948,7 +948,7 @@ export async function processInvoiceOCR(
     }
 
     const genAI = new GoogleGenerativeAI(key);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: aiConfig.model || "gemini-1.5-flash" });
 
     const prompt = `Analiza la imagen o PDF de esta factura de Paraguay y extrae los siguientes datos en formato JSON estricto:
 {
