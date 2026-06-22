@@ -566,7 +566,12 @@ export async function saveAISettings(settings: Record<string, string>): Promise<
     const db = getDb();
     for (const [key, value] of Object.entries(settings)) {
       if (key.startsWith("ai.")) {
-        await db.update(globalSettings).set({ value, updatedAt: new Date() }).where(eq(globalSettings.key, key));
+        await db.insert(globalSettings)
+          .values({ key, value, updatedAt: new Date() })
+          .onConflictDoUpdate({
+            target: globalSettings.key,
+            set: { value, updatedAt: new Date() }
+          });
       }
     }
     return { ok: true, data: undefined };

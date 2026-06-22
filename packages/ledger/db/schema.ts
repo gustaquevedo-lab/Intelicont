@@ -326,6 +326,13 @@ export const aiProposals = pgTable("ai_proposals", {
   createdAt:    timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const globalSettings = pgTable("global_settings", {
+  key:         varchar("key", { length: 100 }).primaryKey(),
+  value:       text("value"),
+  description: text("description"),
+  updatedAt:   timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 // ─── Auth: Memberships ─────────────────────────────────────────────────────
 
 export const memberships = pgTable("memberships", {
