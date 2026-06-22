@@ -29,6 +29,13 @@
       "when": 1781987281344,
       "tag": "0003_wandering_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782090622905,
+      "tag": "0004_watery_vision",
+      "breakpoints": true
     }
   ]
 }

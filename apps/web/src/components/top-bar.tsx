@@ -91,7 +91,7 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
           </div>
 
           {/* Center: Entity Switcher */}
-          {selectedEntity && (
+          {availableEntities.length > 0 && (
             <div className="relative hidden sm:block">
               <button
                 onClick={() => setShowEntityPicker(!showEntityPicker)}
@@ -100,10 +100,10 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                 <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
                 <div className="text-left">
                   <p className="text-xs font-black text-gray-900 dark:text-white leading-tight truncate max-w-[140px] uppercase tracking-tight">
-                    {selectedEntity.tradeName || selectedEntity.legalName}
+                    {selectedEntity ? (selectedEntity.tradeName || selectedEntity.legalName) : "Seleccionar Empresa"}
                   </p>
                   <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold leading-tight">
-                    RUC {selectedEntity.ruc}
+                    {selectedEntity ? `RUC ${selectedEntity.ruc}` : "Ninguna seleccionada"}
                   </p>
                 </div>
                 <ChevronDown className="h-3 w-3 text-gray-400 shrink-0" />

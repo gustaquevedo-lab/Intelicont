@@ -29,7 +29,11 @@ import {
   TrendingUp,
   Files,
   Activity,
+  Check,
+  ChevronDown,
 } from "lucide-react";
+import { useUser } from "@/hooks/use-user";
+import { useEntity } from "@/hooks/use-entity";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 
@@ -96,6 +100,9 @@ export function Sidebar({
   onMobileClose?: () => void;
 }) {
   const pathname = usePathname();
+  const { user } = useUser();
+  const { entities: availableEntities, selectedEntity, selectEntity } = useEntity(user?.id);
+  const [showEntityPicker, setShowEntityPicker] = useState(false);
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -109,6 +116,96 @@ export function Sidebar({
           <X size={20} />
         </button>
       </div>
+
+      {/* Entity Switcher */}
+      {availableEntities.length > 0 && (
+        <div className="px-4 py-3 border-b border-white/5 relative">
+          <button
+            onClick={() => setShowEntityPicker(!showEntityPicker)}
+            className={cn(
+              "flex items-center gap-2.5 w-full p-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all text-left no-tap-highlight",
+              collapsed ? "justify-center" : ""
+            )}
+            title={selectedEntity ? selectedEntity.legalName : "Seleccionar Empresa"}
+          >
+            <div className="h-8 w-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+              <Building2 className="h-4 w-4 text-blue-300" />
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-white leading-tight truncate uppercase tracking-tight">
+                  {selectedEntity ? (selectedEntity.tradeName || selectedEntity.legalName) : "Seleccionar Empresa"}
+                </p>
+                <p className="text-[10px] text-blue-200/50 font-bold leading-tight mt-0.5">
+                  {selectedEntity ? `RUC ${selectedEntity.ruc}` : "Ninguna seleccionada"}
+                </p>
+              </div>
+            )}
+            {!collapsed && (
+              <ChevronDown className="h-3.5 w-3.5 text-white/40 shrink-0" />
+            )}
+          </button>
+
+          {showEntityPicker && (
+            <>
+              <div className="fixed inset-0 z-[160]" onClick={() => setShowEntityPicker(false)} />
+              <div className={cn(
+                "absolute left-4 right-4 mt-2 bg-gray-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[170]",
+                collapsed ? "w-60 left-16" : ""
+              )}>
+                <div className="p-2 border-b border-white/5">
+                  <p className="text-[10px] font-black text-blue-300/40 uppercase tracking-widest px-2 py-1">
+                    Cambiar Empresa
+                  </p>
+                </div>
+                <div className="p-1 max-h-60 overflow-y-auto space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                  {availableEntities.map((entity) => (
+                    <button
+                      key={entity.id}
+                      onClick={() => {
+                        selectEntity(entity.id);
+                        setShowEntityPicker(false);
+                      }}
+                      className={cn(
+                        "flex items-center gap-3 w-full px-2.5 py-2 rounded-lg text-left transition-colors no-tap-highlight text-xs",
+                        selectedEntity?.id === entity.id
+                          ? "bg-white/10 text-white"
+                          : "text-blue-100/60 hover:bg-white/5 hover:text-white"
+                      )}
+                    >
+                      <div className={cn(
+                        "h-7 w-7 rounded-md flex items-center justify-center shrink-0",
+                        selectedEntity?.id === entity.id
+                          ? "bg-blue-500/20 border border-blue-500/30"
+                          : "bg-white/5"
+                      )}>
+                        <Building2 className={cn(
+                          "h-3.5 w-3.5",
+                          selectedEntity?.id === entity.id ? "text-blue-300" : "text-white/40"
+                        )} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className={cn(
+                          "font-bold truncate uppercase tracking-tight",
+                          selectedEntity?.id === entity.id ? "text-white" : "text-blue-100/80"
+                        )}>
+                          {entity.tradeName || entity.legalName}
+                        </p>
+                        <p className="text-[9px] text-blue-200/40">
+                          RUC {entity.ruc}
+                        </p>
+                      </div>
+                      {selectedEntity?.id === entity.id && (
+                        <Check className="h-3.5 w-3.5 text-blue-300 shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-3 overflow-y-auto space-y-6">

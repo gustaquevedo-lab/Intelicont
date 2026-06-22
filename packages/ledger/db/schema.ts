@@ -313,6 +313,19 @@ export const aiDecisions = pgTable("ai_decisions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const aiProposals = pgTable("ai_proposals", {
+  id:           uuid("id").primaryKey().defaultRandom(),
+  docId:        uuid("doc_id").references(() => taxDocuments.id, { onDelete: "cascade" }).notNull(),
+  provider:     varchar("provider",     { length: 50 }).notNull(),
+  model:        varchar("model",        { length: 100 }),
+  confidence:   numeric("confidence",   { precision: 4, scale: 3 }),
+  reasoning:    text("reasoning"),
+  proposalJson: jsonb("proposal_json").notNull(),
+  status:       varchar("status",       { length: 20 }).default("pending"),
+  reviewedAt:   timestamp("reviewed_at", { withTimezone: true }),
+  createdAt:    timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 // ─── Auth: Memberships ─────────────────────────────────────────────────────
 
 export const memberships = pgTable("memberships", {
@@ -536,6 +549,7 @@ export const taxDocumentsRelations = relations(taxDocuments, ({ one, many }) => 
   journalEntry: one(journalEntries, { fields: [taxDocuments.journalEntryId], references: [journalEntries.id] }),
   lines: many(taxDocumentLines),
   retentions: many(retentions),
+  aiProposals: many(aiProposals),
 }));
 
 export const taxDocumentLinesRelations = relations(taxDocumentLines, ({ one }) => ({
@@ -580,6 +594,10 @@ export const auditEventsRelations = relations(auditEvents, ({ one }) => ({
 
 export const aiDecisionsRelations = relations(aiDecisions, ({ one }) => ({
   entity: one(entities, { fields: [aiDecisions.entityId], references: [entities.id] }),
+}));
+
+export const aiProposalsRelations = relations(aiProposals, ({ one }) => ({
+  document: one(taxDocuments, { fields: [aiProposals.docId], references: [taxDocuments.id] }),
 }));
 
 export const inventoryItemsRelations = relations(inventoryItems, ({ one, many }) => ({
