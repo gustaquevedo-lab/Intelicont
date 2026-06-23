@@ -569,10 +569,44 @@ export function ComprobantesClient({ initialData, entities, dbError }: Props) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 sm:justify-end shrink-0 pl-13 sm:pl-0">
-                <div className="text-right">
+              <div className="flex items-center gap-3 sm:justify-end shrink-0 pl-12 sm:pl-0">
+                <div className="text-right flex flex-col items-end">
                   <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums">{fmt(doc.total)}</p>
-                  <p className="text-xs text-gray-400">{doc.currency}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {doc.currency === "PYG" ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20" className="h-3 w-4 rounded-[1px] shrink-0">
+                        <rect width="30" height="6.67" fill="#D52B1E"/>
+                        <rect y="6.67" width="30" height="6.66" fill="#FFFFFF"/>
+                        <rect y="13.33" width="30" height="6.67" fill="#0038A8"/>
+                        <circle cx="15" cy="10" r="2.2" fill="#FFFFFF"/>
+                        <circle cx="15" cy="10" r="1.6" fill="none" stroke="#F1B82D" strokeWidth="0.4"/>
+                        <circle cx="15" cy="10" r="0.6" fill="#D52B1E"/>
+                      </svg>
+                    ) : doc.currency === "USD" ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3 w-4 rounded-[1px] shrink-0">
+                        <rect width="20" height="14" fill="#B22234"/>
+                        {[0,2,4,6,8,10,12].map(y => <rect key={y} y={y} width="20" height="1.08" fill="#fff"/>)}
+                        <rect width="8" height="7.5" fill="#3C3B6E"/>
+                      </svg>
+                    ) : doc.currency === "EUR" ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3 w-4 rounded-[1px] shrink-0">
+                        <rect width="20" height="14" fill="#039"/>
+                      </svg>
+                    ) : doc.currency === "BRL" ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3 w-4 rounded-[1px] shrink-0">
+                        <rect width="20" height="14" fill="#009C3B"/>
+                        <polygon points="10,1.4 18.5,7 10,12.6 1.5,7" fill="#FEDF00"/>
+                        <circle cx="10" cy="7" r="2.8" fill="#002776"/>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3 w-4 rounded-[1px] shrink-0">
+                        <rect width="20" height="14" fill="#74ACDF"/>
+                        <rect y="4.67" width="20" height="4.66" fill="#fff"/>
+                        <circle cx="10" cy="7" r="1.5" fill="#F6B40E"/>
+                      </svg>
+                    )}
+                    <span className="text-xs text-gray-400 font-bold">{doc.currency}</span>
+                  </div>
                 </div>
 
                 {doc.status === "proposed" && (
