@@ -29,12 +29,14 @@ const CURRENCIES: Array<{ code: string; label: string; symbol: string; flag: Rea
   {
     code: "PYG", label: "Guaraní", symbol: "₲",
     flag: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3.5 w-5 rounded-[2px] shrink-0">
-        <rect width="20" height="4.67" fill="#D52B1E"/>
-        <rect y="4.67" width="20" height="4.66" fill="#fff"/>
-        <rect y="9.33" width="20" height="4.67" fill="#0038A8"/>
-        <circle cx="10" cy="7" r="1.8" fill="none" stroke="#F1B82D" strokeWidth="0.4"/>
-        <circle cx="10" cy="7" r="0.6" fill="#D52B1E"/>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20" className="h-3.5 w-5 rounded-[2px] shrink-0">
+        <rect width="30" height="6.67" fill="#D52B1E"/>
+        <rect y="6.67" width="30" height="6.66" fill="#FFFFFF"/>
+        <rect y="13.33" width="30" height="6.67" fill="#0038A8"/>
+        {/* Simplified emblem */}
+        <circle cx="15" cy="10" r="2.2" fill="#FFFFFF"/>
+        <circle cx="15" cy="10" r="1.6" fill="none" stroke="#F1B82D" strokeWidth="0.4"/>
+        <circle cx="15" cy="10" r="0.6" fill="#D52B1E"/>
       </svg>
     ),
   },
@@ -778,7 +780,7 @@ export default function RegistrarComprobantePage() {
           </div>
 
           {/* ── Moneda y Tipo de Cambio ── */}
-          <div className="bg-gray-900/40 border border-gray-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-sm">
+          <div className="relative z-10 bg-gray-900/40 border border-gray-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-sm">
             <h2 className="text-sm font-bold text-gray-200 border-b border-gray-800 pb-2 flex items-center gap-2">
               <Globe className="h-4 w-4 text-cyan-400" /> Moneda y Tipo de Cambio
             </h2>
