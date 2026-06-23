@@ -44,6 +44,9 @@ export default function RecibosPage() {
   // Selected installments to pay with this receipt
   const [selectedInstIds, setSelectedInstIds] = useState<Set<string>>(new Set());
 
+  // Track user-inputted amounts for partial payments (maps installmentId -> numeric amount)
+  const [partialAmounts, setPartialAmounts] = useState<Record<string, number>>({});
+
   // Receipt form fields
   const [receiptNumber, setReceiptNumber] = useState("");
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
@@ -54,7 +57,17 @@ export default function RecibosPage() {
   // Computed total of selected installments
   const selectedTotal = installments
     .filter((i) => selectedInstIds.has(i.id))
-    .reduce((s, i) => s + i.amount, 0);
+    .reduce((s, i) => {
+      const amt = partialAmounts[i.id] !== undefined ? partialAmounts[i.id] : i.amount;
+      return s + amt;
+    }, 0);
+
+  const handlePartialAmountChange = (id: string, value: number) => {
+    setPartialAmounts((prev) => ({
+      ...prev,
+      [id]: Math.max(0, value),
+    }));
+  };
 
   // Load entities
   useEffect(() => {
@@ -133,7 +146,11 @@ export default function RecibosPage() {
         partnerRuc,
         partnerName,
         paymentMethod,
-        installmentIds: Array.from(selectedInstIds),
+        installmentPayments: Array.from(selectedInstIds).map((id) => {
+          const inst = installments.find((i) => i.id === id);
+          const payAmount = partialAmounts[id] !== undefined ? partialAmounts[id] : (inst?.amount || 0);
+          return { installmentId: id, payAmount };
+        }),
       });
 
       if (result.ok) {
@@ -143,6 +160,7 @@ export default function RecibosPage() {
         });
         // Refresh installments
         setSelectedInstIds(new Set());
+        setPartialAmounts({});
         setReceiptNumber("");
         loadPendingInstallments(entityId).then((r) => {
           if (r.ok) setInstallments(r.data);
@@ -251,43 +269,73 @@ export default function RecibosPage() {
               <div className="divide-y divide-gray-800/60">
                 {installments.map((inst) => {
                   const isSelected = selectedInstIds.has(inst.id);
+                  const payAmount = partialAmounts[inst.id] !== undefined ? partialAmounts[inst.id] : inst.amount;
+
                   return (
-                    <button
+                    <div
                       key={inst.id}
-                      type="button"
-                      onClick={() => toggleInstallment(inst.id)}
                       className={cn(
-                        "w-full flex items-center gap-4 px-5 py-3.5 text-left transition-all",
+                        "w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-4 transition-all border-l-2",
                         isSelected
-                          ? "bg-emerald-500/10 border-l-2 border-emerald-500"
-                          : "hover:bg-gray-800/30 border-l-2 border-transparent",
+                          ? "bg-emerald-500/10 border-emerald-500"
+                          : "hover:bg-gray-800/10 border-transparent",
                       )}
                     >
-                      <div className={cn(
-                        "w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
-                        isSelected ? "bg-emerald-500 border-emerald-500" : "border-gray-600"
-                      )}>
-                        {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-white truncate">{inst.partnerName}</span>
-                          {inst.isOverdue && (
-                            <span className="shrink-0 text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                              Vencida
-                            </span>
-                          )}
+                      <button
+                        type="button"
+                        onClick={() => toggleInstallment(inst.id)}
+                        className="flex items-center gap-4 text-left flex-1 min-w-0"
+                      >
+                        <div className={cn(
+                          "w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
+                          isSelected ? "bg-emerald-500 border-emerald-500" : "border-gray-600"
+                        )}>
+                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Fac. {inst.docNumber} · Cuota {inst.installmentNumber} · Vence: <span className={cn("font-mono", inst.isOverdue ? "text-red-400" : "text-gray-300")}>{inst.dueDate}</span>
-                        </p>
-                      </div>
 
-                      <span className="text-sm font-bold font-mono text-white shrink-0">
-                        ₲ {formatGs(inst.amount)}
-                      </span>
-                    </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-white truncate">{inst.partnerName}</span>
+                            {inst.isOverdue && (
+                              <span className="shrink-0 text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                Vencida
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            Fac. {inst.docNumber} · Cuota {inst.installmentNumber} · Vence: <span className={cn("font-mono", inst.isOverdue ? "text-red-400" : "text-gray-300")}>{inst.dueDate}</span>
+                          </p>
+                        </div>
+                      </button>
+
+                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                        <div className="text-right">
+                          <p className="text-[10px] text-gray-500">Monto total</p>
+                          <span className="text-xs font-semibold font-mono text-gray-400 line-through">
+                            ₲ {formatGs(inst.amount)}
+                          </span>
+                        </div>
+
+                        {isSelected ? (
+                          <div className="flex flex-col items-end">
+                            <label className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mb-0.5">Monto a Pagar (Gs.)</label>
+                            <input
+                              type="number"
+                              value={payAmount}
+                              onChange={(e) => handlePartialAmountChange(inst.id, parseFloat(e.target.value) || 0)}
+                              className="w-32 px-2.5 py-1 bg-gray-900 border border-emerald-500/40 rounded-lg text-xs font-mono text-white text-right focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            />
+                          </div>
+                        ) : (
+                          <div className="text-right">
+                            <p className="text-[10px] text-gray-500">Saldo pendiente</p>
+                            <span className="text-sm font-bold font-mono text-white">
+                              ₲ {formatGs(inst.amount)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
               </div>

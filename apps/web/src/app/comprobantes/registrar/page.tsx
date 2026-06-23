@@ -22,6 +22,7 @@ import {
   loadChartOfAccountsFlat,
 } from "../actions";
 import { validateRUC } from "@/lib/ruc";
+import { validateTimbrado as dbValidateTimbrado } from "../../timbrados/actions";
 
 // ── Currency definitions with inline SVG flags ──────────────────────────────
 const CURRENCIES: Array<{ code: string; label: string; symbol: string; flag: React.ReactNode }> = [
@@ -238,8 +239,10 @@ export default function RegistrarComprobantePage() {
       setTcDate("");
       setTcSourceName("");
       setTcError(null);
+    } else if (tcSource !== "manual") {
+      handleFetchTC();
     }
-  }, [currency]);
+  }, [currency, tcSource]);
 
   // Sync paymentMethod with condition
   useEffect(() => {
@@ -256,12 +259,32 @@ export default function RegistrarComprobantePage() {
     return validateRUC(partnerRuc);
   }, [partnerRuc]);
 
+  // Timbrado status from DB
+  const [timbradoDbCheck, setTimbradoDbCheck] = useState<{ checked: boolean; valid: boolean; reason?: string }>({ checked: false, valid: true });
+
+  // Cross-check timbrado in DB (applicable to issued bills, and optional warning for received bills)
+  useEffect(() => {
+    if (!entityId || !timbrado || timbrado.length !== 8) {
+      setTimbradoDbCheck({ checked: false, valid: true });
+      return;
+    }
+    const d = new Date(issueDate);
+    if (isNaN(d.getTime())) return;
+
+    dbValidateTimbrado(entityId, timbrado, d).then((res) => {
+      setTimbradoDbCheck({ checked: true, valid: res.valid, reason: res.reason });
+    });
+  }, [entityId, timbrado, issueDate]);
+
   // Timbrado simple active verification (must be 8 digits and not expired)
   const timbradoValidation = useMemo(() => {
     if (!timbrado) return null;
     if (timbrado.length !== 8) return { valid: false, error: "El timbrado debe tener exactamente 8 dígitos" };
+    if (direction === "issued" && timbradoDbCheck.checked && !timbradoDbCheck.valid) {
+      return { valid: false, error: "Timbrado no habilitado en base de datos para esta fecha/empresa" };
+    }
     return { valid: true };
-  }, [timbrado]);
+  }, [timbrado, timbradoDbCheck, direction]);
 
   // Totals calculations — convierte a PYG si hay moneda extranjera
   const tcRate = currency !== "PYG" && tcSell > 0 ? tcSell : 1;
@@ -695,6 +718,17 @@ export default function RegistrarComprobantePage() {
                     timbradoValidation && !timbradoValidation.valid ? "border-red-500/60 focus:ring-red-500/20" : "border-gray-700/50 focus:ring-blue-500/30"
                   )}
                 />
+                {timbrado && timbrado.length === 8 && timbradoDbCheck.checked && (
+                  <div className="mt-1 flex items-center gap-1 text-[10px]">
+                    {timbradoDbCheck.valid ? (
+                      <span className="text-green-400 font-semibold">✓ Timbrado registrado y vigente</span>
+                    ) : (
+                      <span className={cn("font-semibold", direction === "issued" ? "text-red-400" : "text-amber-400")}>
+                        {direction === "issued" ? "❌ Error: No registrado para esta fecha" : "⚠️ Nota: No registrado para emitir (vigente para compras)"}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelicont vs Expert360 — Análisis Profundo Módulo a Módulo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background: #f5f5f5;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            padding: 40px 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .section h2 {
+            color: #dc2626;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #dc2626;
+            padding-bottom: 10px;
+        }
+        .section h3 {
+            color: #b91c1c;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .comparison-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .product {
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+        .expert { border-left-color: #999; background: #f5f5f5; }
+        .intelicont { border-left-color: #104c91; background: #e8f4f8; }
+        .product h4 {
+            font-size: 1.1em;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+        ul { list-style: none; }
+        li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-left: 20px;
+            position: relative;
+        }
+        li:last-child { border-bottom: none; }
+        li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #dc2626;
+            font-weight: bold;
+        }
+        .good { color: #16a34a; font-weight: bold; }
+        .bad { color: #dc2626; font-weight: bold; }
+        .gap-analysis {
+            background: #fef2f2;
+            border-left: 5px solid #dc2626;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+            color: #dc2626;
+        }
+        tr:hover { background: #fafafa; }
+        .opportunity {
+            background: #f0fdf4;
+            border-left: 5px solid #16a34a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        .metric {
+            display: inline-block;
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .metric.positive { background: #16a34a; }
+        .roadmap {
+            background: #eff6ff;
+            border-left: 5px solid #104c91;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+        }
+        .prompt-code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            margin: 15px 0;
+        }
+        .code-label {
+            display: inline-block;
+            background: #dc2626;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            .comparison-box { grid-template-columns: 1fr; }
+            header h1 { font-size: 1.8em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ Intelicont vs Expert360</h1>
+            <p>Análisis detallado módulo a módulo, con oportunidades de ataque y roadmap específico</p>
+        </header>
+
+        <div class="section">
+            <h2>📊 Resumen Ejecutivo</h2>
+            <p>Expert360 es la herramienta líder en Paraguay, pero tiene debilidades estructurales que Intelicont puede explotar. Este documento analiza EXACTAMENTE dónde y cómo.</p>
+
+            <div class="gap-analysis">
+                <strong>🎯 La Oportunidad Principal:</strong><br><br>
+                Expert360 es un software WinForms migrado a web. Tiene toda la funcionalidad fiscal, pero:
+                <ul style="margin-top: 10px;">
+                    <li>UX densa y lenta (formularios grandes, muchos clics)</li>
+                    <li>Sin IA en ningún flujo (tipeado manual de todo)</li>
+                    <li>Conciliación bancaria 100% manual</li>
+                    <li>Sin validación inline (errores solo al grabar)</li>
+                    <li>Búsquedas limitadas (solo por código/número)</li>
+                    <li>Sin API pública (ecosistema cerrado)</li>
+                    <li>Dashboard limitado (solo totales)</li>
+                </ul>
+            </div>
+
+            <h3>Intelicont Gana En:</h3>
+            <div class="comparison-box">
+                <div class="product intelicont">
+                    <h4>✅ Ventajas Nativas Intelicont</h4>
+                    <ul>
+                        <li><span class="good">UX moderna</span> - formularios simples, pocos campos visibles</li>
+                        <li><span class="good">IA integrada</span> - asientos sugeridos, no manuales</li>
+                        <li><span class="good">Validación inline</span> - feedback inmediato</li>
+                        <li><span class="good">Búsqueda smart</span> - por descripción, tipo, monto</li>
+                        <li><span class="good">API abierta</span> - webhooks, integraciones</li>
+                        <li><span class="good">Mobile ready</span> - responsive + app future</li>
+                        <li><span class="good">Event sourced</span> - audit trail nativo</li>
+                    </ul>
+                </div>
+                <div class="product expert">
+                    <h4>❌ Debilidades Expert360</h4>
+                    <ul>
+                        <li><span class="bad">UX heredada</span> - WinForms, dense, 2010s</li>
+                        <li><span class="bad">Sin IA</span> - todo manual, sin sugerencias</li>
+                        <li><span class="bad">Sin validación live</span> - errores al grabar</li>
+                        <li><span class="bad">Búsqueda primitiva</span> - solo código/número</li>
+                        <li><span class="bad">Ecosystem cerrado</span> - StarSoft monopolio</li>
+                        <li><span class="bad">Mobile mediocre</span> - responsive ≠ app</li>
+                        <li><span class="bad">Sin trazabilidad NIIF</span> - doble libro no nativo</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- MÓDULO 1: CONTABILIDAD CORE -->
+        <div class="section">
+            <h2>1️⃣ Contabilidad Core (Asientos, Libros, Balances)</h2>
+
+            <h3>Cómo Funciona en Expert360 (Observado)</h3>
+            <div class="comparison-box">
+                <div class="product expert">
+                    <h4>Expert360 - "Carga de Asiento Contable"</h4>
+                    <ul>
+                        <li>Formulario modal densa</li>
+                        <li>Campos: Fecha | Comprobante | Sucursal | Concepto | Ajuste Cambio</li>
+                        <li>Tabla de líneas manual: Cuenta | Descripción | CC | Debe | Haber</li>
+                        <li>Selector de cuentas en panel lateral (otro modal)</li>
+                        <li>Muestra "Diferencia: 0" solo al final</li>
+                        <li>Validación solo al grabar</li>
+                        <li>Botones grandes: Grabar | Cancelar | Copiar | Contraasiento</li>
+                        <li>Lista de asientos: 63 páginas, búsqueda por #</li>
+                    </ul>
+                    <div class="code-label">PAIN POINT</div>
+                    <div style="margin-top: 10px;">Todo requiere tipeo manual. Crear asiento = 3-5 minutos promedio. Sin sugerencias, sin validación live.</div>
+                </div>
+                <div class="product intelicont">
+                    <h4>Intelicont - Cómo Debería Ser</h4>
+                    <ul>
+                        <li>Form minimalista: solo 3-4 campos visibles</li>
+                        <li>Autocomplete: "Compra a proveedor" → sugiere cuentas</li>
+                        <li>Validación inline: mientras tipeas, ve "Débito = Crédito? ✓"</li>
+                        <li>Búsqueda: por descripción, monto, tipo ("Compra IVA 10%")</li>
+                        <li>IA sugiere: "Débito Gasto Compras, Crédito Banco, Retención 5%"</li>
+                        <li>Contador aprueba o edita (1 minuto)</li>
+                        <li>Preview: ve asiento formateado antes de grabar</li>
+                        <li>Teclado-first: Tab entre campos, Enter graba</li>
+                    </ul>
+                    <div class="metric">-80% tiempo por asiento</div>
+                </div>
+            </div>
+
+            <h3>Libros (Diario, Mayor, Balances)</h3>
+            <div class="gap-analysis">
+                <strong>Expert360:</strong> Genera libros desde asientos posteados. Lectura visual (PDF). Sin drill-down. Sin tendencias.
+                <br><br>
+                <strong>Intelicont:</strong> Tablas interactivas. Click en número → detalle de líneas. Filtros, búsqueda. Exporta a Excel con fórmulas.
+            </div>
+
+            <h3>Plan de Cuentas</h3>
+            <table>
+                <tr>
+                    <th>Aspecto</th>
+                    <th>Expert360</th>
+                    <th>Intelicont</th>
+                </tr>
+                <tr>
+                    <td><strong>Estructura</strong></td>
+                    <td>Fija (PY DNIT)</td>
+                    <td>Seed PY + extensible</td>
+                </tr>
+                <tr>
+                    <td><strong>Búsqueda</strong></td>
+                    <td>Por código exact</td>
+                    <td>Por descripción, fuzzy search</td>
+                </tr>
+                <tr>
+                    <td><strong>Enlaces EEFF</strong></td>
+                    <td>Manual, propenso a error</td>
+                    <td>Automático, con validación</td>
+                </tr>
+                <tr>
+                    <td><strong>Historial</strong></td>
+                    <td>Sin versioning</td>
+                    <td>Todas las versiones registradas</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- MÓDULO 2: VENTAS Y COBROS -->
+        <div class="section">
+            <h2>2️⃣ Ventas / Cuentas por Cobrar</h2>
+
+            <h3>Expert360 Approach</h3>
+            <ul>
+                <li>Registro manual de facturas (cliente, monto, IVA)</li>
+                <li>Descuentos, retenciones manuales</li>
+                <li>Anticipos: asiento manual</li>
+                <li>Informes por cliente, comprobante, fecha</li>
+                <li>Sin reconocimiento de ingresos (todo efectivo)</li>
+            </ul>
+
+            <h3>Intelicont Oportunidad</h3>
+            <div class="opportunity">
+                <strong>SIFEN XML → IA → Asiento Automático</strong><br><br>
+                Contador sube PDF o XML de factura:
+                <ul style="margin-top: 10px;">
+                    <li>IA extrae: cliente, monto, IVA, retención</li>
+                    <li>Propone asiento con 94% de confianza</li>
+                    <li>Contador aprueba o edita 3 campos principales</li>
+                    <li>Registrado en 20 segundos vs 2-3 minutos manual</li>
+                </ul>
+                <br>
+                <span class="metric positive">-70% horas de ingreso</span>
+            </div>
+
+            <h3>Cuenta Corriente Clientes</h3>
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Expert360</th>
+                    <th>Intelicont</th>
+                </tr>
+                <tr>
+                    <td>Saldo por cliente</td>
+                    <td>✓ Manual</td>
+                    <td>✓ Auto desde asientos</td>
+                </tr>
+                <tr>
+                    <td>Edad de saldo</td>
+                    <td>Manual</td>
+                    <td>✓ Automático (0-30-60-90 días)</td>
+                </tr>
+                <tr>
+                    <td>Cobranza sugerida</td>
+                    <td>✗</td>
+                    <td>✓ IA predice por cliente</td>
+                </tr>
+                <tr>
+                    <td>Incobrables detectados</td>
+                    <td>Manual inspection</td>
+                    <td>✓ IA flags (>90 días)</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- MÓDULO 3: BANCOS -->
+        <div class="section">
+            <h2>3️⃣ Bancos & Conciliación (El Dolor Principal)</h2>
+
+            <div class="gap-analysis">
+                <strong>🚨 CRÍTICO: Expert360 Conciliación = 100% Manual</strong><br><br>
+                Contador cada mes:
+                <ul style="margin-top: 10px;">
+                    <li>Importa extracto bancario (OFX/CSV manual)</li>
+                    <li>Abre lista de movimientos</li>
+                    <li>Abre lista de asientos/pagos registrados</li>
+                    <li>Arrastra-y-suelta: movimiento → asiento</li>
+                    <li>4-6 horas para 50-100 movimientos</li>
+                    <li>Diferencias sin resolver quedan pendientes</li>
+                </ul>
+            </div>
+
+            <h3>Intelicont: IA Matching (85% Automático)</h3>
+            <div class="opportunity">
+                <strong>Flujo Automático:</strong>
+                <ul>
+                    <li>✅ API nativa: Itaú, GNB, Asunción, Evo (descarga diaria)</li>
+                    <li>✅ IA matching: movimiento banco ↔ asientos (85% automático)</li>
+                    <li>✅ Sugerencias: "Este movimiento $100k coincide con Pago Factura A ($100k) o Pago Factura B ($98k con retención)"</li>
+                    <li>✅ Excepciones solo: comisiones, retenciones, transferencias raras</li>
+                    <li>✅ Contador solo revisa pendientes (15% = 5-10 items)</li>
+                    <li>✅ Tiempo: 15 minutos vs 5 horas</li>
+                </ul>
+                <br>
+                <span class="metric positive">-80% horas de conciliación</span>
+                <span class="metric positive">ROI en 1 mes</span>
+            </div>
+
+            <h3>Comparativa Conciliación</h3>
+            <table>
+                <tr>
+                    <th>Característica</th>
+                    <th>Expert360</th>
+                    <th>Intelicont</th>
+                </tr>
+                <tr>
+                    <td>Importación</td>
+                    <td>Manual (CSV/OFX)</td>
+                    <td>✓ API automática</td>
+                </tr>
+                <tr>
+                    <td>Matching</td>
+                    <td>100% Manual</td>
+                    <td>✓ 85% IA automático</td>
+                </tr>
+                <tr>
+                    <td>Detección diferencias</td>
+                    <td>Manual</td>
+                    <td>✓ IA detecta retenciones, comisiones</td>
+                </tr>
+                <tr>
+                    <td>Tiempo/mes</td>
+                    <td>4-6 horas × 5 bancos = 20-30 horas</td>
+                    <td>15 min × 5 bancos = 75 minutos</td>
+                </tr>
+                <tr>
+                    <td>Costo/mes</td>
+                    <td>1-1.5 FTE ($400-600K PYG)</td>
+                    <td>Included, <100 PYG</td>
+                </tr>
+            </table>
+
+            <h3>Multi-Banco</h3>
+            <p><span class="bad">Expert360:</span> Concilia banco por banco (tab switching)</p>
+            <p><span class="good">Intelicont:</span> Vista centralizada de todos los bancos, saldos en tiempo real, reconciliación cross-bank</p>
+        </div>
+
+        <!-- MÓDULO 4: CIERRE MENSUAL -->
+        <div class="section">
+            <h2>4️⃣ Cierre Mensual (Donde Más Duele)</h2>
+
+            <h3>Expert360: Checklist en Papel</h3>
+            <div class="gap-analysis">
+                Contador cierra mes manualmente:
+                <ul style="margin-top: 10px;">
+                    <li>¿Depreciación corrió? (manual, hoja Excel)</li>
+                    <li>¿Conciliación bancaria lista? (manual, ver por banco)</li>
+                    <li>¿Todas las retenciones? (manual, hoja)</li>
+                    <li>¿Diferencias FX? (manual, ajuste cambio)</li>
+                    <li>¿Incobrables? (manual, inspection)</li>
+                    <li>¿Inventario? (manual, conteo físico)</li>
+                    <li>¿Hechauka genera? (sí, pero requiere validar manualmente)</li>
+                    <li>¿104/106 cierran? (sí, pero re-validar)</li>
+                </ul>
+                <br>
+                <strong style="color: #dc2626;">Resultado: 8-10 horas de cierre, errores comunes, retrabajos</strong>
+            </div>
+
+            <h3>Intelicont: Checklist Interactivo + Automatización</h3>
+            <div class="opportunity">
+                <strong>Flujo Asistido:</strong>
+                <ul>
+                    <li>✅ Checklist interactivo en UI</li>
+                    <li>✅ Auto-check: Depreciación corrió? ✓ (verifica evento en BD)</li>
+                    <li>✅ Auto-check: Conciliación > 95% matched? ✓</li>
+                    <li>✅ Auto-check: Retenciones registradas? ✓ (valida por tipo cliente)</li>
+                    <li>✅ Auto-check: EEFF genera sin errores? ✓</li>
+                    <li>⚠️ Manual: Incobrables (contador solo aprueba IA suggestion)</li>
+                    <li>⚠️ Manual: Inventario (pero con histórico vs físico)</li>
+                    <li>✓ Auto-generate: 104/106/500v3 (validados DNIT)</li>
+                    <li>✓ Auto-export: Hechauka XML listo para DNIT</li>
+                </ul>
+                <br>
+                <span class="metric positive">-60% horas de cierre</span>
+                <span class="metric positive">-80% errores DNIT</span>
+            </div>
+
+            <h3>ROI del Cierre Automático</h3>
+            <p><strong>Escenario: Estudio con 10 empresas</strong></p>
+            <ul>
+                <li>Expert360: 10 × 8 horas = 80 horas/mes = 1 FTE ($20K PYG)</li>
+                <li>Intelicont: 10 × 3 horas = 30 horas/mes</li>
+                <li><span class="metric positive">Ahorro: 50 horas/mes = $30K PYG</span></li>
+                <li><span class="metric positive">Payback Intelicont: <1 mes</span></li>
+            </ul>
+        </div>
+
+        <!-- MÓDULO 5: REPORTES & BI -->
+        <div class="section">
+            <h2>5️⃣ Reportes & Estados Financieros</h2>
+
+            <h3>Expert360: Estáticos</h3>
+            <ul>
+                <li>Balance General, Estado de Resultados, Flujo, Variaciones</li>
+                <li>Descargas PDF (no explorables)</li>
+                <li>Sin drill-down (números negros, sin detalles)</li>
+                <li>Cambios requieren manual edit</li>
+                <li>Sin tendencias</li>
+                <li>Sin BI (Looker, Metabase, etc.)</li>
+            </ul>
+
+            <h3>Intelicont: Interactivo</h3>
+            <div class="opportunity">
+                <strong>Dashboards Vivos:</strong>
+                <ul>
+                    <li>✓ Balance, Estado Resultados, Flujo automáticos</li>
+                    <li>✓ Click en número → detalle de cuentas/líneas</li>
+                    <li>✓ Filtros: por período, rango, moneda</li>
+                    <li>✓ Comparativos: MoM, YoY, varianza análisis</li>
+                    <li>✓ Tendencias: gráficos automáticos</li>
+                    <li>✓ BI integrado: Looker embed o Metabase</li>
+                    <li>✓ NL queries: "¿Cuál fue mi margen en Q2?" → SQL automático</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- MÓDULO 6: DNIT & FISCALIDAD -->
+        <div class="section">
+            <h2>6️⃣ DNIT & Cumplimiento Fiscal PY</h2>
+
+            <h3>Expert360: Completo pero Manual</h3>
+            <table>
+                <tr>
+                    <th>Formulario</th>
+                    <th>Expert360</th>
+                    <th>Validación</th>
+                </tr>
+                <tr>
+                    <td>104 (IVA)</td>
+                    <td>✓ Genera automático</td>
+                    <td>Manual DNIT (usuario valida)</td>
+                </tr>
+                <tr>
+                    <td>106 (Retenciones)</td>
+                    <td>✓ Genera automático</td>
+                    <td>Manual DNIT</td>
+                </tr>
+                <tr>
+                    <td>500v3 (Balance)</td>
+                    <td>✓ Genera automático</td>
+                    <td>Manual DNIT</td>
+                </tr>
+                <tr>
+                    <td>120v4 (IR)</td>
+                    <td>✓ Genera automático</td>
+                    <td>Manual DNIT</td>
+                </tr>
+                <tr>
+                    <td>Hechauka</td>
+                    <td>✓ Exportable</td>
+                    <td>Validación manual</td>
+                </tr>
+                <tr>
+                    <td>RG90</td>
+                    <td>Parcial</td>
+                    <td>Manual</td>
+                </tr>
+            </table>
+
+            <h3>Intelicont: Automático + IA Validation</h3>
+            <div class="opportunity">
+                <strong>Diferenciador clave:</strong>
+                <ul>
+                    <li>✓ Genera 104/106/500v3 automático (como Expert360)</li>
+                    <li>✓ **Valida contra DNIT rules con IA**: "Esta retención no es válida para este tipo de proveedor" → aviso</li>
+                    <li>✓ **Integración Aranduka nativa**: genera XML, submit directo a DNIT sin Excel</li>
+                    <li>✓ **Mantiene tabla de tasas DNIT**: actualización automática (15 de cada mes, ej.)</li>
+                    <li>✓ **RG90 completo**: conciliación SIFEN automática</li>
+                    <li>✓ **Hechauka**: genera y valida, listo para presentar</li>
+                </ul>
+            </div>
+
+            <h3>El Win Crítico</h3>
+            <p><span class="good">Intelicont evita errores DNIT</span> — Expert360 genera formularios, pero no valida reglas (contador tiene que hacerlo). Con IA validation, Intelicont reduce audit risk significativamente.</p>
+        </div>
+
+        <!-- ROADMAP ESPECÍFICO -->
+        <div class="section">
+            <h2>🛣️ Roadmap para Dominar Intelicont vs Expert360</h2>
+
+            <h3>Fase 1 (Meses 1-3): MVP Contable Inexpugnable</h3>
+            <div class="roadmap">
+                <strong>Meta:</strong> Contador puede operar 1 empresa sin Expert360<br><br>
+                <ul>
+                    <li>✅ Asientos con plan PY (400 cuentas)</li>
+                    <li>✅ Libros: Diario, Mayor, Sumas y Saldos (desde eventos)</li>
+                    <li>✅ Formularios 104, 106, 500v3 (generación automática)</li>
+                    <li>✅ Validación DNIT: checker de 104/106 correctas</li>
+                    <li>✅ Hechauka exportable</li>
+                    <li>✅ Dashboard: saldo IVA, vencimientos DNIT</li>
+                </ul>
+                <br>
+                <span class="metric">CRITICAL: DNIT validation impecable (sin errores)</span>
+            </div>
+
+            <h3>Fase 2 (Meses 4-6): Ingesta + Bancos (El Matador)</h3>
+            <div class="roadmap">
+                <strong>Meta:</strong> Contador no toca Excel para conciliación ni ingesta<br><br>
+                <ul>
+                    <li>✅ SIFEN XML ingestion: sube PDF → IA propone asiento</li>
+                    <li>✅ Conciliación bancaria: 85%+ automático</li>
+                    <li>✅ API bancos: Itaú, GNB, Asunción, Evo (descarga diaria)</li>
+                    <li>✅ Matching IA: movimiento ↔ asiento</li>
+                    <li>✅ Retenciones: motor configurable</li>
+                    <li>✅ Cuenta corriente: clientes/proveedores (auto desde asientos)</li>
+                </ul>
+                <br>
+                <span class="metric positive">Esto es la DIFERENCIADORA vs Expert360</span>
+            </div>
+
+            <h3>Fase 3 (Meses 7-9): Cierre Asistido + EEFF</h3>
+            <div class="roadmap">
+                <strong>Meta:</strong> Cierre mensual en 2-3 horas<br><br>
+                <ul>
+                    <li>✅ Checklist interactivo: items se marcan solos si validan</li>
+                    <li>✅ EEFF automático: plan contable ↔ plan EEFF (enlaces automáticos)</li>
+                    <li>✅ Depreciación: asiento automático en cierre</li>
+                    <li>✅ Validaciones: alertas por inconsistencias (IVA por pagar vs bank)</li>
+                    <li>✅ Cierre bloqueado: periodo cerrado no editable</li>
+                </ul>
+            </div>
+
+            <h3>Fase 4 (Meses 10-12): API + Integraciones</h3>
+            <div class="roadmap">
+                <strong>Meta:</strong> Ecosystem play (SueldOK → Intelicont, Intelicont → InteliAudit)<br><br>
+                <ul>
+                    <li>✅ API pública v1: OpenAPI docs, SDKs Python/Node</li>
+                    <li>✅ Webhooks: eventos firmados (JWS)</li>
+                    <li>✅ Integración SueldOK: nómina → asientos automáticos</li>
+                    <li>✅ InteliAudit integration: auditor accede sin copiar datos</li>
+                    <li>✅ Marketplace: integradores buildean connectors</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- PROMPTS EJECUTIVOS -->
+        <div class="section">
+            <h2>💬 Prompts Ejecutivos para Esta Semana</h2>
+
+            <h3>Prompt 1: IA Asiento Sugerido (SIFEN XML)</h3>
+            <div class="code-label">PROMPT PARA EJECUTAR YA</div>
+            <div class="prompt-code">
+Implementa endpoint POST /api/ingestion/sifen-xml que:
+1. Reciba file upload (XML SIFEN factura)
+2. Parsee: proveedor RUC, monto neto, IVA%, retención %
+3. Llame Claude API (Sonnet) con contexto:
+   "Contabilidad Paraguay. Factura de PROVEEDOR_RUC por MONTO_NETO.
+    IVA 10%, retención IRE 5%.
+    ¿Qué asiento contable? Retorna JSON con debit/credit."
+4. Parse respuesta IA → sugerir asiento
+5. Frontend muestra preview: "Débito 5110 Gasto X | Crédito 2010 Banco Y | Retención Z"
+6. Contador aprueba o edita 3 campos principales
+7. Inserta vía asiento API (inmutable)
+
+Test: 5 XMLs reales, validar asientos correctos
+            </div>
+
+            <h3>Prompt 2: Matching Bancario 85%</h3>
+            <div class="code-label">PROMPT PARA ESTA SEMANA 2</div>
+            <div class="prompt-code">
+Implementa IA matching para conciliación:
+1. Input: { bankMovements: [{date, amount, desc}],
+            journalEntries: [{date, amount, desc, reference}] }
+2. Para cada bankMovement:
+   a) Busca exacto: monto === amount
+   b) Si no, busca ±5% (retención, comisión)
+   c) Llamar Claude embedding: similarity("Pago Acme" vs "Factura Acme #001")
+   d) Top 3 matches → retornar con confidence score
+3. Contador hace tick en UI → match aprobado
+4. Output: { bankMovementId, matchedEntryId, confidence: 0-1 }
+
+Test: 100 movimientos, meta 85%+ matching automático
+            </div>
+
+            <h3>Prompt 3: Validador DNIT 104/106</h3>
+            <div class="code-label">PROMPT PARA VALIDACIÓN CRÍTICA</div>
+            <div class="prompt-code">
+Implementa validador DNIT:
+1. Función validar_104():
+   - Total débito facturas = sumatoria IVA compras
+   - Total crédito = sumatoria IVA ventas + anticipos
+   - Impuesto = crédito - débito
+   - Si débito > crédito, es devolución (flag)
+
+2. Función validar_106():
+   - Si retenedor = false, error
+   - Por tipo ramo: Construcción 10%, Servicios 5%, Comercio 3%
+   - Validar monto >= factura × tasa
+
+3. Retorna: { valid: bool, errors: string[] }
+
+Test: 10 casos reales (completos, incompletos, edge cases)
+            </div>
+        </div>
+
+        <!-- CONCLUSIÓN -->
+        <div class="section">
+            <h2>✅ Conclusión: Por Qué Intelicont Gana</h2>
+            <div class="opportunity">
+                <strong>No es un feature battle. Es una batalla de VELOCIDAD DEL CONTADOR.</strong><br><br>
+                Expert360: "Tienes todas las herramientas, ahora tipeá 5 horas para registrar, 5 horas para conciliar, 5 horas para cerrar." = 15 horas/mes<br><br>
+                Intelicont: "IA te sugiere asientos (20 seg), matching automático (15 min), cierre asistido (2 horas)." = 2.5 horas/mes<br><br>
+                <span class="metric positive">-85% de horas de operación = El contador hace más proyectos, gana más dinero, es feliz</span>
+                <br><br>
+                <strong>Eso es lo que vende. No "mejores features". Es "Tu vida es 10x más fácil".</strong>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

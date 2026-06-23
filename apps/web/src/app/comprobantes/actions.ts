@@ -1252,6 +1252,11 @@ export async function loadPendingInstallments(entityId: string): Promise<ActionR
 
 // ─── Register payment receipt (OCR + posting) ────────────────────────────────
 
+export interface InstallmentPaymentInput {
+  installmentId: string;
+  payAmount:     number;
+}
+
 export interface RegisterReceiptInput {
   entityId:          string;
   number:            string;
@@ -1261,15 +1266,15 @@ export interface RegisterReceiptInput {
   partnerName:       string;
   paymentMethod:     "cash" | "bank" | "card";
   bankAccountId?:    string;
-  installmentIds:    string[];       // IDs of installments being paid
+  installmentPayments: InstallmentPaymentInput[];       // Installments details being paid
   metadata?:         Record<string, unknown>;
 }
 
 export async function registerReceipt(
   input: RegisterReceiptInput
 ): Promise<ActionResult<{ receiptId: string; entryNumber: string }>> {
-  const { entityId, number, issueDate, total, partnerRuc, partnerName, paymentMethod, bankAccountId, installmentIds } = input;
-  if (!entityId || !number || !issueDate || !installmentIds.length)
+  const { entityId, number, issueDate, total, partnerRuc, partnerName, paymentMethod, bankAccountId, installmentPayments } = input;
+  if (!entityId || !number || !issueDate || !installmentPayments.length)
     return { ok: false, error: "Faltan campos obligatorios" };
 
   try {
@@ -1291,11 +1296,37 @@ export async function registerReceipt(
         metadata: input.metadata ?? {},
       }).returning();
 
-      // 2. Mark installments as paid
-      for (const instId of installmentIds) {
-        await tx.update(paymentInstallments)
-          .set({ status: "paid", receiptId: savedReceipt.id, updatedAt: new Date() })
-          .where(eq(paymentInstallments.id, instId));
+      // 2. Mark installments as paid or adjust for partial payment
+      for (const pay of installmentPayments) {
+        // Query current installment
+        const [inst] = await tx.select().from(paymentInstallments).where(eq(paymentInstallments.id, pay.installmentId)).limit(1);
+        if (!inst) continue;
+
+        const currentAmount = Number(inst.amount);
+        const payAmt = pay.payAmount;
+
+        if (payAmt >= currentAmount) {
+          // Fully paid
+          await tx.update(paymentInstallments)
+            .set({ status: "paid", receiptId: savedReceipt.id, updatedAt: new Date() })
+            .where(eq(paymentInstallments.id, pay.installmentId));
+        } else {
+          // Partially paid
+          const remainingAmount = currentAmount - payAmt;
+          // Update current installment to the paid amount, and mark it as paid
+          await tx.update(paymentInstallments)
+            .set({ amount: String(payAmt), status: "paid", receiptId: savedReceipt.id, updatedAt: new Date() })
+            .where(eq(paymentInstallments.id, pay.installmentId));
+
+          // Create a new pending installment for the remainder
+          await tx.insert(paymentInstallments).values({
+            documentId: inst.documentId,
+            installmentNumber: inst.installmentNumber, // keeps same number as partial
+            dueDate: inst.dueDate,
+            amount: String(remainingAmount),
+            status: "pending",
+          });
+        }
       }
 
       // 3. Generate payment journal entry

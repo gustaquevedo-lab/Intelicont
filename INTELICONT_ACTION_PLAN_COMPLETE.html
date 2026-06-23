@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelicont Action Plan - Equiparación y Superación de Expert360</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; background: #f5f5f5; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        header { background: linear-gradient(135deg, #104c91 0%, #00a651 100%); color: white; padding: 50px 20px; border-radius: 12px; margin-bottom: 30px; }
+        header h1 { font-size: 3em; margin-bottom: 10px; }
+        .phase { background: white; padding: 30px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border-left: 8px solid #104c91; }
+        .phase.critical { border-left-color: #dc2626; }
+        .phase h2 { color: #104c91; margin-bottom: 10px; font-size: 1.8em; }
+        .phase.critical h2 { color: #dc2626; }
+        .timeline { background: #f0f4f8; padding: 10px 15px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; color: #104c91; display: inline-block; }
+        .week { background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
+        .week h4 { color: #104c91; margin-bottom: 10px; font-size: 1.1em; }
+        .task { background: white; padding: 15px; margin-bottom: 10px; border-left: 4px solid #00a651; border-radius: 4px; }
+        .task.blocker { border-left-color: #dc2626; background: #fef2f2; }
+        .task-title { font-weight: bold; color: #1f2937; margin-bottom: 8px; }
+        .task-desc { font-size: 0.95em; color: #666; margin-bottom: 8px; }
+        .prompt-section { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 0.85em; border-left: 4px solid #00a651; overflow-x: auto; }
+        .prompt-label { display: inline-block; background: #00a651; color: white; padding: 4px 8px; border-radius: 3px; font-size: 0.8em; margin-bottom: 10px; font-family: sans-serif; font-weight: bold; }
+        .success-metric { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px; margin-top: 10px; border-radius: 4px; font-size: 0.95em; }
+        .blocker-list { background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .blocker-list h5 { color: #dc2626; margin-bottom: 10px; }
+        .blocker-list li { margin: 5px 0; margin-left: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f4f8; font-weight: bold; color: #104c91; }
+        tr:hover { background: #fafafa; }
+        .metric { display: inline-block; background: #104c91; color: white; padding: 6px 12px; border-radius: 4px; margin: 5px; font-weight: bold; font-size: 0.9em; }
+        .status-done { color: #16a34a; font-weight: bold; }
+        .status-pending { color: #dc2626; font-weight: bold; }
+        ul { list-style: none; }
+        li { padding: 8px 0; padding-left: 25px; position: relative; }
+        li:before { content: "▸"; position: absolute; left: 0; color: #104c91; font-weight: bold; }
+        .task.blocker li:before { color: #dc2626; }
+        .daily { background: #e8f4f8; border: 1px solid #b3dce8; padding: 15px; margin-bottom: 10px; border-radius: 6px; }
+        .daily h5 { color: #104c91; margin-bottom: 8px; }
+        @media (max-width: 768px) { .phase { padding: 20px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ INTELICONT ACTION PLAN</h1>
+            <p>Plan de Equiparación y Superación de Expert360</p>
+            <p style="font-size: 0.95em; margin-top: 10px;">100% Ejecutable | Tareas Semanales | Prompts Específicos</p>
+        </header>
+
+        <!-- FASE 1: CRÍTICAL - DNIT -->
+        <div class="phase critical">
+            <h2>🚨 FASE 1: DNIT IMPECABLE (Semanas 1-4) — CRÍTICO</h2>
+            <div class="timeline">4 SEMANAS | Meta: Contador puede registrar y cerrar 1 empresa sin errores DNIT</div>
+
+            <div class="blocker-list">
+                <h5>⚠️ BLOQUEA TODO DEMÁS</h5>
+                <ul>
+                    <li>Si DNIT falla = cliente pierde fiscalización = nunca confía en ti</li>
+                    <li>Expert360 genera 104, 106, 500v3 correctamente = MUST MATCH O SUPERAR</li>
+                    <li>No avances a Fase 2 hasta que DNIT sea 100% confiable</li>
+                </ul>
+            </div>
+
+            <!-- SEMANA 1 -->
+            <div class="week">
+                <h4>📅 SEMANA 1: Plan de Cuentas + Motor DNIT Base</h4>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 1.1: Crear plan de cuentas seed PY (DNIT compliant)</div>
+                    <div class="task-desc">Estructura 400 cuentas según DNIT Paraguay vigente 2025. Validable contra real para Impacto Cubiertas.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Crea archivo db/seed-chart-of-accounts-py.sql que inserte 400 cuentas PY DNIT.
+
+Estructura:
+- 1xxx: Activos Circulantes (Caja 1110, Banco 1120, Cta. Ctes. 1130, etc.)
+- 11xx: Activos No Circulantes
+- 2xxx: Pasivos Circulantes (Cta. Pagar 2110, IPS 2135, IVA Débito 2140, etc.)
+- 21xx: Pasivos No Circulantes
+- 3xxx: Patrimonio (Capital 3110, Reservas 3120, Resultados 3130)
+- 4xxx: Ingresos (Ventas 4110, Servicios 4120, Otros 4130)
+- 5xxx: Egresos (Compras 5110, Costos 5120, Gastos 5130)
+
+Campos tabla chart_of_accounts:
+- code (ej: "1110")
+- name (ej: "Caja")
+- type enum (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)
+- requires_dnit_code boolean
+- is_header boolean
+- parent_code (para jerarquía)
+
+Validaciones:
+- Cada cuenta debe poder participar en asiento doble partida
+- Sumar: Activos = Pasivos + Patrimonio
+- Validar contra estructura oficial DNIT 2025
+
+Output: SQL insertable en 1 minuto sin errores
+Test: insertar 5 asientos simples, validar cuadre
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: Puedes insertar asientos y Activos = Pasivos + Patrimonio siempre</div>
+                </div>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 1.2: Validador de Doble Partida + Balance</div>
+                    <div class="task-desc">Function que valida todo asiento cuadra (débito = crédito) SIEMPRE.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa función TypeScript:
+
+function validateJournalEntry(entry: {
+  lines: { account: string, debit?: number, credit?: number }[]
+}): { valid: boolean, errors: string[] }
+
+Validaciones:
+1. Cada línea: debit XOR credit (uno u otro, no ambos)
+2. Sumatoria: sum(debits) === sum(credits) exactamente
+3. Decimales: máximo 4 decimales (Decimal de Paraguay)
+4. Cuentas: todas existen en chart_of_accounts
+5. Si valid=false, retorna lista exacta de errores
+
+Casos de test (TODOS DEBEN PASAR):
+- Asiento correcto (2 líneas): Debit Gasto 100, Credit Banco 100 → valid=true
+- Asiento incorrecto (2 líneas): Debit Gasto 100, Credit Banco 95 → valid=false, error="Doble partida no cuadra"
+- Multi-línea: Debit 50+50, Credit 100 → valid=true
+- Decimal: Debit 100.5000, Credit 100.5000 → valid=true
+- Decimal mala: Debit 100.50001 → valid=false, error="Máximo 4 decimales"
+
+Integración: Llamar ANTES de insertar asiento en BD
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: 100% de test cases pasan, asientos NUNCA se insertan sin validar</div>
+                </div>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 1.3: Test Manual con Impacto Cubiertas</div>
+                    <div class="task-desc">Descarga XML real de Impacto Cubiertas (estás en su cuenta), crea 5 asientos, valida que cuadran.</div>
+                    <div class="success-metric">✅ LISTO CUANDO: 5 asientos diferentes, todos cuadrados, sin errores de doble partida</div>
+                </div>
+            </div>
+
+            <!-- SEMANA 2 -->
+            <div class="week">
+                <h4>📅 SEMANA 2: Formularios 104 + 106 (Los Críticos)</h4>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 2.1: Generador Formulario 104 (IVA)</div>
+                    <div class="task-desc">Genera 104 DNIT desde asientos. DEBE coincidir 100% con Expert360 para mismo período.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa función:
+
+function generateForm104(entityId, periodId): {
+  totalDebito: number,
+  totalCredito: number,
+  impuestoPagar: number,
+  comprobantes: { fecha, ruc, monto, iva }[],
+  validationErrors: string[]
+}
+
+Lógica:
+1. Sumatoria IVA débito = sum(IVA de todas compras en período)
+2. Sumatoria IVA crédito = sum(IVA de todas ventas en período)
+3. Impuesto pagar = crédito - débito
+4. Si débito > crédito, flag como "devolución"
+
+Validaciones DNIT:
+- Total débito debe coincidir con cuenta 2140 "IVA Crédito Fiscal"
+- Total crédito debe coincidir con cuenta 2150 "IVA Débito Fiscal"
+- RUC proveedor/cliente DEBE existir y ser válido
+- Monto DEBE ser positivo
+- Fecha DEBE estar en período
+
+Test contra Impacto Cubiertas período Abril 2026:
+- Generar 104
+- Comparar vs Expert360 104 del mismo período
+- DEBEN ser idénticos (o tu 104 es MEJOR)
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: Tu 104 = Expert360 104 (o es idéntico)</div>
+                </div>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 2.2: Generador Formulario 106 (Retenciones)</div>
+                    <div class="task-desc">Genera 106 con validaciones de tasa por tipo de ramo. DNIT es puro.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa función:
+
+function generateForm106(entityId, periodId): {
+  retencionesIRE: { ruc, monto, tasa }[],
+  retencionesIRP: { ruc, monto, tasa }[],
+  retencionesOtras: { ruc, monto, tasa }[],
+  validationErrors: string[]
+}
+
+Validaciones por tasa:
+- Construcción: IRE 10% MÍNIMO
+- Servicios: IRE 5% MÍNIMO
+- Comercio: IRE 3% MÍNIMO
+- Personal físico (IRP): 15% si aplica
+- Sub-retenedor: validar contra tabla DNIT especial
+
+Lógica:
+1. Sumar retenciones por tipo ramo
+2. Verificar tasa sea correcta para tipo proveedor
+3. Si tasa < mínimo, ERROR
+4. Retenciones deben estar posteadas en asientos
+
+Test:
+- 10 proveedores reales con retención
+- Validar tasas sean correctas
+- Generar 106
+- Comparar vs Expert360
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: Tu 106 = Expert360 106 exactamente</div>
+                </div>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 2.3: Test Doble Contra Expert360</div>
+                    <div class="task-desc">Crea período April 2026 con datos reales (o simulados). Genera 104 + 106. Compara línea a línea con Expert360.</div>
+                    <div class="success-metric">✅ LISTO CUANDO: 104 y 106 idénticos a Expert360</div>
+                </div>
+            </div>
+
+            <!-- SEMANA 3 -->
+            <div class="week">
+                <h4>📅 SEMANA 3: Formulario 500v3 (Balance) + Validador Integral</h4>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 3.1: Generador 500v3 (Balance Anual)</div>
+                    <div class="task-desc">Genera balance DNIT. Validación: Activos = Pasivos + Patrimonio.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa función:
+
+function generateForm500v3(entityId, year): {
+  activos: { cuenta, saldo }[],
+  pasivos: { cuenta, saldo }[],
+  patrimonio: { cuenta, saldo }[],
+  totalActivos: number,
+  totalPasivos: number,
+  totalPatrimonio: number,
+  isBalanced: boolean,
+  validationErrors: string[]
+}
+
+Validaciones:
+1. sumActivos = sumPasivos + sumPatrimonio
+2. Todas cuentas existen
+3. Saldos son correctos (desde journal_entries)
+4. Decimales máximo 4
+5. Si no cuadra, retorna ERROR explícito
+
+Test:
+- Año 2025 (completo)
+- Validar ecuación contable
+- Comparar vs Expert360 500v3
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: Tu 500v3 cuadra perfectamente</div>
+                </div>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 3.2: Validador DNIT Integral</div>
+                    <div class="task-desc">Una función que valida TODO: 104, 106, 500v3 en un período. Si algo falla, BLOQUEA cierre.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa función:
+
+function validateDNITCompliance(entityId, periodId): {
+  form104: { valid, errors },
+  form106: { valid, errors },
+  form500v3: { valid, errors },
+  generalChecks: { valid, errors },
+  canCloseMonth: boolean
+}
+
+Checks:
+1. 104: débito = suma IVA compras, crédito = suma IVA ventas
+2. 106: tasas correctas por ramo
+3. 500v3: Activos = Pasivos + Patrimonio
+4. General: períodos cerrados no editable, RUC válidos, fechas correctas
+5. Si CUALQUIERA falla, canCloseMonth = false
+
+canCloseMonth = true SOLO si TODO es válido
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: Validador bloquea mes si hay errores DNIT</div>
+                </div>
+            </div>
+
+            <!-- SEMANA 4 -->
+            <div class="week">
+                <h4>📅 SEMANA 4: Hechauka + Test Final Integral</h4>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 4.1: Generador Hechauka (Libro Electrónico)</div>
+                    <div class="task-desc">Exporta libro electrónico formato DNIT. Validado antes de exportar.</div>
+                    <div class="success-metric">✅ LISTO CUANDO: Hechauka XML válido para DNIT</div>
+                </div>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 4.2: Test Integral Impacto Cubiertas</div>
+                    <div class="task-desc">Período completo (Abril 2026) con datos REALES. Genera TODOS los formularios. Compara vs Expert360 línea a línea.</div>
+                    <div class="prompt-label">CHECKLIST FINAL DNIT</div>
+                    <div class="prompt-section">
+□ Plan de cuentas: 400 cuentas DNIT compliant
+□ Asientos: todos cuadrados, doble partida validada
+□ 104 IVA: débito/crédito exactos
+□ 106 Retenciones: tasas correctas por ramo
+□ 500v3 Balance: Activos = Pasivos + Patrimonio
+□ Hechauka: XML exportable
+□ Validador integral: bloquea si hay error
+□ Test vs Expert360: 100% coincidencia
+□ Impacto Cubiertas real: período completo sin errores
+                    </div>
+                    <div class="success-metric">✅ FASE 1 COMPLETA CUANDO: Todo ✓ en checklist, DNIT es bulletproof</div>
+                </div>
+            </div>
+
+            <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; margin-top: 20px; border-radius: 4px;">
+                <strong>🎯 FIN FASE 1:</strong> Puedes registrar 1 empresa completa en Intelicont y cerrar mes sin errores DNIT. Confías en el producto. NO avances a Fase 2 sin esto.
+            </div>
+        </div>
+
+        <!-- FASE 2: IA + MATCHING -->
+        <div class="phase">
+            <h2>⚡ FASE 2: IA + MATCHING BANCARIO (Semanas 5-8) — THE DIFFERENTIATOR</h2>
+            <div class="timeline">4 SEMANAS | Meta: Contador no toca Excel para asientos ni conciliación</div>
+
+            <div class="week">
+                <h4>📅 SEMANA 5: SIFEN XML → IA Asiento</h4>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 5.1: Endpoint SIFEN Ingestion + IA</div>
+                    <div class="task-desc">Contador sube PDF/XML → IA propone asiento → aprueba en 20 segundos.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa endpoint POST /api/ingestion/sifen-xml que:
+
+1. Recibe file upload (PDF o XML SIFEN)
+2. Parse XML/PDF → extrae:
+   - Proveedor RUC
+   - Monto neto
+   - IVA %
+   - Retención %
+   - Fecha
+
+3. Llamar Claude API (Sonnet) con contexto:
+   "Contabilidad Paraguay.
+   Factura de proveedor RUC [X] por [MONTO_NETO].
+   IVA [IVA%], retención [RET%].
+   ¿Qué asiento contable? Retorna JSON: {debit: {account_code, amount}, credit: {...}, retención: {...}}"
+
+4. Parse respuesta Claude → sugerir asiento
+
+5. Frontend muestra:
+   "Débito 5110 Gasto Compras [MONTO]
+    Crédito 2010 Banco [MONTO]
+    Retención 2135 IPS [RET]
+    ✓ Doble partida validada"
+
+6. Contador: "Aprueba" o "Edita 3 campos"
+
+7. Inserta vía asiento API (validador de fase 1)
+
+Test:
+- 10 XMLs reales de facturas
+- Valida asientos sean correctos
+- Mide tiempo: <20 segundos por factura vs 2-3 min manual
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: 10 facturas de Impacto Cubiertas → asientos en 20s cada una</div>
+                </div>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 5.2: OCR para PDF (Si no es SIFEN XML)</div>
+                    <div class="task-desc">Si es PDF scaneado, OCR + IA extrae datos.</div>
+                    <div class="success-metric">✅ LISTO CUANDO: OCR + IA puede procesar PDF scaneado de factura</div>
+                </div>
+            </div>
+
+            <div class="week">
+                <h4>📅 SEMANA 6-7: Conciliación Bancaria 85% Automática</h4>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 6.1: API Bancos + Descarga Automática</div>
+                    <div class="task-desc">Integración nativa: Itaú, GNB, Asunción, Evo. Descarga diaria automática.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa descargador de movimientos bancarios:
+
+Para cada banco (Itaú, GNB, Asunción, Evo):
+1. Conecta via API (auth + credentials)
+2. Descarga movimientos últimos 30 días
+3. Parse a formato estándar:
+   { fecha, monto, descripción, ref_code }
+
+4. Almacena en tabla bank_movements
+
+5. Daily job: 23:00 cada noche
+
+Test:
+- Descarga movimientos de cuenta real
+- Valida que llegan correctos
+- Almacena sin errores
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: Movimientos descargan automáticamente cada noche</div>
+                </div>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 6.2: IA Matching (85% Automático)</div>
+                    <div class="task-desc">Movimiento bancario ↔ asiento registrado. IA sugiere matches.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa IA matching para conciliación:
+
+Input:
+- bankMovements: [{date, amount, desc}, ...]
+- journalEntries: [{date, amount, desc, reference}, ...]
+
+Para cada bankMovement:
+1. Busca exacto: amount === entry.amount
+2. Si no, busca ±5% (retención, comisión)
+3. Embedding similarity (Claude): "Pago Acme" vs "Factura Acme #001" → score 0-1
+4. Top 3 matches con confidence
+
+Output para UI:
+{
+  bankMovementId,
+  suggestedMatches: [
+    { entryId, amount, description, confidence: 0.95 },
+    ...
+  ]
+}
+
+Contador: click → match aprobado
+
+Test:
+- 100 movimientos reales
+- 85%+ deben matchear automático
+- 15% manual (comisiones, retenciones especiales)
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: 85%+ matching automático sin intervención</div>
+                </div>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 6.3: UI Conciliación (Limpia)</div>
+                    <div class="task-desc">Dashboard conciliación: movimientos sin match | matches sugeridos | aprobados.</div>
+                    <div class="success-metric">✅ LISTO CUANDO: Contador concilia 5 bancos en <15 minutos</div>
+                </div>
+            </div>
+
+            <div class="week">
+                <h4>📅 SEMANA 8: Integration Test + Metric</h4>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 8.1: Test vs Expert360 Speed</div>
+                    <div class="task-desc">Compara tiempo: Intelicont vs Expert360 para registrar 50 facturas + conciliar 5 bancos.</div>
+                    <div class="prompt-label">BENCHMARK</div>
+                    <div class="prompt-section">
+Scenario: Mes de Abril 2026, Impacto Cubiertas
+- 50 facturas proveedores
+- 5 bancos (Itaú, GNB, Asunción, Evo, Banco Transitorio)
+- ~500 movimientos totales
+
+Expert360:
+- 50 facturas × 2-3 min = 100-150 min
+- 5 bancos × 5 horas = 25 horas
+- Total: 26-26.5 horas
+
+Intelicont:
+- 50 facturas × 20 seg = 16 min
+- 5 bancos × 15 min = 75 min
+- Total: 91 min (~1.5 horas)
+
+GOAL: Intelicont >= 10x más rápido que Expert360
+                    </div>
+                    <div class="success-metric">✅ FASE 2 COMPLETA: Contador registra mes completo en 2-3 horas vs 8-10 en Expert360</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FASE 3: CIERRE + EEFF -->
+        <div class="phase">
+            <h2>📊 FASE 3: CIERRE ASISTIDO + EEFF (Semanas 9-12)</h2>
+            <div class="timeline">4 SEMANAS | Meta: Cierre mensual automatizado en checklist interactivo</div>
+
+            <div class="week">
+                <h4>📅 SEMANA 9-10: Checklist Interactivo + Validaciones</h4>
+
+                <div class="task blocker">
+                    <div class="task-title">✅ Tarea 9.1: Checklist Interactivo del Cierre</div>
+                    <div class="task-desc">Items se marcan solos si validan. Contador solo aprueba.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa componente React: ClosingChecklist
+
+Items (se marcan automático si cumplen):
+1. ✓ Conciliación bancaria > 95% matched?
+   → Check: count(matched) / total >= 0.95
+
+2. ✓ Depreciación corrió?
+   → Check: existe evento "DepreciationPosted" en mes
+
+3. ✓ Retenciones registradas?
+   → Check: todas compras con proveedor "retenedor" tienen retención
+
+4. ✓ Ajuste FX corrió?
+   → Check: existe evento "FXAdjustment" si hay cuentas en USD
+
+5. ✓ Incobrables detectados?
+   → IA flag: clientes > 90 días sin cobrar
+
+6. ✓ Inventario?
+   → Manual: contador sube conteo físico vs contable
+
+7. ✓ EEFF genera sin error?
+   → Check: Activos = Pasivos + Patrimonio
+
+8. ✓ 104/106 válidos?
+   → Check: validador DNIT integral
+
+Cada item:
+- ✓ Verde: completo
+- ⚠️ Amarillo: pendiente
+- 🔴 Rojo: ERROR, bloquea cierre
+
+Contador NO PUEDE cerrar si hay 🔴
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: Checklist se auto-valida, cierre se bloquea si hay error</div>
+                </div>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 9.2: Depreciación Automática</div>
+                    <div class="task-desc">Job que corre en cierre: genera asiento deprecación automáticamente.</div>
+                    <div class="success-metric">✅ LISTO CUANDO: Asiento depreciación se genera sin intervención</div>
+                </div>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 9.3: Validaciones de Coherencia</div>
+                    <div class="task-desc">Alertas si IVA por pagar > saldo banco, etc. IA flags issues.</div>
+                    <div class="success-metric">✅ LISTO CUANDO: Contador recibe alerts de inconsistencias</div>
+                </div>
+            </div>
+
+            <div class="week">
+                <h4>📅 SEMANA 11-12: EEFF Automático</h4>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 11.1: Plan EEFF con Enlaces Automáticos</div>
+                    <div class="task-desc">Plan de cuentas EEFF enlazado a plan contable. EEFF genera realtime.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+Implementa tabla: eeff_chart_of_accounts
+
+Estructura:
+{
+  eeff_code: "1.1.1",
+  eeff_name: "Efectivo y Equivalentes",
+  accounting_codes: ["1110", "1120"], // Caja, Banco
+  statement: "BG" // Balance General
+}
+
+Función generateEEFF():
+1. Para cada línea EEFF
+2. Sum saldos de cuentas contables enlazadas
+3. Retorna estructura BG, ER, FE, EVP completa
+
+Test:
+- 50 cuentas contables → se mapean correctamente a EEFF
+- Saldos EEFF = suma subcuentas
+- BG: Activos = Pasivos + Patrimonio siempre
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: EEFF se genera automático y balancea siempre</div>
+                </div>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 11.2: Dashboards EEFF Interactivos</div>
+                    <div class="task-desc">Click en número → drill-down a detalle. Gráficos tendencias.</div>
+                    <div class="success-metric">✅ FASE 3 COMPLETA: Cierre en 2-3 horas, EEFF perfecto</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FASE 4: API + INTEGRACIONES -->
+        <div class="phase">
+            <h2>🔗 FASE 4: API Pública + Integraciones (Semanas 13-16)</h2>
+            <div class="timeline">4 SEMANAS | Meta: Ecosystem play</div>
+
+            <div class="week">
+                <h4>📅 SEMANA 13-14: API Pública v1</h4>
+                <div class="task">
+                    <div class="task-title">✅ Tarea 13.1: OpenAPI Spec + SDKs</div>
+                    <div class="prompt-label">ENDPOINTS MÍNIMOS</div>
+                    <div class="prompt-section">
+GET /api/v1/entities/{entityId}/journal-entries
+GET /api/v1/entities/{entityId}/balance
+POST /api/v1/entities/{entityId}/journal-entries (crear asiento)
+GET /api/v1/entities/{entityId}/forms/{formType} (104, 106, 500v3)
+
+Auth: Bearer token (JWT 7 días)
+RLS: usuario solo ve su entity
+
+Output: OpenAPI spec + Python + Node SDKs
+                    </div>
+                    <div class="success-metric">✅ LISTO CUANDO: API documented + SDKs work</div>
+                </div>
+
+                <div class="task">
+                    <div class="task-title">✅ Tarea 13.2: Webhook Outbox</div>
+                    <div class="task-desc">Evento JournalEntryCreated → webhook a integrador (Sueldok, etc.)</div>
+                    <div class="success-metric">✅ LISTO CUANDO: Webhooks se disparan correctamente</div>
+                </div>
+            </div>
+
+            <div class="week">
+                <h4>📅 SEMANA 15-16: Integración SueldOK</h4>
+                <div class="task">
+                    <div class="task-title">✅ Tarea 15.1: SueldOK → Intelicont Webhook</div>
+                    <div class="task-desc">Nómina generada en SueldOK → webhook → asientos automáticos en Intelicont.</div>
+                    <div class="prompt-label">PROMPT EJECUTABLE</div>
+                    <div class="prompt-section">
+POST /api/v1/webhooks/sueldok/payroll-posted
+
+Payload:
+{
+  employeeId: "X",
+  grossSalary: 1000000,
+  deductions: [{ type: "PENSION", amount: 100000 }],
+  taxes: [{ type: "IPS", amount: 50000 }],
+  date: "2026-04-30"
+}
+
+Genera automático:
+Débito 5210 Gasto Sueldos = 1000000
+Crédito 2110 Sueldos por Pagar = 850000
+Crédito 2135 IPS por Pagar = 50000
+Crédito 2140 Otros Desc. = 100000
+
+Test:
+- 10 nóminas de mes
+- Validar asientos cuadren
+- Contador ve "asientos generados desde Sueldok"
+                    </div>
+                    <div class="success-metric">✅ FASE 4 COMPLETA: Nómina → Contabilidad es automático</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESUMEN Y MÉTRICAS -->
+        <div class="phase">
+            <h2>📈 Métricas de Éxito Final</h2>
+            <table>
+                <tr>
+                    <th>Métrica</th>
+                    <th>Expert360</th>
+                    <th>Intelicont Meta</th>
+                    <th>Fase</th>
+                </tr>
+                <tr>
+                    <td><strong>DNIT Errors</strong></td>
+                    <td>~2-3% (manual validation)</td>
+                    <td><span class="status-done">0% (automated)</span></td>
+                    <td>Fase 1</td>
+                </tr>
+                <tr>
+                    <td><strong>Tiempo asientos/mes</strong></td>
+                    <td>100-150 min</td>
+                    <td><span class="status-done">16 min</span></td>
+                    <td>Fase 2</td>
+                </tr>
+                <tr>
+                    <td><strong>Conciliación bancaria</strong></td>
+                    <td>5-6 horas</td>
+                    <td><span class="status-done">15 min</span></td>
+                    <td>Fase 2</td>
+                </tr>
+                <tr>
+                    <td><strong>Cierre mensual</strong></td>
+                    <td>8-10 horas</td>
+                    <td><span class="status-done">2-3 horas</span></td>
+                    <td>Fase 3</td>
+                </tr>
+                <tr>
+                    <td><strong>EEFF accuracy</strong></td>
+                    <td>Manual links (error-prone)</td>
+                    <td><span class="status-done">100% automatic</span></td>
+                    <td>Fase 3</td>
+                </tr>
+                <tr>
+                    <td><strong>Nómina integration</strong></td>
+                    <td>Manual asientos</td>
+                    <td><span class="status-done">Automático webhook</span></td>
+                    <td>Fase 4</td>
+                </tr>
+                <tr>
+                    <td><strong>Total mes horas</strong></td>
+                    <td>~25-30 horas</td>
+                    <td><span class="status-done">~2-3 horas</span></td>
+                    <td>Fase 1-4</td>
+                </tr>
+            </table>
+
+            <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 20px; margin-top: 20px; border-radius: 4px; font-size: 1.1em;">
+                <strong>🎯 INTELICONT DOMINA CUANDO:</strong><br><br>
+                Contador cierra mes en 2-3 horas (vs 25-30 en Expert360)<br>
+                DNIT 0% errores (automático validado)<br>
+                Precio 40% menos (180K vs 300K PYG)<br>
+                UX moderna (no WinForms)<br>
+                API abierta (integra con SueldOK, bancos, auditoría)<br><br>
+                <span class="metric">= Intelicont es THE CHOICE para estudios contables PY</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
