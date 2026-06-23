@@ -30,11 +30,11 @@ const CURRENCIES: Array<{ code: string; label: string; symbol: string; flag: Rea
     code: "PYG", label: "Guaraní", symbol: "₲",
     flag: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3.5 w-5 rounded-[2px] shrink-0">
-        <rect width="20" height="14" fill="#D52B1E"/>
+        <rect width="20" height="4.67" fill="#D52B1E"/>
         <rect y="4.67" width="20" height="4.66" fill="#fff"/>
-        <rect y="9.33" width="20" height="4.67" fill="#009B3A"/>
-        <circle cx="10" cy="7" r="2.2" fill="none" stroke="#1C4E9B" strokeWidth="0.6"/>
-        <circle cx="10" cy="7" r="0.9" fill="#D52B1E"/>
+        <rect y="9.33" width="20" height="4.67" fill="#0038A8"/>
+        <circle cx="10" cy="7" r="1.8" fill="none" stroke="#F1B82D" strokeWidth="0.4"/>
+        <circle cx="10" cy="7" r="0.6" fill="#D52B1E"/>
       </svg>
     ),
   },
@@ -787,7 +787,7 @@ export default function RegistrarComprobantePage() {
               {/* Moneda — custom picker with SVG flags */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1.5">Moneda del Comprobante</label>
-                <div className="relative" ref={currencyDropdownRef}>
+                <div className="relative z-20" ref={currencyDropdownRef}>
                   {/* Trigger */}
                   <button
                     type="button"
@@ -803,7 +803,7 @@ export default function RegistrarComprobantePage() {
 
                   {/* Dropdown */}
                   {showCurrencyDropdown && (
-                    <div className="absolute z-30 top-full mt-1 left-0 right-0 bg-gray-900 border border-gray-700/80 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-gray-900 border border-gray-700/80 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
                       {CURRENCIES.map((c) => (
                         <button
                           key={c.code}
