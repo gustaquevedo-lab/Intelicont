@@ -618,78 +618,82 @@ export interface ManualComprobanteInput {
   bankAccountId?: string;
   documentOrigenId?: string; // NC/ND: UUID of the originating tax document
   installments?: Array<{ dueDate: string; amount: number; installmentNumber: number }>;
+  currencyCode?: string;
+  fxRate?: number;
 }
 
 export async function createManualComprobante(
   input: ManualComprobanteInput
 ): Promise<ActionResult<{ docId: string; entryId: string; entryNumber: string }>> {
-  const {
-    entityId, direction, docType, number, timbrado, issueDate,
-    partnerRuc, partnerName, condition, gravado10, gravado5,
-    exento, iva10, iva5, total, lines, paymentMethod, bankAccountId,
-    documentOrigenId,
-  } = input;
+    const {
+      entityId, direction, docType, number, timbrado, issueDate,
+      partnerRuc, partnerName, condition, gravado10, gravado5,
+      exento, iva10, iva5, total, lines, paymentMethod, bankAccountId,
+      documentOrigenId, currencyCode, fxRate,
+    } = input;
 
-  if (!entityId) return { ok: false, error: "Falta empresa" };
-  if (!number) return { ok: false, error: "Falta número de comprobante" };
-  if (!partnerRuc || !partnerName) return { ok: false, error: "Falta datos del proveedor/cliente" };
+    if (!entityId) return { ok: false, error: "Falta empresa" };
+    if (!number) return { ok: false, error: "Falta número de comprobante" };
+    if (!partnerRuc || !partnerName) return { ok: false, error: "Falta datos del proveedor/cliente" };
 
-  try {
-    const db = getDb();
-    const parsedDate = new Date(issueDate + "T12:00:00");
-    const year = parsedDate.getFullYear();
+    try {
+      const db = getDb();
+      const parsedDate = new Date(issueDate + "T12:00:00");
+      const year = parsedDate.getFullYear();
 
-    // Fetch Entity for RUC/Name mapping
-    const entityRow = await db.select().from(entities).where(eq(entities.id, entityId)).limit(1);
-    if (entityRow.length === 0) return { ok: false, error: "Empresa no encontrada" };
-    const entityRuc = entityRow[0].ruc;
-    const entityLegalName = entityRow[0].legalName;
+      // Fetch Entity for RUC/Name mapping
+      const entityRow = await db.select().from(entities).where(eq(entities.id, entityId)).limit(1);
+      if (entityRow.length === 0) return { ok: false, error: "Empresa no encontrada" };
+      const entityRuc = entityRow[0].ruc;
+      const entityLegalName = entityRow[0].legalName;
 
-    const result = await db.transaction(async (tx) => {
-      // 1. Find or create Partner
-      let partnerRow = await tx.select()
-        .from(partners)
-        .where(and(eq(partners.entityId, entityId), eq(partners.ruc, partnerRuc)))
-        .limit(1);
+      const result = await db.transaction(async (tx) => {
+        // 1. Find or create Partner
+        let partnerRow = await tx.select()
+          .from(partners)
+          .where(and(eq(partners.entityId, entityId), eq(partners.ruc, partnerRuc)))
+          .limit(1);
 
-      let partnerId: string;
-      if (partnerRow.length === 0) {
-        const [newPartner] = await tx.insert(partners).values({
+        let partnerId: string;
+        if (partnerRow.length === 0) {
+          const [newPartner] = await tx.insert(partners).values({
+            entityId,
+            kind: direction === "received" ? "supplier" : "customer",
+            ruc: partnerRuc,
+            legalName: partnerName,
+          }).returning();
+          partnerId = newPartner.id;
+        } else {
+          partnerId = partnerRow[0].id;
+        }
+
+        // Determine issuer and receiver
+        const issuerRuc = direction === "received" ? partnerRuc : entityRuc;
+        const issuerName = direction === "received" ? partnerName : entityLegalName;
+        const receiverRuc = direction === "received" ? entityRuc : partnerRuc;
+        const receiverName = direction === "received" ? entityLegalName : partnerName;
+
+        // 2. Insert Tax Document
+        const [savedDoc] = await tx.insert(taxDocuments).values({
           entityId,
-          kind: direction === "received" ? "supplier" : "customer",
-          ruc: partnerRuc,
-          legalName: partnerName,
+          direction,
+          docType: mapToDbDocType(docType),
+          number,
+          timbrado,
+          issueDate: issueDate,
+          partnerId,
+          condition: condition === "cash" ? "cash" : "credit",
+          gravado10: String(gravado10),
+          gravado5: String(gravado5),
+          exento: String(exento),
+          iva10: String(iva10),
+          iva5: String(iva5),
+          total: String(total),
+          status: "posted",
+          currencyCode: currencyCode || "PYG",
+          fxRate: fxRate !== undefined ? String(fxRate) : "1",
+          ...(documentOrigenId ? { documentOrigenId } : {}),
         }).returning();
-        partnerId = newPartner.id;
-      } else {
-        partnerId = partnerRow[0].id;
-      }
-
-      // Determine issuer and receiver
-      const issuerRuc = direction === "received" ? partnerRuc : entityRuc;
-      const issuerName = direction === "received" ? partnerName : entityLegalName;
-      const receiverRuc = direction === "received" ? entityRuc : partnerRuc;
-      const receiverName = direction === "received" ? entityLegalName : partnerName;
-
-      // 2. Insert Tax Document
-      const [savedDoc] = await tx.insert(taxDocuments).values({
-        entityId,
-        direction,
-        docType: mapToDbDocType(docType),
-        number,
-        timbrado,
-        issueDate: issueDate,
-        partnerId,
-        condition: condition === "cash" ? "cash" : "credit",
-        gravado10: String(gravado10),
-        gravado5: String(gravado5),
-        exento: String(exento),
-        iva10: String(iva10),
-        iva5: String(iva5),
-        total: String(total),
-        status: "posted",
-        ...(documentOrigenId ? { documentOrigenId } : {}),
-      }).returning();
 
       // Insert Tax Document Lines
       if (lines.length > 0) {
@@ -1206,6 +1210,8 @@ export async function loadPendingInstallments(entityId: string): Promise<ActionR
   amount: number;
   status: string;
   isOverdue: boolean;
+  currencyCode: string;
+  fxRate: number;
 }>>> {
   if (!entityId) return { ok: false, error: "entityId requerido" };
   try {
@@ -1220,6 +1226,8 @@ export async function loadPendingInstallments(entityId: string): Promise<ActionR
         status:            paymentInstallments.status,
         docNumber:         taxDocuments.number,
         partnerName:       partners.legalName,
+        currencyCode:      taxDocuments.currencyCode,
+        fxRate:            taxDocuments.fxRate,
       })
       .from(paymentInstallments)
       .innerJoin(taxDocuments, eq(paymentInstallments.documentId, taxDocuments.id))
@@ -1243,6 +1251,8 @@ export async function loadPendingInstallments(entityId: string): Promise<ActionR
         amount:            Number(r.amount),
         status:            r.status ?? "pending",
         isOverdue:         new Date(String(r.dueDate)) < today,
+        currencyCode:      r.currencyCode ?? "PYG",
+        fxRate:            Number(r.fxRate) || 1,
       })),
     };
   } catch (err) {
@@ -1268,12 +1278,13 @@ export interface RegisterReceiptInput {
   bankAccountId?:    string;
   installmentPayments: InstallmentPaymentInput[];       // Installments details being paid
   metadata?:         Record<string, unknown>;
+  paymentFxRate?:    number;                             // Optional: exchange rate at payment time
 }
 
 export async function registerReceipt(
   input: RegisterReceiptInput
 ): Promise<ActionResult<{ receiptId: string; entryNumber: string }>> {
-  const { entityId, number, issueDate, total, partnerRuc, partnerName, paymentMethod, bankAccountId, installmentPayments } = input;
+  const { entityId, number, issueDate, total, partnerRuc, partnerName, paymentMethod, bankAccountId, installmentPayments, paymentFxRate } = input;
   if (!entityId || !number || !issueDate || !installmentPayments.length)
     return { ok: false, error: "Faltan campos obligatorios" };
 
@@ -1293,17 +1304,61 @@ export async function registerReceipt(
         partnerName,
         paymentMethod,
         ...(bankAccountId ? { bankAccountId } : {}),
-        metadata: input.metadata ?? {},
+        metadata: {
+          ...(input.metadata ?? {}),
+          paymentFxRate: paymentFxRate || 1,
+        },
       }).returning();
+
+      // Accounts configurations
+      const defaultAccountsPayable = await tx.select().from(accounts).where(eq(accounts.code, "2.1.01")).limit(1);
+      const defaultCashAcc = await tx.select().from(accounts).where(eq(accounts.code, "1.1.01")).limit(1);
+      const defaultGainFxAcc = await tx.select().from(accounts).where(eq(accounts.code, "4.1.02")).limit(1); // Ganancias por Tipo de Cambio
+      const defaultLossFxAcc = await tx.select().from(accounts).where(eq(accounts.code, "5.1.12")).limit(1); // Pérdidas por Tipo de Cambio
+
+      let creditAccId: string | undefined = defaultCashAcc[0]?.id;
+      if (paymentMethod === "bank" && bankAccountId) {
+        const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
+        if (bankAcc?.glAccountId) creditAccId = bankAcc.glAccountId;
+      }
+
+      let totalPygPaid = 0;
+      let totalPygLiabilityCancelled = 0;
 
       // 2. Mark installments as paid or adjust for partial payment
       for (const pay of installmentPayments) {
-        // Query current installment
-        const [inst] = await tx.select().from(paymentInstallments).where(eq(paymentInstallments.id, pay.installmentId)).limit(1);
-        if (!inst) continue;
+        // Query current installment joined with tax document to read original fxRate and currencyCode
+        const [instRow] = await tx
+          .select({
+            id: paymentInstallments.id,
+            documentId: paymentInstallments.documentId,
+            installmentNumber: paymentInstallments.installmentNumber,
+            dueDate: paymentInstallments.dueDate,
+            amount: paymentInstallments.amount,
+            currencyCode: taxDocuments.currencyCode,
+            fxRate: taxDocuments.fxRate,
+          })
+          .from(paymentInstallments)
+          .innerJoin(taxDocuments, eq(paymentInstallments.documentId, taxDocuments.id))
+          .where(eq(paymentInstallments.id, pay.installmentId))
+          .limit(1);
 
-        const currentAmount = Number(inst.amount);
+        if (!instRow) continue;
+
+        const currentAmount = Number(instRow.amount);
         const payAmt = pay.payAmount;
+
+        const originalRate = Number(instRow.fxRate) || 1;
+        const currentRate = paymentFxRate || originalRate; // fallback to original if not specified
+
+        // PYG calculations
+        // If it's a foreign currency (USD), calculate the values using rates
+        const isForeign = instRow.currencyCode && instRow.currencyCode !== "PYG";
+        const pygLiabilityCancelled = isForeign ? Math.round(payAmt * originalRate) : payAmt;
+        const pygPaid = isForeign ? Math.round(payAmt * currentRate) : payAmt;
+
+        totalPygLiabilityCancelled += pygLiabilityCancelled;
+        totalPygPaid += pygPaid;
 
         if (payAmt >= currentAmount) {
           // Fully paid
@@ -1313,20 +1368,26 @@ export async function registerReceipt(
         } else {
           // Partially paid
           const remainingAmount = currentAmount - payAmt;
-          // Update current installment to the paid amount, and mark it as paid
           await tx.update(paymentInstallments)
             .set({ amount: String(payAmt), status: "paid", receiptId: savedReceipt.id, updatedAt: new Date() })
             .where(eq(paymentInstallments.id, pay.installmentId));
 
           // Create a new pending installment for the remainder
           await tx.insert(paymentInstallments).values({
-            documentId: inst.documentId,
-            installmentNumber: inst.installmentNumber, // keeps same number as partial
-            dueDate: inst.dueDate,
+            documentId: instRow.documentId,
+            installmentNumber: instRow.installmentNumber,
+            dueDate: instRow.dueDate,
             amount: String(remainingAmount),
             status: "pending",
           });
         }
+      }
+
+      // If currency is PYG or there was no fxRate changes, totalPygPaid will equal totalPygLiabilityCancelled
+      // Let's normalize it to receipt total if it's PYG
+      if (totalPygPaid === 0) {
+        totalPygPaid = total;
+        totalPygLiabilityCancelled = total;
       }
 
       // 3. Generate payment journal entry
@@ -1351,36 +1412,54 @@ export async function registerReceipt(
         .where(eq(receipts.id, savedReceipt.id));
 
       // 4. Build journal lines
-      // Debit: Accounts Payable (Proveedores) — cancels the liability
-      const defaultAccountsPayable = await tx.select().from(accounts).where(eq(accounts.code, "2.1.01")).limit(1);
-      // Credit: Cash/Bank
-      let creditAccId: string | undefined;
-      const defaultCashAcc = await tx.select().from(accounts).where(eq(accounts.code, "1.1.01")).limit(1);
-      creditAccId = defaultCashAcc[0]?.id;
-
-      if (paymentMethod === "bank" && bankAccountId) {
-        const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
-        if (bankAcc?.glAccountId) creditAccId = bankAcc.glAccountId;
-      }
-
       const jeLines: Array<{ accountId: string; debit: string; credit: string; description: string }> = [];
 
+      // Debit: Accounts Payable (Proveedores) — cancels the liability at the invoice exchange rate
       if (defaultAccountsPayable[0]?.id) {
         jeLines.push({
           accountId: defaultAccountsPayable[0].id,
-          debit: String(total),
+          debit: String(totalPygLiabilityCancelled),
           credit: "0",
           description: `Cancelación deuda s/ recibo ${number} — ${partnerName}`,
         });
       }
 
+      // Credit: Cash/Bank — actual outflow of funds at the payment exchange rate
       if (creditAccId) {
         jeLines.push({
           accountId: creditAccId,
           debit: "0",
-          credit: String(total),
+          credit: String(totalPygPaid),
           description: `Pago s/ recibo ${number} — ${paymentMethod}`,
         });
+      }
+
+      // 5. Handle Difference of Exchange (Diferencia de Cambio)
+      const diff = totalPygLiabilityCancelled - totalPygPaid;
+      if (diff !== 0) {
+        if (diff > 0) {
+          // We paid less Guaraníes than the original liability (Gain / Ganancia)
+          const gainAccId = defaultGainFxAcc[0]?.id;
+          if (gainAccId) {
+            jeLines.push({
+              accountId: gainAccId,
+              debit: "0",
+              credit: String(diff),
+              description: `Ganancia por Diferencia de Cambio s/ recibo ${number}`,
+            });
+          }
+        } else {
+          // We paid more Guaraníes than the original liability (Loss / Pérdida)
+          const lossAccId = defaultLossFxAcc[0]?.id;
+          if (lossAccId) {
+            jeLines.push({
+              accountId: lossAccId,
+              debit: String(Math.abs(diff)),
+              credit: "0",
+              description: `Pérdida por Diferencia de Cambio s/ recibo ${number}`,
+            });
+          }
+        }
       }
 
       if (jeLines.length >= 2) {

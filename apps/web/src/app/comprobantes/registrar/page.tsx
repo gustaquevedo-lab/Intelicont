@@ -234,7 +234,7 @@ export default function RegistrarComprobantePage() {
     if (currency === "PYG" || tcSource === "manual") return;
     setTcLoading(true);
     setTcError(null);
-    const res = await fetchExchangeRate(currency, tcSource);
+    const res = await fetchExchangeRate(currency, tcSource, issueDate);
     setTcLoading(false);
     if (res.ok) {
       setTcBuy(res.data.buyRate);
@@ -246,7 +246,7 @@ export default function RegistrarComprobantePage() {
     }
   };
 
-  // Reset TC when currency changes back to PYG
+  // Reset TC when currency changes back to PYG or date changes
   useEffect(() => {
     if (currency === "PYG") {
       setTcBuy(0);
@@ -257,7 +257,7 @@ export default function RegistrarComprobantePage() {
     } else if (tcSource !== "manual") {
       handleFetchTC();
     }
-  }, [currency, tcSource]);
+  }, [currency, tcSource, issueDate]);
 
   // Sync paymentMethod with condition
   useEffect(() => {
@@ -518,6 +518,8 @@ export default function RegistrarComprobantePage() {
         installments: condition === "credit" && installmentsPreview.length > 0
           ? installmentsPreview
           : undefined,
+        currencyCode: currency,
+        fxRate: tcRate,
       });
 
       if (result.ok) {

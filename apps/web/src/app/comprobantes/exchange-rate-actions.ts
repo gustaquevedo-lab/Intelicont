@@ -24,33 +24,59 @@ type ActionResult<T> =
   | { ok: false; error: string };
 
 // ── BCP (USD via DolarPy, others via backup) ───────────────────────────────────
-async function fetchFromBCP(currency: string): Promise<ExchangeRateResult> {
-  const today = new Date().toISOString().split("T")[0];
+async function fetchFromBCP(currency: string, targetDate?: string): Promise<ExchangeRateResult> {
+  const queryDate = targetDate || new Date().toISOString().split("T")[0];
 
   if (currency.toUpperCase() === "USD") {
-    // Para dólares usamos la API comunitaria y estable DolarPy
-    const res = await fetch("https://dolar.melizeche.com/api/1.0/", {
-      next: { revalidate: 3600 }
-    });
-    if (!res.ok) {
-      throw new Error(`DolarPy respondió con ${res.status}`);
+    // Si es hoy, usamos DolarPy
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (queryDate === todayStr) {
+      const res = await fetch("https://dolar.melizeche.com/api/1.0/", {
+        next: { revalidate: 3600 }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const bcpData = data?.dolarpy?.bcp;
+        if (bcpData && bcpData.venta) {
+          return {
+            currency: "USD",
+            buyRate: Number(bcpData.compra) || 0,
+            sellRate: Number(bcpData.venta) || 0,
+            date: queryDate,
+            source: "bcp",
+            sourceName: "Banco Central del Paraguay (vía DolarPy)",
+          };
+        }
+      }
     }
-    const data = await res.json();
-    const bcpData = data?.dolarpy?.bcp;
-    if (!bcpData || !bcpData.venta) {
-      throw new Error("DolarPy: cotización del BCP no disponible");
-    }
-    return {
-      currency: "USD",
-      buyRate: Number(bcpData.compra) || 0,
-      sellRate: Number(bcpData.venta) || 0,
-      date: today,
-      source: "bcp",
-      sourceName: "Banco Central del Paraguay (vía DolarPy)",
-    };
+
+    // Si es una fecha específica o DolarPy falló, consultamos el JSON histórico de la SET
+    try {
+      const res = await fetch("https://cdn.jsdelivr.net/gh/sistemasaguila/cotizaciones-set@main/data/latest.json", {
+        next: { revalidate: 3600 }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Buscamos si la fecha exacta existe, o bien tomamos la más cercana
+        const dates = Object.keys(data);
+        const matchedDate = dates.includes(queryDate) ? queryDate : dates[0];
+        const rates = data[matchedDate];
+        const usdData = rates?.["usd"];
+        if (usdData) {
+          return {
+            currency: "USD",
+            buyRate: Number(usdData.purchase) || 0,
+            sellRate: Number(usdData.sale) || 0,
+            date: matchedDate,
+            source: "bcp",
+            sourceName: `Banco Central del Paraguay (vía SET - ${matchedDate})`,
+          };
+        }
+      }
+    } catch {}
   }
 
-  // Para EUR, BRL, ARS, etc., usamos el CDN de cotizaciones de DNIT/SET que contiene múltiples monedas
+  // Para EUR, BRL, ARS, etc., usamos el CDN de cotizaciones de la SET
   try {
     const res = await fetch("https://cdn.jsdelivr.net/gh/sistemasaguila/cotizaciones-set@main/data/latest.json", {
       next: { revalidate: 3600 }
@@ -59,8 +85,8 @@ async function fetchFromBCP(currency: string): Promise<ExchangeRateResult> {
     const data = await res.json();
     const dates = Object.keys(data);
     if (dates.length === 0) throw new Error("No hay fechas en JSON de cotizaciones");
-    const latestDate = dates[0];
-    const rates = data[latestDate];
+    const matchedDate = dates.includes(queryDate) ? queryDate : dates[0];
+    const rates = data[matchedDate];
     const key = currency.toLowerCase() === "ars" ? "arp" : currency.toLowerCase();
     const currencyData = rates[key];
 
@@ -72,9 +98,9 @@ async function fetchFromBCP(currency: string): Promise<ExchangeRateResult> {
       currency: currency.toUpperCase(),
       buyRate: Number(currencyData.purchase) || 0,
       sellRate: Number(currencyData.sale) || 0,
-      date: latestDate,
+      date: matchedDate,
       source: "bcp",
-      sourceName: `Banco Central del Paraguay (vía SET - ${latestDate})`,
+      sourceName: `Banco Central del Paraguay (vía SET - ${matchedDate})`,
     };
   } catch (err: any) {
     throw new Error(err.message || `No se pudo obtener cotización de ${currency} desde la base de datos de SET.`);
@@ -82,8 +108,8 @@ async function fetchFromBCP(currency: string): Promise<ExchangeRateResult> {
 }
 
 // ── DNIT ───────────────────────────────────────────────────────────────────────
-async function fetchFromDNIT(currency: string): Promise<ExchangeRateResult> {
-  // Para la DNIT (cotización oficial de liquidación) usamos directamente el JSON de la SET/DNIT
+async function fetchFromDNIT(currency: string, targetDate?: string): Promise<ExchangeRateResult> {
+  const queryDate = targetDate || new Date().toISOString().split("T")[0];
   try {
     const res = await fetch("https://cdn.jsdelivr.net/gh/sistemasaguila/cotizaciones-set@main/data/latest.json", {
       next: { revalidate: 3600 }
@@ -96,9 +122,9 @@ async function fetchFromDNIT(currency: string): Promise<ExchangeRateResult> {
     if (dates.length === 0) {
       throw new Error("No se encontraron registros de cotizaciones en DNIT");
     }
-    // La cotización más reciente publicada
-    const latestDate = dates[0];
-    const rates = data[latestDate];
+    // Buscamos la fecha exacta solicitada o en su defecto la cotización más reciente
+    const matchedDate = dates.includes(queryDate) ? queryDate : dates[0];
+    const rates = data[matchedDate];
     const key = currency.toLowerCase() === "ars" ? "arp" : currency.toLowerCase();
     const currencyData = rates[key];
 
@@ -110,9 +136,9 @@ async function fetchFromDNIT(currency: string): Promise<ExchangeRateResult> {
       currency: currency.toUpperCase(),
       buyRate: Number(currencyData.purchase) || 0,
       sellRate: Number(currencyData.sale) || 0,
-      date: latestDate,
+      date: matchedDate,
       source: "dnit",
-      sourceName: `DNIT (Cotización SET al ${latestDate})`,
+      sourceName: `DNIT (Cotización SET al ${matchedDate})`,
     };
   } catch (err: any) {
     throw new Error(err.message || "Error al obtener cotización fiscal de la DNIT");
@@ -122,7 +148,8 @@ async function fetchFromDNIT(currency: string): Promise<ExchangeRateResult> {
 // ── Public Action ──────────────────────────────────────────────────────────────
 export async function fetchExchangeRate(
   currency: string,
-  source: ExchangeRateSource
+  source: ExchangeRateSource,
+  targetDate?: string
 ): Promise<ActionResult<ExchangeRateResult>> {
   if (source === "manual") {
     return {
@@ -134,8 +161,8 @@ export async function fetchExchangeRate(
   try {
     const result =
       source === "bcp"
-        ? await fetchFromBCP(currency)
-        : await fetchFromDNIT(currency);
+        ? await fetchFromBCP(currency, targetDate)
+        : await fetchFromDNIT(currency, targetDate);
 
     return { ok: true, data: result };
   } catch (err: any) {

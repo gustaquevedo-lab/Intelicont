@@ -12,6 +12,7 @@ import {
   loadPendingInstallments,
   processReceiptOCR,
   registerReceipt,
+  fetchExchangeRate,
 } from "../actions";
 
 function formatGs(v: number) {
@@ -28,6 +29,8 @@ type Installment = {
   amount: number;
   status: string;
   isOverdue: boolean;
+  currencyCode: string;
+  fxRate: number;
 };
 
 export default function RecibosPage() {
@@ -54,7 +57,32 @@ export default function RecibosPage() {
   const [partnerName, setPartnerName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank" | "card">("cash");
 
+  // Multi-currency handling for payment
+  const [paymentFxRate, setPaymentFxRate] = useState<number>(0);
+  const [fetchingFx, setFetchingFx] = useState(false);
+
+  // Check if any selected installment is in foreign currency (e.g. USD)
+  const selectedForeignInstallments = installments.filter(
+    (i) => selectedInstIds.has(i.id) && i.currencyCode && i.currencyCode !== "PYG"
+  );
+  const hasForeignCurrency = selectedForeignInstallments.length > 0;
+  // Use first foreign currency code as target
+  const targetCurrency = selectedForeignInstallments[0]?.currencyCode || "USD";
+
+  // Fetch exchange rate on date change if foreign debt is selected
+  useEffect(() => {
+    if (!hasForeignCurrency || !issueDate) return;
+    setFetchingFx(true);
+    fetchExchangeRate(targetCurrency, "dnit", issueDate).then((res) => {
+      setFetchingFx(false);
+      if (res.ok) {
+        setPaymentFxRate(res.data.sellRate);
+      }
+    });
+  }, [issueDate, hasForeignCurrency, targetCurrency]);
+
   // Computed total of selected installments
+  // If foreign currency, show total in USD, but compute PYG conversion dynamically
   const selectedTotal = installments
     .filter((i) => selectedInstIds.has(i.id))
     .reduce((s, i) => {
@@ -151,6 +179,7 @@ export default function RecibosPage() {
           const payAmount = partialAmounts[id] !== undefined ? partialAmounts[id] : (inst?.amount || 0);
           return { installmentId: id, payAmount };
         }),
+        paymentFxRate: hasForeignCurrency ? paymentFxRate : undefined,
       });
 
       if (result.ok) {
@@ -399,6 +428,22 @@ export default function RecibosPage() {
                   className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                 />
               </div>
+              {hasForeignCurrency && (
+                <div className="animate-in fade-in duration-200">
+                  <label className="block text-xs font-semibold text-cyan-400 mb-1 flex items-center gap-1">
+                    TC Pago ({targetCurrency}) *
+                    {fetchingFx && <Loader2 className="h-3 w-3 animate-spin text-cyan-400" />}
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={paymentFxRate || ""}
+                    onChange={(e) => setPaymentFxRate(parseFloat(e.target.value) || 0)}
+                    placeholder="Ej: 7520"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-cyan-800/40 rounded-xl text-sm text-cyan-300 font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1">RUC *</label>
                 <input
@@ -449,17 +494,65 @@ export default function RecibosPage() {
             </div>
 
             {/* Summary */}
-            {selectedInstIds.size > 0 && (
-              <div className="rounded-xl bg-emerald-950/20 border border-emerald-800/30 p-3 animate-in fade-in">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400">{selectedInstIds.size} cuota{selectedInstIds.size !== 1 ? "s" : ""} seleccionada{selectedInstIds.size !== 1 ? "s" : ""}</span>
-                  <span className="text-base font-bold text-emerald-400 font-mono">₲ {formatGs(selectedTotal)}</span>
+            {selectedInstIds.size > 0 && (() => {
+              // Calculate preview metrics
+              let totalPygLiability = 0;
+              let totalPygPayment = 0;
+
+              selectedForeignInstallments.forEach((i) => {
+                const payAmt = partialAmounts[i.id] !== undefined ? partialAmounts[i.id] : i.amount;
+                totalPygLiability += Math.round(payAmt * i.fxRate);
+                totalPygPayment += Math.round(payAmt * (paymentFxRate || i.fxRate));
+              });
+
+              const diff = totalPygLiability - totalPygPayment;
+
+              return (
+                <div className="rounded-xl bg-emerald-950/20 border border-emerald-800/30 p-3 space-y-2 animate-in fade-in">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400">{selectedInstIds.size} cuota{selectedInstIds.size !== 1 ? "s" : ""} seleccionada{selectedInstIds.size !== 1 ? "s" : ""}</span>
+                    <span className="font-bold text-emerald-400 font-mono">
+                      {hasForeignCurrency 
+                        ? `${targetCurrency} ${selectedTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}`
+                        : `₲ ${formatGs(selectedTotal)}`
+                      }
+                    </span>
+                  </div>
+
+                  {hasForeignCurrency && (
+                    <div className="border-t border-gray-800 pt-2 space-y-1 text-[11px]">
+                      <div className="flex justify-between text-gray-400">
+                        <span>Deuda Original en PYG:</span>
+                        <span className="font-mono">₲ {formatGs(totalPygLiability)}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-400">
+                        <span>Valor al TC de Pago:</span>
+                        <span className="font-mono">₲ {formatGs(totalPygPayment)}</span>
+                      </div>
+
+                      {diff !== 0 ? (
+                        <div className={cn(
+                          "flex justify-between font-semibold mt-1 p-1 rounded",
+                          diff > 0 ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                        )}>
+                          <span>{diff > 0 ? "Ganancia por Dif. Cambio:" : "Pérdida por Dif. Cambio:"}</span>
+                          <span className="font-mono">₲ {formatGs(Math.abs(diff))}</span>
+                        </div>
+                      ) : (
+                        <div className="text-gray-500 italic text-[10px] text-center mt-1">
+                          Sin diferencia de cambio (mismo tipo de cambio).
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-[10px] text-gray-500 mt-1 border-t border-gray-800/60 pt-1.5">
+                    Se generará el asiento: Débito Proveedores / Crédito {paymentMethod === "cash" ? "Caja" : paymentMethod === "bank" ? "Banco" : "Tarjeta"}
+                    {hasForeignCurrency && diff !== 0 && " + cuenta de Diferencia de Cambio."}
+                  </p>
                 </div>
-                <p className="text-[10px] text-gray-500 mt-1">
-                  Se generará el asiento: Débito Proveedores / Crédito {paymentMethod === "cash" ? "Caja" : paymentMethod === "bank" ? "Banco" : "Tarjeta"}
-                </p>
-              </div>
-            )}
+              );
+            })()}
 
             <button
               onClick={handleRegister}
