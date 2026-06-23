@@ -5,9 +5,10 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import {
   taxDocuments, taxDocumentLines, aiProposals,
-  journalEntries, journalLines, accounts,
+  journalEntries, journalLines, accounts, chartOfAccounts,
   globalSettings, entities, partners,
   inventoryItems, stockTransactions, fixedAssets, bankAccounts,
+  paymentInstallments, receipts,
   type TaxDocument,
 } from "@/lib/db/schema";
 import { parseSifenXML, type SifenInvoice } from "@/lib/sifen-parser";
@@ -593,6 +594,7 @@ export interface ManualLineInput {
   productCode?: string;
   productDescription?: string;
   usefulLifeMonths?: number;
+  accountId?: string;
 }
 
 export interface ManualComprobanteInput {
@@ -615,6 +617,7 @@ export interface ManualComprobanteInput {
   paymentMethod: "cash" | "bank" | "card" | "credit";
   bankAccountId?: string;
   documentOrigenId?: string; // NC/ND: UUID of the originating tax document
+  installments?: Array<{ dueDate: string; amount: number; installmentNumber: number }>;
 }
 
 export async function createManualComprobante(
@@ -775,6 +778,19 @@ export async function createManualComprobante(
         }
       }
 
+      // 3.5. Insert Installments if Condition is credit
+      if (condition === "credit" && input.installments && input.installments.length > 0) {
+        await tx.insert(paymentInstallments).values(
+          input.installments.map((inst) => ({
+            documentId: savedDoc.id,
+            installmentNumber: inst.installmentNumber,
+            dueDate: inst.dueDate,
+            amount: String(inst.amount),
+            status: "pending",
+          }))
+        );
+      }
+
       // 4. Generate Journal Entry
       // Sequence number
       const [{ cnt }] = await tx.select({ cnt: drizzleCount() })
@@ -787,7 +803,7 @@ export async function createManualComprobante(
         date: parsedDate,
         number: entryNumber,
         source: direction === "received" ? "purchase" : "sales",
-        description: `${direction === "received" ? "Compra" : "Venta"} s/ ${docType.toUpperCase()} Nro. ${number} — ${partnerName}`,
+        description: `${direction === "received" ? "Compra" : "Venta"} s/ ${docType.toUpperCase()} Nro. ${number} — ${partnerName} (${condition === "credit" ? "Crédito" : "Contado"})`,
         status: "posted",
         postedAt: new Date(),
       }).returning();
@@ -816,9 +832,12 @@ export async function createManualComprobante(
         // Purchase (Compras)
         // Debit: items + IVA
         for (const l of lines) {
-          let accId = defaultExpenseAcc[0]?.id;
-          if (l.destination === "mercaderia") accId = defaultInventoryAcc[0]?.id || accId;
-          if (l.destination === "activo_fijo") accId = defaultAssetAcc[0]?.id || accId;
+          let accId = l.accountId; // Prefer custom accountId
+          if (!accId) {
+            accId = defaultExpenseAcc[0]?.id;
+            if (l.destination === "mercaderia") accId = defaultInventoryAcc[0]?.id || accId;
+            if (l.destination === "activo_fijo") accId = defaultAssetAcc[0]?.id || accId;
+          }
 
           if (accId) {
             jeLines.push({
@@ -842,11 +861,13 @@ export async function createManualComprobante(
         }
 
         // Credit payment leg
-        let payAccId = defaultAccountsPayable[0]?.id;
-        if (paymentMethod === "cash") payAccId = defaultCashAcc[0]?.id || payAccId;
-        if (paymentMethod === "bank" && bankAccountId) {
-          const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
-          if (bankAcc?.glAccountId) payAccId = bankAcc.glAccountId;
+        let payAccId = defaultAccountsPayable[0]?.id; // Default credit: Proveedores
+        if (condition === "cash") {
+          payAccId = defaultCashAcc[0]?.id || payAccId;
+          if (paymentMethod === "bank" && bankAccountId) {
+            const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
+            if (bankAcc?.glAccountId) payAccId = bankAcc.glAccountId;
+          }
         }
 
         if (payAccId) {
@@ -854,18 +875,20 @@ export async function createManualComprobante(
             accountId: payAccId,
             debit: "0",
             credit: String(total),
-            description: `Pago s/ compra ${number} - ${paymentMethod}`,
+            description: `Contrapartida s/ compra ${number} - ${condition === "credit" ? "Crédito" : paymentMethod}`,
           });
         }
 
       } else {
         // Sales (Ventas)
         // Debit payment leg
-        let recAccId = defaultAccountsReceivable[0]?.id;
-        if (paymentMethod === "cash") recAccId = defaultCashAcc[0]?.id || recAccId;
-        if (paymentMethod === "bank" && bankAccountId) {
-          const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
-          if (bankAcc?.glAccountId) recAccId = bankAcc.glAccountId;
+        let recAccId = defaultAccountsReceivable[0]?.id; // Default debit: Clientes
+        if (condition === "cash") {
+          recAccId = defaultCashAcc[0]?.id || recAccId;
+          if (paymentMethod === "bank" && bankAccountId) {
+            const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
+            if (bankAcc?.glAccountId) recAccId = bankAcc.glAccountId;
+          }
         }
 
         if (recAccId) {
@@ -873,7 +896,7 @@ export async function createManualComprobante(
             accountId: recAccId,
             debit: String(total),
             credit: "0",
-            description: `Cobro s/ venta ${number} - ${paymentMethod}`,
+            description: `Contrapartida s/ venta ${number} - ${condition === "credit" ? "Crédito" : paymentMethod}`,
           });
         }
 
@@ -1140,5 +1163,262 @@ export async function loadRecentDocuments(
     };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Error al cargar documentos" };
+  }
+}
+
+// ─── Load accounts flat for line account selector ─────────────────────────────
+
+export async function loadChartOfAccountsFlat(entityId: string): Promise<ActionResult<Array<{
+  id: string; code: string; name: string; nature: string | null;
+}>>> {
+  if (!entityId) return { ok: false, error: "entityId requerido" };
+  try {
+    const db = getDb();
+    const [coa] = await db
+      .select()
+      .from(chartOfAccounts)
+      .where(eq(chartOfAccounts.entityId, entityId))
+      .limit(1);
+
+    if (!coa) return { ok: true, data: [] };
+
+    const rows = await db
+      .select({ id: accounts.id, code: accounts.code, name: accounts.name, nature: accounts.nature })
+      .from(accounts)
+      .where(and(eq(accounts.coaId, coa.id), eq(accounts.allowsPosting, true)))
+      .orderBy(accounts.code);
+
+    return { ok: true, data: rows.map((r) => ({ id: r.id, code: r.code, name: r.name, nature: r.nature ?? null })) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al cargar plan de cuentas" };
+  }
+}
+
+// ─── Load pending installments for an entity (for receipts module) ────────────
+
+export async function loadPendingInstallments(entityId: string): Promise<ActionResult<Array<{
+  id: string;
+  documentId: string;
+  docNumber: string;
+  partnerName: string;
+  installmentNumber: number;
+  dueDate: string;
+  amount: number;
+  status: string;
+  isOverdue: boolean;
+}>>> {
+  if (!entityId) return { ok: false, error: "entityId requerido" };
+  try {
+    const db = getDb();
+    const rows = await db
+      .select({
+        id:                paymentInstallments.id,
+        documentId:        paymentInstallments.documentId,
+        installmentNumber: paymentInstallments.installmentNumber,
+        dueDate:           paymentInstallments.dueDate,
+        amount:            paymentInstallments.amount,
+        status:            paymentInstallments.status,
+        docNumber:         taxDocuments.number,
+        partnerName:       partners.legalName,
+      })
+      .from(paymentInstallments)
+      .innerJoin(taxDocuments, eq(paymentInstallments.documentId, taxDocuments.id))
+      .leftJoin(partners, eq(taxDocuments.partnerId, partners.id))
+      .where(and(
+        eq(taxDocuments.entityId, entityId),
+        eq(paymentInstallments.status, "pending"),
+      ))
+      .orderBy(paymentInstallments.dueDate);
+
+    const today = new Date();
+    return {
+      ok: true,
+      data: rows.map((r) => ({
+        id:                r.id,
+        documentId:        r.documentId,
+        docNumber:         r.docNumber ?? "",
+        partnerName:       r.partnerName ?? "Desconocido",
+        installmentNumber: r.installmentNumber,
+        dueDate:           String(r.dueDate).slice(0, 10),
+        amount:            Number(r.amount),
+        status:            r.status ?? "pending",
+        isOverdue:         new Date(String(r.dueDate)) < today,
+      })),
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al cargar cuotas" };
+  }
+}
+
+// ─── Register payment receipt (OCR + posting) ────────────────────────────────
+
+export interface RegisterReceiptInput {
+  entityId:          string;
+  number:            string;
+  issueDate:         string;
+  total:             number;
+  partnerRuc:        string;
+  partnerName:       string;
+  paymentMethod:     "cash" | "bank" | "card";
+  bankAccountId?:    string;
+  installmentIds:    string[];       // IDs of installments being paid
+  metadata?:         Record<string, unknown>;
+}
+
+export async function registerReceipt(
+  input: RegisterReceiptInput
+): Promise<ActionResult<{ receiptId: string; entryNumber: string }>> {
+  const { entityId, number, issueDate, total, partnerRuc, partnerName, paymentMethod, bankAccountId, installmentIds } = input;
+  if (!entityId || !number || !issueDate || !installmentIds.length)
+    return { ok: false, error: "Faltan campos obligatorios" };
+
+  try {
+    const db = getDb();
+    const parsedDate = new Date(issueDate + "T12:00:00");
+    const year = parsedDate.getFullYear();
+
+    const result = await db.transaction(async (tx) => {
+      // 1. Insert receipt record
+      const [savedReceipt] = await tx.insert(receipts).values({
+        entityId,
+        number,
+        issueDate,
+        total: String(total),
+        partnerRuc,
+        partnerName,
+        paymentMethod,
+        ...(bankAccountId ? { bankAccountId } : {}),
+        metadata: input.metadata ?? {},
+      }).returning();
+
+      // 2. Mark installments as paid
+      for (const instId of installmentIds) {
+        await tx.update(paymentInstallments)
+          .set({ status: "paid", receiptId: savedReceipt.id, updatedAt: new Date() })
+          .where(eq(paymentInstallments.id, instId));
+      }
+
+      // 3. Generate payment journal entry
+      const [{ cnt }] = await tx.select({ cnt: drizzleCount() })
+        .from(journalEntries).where(eq(journalEntries.entityId, entityId));
+      const seq = (Number(cnt) || 0) + 1;
+      const entryNumber = `${String(seq).padStart(5, "0")}-${year}`;
+
+      const [entry] = await tx.insert(journalEntries).values({
+        entityId,
+        date: parsedDate,
+        number: entryNumber,
+        source: "payment",
+        description: `Recibo Nro. ${number} — ${partnerName}`,
+        status: "posted",
+        postedAt: new Date(),
+      }).returning();
+
+      // Update receipt with journal entry id
+      await tx.update(receipts)
+        .set({ journalEntryId: entry.id })
+        .where(eq(receipts.id, savedReceipt.id));
+
+      // 4. Build journal lines
+      // Debit: Accounts Payable (Proveedores) — cancels the liability
+      const defaultAccountsPayable = await tx.select().from(accounts).where(eq(accounts.code, "2.1.01")).limit(1);
+      // Credit: Cash/Bank
+      let creditAccId: string | undefined;
+      const defaultCashAcc = await tx.select().from(accounts).where(eq(accounts.code, "1.1.01")).limit(1);
+      creditAccId = defaultCashAcc[0]?.id;
+
+      if (paymentMethod === "bank" && bankAccountId) {
+        const [bankAcc] = await tx.select().from(bankAccounts).where(eq(bankAccounts.id, bankAccountId)).limit(1);
+        if (bankAcc?.glAccountId) creditAccId = bankAcc.glAccountId;
+      }
+
+      const jeLines: Array<{ accountId: string; debit: string; credit: string; description: string }> = [];
+
+      if (defaultAccountsPayable[0]?.id) {
+        jeLines.push({
+          accountId: defaultAccountsPayable[0].id,
+          debit: String(total),
+          credit: "0",
+          description: `Cancelación deuda s/ recibo ${number} — ${partnerName}`,
+        });
+      }
+
+      if (creditAccId) {
+        jeLines.push({
+          accountId: creditAccId,
+          debit: "0",
+          credit: String(total),
+          description: `Pago s/ recibo ${number} — ${paymentMethod}`,
+        });
+      }
+
+      if (jeLines.length >= 2) {
+        await tx.insert(journalLines).values(
+          jeLines.map((jl) => ({
+            entryId: entry.id,
+            accountId: jl.accountId,
+            debit: jl.debit,
+            credit: jl.credit,
+            currencyCode: "PYG",
+            description: jl.description,
+          }))
+        );
+      }
+
+      return { receiptId: savedReceipt.id, entryNumber };
+    });
+
+    revalidatePath("/comprobantes");
+    revalidatePath("/comprobantes/recibos");
+    revalidatePath("/asientos");
+    return { ok: true, data: result };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al registrar recibo" };
+  }
+}
+
+// ─── Process receipt OCR with Gemini ─────────────────────────────────────────
+
+export async function processReceiptOCR(
+  base64Data: string,
+  mimeType: string
+): Promise<ActionResult<{
+  number?: string;
+  issueDate?: string;
+  total?: number;
+  partnerRuc?: string;
+  partnerName?: string;
+  relatedInvoiceNumber?: string;
+}>> {
+  try {
+    const aiConfig = await loadAIConfig();
+    const key = aiConfig.apiKey || process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!key) return { ok: false, error: "La clave API de Gemini no está configurada." };
+
+    const genAI = new GoogleGenerativeAI(key);
+    const model = genAI.getGenerativeModel({ model: aiConfig.model || "gemini-2.5-flash" });
+
+    const prompt = `Analiza esta imagen de un recibo de pago de Paraguay y extrae los datos en JSON estricto:
+{
+  "number": "número del recibo",
+  "issueDate": "fecha en formato YYYY-MM-DD",
+  "total": 150000,
+  "partnerRuc": "RUC del pagador o receptor",
+  "partnerName": "Razón social",
+  "relatedInvoiceNumber": "número de factura que cancela (si se menciona)"
+}
+Responde únicamente el JSON, sin markdown.`;
+
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Data, mimeType } }
+    ]);
+
+    const text = result.response.text();
+    const clean = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const data = JSON.parse(clean);
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al procesar OCR del recibo" };
   }
 }

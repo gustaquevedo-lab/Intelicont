@@ -333,6 +333,34 @@ export const globalSettings = pgTable("global_settings", {
   updatedAt:   timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+export const receipts = pgTable("receipts", {
+  id:            uuid("id").primaryKey().defaultRandom(),
+  entityId:      uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  number:        varchar("number", { length: 100 }).notNull(),
+  issueDate:     date("issue_date").notNull(),
+  total:         numeric("total", { precision: 20, scale: 4 }).notNull(),
+  partnerRuc:    varchar("partner_ruc", { length: 20 }).notNull(),
+  partnerName:   text("partner_name").notNull(),
+  paymentMethod: varchar("payment_method", { length: 30 }).notNull(), // 'cash', 'bank', 'card'
+  bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, { onDelete: "set null" }),
+  journalEntryId:uuid("journal_entry_id").references(() => journalEntries.id, { onDelete: "set null" }),
+  metadata:      jsonb("metadata"),
+  createdAt:     timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:     timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const paymentInstallments = pgTable("payment_installments", {
+  id:                uuid("id").primaryKey().defaultRandom(),
+  documentId:        uuid("document_id").references(() => taxDocuments.id, { onDelete: "cascade" }).notNull(),
+  installmentNumber: integer("installment_number").notNull(),
+  dueDate:           date("due_date").notNull(),
+  amount:            numeric("amount", { precision: 20, scale: 4 }).notNull(),
+  status:            varchar("status", { length: 20 }).default("pending").notNull(), // 'pending', 'paid'
+  receiptId:         uuid("receipt_id").references((): any => receipts.id, { onDelete: "set null" }),
+  createdAt:         timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:         timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 // ─── Auth: Memberships ─────────────────────────────────────────────────────
 
 export const memberships = pgTable("memberships", {

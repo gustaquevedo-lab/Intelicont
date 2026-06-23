@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, Trash2, CheckCircle2, AlertCircle, Save, Loader2,
   Building2, Calendar, FileText, ShoppingBag, Landmark, CreditCard,
   Layers, Package, Monitor, Briefcase, ChevronRight, Upload, Sparkles, X,
-  DollarSign, RefreshCw, Globe
+  DollarSign, RefreshCw, Globe, ChevronDown
 } from "lucide-react";
 import { fetchExchangeRate, type ExchangeRateSource } from "../exchange-rate-actions";
 import { cn } from "@/lib/utils";
@@ -19,8 +19,70 @@ import {
   loadInventoryItems,
   loadFixedAssets,
   loadRecentDocuments,
+  loadChartOfAccountsFlat,
 } from "../actions";
 import { validateRUC } from "@/lib/ruc";
+
+// ── Currency definitions with inline SVG flags ──────────────────────────────
+const CURRENCIES: Array<{ code: string; label: string; symbol: string; flag: React.ReactNode }> = [
+  {
+    code: "PYG", label: "Guaraní", symbol: "₲",
+    flag: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3.5 w-5 rounded-[2px] shrink-0">
+        <rect width="20" height="14" fill="#D52B1E"/>
+        <rect y="4.67" width="20" height="4.66" fill="#fff"/>
+        <rect y="9.33" width="20" height="4.67" fill="#009B3A"/>
+        <circle cx="10" cy="7" r="2.2" fill="none" stroke="#1C4E9B" strokeWidth="0.6"/>
+        <circle cx="10" cy="7" r="0.9" fill="#D52B1E"/>
+      </svg>
+    ),
+  },
+  {
+    code: "USD", label: "Dólar", symbol: "$",
+    flag: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3.5 w-5 rounded-[2px] shrink-0">
+        <rect width="20" height="14" fill="#B22234"/>
+        {[0,2,4,6,8,10,12].map(y => <rect key={y} y={y} width="20" height="1.08" fill="#fff"/>)}
+        <rect width="8" height="7.5" fill="#3C3B6E"/>
+        {[[2,1],[5,1],[3.5,2.5],[1.5,2.5],[4.5,4],[2.5,4],[6.5,4],[1,1],[4,2.5],[6,2.5],[1.5,4.5],[3.5,4.5],[5.5,4.5],[1,3],[6,1],[3,4],[5,3],[2,3.5]].map(([x,y],i)=>
+          <circle key={i} cx={x as number} cy={y as number} r="0.4" fill="#fff"/>
+        )}
+      </svg>
+    ),
+  },
+  {
+    code: "EUR", label: "Euro", symbol: "€",
+    flag: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3.5 w-5 rounded-[2px] shrink-0">
+        <rect width="20" height="14" fill="#039"/>
+        {Array.from({length:12},(_,i) => {
+          const angle = (i/12)*2*Math.PI - Math.PI/2;
+          return <circle key={i} cx={10+3.5*Math.cos(angle)} cy={7+3.5*Math.sin(angle)} r="0.55" fill="#FC0"/>;
+        })}
+      </svg>
+    ),
+  },
+  {
+    code: "BRL", label: "Real", symbol: "R$",
+    flag: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3.5 w-5 rounded-[2px] shrink-0">
+        <rect width="20" height="14" fill="#009C3B"/>
+        <polygon points="10,1.4 18.5,7 10,12.6 1.5,7" fill="#FEDF00"/>
+        <circle cx="10" cy="7" r="2.8" fill="#002776"/>
+      </svg>
+    ),
+  },
+  {
+    code: "ARS", label: "Peso Arg.", symbol: "$",
+    flag: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 14" className="h-3.5 w-5 rounded-[2px] shrink-0">
+        <rect width="20" height="14" fill="#74ACDF"/>
+        <rect y="4.67" width="20" height="4.66" fill="#fff"/>
+        <circle cx="10" cy="7" r="1.5" fill="#F6B40E"/>
+      </svg>
+    ),
+  },
+];
 
 interface LineaDetalle {
   id: string;
@@ -33,6 +95,7 @@ interface LineaDetalle {
   productCode?: string;
   productDescription?: string;
   usefulLifeMonths?: number;
+  accountId?: string; // GL account override selected by user
 }
 
 function uid() {
@@ -54,6 +117,11 @@ export default function RegistrarComprobantePage() {
   const [entities, setEntities] = useState<Array<{ id: string; legalName: string; ruc: string }>>([]);
   const [inventoryList, setInventoryList] = useState<Array<{ code: string; description: string }>>([]);
   const [fixedAssetsList, setFixedAssetsList] = useState<Array<{ code: string; name: string }>>([]);
+  const [chartAccounts, setChartAccounts] = useState<Array<{ id: string; code: string; name: string; nature: string | null }>>([]);
+
+  // Currency picker open state
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const currencyDropdownRef = useRef<HTMLDivElement>(null);
 
   // Form Header States
   const [entityId, setEntityId] = useState("");
@@ -85,6 +153,10 @@ export default function RegistrarComprobantePage() {
   const [lines, setLines] = useState<LineaDetalle[]>([
     { id: uid(), description: "", quantity: 1, unitPrice: 0, ivaRate: 10, lineTotal: 0, destination: "gasto" }
   ]);
+
+  // ── Credit installments ──
+  const [creditInstallmentsCount, setCreditInstallmentsCount] = useState(1);
+  const [creditIntervalDays, setCreditIntervalDays] = useState(30);
 
   // Inline Modals States
   const [showProductModal, setShowProductModal] = useState(false);
@@ -119,6 +191,9 @@ export default function RegistrarComprobantePage() {
     ]);
     if (invRes.ok) setInventoryList(invRes.data);
     if (assetRes.ok) setFixedAssetsList(assetRes.data);
+    // Also load chart of accounts
+    const acctRes = await loadChartOfAccountsFlat(entId);
+    if (acctRes.ok) setChartAccounts(acctRes.data);
   };
 
   // Load recent docs when NC/ND selected
@@ -229,6 +304,23 @@ export default function RegistrarComprobantePage() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lines, currency, tcSell]);
+
+  // ── Installments preview (computed) ──
+  const installmentsPreview = useMemo(() => {
+    if (condition !== "credit" || creditInstallmentsCount < 1 || !issueDate) return [];
+    const baseDate = new Date(issueDate + "T12:00:00");
+    const amountPerQuota = Math.round(totals.total / creditInstallmentsCount);
+    const remainder = totals.total - amountPerQuota * creditInstallmentsCount;
+    return Array.from({ length: creditInstallmentsCount }, (_, i) => {
+      const dueDate = new Date(baseDate);
+      dueDate.setDate(dueDate.getDate() + creditIntervalDays * (i + 1));
+      return {
+        installmentNumber: i + 1,
+        dueDate: dueDate.toISOString().split("T")[0],
+        amount: i === creditInstallmentsCount - 1 ? amountPerQuota + remainder : amountPerQuota,
+      };
+    });
+  }, [condition, creditInstallmentsCount, creditIntervalDays, issueDate, totals.total]);
 
   const addLine = () => {
     setLines([
@@ -379,11 +471,15 @@ export default function RegistrarComprobantePage() {
           destination: l.destination,
           productCode: l.productCode,
           productDescription: l.productDescription || l.description,
-          usefulLifeMonths: l.usefulLifeMonths
+          usefulLifeMonths: l.usefulLifeMonths,
+          accountId: l.accountId || undefined,
         })),
         paymentMethod,
         bankAccountId: bankAccountId || undefined,
         documentOrigenId: documentOrigenId || undefined,
+        installments: condition === "credit" && installmentsPreview.length > 0
+          ? installmentsPreview
+          : undefined,
       });
 
       if (result.ok) {
@@ -654,20 +750,45 @@ export default function RegistrarComprobantePage() {
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Moneda */}
+              {/* Moneda — custom picker with SVG flags */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1.5">Moneda del Comprobante</label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all"
-                >
-                  <option value="PYG">🇵🇾 PYG — Guaraní</option>
-                  <option value="USD">🇺🇸 USD — Dólar</option>
-                  <option value="EUR">🇪🇺 EUR — Euro</option>
-                  <option value="BRL">🇧🇷 BRL — Real</option>
-                  <option value="ARS">🇦🇷 ARS — Peso Arg.</option>
-                </select>
+                <div className="relative" ref={currencyDropdownRef}>
+                  {/* Trigger */}
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrencyDropdown((p) => !p)}
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all hover:border-gray-600/70"
+                  >
+                    {CURRENCIES.find((c) => c.code === currency)?.flag}
+                    <span className="font-semibold">{currency}</span>
+                    <span className="text-gray-400">—</span>
+                    <span className="text-gray-300 flex-1 text-left">{CURRENCIES.find((c) => c.code === currency)?.label}</span>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-gray-500 transition-transform", showCurrencyDropdown && "rotate-180")} />
+                  </button>
+
+                  {/* Dropdown */}
+                  {showCurrencyDropdown && (
+                    <div className="absolute z-30 top-full mt-1 left-0 right-0 bg-gray-900 border border-gray-700/80 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                      {CURRENCIES.map((c) => (
+                        <button
+                          key={c.code}
+                          type="button"
+                          onClick={() => { setCurrency(c.code as any); setShowCurrencyDropdown(false); }}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-gray-800",
+                            currency === c.code ? "bg-cyan-500/10 text-cyan-300" : "text-gray-300"
+                          )}
+                        >
+                          {c.flag}
+                          <span className="font-semibold w-8">{c.code}</span>
+                          <span className="text-gray-400 text-xs">{c.label}</span>
+                          {currency === c.code && <CheckCircle2 className="h-3.5 w-3.5 ml-auto text-cyan-400" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Fuente TC */}
@@ -679,9 +800,9 @@ export default function RegistrarComprobantePage() {
                     onChange={(e) => setTcSource(e.target.value as ExchangeRateSource)}
                     className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all"
                   >
-                    <option value="manual">✍️ Manual — Ingreso propio</option>
-                    <option value="bcp">🏦 BCP — Banco Central PY</option>
-                    <option value="dnit">📋 DNIT — Cotización fiscal</option>
+                    <option value="manual">Manual — Ingreso propio</option>
+                    <option value="bcp">BCP — Banco Central PY</option>
+                    <option value="dnit">DNIT — Cotización fiscal</option>
                   </select>
                 </div>
               )}
@@ -812,6 +933,89 @@ export default function RegistrarComprobantePage() {
                 </div>
               )}
             </div>
+
+            {/* ── Credit Installments Setup ── */}
+            {condition === "credit" && (
+              <div className="animate-in fade-in slide-in-from-top-1 duration-200 space-y-4">
+                <div className="h-px bg-gray-800/60" />
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-amber-400" />
+                  <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Condiciones de Crédito</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1.5">Cantidad de Cuotas</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCreditInstallmentsCount(Math.max(1, creditInstallmentsCount - 1))}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-lg font-bold transition-colors"
+                      >−</button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={36}
+                        value={creditInstallmentsCount}
+                        onChange={(e) => setCreditInstallmentsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-white text-center font-mono focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCreditInstallmentsCount(Math.min(36, creditInstallmentsCount + 1))}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-lg font-bold transition-colors"
+                      >+</button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1.5">Días entre Cuotas</label>
+                    <select
+                      value={creditIntervalDays}
+                      onChange={(e) => setCreditIntervalDays(parseInt(e.target.value))}
+                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                    >
+                      <option value={7}>7 días (semanal)</option>
+                      <option value={15}>15 días (quincenal)</option>
+                      <option value={30}>30 días (mensual)</option>
+                      <option value={60}>60 días (bimestral)</option>
+                      <option value={90}>90 días (trimestral)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Installments Preview Table */}
+                {installmentsPreview.length > 0 && totals.total > 0 && (
+                  <div className="rounded-xl border border-amber-800/30 overflow-hidden">
+                    <div className="px-3 py-2 bg-amber-950/20 border-b border-amber-800/20 flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-400">Vista previa de cuotas</span>
+                      <span className="text-[10px] text-gray-500">{installmentsPreview.length} cuota{installmentsPreview.length !== 1 ? "s" : ""} · Total: ₲ {formatGs(totals.total)}</span>
+                    </div>
+                    <div className="divide-y divide-gray-800/40">
+                      {installmentsPreview.map((inst) => {
+                        const today = new Date();
+                        const due = new Date(inst.dueDate);
+                        const daysUntil = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        return (
+                          <div key={inst.installmentNumber} className="flex items-center justify-between px-3 py-2 text-xs hover:bg-gray-800/20 transition-colors">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-[10px]">
+                                {inst.installmentNumber}
+                              </span>
+                              <span className="font-mono text-gray-300">{inst.dueDate}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] text-gray-500">
+                                {daysUntil > 0 ? `en ${daysUntil} días` : "hoy"}
+                              </span>
+                              <span className="font-bold font-mono text-amber-300">₲ {formatGs(inst.amount)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Lines Table Section */}
@@ -1008,6 +1212,46 @@ export default function RegistrarComprobantePage() {
                           + Nuevo Activo Inline
                         </button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* ── Cuenta Contable por Línea (Gasto / Activo Fijo) ── */}
+                  {(linea.destination === "gasto" || linea.destination === "activo_fijo") && chartAccounts.length > 0 && (
+                    <div className="flex items-center gap-3 p-2.5 bg-gray-800/20 border border-gray-700/30 rounded-xl animate-in fade-in duration-150">
+                      <Briefcase className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                      <div className="flex-1">
+                        <label className="block text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                          Cuenta Contable (opcional — reemplaza la predeterminada)
+                        </label>
+                        <select
+                          value={linea.accountId || ""}
+                          onChange={(e) => updateLine(linea.id, "accountId", e.target.value || undefined)}
+                          className="w-full px-2 py-1.5 bg-gray-800/50 border border-gray-700/40 rounded-lg text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                        >
+                          <option value="">— Cuenta predeterminada del sistema —</option>
+                          {chartAccounts
+                            .filter((a) =>
+                              linea.destination === "gasto"
+                                ? (a.nature === "expense" || a.code.startsWith("5.") || a.code.startsWith("6."))
+                                : (a.nature === "asset" || a.code.startsWith("1.2"))
+                            )
+                            .map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.code} — {a.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      {linea.accountId && (
+                        <button
+                          type="button"
+                          onClick={() => updateLine(linea.id, "accountId", undefined)}
+                          className="text-gray-500 hover:text-red-400 transition-colors shrink-0"
+                          title="Quitar cuenta específica"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
