@@ -214,6 +214,17 @@ export default function RegistrarComprobantePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docType, entityId, direction]);
 
+  // Close currency dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (currencyDropdownRef.current && !currencyDropdownRef.current.contains(event.target as Node)) {
+        setShowCurrencyDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     if (entityId) refreshInventoryAndAssets(entityId);
   }, [entityId]);
@@ -789,9 +800,9 @@ export default function RegistrarComprobantePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Moneda — custom picker with SVG flags */}
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-semibold text-gray-400 mb-1.5">Moneda del Comprobante</label>
-                <div className="relative z-20" ref={currencyDropdownRef}>
+                <div className="relative z-30" ref={currencyDropdownRef}>
                   {/* Trigger */}
                   <button
                     type="button"
@@ -807,7 +818,7 @@ export default function RegistrarComprobantePage() {
 
                   {/* Dropdown */}
                   {showCurrencyDropdown && (
-                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-gray-900 border border-gray-700/80 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-gray-900 border border-gray-700/80 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 max-h-60 overflow-y-auto">
                       {CURRENCIES.map((c) => (
                         <button
                           key={c.code}
