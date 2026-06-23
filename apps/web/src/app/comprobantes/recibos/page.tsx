@@ -12,8 +12,8 @@ import {
   loadPendingInstallments,
   processReceiptOCR,
   registerReceipt,
-  fetchExchangeRate,
 } from "../actions";
+import { fetchExchangeRate } from "../exchange-rate-actions";
 
 function formatGs(v: number) {
   return v.toLocaleString("es-PY", { maximumFractionDigits: 0 });
@@ -75,7 +75,7 @@ export default function RecibosPage() {
     setFetchingFx(true);
     fetchExchangeRate(targetCurrency, "dnit", issueDate).then((res) => {
       setFetchingFx(false);
-      if (res.ok) {
+      if (res.ok && res.data) {
         setPaymentFxRate(res.data.sellRate);
       }
     });
