@@ -29,14 +29,16 @@ const CURRENCIES: Array<{ code: string; label: string; symbol: string; flag: Rea
   {
     code: "PYG", label: "Guaraní", symbol: "₲",
     flag: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20" className="h-3.5 w-5 rounded-[2px] shrink-0">
-        <rect width="30" height="6.67" fill="#D52B1E"/>
-        <rect y="6.67" width="30" height="6.66" fill="#FFFFFF"/>
-        <rect y="13.33" width="30" height="6.67" fill="#0038A8"/>
-        {/* Simplified emblem */}
-        <circle cx="15" cy="10" r="2.2" fill="#FFFFFF"/>
-        <circle cx="15" cy="10" r="1.6" fill="none" stroke="#F1B82D" strokeWidth="0.4"/>
-        <circle cx="15" cy="10" r="0.6" fill="#D52B1E"/>
+      /* Paraguay: rojo | blanco | azul con estrella de cinco puntas */
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20" className="h-3.5 w-5 rounded-[2px] shrink-0" aria-label="Paraguay">
+        <rect width="30" height="6.67" y="0"     fill="#D52B1E"/>
+        <rect width="30" height="6.66" y="6.67"  fill="#FFFFFF"/>
+        <rect width="30" height="6.67" y="13.33" fill="#0038A8"/>
+        {/* Estrella de 5 puntas centrada en la franja blanca */}
+        <polygon
+          points="15,7.3 15.75,9.4 18.0,9.4 16.3,10.65 16.95,12.7 15,11.45 13.05,12.7 13.7,10.65 12.0,9.4 14.25,9.4"
+          fill="#D52B1E"
+        />
       </svg>
     ),
   },
