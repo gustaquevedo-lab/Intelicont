@@ -23,137 +23,100 @@ type ActionResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
 
-// ── BCP ────────────────────────────────────────────────────────────────────────
-// El BCP publica sus cotizaciones en un endpoint JSON / XML abierto.
-// URL: https://www.bcp.gov.py/indicadores-economicos (scraping del widget de tasas)
-// También disponible vía: https://www.bcp.gov.py/webapps/web/cotizacion/monedas
+// ── BCP (USD via DolarPy, others via backup) ───────────────────────────────────
 async function fetchFromBCP(currency: string): Promise<ExchangeRateResult> {
-  // El BCP expone un servicio REST no documentado oficialmente pero estable:
-  // https://www.bcp.gov.py/webapps/web/cotizacion/monedas-get
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-  const [year, month, day] = today.split("-");
+  const today = new Date().toISOString().split("T")[0];
 
-  const url = `https://www.bcp.gov.py/webapps/web/cotizacion/monedas-get?fecha=${day}%2F${month}%2F${year}`;
-
-  const res = await fetch(url, {
-    headers: { "Accept": "application/json, text/plain, */*" },
-    next: { revalidate: 3600 }, // cache 1h
-  });
-
-  if (!res.ok) {
-    throw new Error(`BCP respondió con ${res.status}`);
+  if (currency.toUpperCase() === "USD") {
+    // Para dólares usamos la API comunitaria y estable DolarPy
+    const res = await fetch("https://dolar.melizeche.com/api/1.0/", {
+      next: { revalidate: 3600 }
+    });
+    if (!res.ok) {
+      throw new Error(`DolarPy respondió con ${res.status}`);
+    }
+    const data = await res.json();
+    const bcpData = data?.dolarpy?.bcp;
+    if (!bcpData || !bcpData.venta) {
+      throw new Error("DolarPy: cotización del BCP no disponible");
+    }
+    return {
+      currency: "USD",
+      buyRate: Number(bcpData.compra) || 0,
+      sellRate: Number(bcpData.venta) || 0,
+      date: today,
+      source: "bcp",
+      sourceName: "Banco Central del Paraguay (vía DolarPy)",
+    };
   }
 
-  const text = await res.text();
-  let data: Array<{
-    moneda: string;
-    descripcion: string;
-    compra: string;
-    venta: string;
-    fecha: string;
-  }>;
-
+  // Para EUR, BRL, ARS, etc., usamos el CDN de cotizaciones de DNIT/SET que contiene múltiples monedas
   try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error("BCP: respuesta no es JSON válido");
+    const res = await fetch("https://cdn.jsdelivr.net/gh/sistemasaguila/cotizaciones-set@main/data/latest.json", {
+      next: { revalidate: 3600 }
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const dates = Object.keys(data);
+    if (dates.length === 0) throw new Error("No hay fechas en JSON de cotizaciones");
+    const latestDate = dates[0];
+    const rates = data[latestDate];
+    const key = currency.toLowerCase() === "ars" ? "arp" : currency.toLowerCase();
+    const currencyData = rates[key];
+
+    if (!currencyData) {
+      throw new Error(`Moneda ${currency} no encontrada en las cotizaciones vigentes.`);
+    }
+
+    return {
+      currency: currency.toUpperCase(),
+      buyRate: Number(currencyData.purchase) || 0,
+      sellRate: Number(currencyData.sale) || 0,
+      date: latestDate,
+      source: "bcp",
+      sourceName: `Banco Central del Paraguay (vía SET - ${latestDate})`,
+    };
+  } catch (err: any) {
+    throw new Error(err.message || `No se pudo obtener cotización de ${currency} desde la base de datos de SET.`);
   }
-
-  // Normalización del código de moneda
-  const codeMap: Record<string, string[]> = {
-    USD: ["USD", "DOLAR AMERICANO", "DÓLAR"],
-    EUR: ["EUR", "EURO"],
-    BRL: ["BRL", "REAL BRASILEÑO", "REAL"],
-    ARS: ["ARS", "PESO ARGENTINO"],
-  };
-
-  const searchTerms = codeMap[currency.toUpperCase()] || [currency.toUpperCase()];
-  const row = data.find((r) =>
-    searchTerms.some(
-      (t) =>
-        r.moneda?.toUpperCase().includes(t) ||
-        r.descripcion?.toUpperCase().includes(t)
-    )
-  );
-
-  if (!row) {
-    throw new Error(`BCP: moneda ${currency} no encontrada para la fecha ${today}`);
-  }
-
-  const parseGs = (s: string) =>
-    parseFloat(s.replace(/\./g, "").replace(",", ".")) || 0;
-
-  return {
-    currency: currency.toUpperCase(),
-    buyRate: parseGs(row.compra),
-    sellRate: parseGs(row.venta),
-    date: today,
-    source: "bcp",
-    sourceName: "Banco Central del Paraguay",
-  };
 }
 
 // ── DNIT ───────────────────────────────────────────────────────────────────────
-// La DNIT usa la cotización del BCP pero la publica en su propia página.
-// Endpoint conocido: https://www.dnit.gov.py/web/dnit/api-cotizacion (no oficial)
-// Alternativa estable: utilizamos directamente el BCP ya que la DNIT
-// oficialmente adopta los valores del BCP del día anterior para liquidaciones.
-// Incluimos el label "DNIT" para transparencia ante el contador.
 async function fetchFromDNIT(currency: string): Promise<ExchangeRateResult> {
-  // La DNIT para efectos fiscales usa la cotización del BCP del día anterior hábil.
-  // Intentamos primero su API y luego hacemos fallback al BCP con nota.
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const y = yesterday.toISOString().split("T")[0];
-  const [year, month, day] = y.split("-");
-
-  const url = `https://www.bcp.gov.py/webapps/web/cotizacion/monedas-get?fecha=${day}%2F${month}%2F${year}`;
-
-  const res = await fetch(url, {
-    headers: { "Accept": "application/json, text/plain, */*" },
-    next: { revalidate: 3600 },
-  });
-
-  if (!res.ok) throw new Error(`DNIT/BCP respondió con ${res.status}`);
-
-  const text = await res.text();
-  let data: Array<{ moneda: string; descripcion: string; compra: string; venta: string }>;
-
+  // Para la DNIT (cotización oficial de liquidación) usamos directamente el JSON de la SET/DNIT
   try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error("DNIT: respuesta no es JSON válido");
+    const res = await fetch("https://cdn.jsdelivr.net/gh/sistemasaguila/cotizaciones-set@main/data/latest.json", {
+      next: { revalidate: 3600 }
+    });
+    if (!res.ok) {
+      throw new Error(`API de cotizaciones SET respondió con código ${res.status}`);
+    }
+    const data = await res.json();
+    const dates = Object.keys(data);
+    if (dates.length === 0) {
+      throw new Error("No se encontraron registros de cotizaciones en DNIT");
+    }
+    // La cotización más reciente publicada
+    const latestDate = dates[0];
+    const rates = data[latestDate];
+    const key = currency.toLowerCase() === "ars" ? "arp" : currency.toLowerCase();
+    const currencyData = rates[key];
+
+    if (!currencyData) {
+      throw new Error(`Moneda ${currency} no encontrada para efectos fiscales DNIT.`);
+    }
+
+    return {
+      currency: currency.toUpperCase(),
+      buyRate: Number(currencyData.purchase) || 0,
+      sellRate: Number(currencyData.sale) || 0,
+      date: latestDate,
+      source: "dnit",
+      sourceName: `DNIT (Cotización SET al ${latestDate})`,
+    };
+  } catch (err: any) {
+    throw new Error(err.message || "Error al obtener cotización fiscal de la DNIT");
   }
-
-  const codeMap: Record<string, string[]> = {
-    USD: ["USD", "DOLAR AMERICANO", "DÓLAR"],
-    EUR: ["EUR", "EURO"],
-    BRL: ["BRL", "REAL BRASILEÑO", "REAL"],
-    ARS: ["ARS", "PESO ARGENTINO"],
-  };
-
-  const searchTerms = codeMap[currency.toUpperCase()] || [currency.toUpperCase()];
-  const row = data.find((r) =>
-    searchTerms.some(
-      (t) =>
-        r.moneda?.toUpperCase().includes(t) ||
-        r.descripcion?.toUpperCase().includes(t)
-    )
-  );
-
-  if (!row) throw new Error(`DNIT: moneda ${currency} no encontrada`);
-
-  const parseGs = (s: string) =>
-    parseFloat(s.replace(/\./g, "").replace(",", ".")) || 0;
-
-  return {
-    currency: currency.toUpperCase(),
-    buyRate: parseGs(row.compra),
-    sellRate: parseGs(row.venta),
-    date: y,
-    source: "dnit",
-    sourceName: "DNIT (cotización BCP día hábil anterior)",
-  };
 }
 
 // ── Public Action ──────────────────────────────────────────────────────────────
