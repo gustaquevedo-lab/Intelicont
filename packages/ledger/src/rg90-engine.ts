@@ -143,3 +143,48 @@ export function summarizeRg90(entries: Rg90Entry[]): Rg90Summary {
     totalDifference: Math.abs(totalSifenAmount - totalBookAmount),
   };
 }
+
+// ─── Official DNIT RG90 Export Layouts (955 & 956) ─────────────────────────
+
+export interface Rg90ExportLine {
+  ruc: string;
+  dv: string;
+  name: string;
+  docType: string; // "1" factura, etc
+  issueDate: string; // YYYY-MM-DD
+  number: string; // xxx-xxx-xxxxxxx
+  gravado10: number;
+  gravado5: number;
+  iva10: number;
+  iva5: number;
+  exento: number;
+  total: number;
+  condicion: string; // "1" contado, "2" credito
+  imputaIva: string; // "S" o "N"
+  imputaIre: string; // "S" o "N"
+  imputaIrp: string; // "S" o "N"
+  noImputable: string; // "S" o "N"
+}
+
+/**
+ * Generates the official RG90 purchasing (Compras - 955) import string for Marangatú
+ */
+export function generateRg90ComprasCsv(records: Rg90ExportLine[]): string {
+  const header = "TipoRegistro;RucInformado;DvInformado;NombreInformado;TipoComprobante;FechaEmision;NumeroComprobante;Gravado10;Gravado5;Iva10;Iva5;Exento;Total;Condicion;ImputaIva;ImputaIre;ImputaIrp;NoImputable\r\n";
+  const rows = records.map(r => {
+    return `1;${r.ruc};${r.dv};${r.name};${r.docType};${r.issueDate};${r.number};${Math.round(r.gravado10)};${Math.round(r.gravado5)};${Math.round(r.iva10)};${Math.round(r.iva5)};${Math.round(r.exento)};${Math.round(r.total)};${r.condicion};${r.imputaIva};${r.imputaIre};${r.imputaIrp};${r.noImputable}`;
+  });
+  return header + rows.join("\r\n");
+}
+
+/**
+ * Generates the official RG90 selling (Ventas - 956) import string for Marangatú
+ */
+export function generateRg90VentasCsv(records: Rg90ExportLine[]): string {
+  const header = "TipoRegistro;RucInformado;DvInformado;NombreInformado;TipoComprobante;FechaEmision;NumeroComprobante;Gravado10;Gravado5;Iva10;Iva5;Exento;Total;Condicion;MonedaExtranjera;ImputaIva;ImputaIre;ImputaIrp;NoImputable\r\n";
+  const rows = records.map(r => {
+    return `2;${r.ruc};${r.dv};${r.name};${r.docType};${r.issueDate};${r.number};${Math.round(r.gravado10)};${Math.round(r.gravado5)};${Math.round(r.iva10)};${Math.round(r.iva5)};${Math.round(r.exento)};${Math.round(r.total)};${r.condicion};N;${r.imputaIva};${r.imputaIre};${r.imputaIrp};${r.noImputable}`;
+  });
+  return header + rows.join("\r\n");
+}
+
