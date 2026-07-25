@@ -2,15 +2,10 @@ import postgres from "postgres";
 import * as fs from "fs";
 import * as path from "path";
 
-const password = encodeURIComponent("Luzma7834..");
-const projectRef = "dtjcazcwajqgyjqwgasw";
-const host = "aws-1-us-west-1.pooler.supabase.com";
-
-// Use Supabase Pooler URL resolved from linked project config
-const dbUrl = `postgresql://postgres.${projectRef}:${password}@${host}:5432/postgres`;
+const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:IFqjkoEjmYZrijmgDcQDAdvZiQidTtcT@tokaido.proxy.rlwy.net:45280/railway";
 
 async function run() {
-  console.log("Connecting directly to database pooler:", host);
+  console.log("Connecting directly to Railway PostgreSQL database...");
   const sql = postgres(dbUrl, { prepare: false });
 
   try {
@@ -24,11 +19,6 @@ async function run() {
     await sql`CREATE TABLE IF NOT EXISTS _migrations (name text primary key, applied_at timestamp default now())`;
 
     for (const file of files) {
-      if (file === "0000_friendly_sandman.sql" || file === "0001_long_rachel_grey.sql" || file === "0001_rls.sql") {
-        console.log(`Skipping migration ${file} (already present on remote).`);
-        continue;
-      }
-      
       const alreadyApplied = await sql`SELECT name FROM _migrations WHERE name = ${file}`;
       if (alreadyApplied.length > 0) {
         console.log(`Migration ${file} is already applied. Skipping.`);
@@ -44,7 +34,7 @@ async function run() {
       console.log(`Successfully applied ${file}.`);
     }
 
-    console.log("\n🚀 All migrations applied successfully to the remote database!");
+    console.log("\n🚀 All migrations applied successfully to Railway PostgreSQL!");
     process.exit(0);
   } catch (error: any) {
     console.error("Migration execution failed:", error);

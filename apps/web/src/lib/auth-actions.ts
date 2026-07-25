@@ -1,11 +1,18 @@
 "use server";
 
-import { createServerSupabaseClient, setEntityContext } from "@/lib/supabase/server";
+/**
+ * auth-actions.ts — Server Actions for Authentication & User Management
+ *
+ * Migrated from Supabase Auth to native Railway PostgreSQL Auth.
+ * All user identity comes from `getSession()` backed by the `sessions` table.
+ */
+
 import { getDb } from "@ledger/db/index";
-import { memberships, entities, auditEvents } from "@ledger/db/schema";
+import { memberships, entities, auditEvents, users } from "@ledger/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getSession, requireSession, destroySession } from "@/lib/session";
 import { requirePermission } from "@/lib/permissions";
 
 export type ActionResult<T = void> = {
@@ -24,51 +31,37 @@ export type MembershipWithEntity = {
   tradeName: string | null;
 };
 
-export async function signInWithMagicLink(email: string): Promise<ActionResult> {
-  try {
-    const supabase = await createServerSupabaseClient();
+// ─── Session / Current User ────────────────────────────────────────────────
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3456"}/auth/callback`,
-      },
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Error al enviar magic link" };
-  }
-}
-
-export async function signOut(): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-  await supabase.auth.signOut();
-  revalidatePath("/");
-  redirect("/login");
-}
-
+/**
+ * Returns the authenticated user from the native session cookie.
+ * Returns null if not authenticated.
+ */
 export async function getCurrentUser() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error || !data.user) {
-      return null;
-    }
-
-    return data.user;
+    const session = await getSession();
+    if (!session) return null;
+    return session.user;
   } catch {
     return null;
   }
 }
 
-export async function getUserMemberships(userId: string): Promise<{ success: boolean; data: MembershipWithEntity[]; error?: string }> {
+/**
+ * Server action sign-out: destroys session and redirects to /login.
+ * Called from the UI sign-out button.
+ */
+export async function signOut(): Promise<void> {
+  await destroySession();
+  revalidatePath("/");
+  redirect("/login");
+}
+
+// ─── User Memberships ──────────────────────────────────────────────────────
+
+export async function getUserMemberships(
+  userId: string
+): Promise<{ success: boolean; data: MembershipWithEntity[]; error?: string }> {
   try {
     const db = getDb();
     const result = await db
@@ -100,22 +93,36 @@ export async function inviteUser(input: {
   role: "admin" | "accountant" | "assistant" | "auditor" | "client";
 }): Promise<ActionResult> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Usuario no autenticado" };
+    const session = await requireSession();
+    const { user } = session;
 
     await requirePermission(user.id, input.entityId, "invite");
 
     const db = getDb();
 
+    // Find or create user by email
+    let [targetUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, input.email.trim().toLowerCase()));
+
+    if (!targetUser) {
+      [targetUser] = await db
+        .insert(users)
+        .values({ email: input.email.trim().toLowerCase(), emailVerified: false })
+        .returning();
+    }
+
     // Check if membership already exists
     const existing = await db
       .select()
       .from(memberships)
-      .where(and(
-        eq(memberships.entityId, input.entityId),
-        eq(memberships.userId, input.email)
-      ));
+      .where(
+        and(
+          eq(memberships.entityId, input.entityId),
+          eq(memberships.userId, targetUser.id)
+        )
+      );
 
     if (existing.length > 0) {
       return { success: false, error: "El usuario ya tiene una membresía en esta entidad" };
@@ -123,7 +130,7 @@ export async function inviteUser(input: {
 
     // Create membership
     await db.insert(memberships).values({
-      userId: input.email,
+      userId: targetUser.id,
       entityId: input.entityId,
       role: input.role,
       invitedBy: user.id,
@@ -135,7 +142,7 @@ export async function inviteUser(input: {
       actorId: user.id,
       action: "user.invite",
       targetType: "membership",
-      targetId: input.email,
+      targetId: targetUser.id,
       after: { email: input.email, role: input.role },
     });
 
@@ -151,43 +158,43 @@ export async function removeUser(input: {
   userId: string;
 }): Promise<ActionResult> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Usuario no autenticado" };
+    const session = await requireSession();
+    const { user } = session;
 
     await requirePermission(user.id, input.entityId, "remove");
 
     const db = getDb();
 
-    // Get membership before deletion for audit
     const membership = await db
       .select()
       .from(memberships)
-      .where(and(
-        eq(memberships.entityId, input.entityId),
-        eq(memberships.userId, input.userId)
-      ));
+      .where(
+        and(
+          eq(memberships.entityId, input.entityId),
+          eq(memberships.userId, input.userId)
+        )
+      );
 
     if (membership.length === 0) {
       return { success: false, error: "Membresía no encontrada" };
     }
 
-    // Delete membership
     await db
       .delete(memberships)
-      .where(and(
-        eq(memberships.entityId, input.entityId),
-        eq(memberships.userId, input.userId)
-      ));
+      .where(
+        and(
+          eq(memberships.entityId, input.entityId),
+          eq(memberships.userId, input.userId)
+        )
+      );
 
-    // Audit event
     await db.insert(auditEvents).values({
       entityId: input.entityId,
       actorId: user.id,
       action: "user.remove",
       targetType: "membership",
       targetId: input.userId,
-      before: { email: input.userId, role: membership[0].role },
+      before: { role: membership[0].role },
     });
 
     revalidatePath("/configuracion");
@@ -204,15 +211,13 @@ export async function updateEntitySettings(input: {
   settings: Record<string, unknown>;
 }): Promise<ActionResult> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "Usuario no autenticado" };
+    const session = await requireSession();
+    const { user } = session;
 
     await requirePermission(user.id, input.entityId, "admin");
 
     const db = getDb();
 
-    // Get current entity for audit
     const [entity] = await db
       .select()
       .from(entities)
@@ -220,13 +225,11 @@ export async function updateEntitySettings(input: {
 
     if (!entity) return { success: false, error: "Entidad no encontrada" };
 
-    // Update entity settings
     await db
       .update(entities)
       .set({ taxRegimes: input.settings.taxRegimes as string[] })
       .where(eq(entities.id, input.entityId));
 
-    // Audit event
     await db.insert(auditEvents).values({
       entityId: input.entityId,
       actorId: user.id,
@@ -252,15 +255,13 @@ export async function logExportAccess(input: {
   format: string;
 }): Promise<void> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const session = await getSession();
+    if (!session) return;
 
     const db = getDb();
-
     await db.insert(auditEvents).values({
       entityId: input.entityId,
-      actorId: user.id,
+      actorId: session.user.id,
       action: "access.export",
       targetType: "report",
       targetId: input.reportType,
@@ -276,15 +277,13 @@ export async function logReportAccess(input: {
   reportType: string;
 }): Promise<void> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const session = await getSession();
+    if (!session) return;
 
     const db = getDb();
-
     await db.insert(auditEvents).values({
       entityId: input.entityId,
-      actorId: user.id,
+      actorId: session.user.id,
       action: "access.report",
       targetType: "report",
       targetId: input.reportType,

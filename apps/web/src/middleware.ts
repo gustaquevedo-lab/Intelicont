@@ -1,61 +1,85 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { jwtVerify } from "jose";
+
+// ─── Constants ─────────────────────────────────────────────────────────────
+
+const SESSION_COOKIE = "intelicont_session";
 
 const PUBLIC_PATHS = [
   "/login",
   "/auth/callback",
+  "/auth/verify",
   "/auth/signout",
+  "/auth/forgot-password",
+  "/auth/reset-password",
   "/opengraph-image",
   "/twitter-image",
   "/brand",
 ];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
 function isPublic(pathname: string): boolean {
   return (
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
+    pathname.startsWith("/api/auth") ||     // auth API routes are public
     pathname.startsWith("/favicon") ||
     pathname.includes(".")
   );
 }
 
-function isRSCRequest(request: NextRequest): boolean {
-  return (
-    request.headers.has("RSC") ||
-    request.nextUrl.searchParams.has("_rsc") ||
-    request.headers.get("x-middleware-prefetch") === "1"
-  );
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.AUTH_SECRET ?? "intelicont_railway_secret_key_2026_super_secure";
+  return new TextEncoder().encode(secret);
 }
+
+// ─── Middleware ────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  console.log("[Middleware] Request path:", pathname);
-
+  // Allow public paths without any session check
   if (isPublic(pathname)) {
-    console.log("[Middleware] Public path, skipping auth check:", pathname);
     return NextResponse.next();
   }
 
-  const { user, response } = await updateSession(request);
+  // Check session cookie
+  const jwt = request.cookies.get(SESSION_COOKIE)?.value;
 
-  if (!user) {
-    if (pathname === "/") {
-      if (isRSCRequest(request)) {
-        console.log("[Middleware] No user, RSC request for '/', redirecting to /login");
-        return NextResponse.redirect(new URL("/login", request.url));
-      }
-      console.log("[Middleware] No user, rewriting '/' to serve landing page");
-      return NextResponse.rewrite(new URL("/landing/index.html", request.url));
-    }
-    console.log("[Middleware] No user, redirecting to /login from:", pathname);
+  if (!jwt) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  console.log("[Middleware] Auth successful, proceeding to:", pathname);
+  try {
+    // Verify JWT signature and expiry (lightweight — no DB call in middleware)
+    const { payload } = await jwtVerify(jwt, getJwtSecret());
+
+    if (!payload.sessionToken) {
+      throw new Error("Invalid session token structure");
+    }
+  } catch {
+    // JWT is invalid or expired — redirect to login
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirectTo", pathname);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete(SESSION_COOKIE);
+    return response;
+  }
+
+  // Forward entity context header for multi-tenancy
+  const entityId =
+    request.headers.get("x-entity-id") ||
+    request.cookies.get("active_entity_id")?.value;
+
+  const response = NextResponse.next();
+
+  if (entityId) {
+    response.headers.set("x-entity-id", entityId);
+  }
+
   return response;
 }
 

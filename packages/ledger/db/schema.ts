@@ -18,6 +18,7 @@ import { relations } from "drizzle-orm";
 // ─── Enums ────────────────────────────────────────────────────────────────
 
 export const entityStatusEnum = pgEnum("entity_status", ["active", "inactive", "closed"]);
+export const entityTypeEnum = pgEnum("entity_type", ["COMMERCIAL", "NON_PROFIT_NGO", "NON_PROFIT_PUBLIC", "ASSOCIATION"]);
 export const fiscalPeriodStatusEnum = pgEnum("fiscal_period_status", ["open", "closing", "closed", "reopened"]);
 export const journalEntryStatusEnum = pgEnum("journal_entry_status", ["draft", "posted", "reversed"]);
 export const accountNatureEnum = pgEnum("account_nature", ["asset", "liability", "equity", "income", "expense"]);
@@ -49,6 +50,7 @@ export const entities = pgTable("entities", {
   ruc: varchar("ruc", { length: 20 }).notNull().unique(),
   legalName: text("legal_name").notNull(),
   tradeName: text("trade_name"),
+  entityType: entityTypeEnum("entity_type").default("COMMERCIAL"),
   taxRegimes: text("tax_regimes").array(),
   baseCurrency: varchar("base_currency", { length: 3 }).notNull().default("PYG"),
   status: entityStatusEnum("status").default("active"),
@@ -56,6 +58,37 @@ export const entities = pgTable("entities", {
   aiApiKey: text("ai_api_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// ─── ESFL: Grants & Projects (Convenios y Donantes) ───────────────────────
+
+export const grants = pgTable("grants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  donorName: text("donor_name").notNull(),
+  grantCode: varchar("grant_code", { length: 50 }),
+  totalBudget: numeric("total_budget", { precision: 20, scale: 4 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("PYG"),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  grantId: uuid("grant_id").references(() => grants.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  code: varchar("code", { length: 50 }).notNull(),
+  budget: numeric("budget", { precision: 20, scale: 4 }).notNull(),
+});
+
+// ─── ESFL: Clasificador Presupuestario PGN / CGR (Objetos del Gasto Estado PY) ──
+
+export const pgnExpenseObjects = pgTable("pgn_expense_objects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: varchar("code", { length: 20 }).notNull().unique(), // ej: 210, 340
+  description: text("description").notNull(),
+  groupCode: varchar("group_code", { length: 20 }).notNull(), // ej: 200 Servicios Personales
 });
 
 // ─── Core: Fiscal Periods ─────────────────────────────────────────────────
@@ -291,10 +324,10 @@ export const closingChecklists = pgTable("closing_checklists", {
 export const auditEvents = pgTable("audit_events", {
   id: uuid("id").primaryKey().defaultRandom(),
   entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
-  actorId: uuid("actor_id").notNull(),
+  actorId: uuid("actor_id"),
   action: varchar("action", { length: 100 }).notNull(),
   targetType: varchar("target_type", { length: 100 }).notNull(),
-  targetId: uuid("target_id"),
+  targetId: varchar("target_id", { length: 255 }),
   before: jsonb("before"),
   after: jsonb("after"),
   reason: text("reason"),
@@ -360,6 +393,41 @@ export const paymentInstallments = pgTable("payment_installments", {
   createdAt:         timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt:         timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
+
+// ─── Auth: Users (Native Railway PostgreSQL Auth) ─────────────────────────
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: text("password_hash"),           // null if magic-link only
+  name: text("name"),
+  avatarUrl: text("avatar_url"),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  // Magic link / OTP
+  magicToken: text("magic_token"),               // hashed token
+  magicTokenExpiresAt: timestamp("magic_token_expires_at", { withTimezone: true }),
+  // Password reset
+  resetToken: text("reset_token"),
+  resetTokenExpiresAt: timestamp("reset_token_expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (table) => [
+  index("users_email_idx").on(table.email),
+]);
+
+export const sessions = pgTable("sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  token: text("token").notNull().unique(),       // random session token stored in cookie
+  activeEntityId: uuid("active_entity_id"),     // last selected entity
+  userAgent: text("user_agent"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (table) => [
+  index("sessions_token_idx").on(table.token),
+  index("sessions_user_id_idx").on(table.userId),
+]);
 
 // ─── Auth: Memberships ─────────────────────────────────────────────────────
 

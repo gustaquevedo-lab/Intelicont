@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InteliGO — Roadmap Lanzamiento</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#f1f5f9;--text2:#94a3b8;--primary:#3b82f6;--primlight:#1e3a5f;--success:#22c55e;--suclight:#14532d;--warning:#f59e0b;--warnlight:#451a03;--danger:#ef4444;--danglight:#450a0a;--purple:#8b5cf6;--purplight:#2e1065;--teal:#14b8a6;--teallight:#134e4a;--gray:#9ca3af;--graylight:#1f2937;--font:'Segoe UI',system-ui,-apple-system,sans-serif;--bolt:#34e27e}
+[data-theme=light]{--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#0f172a;--text2:#64748b;--primary:#2563eb;--primlight:#dbeafe;--success:#16a34a;--suclight:#dcfce7;--warning:#d97706;--warnlight:#fef3c7;--danger:#dc2626;--danglight:#fee2e2;--purple:#7c3aed;--purplight:#ede9fe;--teal:#0d9488;--teallight:#ccfbf1;--gray:#6b7280;--graylight:#f3f4f6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);padding:20px;transition:background .3s,color .3s}
+.c{max-width:1400px;margin:0 auto}
+.tabs{display:flex;gap:4px;margin-bottom:24px;flex-wrap:wrap}
+.tab{padding:10px 20px;border-radius:12px 12px 0 0;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:600;font-size:13px;color:var(--text2);transition:all .2s;font-family:var(--font)}
+.tab:hover{color:var(--text);border-color:var(--primary)}
+.tab.active{background:var(--card);color:var(--primary);border-color:var(--primary)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.header h1{font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--bolt));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text2);font-size:13px}
+.hdr{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hdr button{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;font-size:11px;transition:all .2s;font-family:var(--font)}
+.hdr button:hover{border-color:var(--primary);color:var(--primary);background:var(--primlight)}
+#fileStatus{font-size:10px;color:var(--text2);padding:4px 10px;border-radius:6px;background:var(--graylight);display:inline-block;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.progress-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px}
+.progress-card .ph{display:flex;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+.progress-card .ph h2{font-size:16px;font-weight:700}
+.progress-card .ph span{font-size:12px;color:var(--text2)}
+.pbar{height:8px;background:var(--graylight);border-radius:99px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--primary),var(--bolt));border-radius:99px;transition:width .5s}
+.plabels{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text2)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+.scard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.scard .num{font-size:24px;font-weight:800;display:block}
+.scard .lbl{font-size:11px;color:var(--text2);margin-top:4px}
+.scard.c .num{color:var(--success)}.scard.ip .num{color:var(--primary)}.scard.p .num{color:var(--text2)}
+.phase{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:14px;overflow:hidden}
+.phhead{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;cursor:pointer;gap:12px}
+.phl{display:flex;align-items:center;gap:14px;flex:1}.phnum{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.phinfo h3{font-size:15px;font-weight:700}.phinfo .w{font-size:11px;color:var(--text2);margin-top:2px}
+.phr{display:flex;align-items:center;gap:12px;flex-shrink:0}.phpct{font-size:13px;font-weight:700;min-width:36px;text-align:right}
+.pharr{transition:transform .3s;font-size:16px;color:var(--text2)}.phase.open .pharr{transform:rotate(180deg)}
+.pminibar{width:90px;height:5px;background:var(--graylight);border-radius:99px;overflow:hidden}
+.pminifill{height:100%;border-radius:99px;transition:width .5s}
+.phbody{max-height:0;overflow:hidden;transition:max-height .4s,padding .3s;padding:0 20px}
+.phase.open .phbody{max-height:80000px;padding:0 20px 16px}
+.mod{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.mhead{display:flex;align-items:center;padding:12px 14px;gap:10px;cursor:pointer}
+.mcb{width:18px;height:18px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s;background:transparent;color:transparent}
+.mcb.done{background:var(--success);border-color:var(--success);color:#fff}
+.mcb.partial{background:var(--warning);border-color:var(--warning);color:#fff}
+.mcb.pending{border-color:var(--border)}
+.minfo{flex:1;min-width:0}.minfo .t{font-weight:600;font-size:13px}
+.minfo .d{font-size:11px;color:var(--text2);margin-top:2px}
+.minfo .tech{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px}
+.minfo .tech span{font-size:9px;padding:1px 5px;border-radius:3px;background:var(--graylight);color:var(--text2)}
+.minfo .bolt-badge{display:inline-block;font-size:8px;padding:1px 5px;border-radius:3px;background:#34e27e30;color:var(--bolt);font-weight:700;margin-left:4px;vertical-align:middle}
+.mbadge{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;flex-shrink:0}
+.bdone{background:var(--suclight);color:var(--success)}.bip{background:var(--primlight);color:var(--primary)}.bpend{background:var(--graylight);color:var(--gray)}
+.pbtn{font-size:9px;padding:3px 7px;border-radius:5px;border:1px solid var(--purple);background:transparent;color:var(--purple);cursor:pointer;font-weight:600;flex-shrink:0;font-family:var(--font)}
+.pbtn:hover{background:var(--purple);color:#fff}
+.mbody{max-height:0;overflow:hidden;transition:max-height .3s}
+.mod.open .mbody{max-height:5000px}
+.mbody-inner{padding:0 14px 12px 44px;display:flex;flex-direction:column;gap:4px}
+.tsk{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--text2)}
+.tsk input[type=checkbox]{width:14px;height:14px;border-radius:3px;accent-color:var(--primary);cursor:pointer;margin-top:2px;flex-shrink:0}
+.tsk label{cursor:pointer;flex:1;line-height:1.4}
+.tsk.done label{text-decoration:line-through;opacity:.6}
+.tsk .bolt{font-size:9px;padding:1px 4px;border-radius:3px;background:#34e27e20;color:var(--bolt);font-weight:600}
+.brf-item{padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px}
+.brf-date{font-size:10px;color:var(--primary);font-weight:600;margin-bottom:2px}
+.brf-summary{font-size:12px;line-height:1.5;color:var(--text)}
+.brf-summary .bolt-highlight{color:var(--bolt);font-weight:600}
+.po{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.pm{background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:700px;width:100%;max-height:85vh;display:flex;flex-direction:column}
+.pmh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
+.pmh h3{font-size:15px;font-weight:700}.pmc{width:28px;height:28px;border-radius:6px;border:none;background:var(--graylight);cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.pmb{padding:14px 20px;overflow-y:auto;flex:1}
+.pmb pre{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;word-break:break-word;color:var(--text)}
+.pmf{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--border)}
+.cpbtn{padding:6px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-weight:600;cursor:pointer;font-size:12px;font-family:var(--font)}
+.cpbtn:hover{opacity:.9}.cpbtn.copied{background:var(--success)}
+.bmt{width:100%;border-collapse:collapse;font-size:12px}
+.bmt th,.bmt td{padding:6px 8px;border:1px solid var(--border);text-align:left}
+.bmt th{background:var(--graylight);font-weight:700;font-size:11px;white-space:nowrap}
+.bmt td{vertical-align:top;font-size:11px}
+.bmt .ig{color:var(--success);font-weight:700}
+.bmt .no{color:var(--danger)}
+.bmt .par{color:var(--warning)}
+.bmt .bolt-feat{color:var(--bolt);font-weight:700}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.sc .semo{font-size:32px;margin-bottom:4px}
+.sc .sn{font-weight:600;font-size:12px;margin-bottom:2px}
+.sc .st{font-size:10px;color:var(--text2)}.sc .sf{font-size:9px;color:var(--success);font-weight:600}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.pc{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:18px;position:relative}
+.pc.rec{border-color:var(--primary)}
+.pc .rec-badge{position:absolute;top:-10px;right:12px;background:var(--primary);color:#fff;padding:2px 10px;border-radius:99px;font-size:10px;font-weight:700}
+.pc .pn{font-size:14px;font-weight:700;margin-bottom:6px}
+.pc .pp{font-size:22px;font-weight:800;color:var(--primary);margin-bottom:4px}
+.pc .ppd{font-size:11px;color:var(--text2);margin-bottom:10px}
+.pc ul{list-style:none;padding:0;margin:0}
+.pc ul li{padding:3px 0;font-size:11px;border-bottom:1px solid var(--border)}
+.pc ul li:last-child{border:0}
+.pc ul li:before{content:"✓ ";color:var(--success)}.pc ul li.x:before{content:"✗ ";color:var(--danger)}
+.notes{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:20px}
+.notes h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.notes textarea{width:100%;min-height:60px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:var(--font);font-size:12px;color:var(--text);resize:vertical}
+.notes textarea:focus{outline:none;border-color:var(--primary)}
+.savest{font-size:10px;color:var(--text2);text-align:right;margin-top:6px;opacity:.7}
+@media(max-width:768px){body{padding:10px}.header h1{font-size:22px}.phhead{padding:12px 14px}.phase.open .phbody{padding:0 14px 12px}.mbody-inner{padding-left:32px}.pminibar{width:50px}.stats{grid-template-columns:repeat(2,1fr)}}
+.filters{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.search-i{padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;font-family:var(--font);min-width:150px;outline:none}
+.search-i:focus{border-color:var(--primary)}
+.flt-btn{padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font)}
+.flt-btn:hover{border-color:var(--primary)}.flt-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.phind{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.phind.c{background:var(--success)}.phind.ip{background:var(--primary);animation:pulse 2s infinite}.phind.p{background:var(--gray)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.badge-bolt{display:inline-block;font-size:9px;padding:2px 8px;border-radius:4px;background:#34e27e20;color:var(--bolt);font-weight:700}
+</style>
+</head>
+<body>
+<div class="c">
+<div class="header">
+  <div><h1>🚀 InteliGO — Roadmap Lanzamiento</h1><p style="font-size:12px">Plataforma de Movilidad · Pedro Juan Caballero/Ponta Porã · Inspirado en Bolt 🟢</p></div>
+  <div class="hdr">
+    <span id="fileStatus">📁 Sin archivo</span>
+    <button onclick="openFile()">📂 Abrir</button>
+    <button onclick="saveAs()">💾 Guardar</button>
+    <button onclick="expJSON()">📥 Export</button>
+    <button id="tt" onclick="toggleTheme()">☀️</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="roadmap" onclick="switchTab('roadmap')">📋 Roadmap</div>
+  <div class="tab" data-tab="features" onclick="switchTab('features')">⚡ Bolt Features</div>
+  <div class="tab" data-tab="benchmark" onclick="switchTab('benchmark')">🏁 Benchmark</div>
+  <div class="tab" data-tab="stack" onclick="switchTab('stack')">🛠️ Stack</div>
+  <div class="tab" data-tab="plans" onclick="switchTab('plans')">💰 Plans</div>
+  <div class="tab" data-tab="business" onclick="switchTab('business')">💼 Plan de Negocio</div>
+  <div class="tab" data-tab="marketing" onclick="switchTab('marketing')">📣 Plan de Marketing</div>
+</div>
+
+<!-- TAB ROADMAP -->
+<div class="tab-content active" id="tab-roadmap">
+<div class="progress-card">
+  <div class="ph"><h2>📊 Progreso General</h2><span id="ps">0/0 módulos · 0/0 tareas</span></div>
+  <div class="pbar"><div class="pfill" id="pf" style="width:0%"></div></div>
+  <div class="plabels"><span>F0: Cimentación</span><span>F1: MVP Ride</span><span>F2: Safety+Delivery</span><span>F3: Food+Business</span><span>F4: Hardening</span></div>
+</div>
+
+<div class="stats">
+  <div class="scard c"><span class="num" id="s-done">0</span><span class="lbl">✅ Completado</span></div>
+  <div class="scard ip"><span class="num" id="s-ip">0</span><span class="lbl">🔄 En Progreso</span></div>
+  <div class="scard p"><span class="num" id="s-pend">0</span><span class="lbl">⏳ Pendiente</span></div>
+  <div class="scard"><span class="num">5</span><span class="lbl">📆 Fases</span></div>
+  <div class="scard"><span class="num" id="s-total">0</span><span class="lbl">📋 Tareas</span></div>
+</div>
+
+<div class="filters">
+  <button class="flt-btn active" data-f="all" onclick="setFilter('all',this)">📋 Todas</button>
+  <button class="flt-btn" data-f="done" onclick="setFilter('done',this)">✅ Hechas</button>
+  <button class="flt-btn" data-f="in-progress" onclick="setFilter('in-progress',this)">🔄 En curso</button>
+  <button class="flt-btn" data-f="pending" onclick="setFilter('pending',this)">⏳ Pendientes</button>
+  <input class="search-i" id="gs" placeholder="🔍 Buscar..." oninput="applySearch()">
+</div>
+
+<div id="phasesContainer"></div>
+
+<div class="notes">
+  <h3>📝 Notas del Roadmap <span class="badge-bolt">⚡ Inspirado en Bolt</span></h3>
+  <textarea id="rn" placeholder="Decisiones, cambios de alcance, observaciones..."></textarea>
+  <div class="savest" id="ss">💡 Usá "Abrir" para cargar progreso desde .json en OneDrive</div>
+</div>
+
+<div class="notes" id="bs" style="display:none">
+  <h3>📋 Historial de Sesiones</h3>
+  <div id="bl"></div>
+</div>
+</div>
+
+<!-- TAB FEATURES (Bolt-inspired) -->
+<div class="tab-content" id="tab-features">
+<div class="progress-card">
+  <div class="ph"><h2>⚡ Funcionalidades Inspiradas en Bolt — Mapa Completo</h2><span>Feature parity con Bolt + innovación local</span></div>
+</div>
+<div style="overflow-x:auto;margin-bottom:20px">
+<table class="bmt">
+<tr><th>#</th><th>Feature</th><th>Bolt</th><th>InteliGO</th><th>Fase</th><th>Prioridad</th></tr>
+<tr><td>1</td><td><strong>Ride estándar (Go)</strong></td><td class="ig">✅</td><td class="ig">✅ F1</td><td>F1</td><td>🔴 Crítica</td></tr>
+<tr><td>2</td><td><strong>InteliMoto (Moto taxi)</strong></td><td class="ig">✅ (mercados selectos)</td><td class="ig">✅ F1</td><td>F1</td><td>🔴 Crítica</td></tr>
+<tr><td>3</td><td><strong>Upfront pricing</strong></td><td class="ig">✅</td><td class="ig">✅ F1</td><td>F1</td><td>🔴 Crítica</td></tr>
+<tr><td>4</td><td><strong>Share Trip (compartir viaje)</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🔴 Crítica</td></tr>
+<tr><td>5</td><td><strong>SOS / Emergency Assist</strong></td><td class="ig">✅</td><td class="ig">✅ F1 (existe, mejorar)</td><td>F1</td><td>🔴 Crítica</td></tr>
+<tr><td>6</td><td><strong>In-app Chat + Call anónimo</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🔴 Crítica</td></tr>
+<tr><td>7</td><td><strong>Multi-stop trips</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟡 Alta</td></tr>
+<tr><td>8</td><td><strong>Ride Check (detección paradas largas)</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟡 Alta</td></tr>
+<tr><td>9</td><td><strong>Audio Recording (encriptado)</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟡 Alta</td></tr>
+<tr><td>10</td><td><strong>Driver selfie verification (KYC recurrente)</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟡 Alta</td></tr>
+<tr><td>11</td><td><strong>Scheduled rides (agendar viaje)</strong></td><td class="ig">✅</td><td class="ig">✅ F3</td><td>F3</td><td>🟡 Alta</td></tr>
+<tr><td>12</td><td><strong>InteliGO Send (Delivery paquetes)</strong></td><td class="ig">✅ (Bolt Send)</td><td class="ig">✅ F2</td><td>F2</td><td>🟡 Alta</td></tr>
+<tr><td>13</td><td><strong>InteliGO Food</strong></td><td class="ig">✅ (Bolt Food)</td><td class="ig">✅ F3</td><td>F3</td><td>🟡 Alta</td></tr>
+<tr><td>14</td><td><strong>Driver Rewards Program</strong></td><td class="ig">✅ (4 tiers)</td><td class="ig">✅ F3</td><td>F3</td><td>🟡 Alta</td></tr>
+<tr><td>15</td><td><strong>Early Cashout (retiro anticipado)</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟡 Alta</td></tr>
+<tr><td>16</td><td><strong>Hotspots / Heat Maps</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟢 Media</td></tr>
+<tr><td>17</td><td><strong>Destination Filter</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟢 Media</td></tr>
+<tr><td>18</td><td><strong>InteliGO Business (corporativo)</strong></td><td class="ig">✅ (Bolt Business)</td><td class="ig">✅ F3</td><td>F3</td><td>🟢 Media</td></tr>
+<tr><td>19</td><td><strong>Split fare (dividir costo)</strong></td><td class="no">❌ No tiene</td><td class="ig">✅ F3 — VENTAJA</td><td>F3</td><td>🟢 Media</td></tr>
+<tr><td>20</td><td><strong>Women Only (mujeres con mujeres)</strong></td><td class="ig">✅ (mercados selectos)</td><td class="ig">✅ F3</td><td>F3</td><td>🟢 Media</td></tr>
+<tr><td>21</td><td><strong>Family Profiles</strong></td><td class="ig">✅</td><td class="ig">✅ F3</td><td>F3</td><td>🟢 Media</td></tr>
+<tr><td>22</td><td><strong>Flight Tracking (aeropuerto)</strong></td><td class="ig">✅</td><td class="ig">✅ F4 (PJC tiene aeropuerto)</td><td>F4</td><td>🔵 Baja</td></tr>
+<tr><td>23</td><td><strong>Bolt Plus / Loyalty suscripción pasajero</strong></td><td class="ig">✅</td><td class="ig">✅ F4 — InteliGO Plus</td><td>F4</td><td>🔵 Baja</td></tr>
+<tr><td>24</td><td><strong>Multilingual ES+GU+PT</strong></td><td class="no">❌ Sin Guaraní</td><td class="ig">✅ F1 — VENTAJA</td><td>F1</td><td>🟡 Alta</td></tr>
+<tr><td>25</td><td><strong>Cross-border PJC↔Brasil</strong></td><td class="no">❌ No aplica</td><td class="ig">✅ F1 — VENTAJA</td><td>F1</td><td>🔴 Crítica</td></tr>
+<tr><td>26</td><td><strong>Factura Electrónica SET</strong></td><td class="no">❌</td><td class="ig">✅ F3 — VENTAJA</td><td>F3</td><td>🟡 Alta</td></tr>
+<tr><td>27</td><td><strong>End Trip Early</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟡 Alta</td></tr>
+<tr><td>28</td><td><strong>Driver Shift Limits</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟢 Media</td></tr>
+<tr><td>29</td><td><strong>Rider Unmatching (1★ no repetir)</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟢 Media</td></tr>
+<tr><td>30</td><td><strong>Driver Score (últimos 100 viajes)</strong></td><td class="ig">✅</td><td class="ig">✅ F2</td><td>F2</td><td>🟡 Alta</td></tr>
+</table>
+</div>
+<div class="notes">
+  <h3>💡 Ventajas Diferenciales vs Bolt</h3>
+  <table class="bmt">
+  <tr><th>InteliGO</th><th>Bolt</th></tr>
+  <tr><td class="ig">✅ Guaraní + Español + Portugués</td><td class="no">❌ Sin Guaraní</td></tr>
+  <tr><td class="ig">✅ Cross-border legal PJC↔Ponta Porã</td><td class="no">❌ No aplica (no opera en frontera PY/BR)</td></tr>
+  <tr><td class="ig">✅ Factura electrónica SET para cada viaje</td><td class="no">❌ Sin factura fiscal</td></tr>
+  <tr><td class="ig">✅ Split fare (dividir costo entre pasajeros)</td><td class="no">❌ No existe en Bolt</td></tr>
+  <tr><td class="ig">✅ Modelo suscripción (0% comisión) + opcional comisión</td><td class="par">⚠️ 15-20% comisión por viaje</td></tr>
+  <tr><td class="ig">✅ Pago multi-moneda (Gs, USD, BRL, ARS)</td><td class="no">❌ Moneda local por país</td></tr>
+  <tr><td class="ig">✅ QR payments (68% del mercado PY)</td><td class="par">⚠️ Depende del mercado</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- TAB BENCHMARK -->
+<div class="tab-content" id="tab-benchmark">
+<div class="progress-card">
+  <div class="ph"><h2>🏁 Benchmark — Ponta Porã + Pedro Juan Caballero</h2><span>Competidores reales que operan en la región fronteriza</span></div>
+</div>
+<div style="overflow-x:auto;margin-bottom:16px">
+<table class="bmt">
+<tr><th>Factor</th><th style="color:var(--success)">🚀 InteliGO</th><th>Moovecar</th><th>99 (99Pop)</th><th>Uber</th><th>Urban66/67</th><th>InDriver</th><th>Moto Fast</th></tr>
+<tr><td><strong>Presencia en PJC</strong></td><td class="ig">✅ Sí (lanzamiento)</td><td class="ig">✅ Sí</td><td class="no">❌ Solo BR</td><td class="no">❌ Solo BR</td><td class="no">❌ Solo PP</td><td class="no">❌ Bloquea frontera</td><td class="par">⚠️ WhatsApp</td></tr>
+<tr><td><strong>Presencia en Ponta Porã</strong></td><td class="ig">✅ Sí</td><td class="ig">✅ Sí</td><td class="ig">✅ Sí</td><td class="ig">✅ Sí</td><td class="ig">✅ Sí</td><td class="ig">✅ Sí</td><td class="ig">✅ Sí</td></tr>
+<tr><td><strong>Cross-border legal</strong></td><td class="ig">✅ Sí</td><td class="ig">✅ Sí (único)</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌ Bloqueado</td><td class="no">❌</td></tr>
+<tr><td><strong>Servicios</strong></td><td>🚗 Ride + 🛵 Moto + 🚚 Send + 🍕 Food + 📦 Express</td><td>🚗 Ride solo</td><td>🚗 Ride + 🚚 Entrega + 🛵 Moto</td><td>🚗 Ride + 🍕 Eats</td><td>🚗 Ride solo</td><td>🚗 Ride + 🚚 Fretes</td><td>🛵 Moto solo</td></tr>
+<tr><td><strong>Modelo Ingreso</strong></td><td class="ig">✅ Suscripción ₲75K/sem + comisión opcional (0-15%)</td><td>Comisión (no revelada)</td><td>~19.99% comisión</td><td>20-60% comisión</td><td>Comisión fija</td><td>Comisión por viaje</td><td>Por viaje</td></tr>
+<tr><td><strong>Tarifa corta (~3km)</strong></td><td class="ig">~₲12,000 / ~R$8</td><td>~R$9-12</td><td>~R$8-12</td><td>~R$12-18</td><td>~R$8-10</td><td>~R$8 base + negociación</td><td>~R$8-15</td></tr>
+<tr><td><strong>Motos</strong></td><td class="ig">✅ Sí (InteliMoto)</td><td class="no">❌ No</td><td class="ig">✅ 99Moto</td><td class="no">❌ No (en PP)</td><td class="no">❌ No</td><td class="ig">✅ Sí</td><td class="ig">✅ Solo moto</td></tr>
+<tr><td><strong>Compartir viaje (Share Trip)</strong></td><td class="ig">✅ Bolt-style (F2)</td><td class="no">❌</td><td class="ig">✅ Sí</td><td class="ig">✅ Sí</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td></tr>
+<tr><td><strong>Botón SOS</strong></td><td class="ig">✅ Sí (F1)</td><td class="par">⚠️ Hotline</td><td class="ig">✅ Sí</td><td class="ig">✅ Sí</td><td class="par">⚠️ Botón motorista</td><td class="par">⚠️ Básico</td><td class="no">❌</td></tr>
+<tr><td><strong>Multi-stop</strong></td><td class="ig">✅ Bolt-style (F2)</td><td class="no">❌</td><td class="no">❌</td><td class="ig">✅ Sí</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td></tr>
+<tr><td><strong>Agendar viaje</strong></td><td class="ig">✅ Bolt-style (F3)</td><td class="no">❌</td><td class="par">⚠️ Limitado</td><td class="ig">✅ Reserve</td><td class="no">❌</td><td class="no">❌</td><td class="par">⚠️ Por WhatsApp</td></tr>
+<tr><td><strong>Idiomas</strong></td><td class="ig">✅ ES + GU + PT</td><td>🇧🇷 PT + ES</td><td>🇧🇷 PT</td><td>ES + EN + PT</td><td>🇧🇷 PT</td><td>ES + PT</td><td>🇧🇷 PT</td></tr>
+<tr><td><strong>Pagos Digitales</strong></td><td class="ig">✅ QR + Pagopar + Kuapay + Efectivo + Pix</td><td>Tarjeta + Efectivo</td><td>Cartão + Dinheiro + 99Pay + Pix</td><td>Cartão + Dinheiro</td><td>Dinheiro + Cartão</td><td>Dinheiro + Cartão + Pix</td><td>Dinheiro</td></tr>
+<tr><td><strong>Factura SET</strong></td><td class="ig">✅ Sí</td><td class="no">❌ No</td><td class="no">❌ No (solo BR)</td><td class="no">❌ No (solo BR)</td><td class="no">❌ No</td><td class="no">❌ No</td><td class="no">❌ No</td></tr>
+<tr><td><strong>App Rating (Google Play)</strong></td><td>— (lanzamiento)</td><td>~4.2</td><td>4.4</td><td>4.3</td><td>~3.8</td><td>4.5</td><td>—</td></tr>
+<tr><td><strong>Driver Rewards</strong></td><td class="ig">✅ Sí (F3) — Bolt-style</td><td class="no">❌</td><td class="par">⚠️ Clube99</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td></tr>
+<tr><td><strong>Delivery de paquetes</strong></td><td class="ig">✅ InteliGO Send (F2)</td><td class="no">❌</td><td class="ig">✅ 99Entrega</td><td class="no">❌</td><td class="no">❌</td><td class="par">⚠️ Fretes</td><td class="ig">✅ Sí</td></tr>
+<tr><td><strong>Delivery de comida</strong></td><td class="ig">✅ InteliGO Food (F3)</td><td class="no">❌</td><td class="no">❌ (no en PP)</td><td class="par">⚠️ Eats (tal vez)</td><td class="no">❌</td><td class="no">❌</td><td class="no">❌</td></tr>
+</table>
+</div>
+
+<div class="notes">
+  <h3>🎯 Dolores del Público Objetivo vs Solución InteliGO</h3>
+  <table class="bmt">
+  <tr><th>#</th><th>Dolor</th><th>Descripción</th><th style="color:var(--success)">✅ Cómo lo resuelve InteliGO</th></tr>
+  <tr><td>1</td><td><strong>💰 Sin app confiable</strong></td><td>Moovecar tiene precios opacos y exclusividad forzada. 99/Uber están solo del lado brasileño. Taxis con tarifas negociadas.</td><td class="ig">Primera plataforma con precios transparentes up-front, tracking GPS, y operación legal en ambos lados de la frontera.</td></tr>
+  <tr><td>2</td><td><strong>🚫 Comisiones abusivas</strong></td><td>Moovecar, 99 y Uber cobran 15-60% comisión. El conductor trabaja para la plataforma.</td><td class="ig">Modelo mixto: suscripción fija (₲75K/sem) para conductores frecuentes o 10% comisión para ocasionales. El conductor elige.</td></tr>
+  <tr><td>3</td><td><strong>🌐 Frontera sin solución digital</strong></td><td>Moovecar es el único con operación cross-border pero exige exclusividad. InDriver bloquea frontera.</td><td class="ig">Cross-border legal sin exclusividad forzada. Tarifas justas, KYC completo, SOS en ambos lados.</td></tr>
+  <tr><td>4</td><td><strong>🛵 Moto es rey</strong></td><td>70% de los viajes cortos son en moto. 99Moto existe pero solo lado BR. Moto Fast es por WhatsApp.</td><td class="ig">InteliMoto: moto con app, GPS, seguro, tarifa justa. Opera en PJC y Ponta Porã.</td></tr>
+  <tr><td>5</td><td><strong>💳 Pagos fragmentados</strong></td><td>Brasil usa Pix, Paraguay usa QR/Bancard. Turistas llevan Gs, USD, BRL, ARS.</td><td class="ig">Aceptamos todo: QR Paraguay, Pix Brasil, Pagopar, Kuapay, tarjeta, efectivo multi-moneda.</td></tr>
+  <tr><td>6</td><td><strong>🔒 Seguridad fronteriza</strong></td><td>Viajar de un país a otro tiene riesgos. No hay herramientas de seguridad digital.</td><td class="ig">Safety Toolkit completo estilo Bolt: Share Trip, SOS, Audio Recording, Ride Check, KYC recurrente.</td></tr>
+  <tr><td>7</td><td><strong>🗣️ Sin Guaraní en apps</strong></td><td>Ninguna app ofrece Guaraní. 60%+ de PJC habla Guaraní como primera lengua.</td><td class="ig">App trilingüe: ES + GU + PT. Primera app de la región con Guaraní.</td></tr>
+  <tr><td>8</td><td><strong>📄 Sin factura para empresas</strong></td><td>Comercios y empresas necesitan factura SET. Ninguna app de la región la ofrece.</td><td class="ig">Factura electrónica SET para cada viaje. Ideal para corporate.</td></tr>
+  <tr><td>9</td><td><strong>🍕 Delivery limitado</strong></td><td>Restaurantes de PJC no tienen delivery digital. iFood no llega a Paraguay.</td><td class="ig">InteliGO Food: marketplace de restaurantes con delivery integrado. 15% comisión al restaurante.</td></tr>
+  <tr><td>10</td><td><strong>🏢 B2B sin opciones</strong></td><td>Empresas no tienen servicio corporativo de movilidad en la región.</td><td class="ig">InteliGO Business: dashboard corporativo, driver dedicado, factura SET, reportes, SLA 45min.</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- TAB STACK -->
+<div class="tab-content" id="tab-stack">
+<div class="progress-card">
+  <div class="ph"><h2>🛠️ Stack Tecnológico — 100% Gratuito</h2><span>$0-10 USD/mes en total</span></div>
+</div>
+<div class="sgrid">
+  <div class="sc"><div class="semo">⚡</div><div class="sn">Express.js</div><div class="st">Backend Runtime</div><div class="sf">Open Source</div></div>
+  <div class="sc"><div class="semo">🔷</div><div class="sn">TypeScript</div><div class="st">Lenguaje</div><div class="sf">Open Source</div></div>
+  <div class="sc"><div class="semo">🗄️</div><div class="sn">PostgreSQL</div><div class="st">Base de Datos</div><div class="sf">Supabase Free 500MB</div></div>
+  <div class="sc"><div class="semo">🌀</div><div class="sn">Redis</div><div class="st">Cache + Pub/Sub</div><div class="sf">Upstash Free 10K/día</div></div>
+  <div class="sc"><div class="semo">📡</div><div class="sn">Socket.IO</div><div class="st">Tiempo Real (GPS)</div><div class="sf">Open Source</div></div>
+  <div class="sc"><div class="semo">🔮</div><div class="sn">Prisma 5</div><div class="st">ORM</div><div class="sf">Open Source</div></div>
+  <div class="sc"><div class="semo">🖥️</div><div class="sn">Next.js 14</div><div class="st">Admin Panel</div><div class="sf">Vercel Hobby Free</div></div>
+  <div class="sc"><div class="semo">🎨</div><div class="sn">Tailwind CSS</div><div class="st">Estilos</div><div class="sf">Open Source</div></div>
+  <div class="sc"><div class="semo">📱</div><div class="sn">Expo (React Native)</div><div class="st">App Mobile</div><div class="sf">EAS Free 30 builds/mes</div></div>
+  <div class="sc"><div class="semo">📬</div><div class="sn">Twilio</div><div class="st">SMS (OTP)</div><div class="sf">~$5-10/mes créditos</div></div>
+  <div class="sc"><div class="semo">🔔</div><div class="sn">Firebase FCM</div><div class="st">Push Notifications</div><div class="sf">Ilimitado Free</div></div>
+  <div class="sc"><div class="semo">☁️</div><div class="sn">Cloudflare R2</div><div class="st">Archivos KYC</div><div class="sf">10GB Free</div></div>
+  <div class="sc"><div class="semo">🚂</div><div class="sn">Railway</div><div class="st">Hosting Backend</div><div class="sf">500hrs/mes Free</div></div>
+  <div class="sc"><div class="semo">🌍</div><div class="sn">Vercel</div><div class="st">Hosting Frontend</div><div class="sf">100GB ancho Free</div></div>
+  <div class="sc"><div class="semo">🗺️</div><div class="sn">MapLibre GL</div><div class="st">Mapas Web</div><div class="sf">OSM tiles Free</div></div>
+  <div class="sc"><div class="semo">📍</div><div class="sn">Google Maps</div><div class="st">Mapas Mobile</div><div class="sf">$200/mes crédito</div></div>
+  <div class="sc"><div class="semo">👁️</div><div class="sn">Sentry</div><div class="st">Monitoreo</div><div class="sf">5K errors/mes Free</div></div>
+  <div class="sc"><div class="semo">🔄</div><div class="sn">GitHub Actions</div><div class="st">CI/CD</div><div class="sf">2000 min/mes Free</div></div>
+  <div class="sc"><div class="semo">🛡️</div><div class="sn">Zod</div><div class="st">Validación</div><div class="sf">Open Source</div></div>
+  <div class="sc"><div class="semo">⚛️</div><div class="sn">Zustand</div><div class="st">Estado Mobile</div><div class="sf">Open Source</div></div>
+</div>
+<div class="notes" style="margin-top:16px">
+<h3>💰 Desglose de Costos Mensuales</h3>
+<table class="bmt">
+<tr><th>Servicio</th><th>Plan</th><th>Incluye</th><th>Costo</th></tr>
+<tr><td>Railway</td><td>Trial</td><td>500 hrs/mes, PostgreSQL 500MB, Redis 30MB</td><td>$0</td></tr>
+<tr><td>Vercel</td><td>Hobby</td><td>100GB ancho banda, 6000 build mins</td><td>$0</td></tr>
+<tr><td>Supabase</td><td>Free</td><td>500MB PostgreSQL, 50K rows, Auth</td><td>$0</td></tr>
+<tr><td>Upstash Redis</td><td>Free</td><td>10K comandos/día, 256MB</td><td>$0</td></tr>
+<tr><td>Cloudflare R2</td><td>Free</td><td>10GB storage, 10M requests/mes</td><td>$0</td></tr>
+<tr><td>Firebase FCM</td><td>Spark</td><td>Notificaciones push ilimitadas</td><td>$0</td></tr>
+<tr><td>EAS Build (Expo)</td><td>Free</td><td>30 builds/mes, OTA updates</td><td>$0</td></tr>
+<tr><td>GitHub Actions</td><td>Free</td><td>2000 min/mes, repos privados</td><td>$0</td></tr>
+<tr><td>Sentry</td><td>Free</td><td>5K errores/mes</td><td>$0</td></tr>
+<tr><td>Twilio SMS</td><td>Pay-as-you-go</td><td>~100-200 OTPs/mes</td><td>~$5-10/mes</td></tr>
+<tr><td>Google Maps</td><td>Pay-as-you-go</td><td>$200 crédito/mes (~28K map loads)</td><td>$0 (en crédito)</td></tr>
+<tr><td style="font-weight:700">TOTAL MENSUAL</td><td colspan="3" style="color:var(--success);font-weight:700">$0-10 USD/mes</td></tr>
+</table>
+</div>
+</div>
+
+<!-- TAB PLANS -->
+<div class="tab-content" id="tab-plans">
+<div class="progress-card">
+  <div class="ph"><h2>💰 Comparativa de Planes — InteliGO vs Competidores</h2><span>Modelo de ingresos más justo para conductores</span></div>
+</div>
+<div class="pgrid">
+  <div class="pc rec">
+    <div class="rec-badge">⭐ RECOMENDADO</div>
+    <div class="pn">🚀 InteliGO — Suscripción</div>
+    <div class="pp">₲75,000<span style="font-size:13px;color:var(--text2)">/semana</span></div>
+    <div class="ppd">~$10 USD/sem · 0% comisión por viaje</div>
+    <ul>
+      <li>100% de la tarifa para el conductor</li>
+      <li>Sin comisión por viaje</li>
+      <li>Safety Toolkit completo (SOS, Share Trip, Recording)</li>
+      <li>Multi-stop, Scheduled rides, Heat Maps</li>
+      <li>Driver Rewards Program (4 niveles)</li>
+      <li>Factura Electrónica SET</li>
+      <li>Guaraní + Español + Portugués</li>
+    </ul>
+  </div>
+  <div class="pc">
+    <div class="pn">🚀 InteliGO — Mensual</div>
+    <div class="pp">₲300,000<span style="font-size:13px;color:var(--text2)">/mes</span></div>
+    <div class="ppd">~$40 USD/mes · Ahorro ₲15K vs semanal</div>
+    <ul>
+      <li>Todo lo del plan semanal</li>
+      <li>20% descuento vs pago semanal</li>
+      <li>Prioridad en asignación de viajes</li>
+      <li>Reportes semanales de ganancias</li>
+      <li>Soporte prioritario</li>
+    </ul>
+  </div>
+  <div class="pc">
+    <div class="pn">🚀 InteliGO — Flex</div>
+    <div class="pp">10%<span style="font-size:13px;color:var(--text2)"> comisión por viaje</span></div>
+    <div class="ppd">Sin suscripción · Para conductores ocasionales</div>
+    <ul>
+      <li>Sin tarifa fija semanal</li>
+      <li>Solo 10% comisión por viaje</li>
+      <li>Ideal para conductores de fin de semana</li>
+      <li>Todos los Safety Features incluidos</li>
+      <li>Sin compromiso de exclusividad</li>
+    </ul>
+  </div>
+  <div class="pc">
+    <div class="pn">🚀 InteliGO Business</div>
+    <div class="pp">₲500,000<span style="font-size:13px;color:var(--text2)">/mes</span></div>
+    <div class="ppd">~$70 USD/mes · Para empresas</div>
+    <ul>
+      <li>Driver dedicado</li>
+      <li>SLA 45 minutos</li>
+      <li>Dashboard corporativo</li>
+      <li>Factura SET por cada viaje</li>
+      <li>Reportes mensuales</li>
+      <li>API de integración</li>
+    </ul>
+  </div>
+  <div class="pc" style="border-color:var(--text2);opacity:.7">
+    <div class="pn">🔵 Moovecar</div>
+    <div class="pp">Comisión<span style="font-size:13px;color:var(--text2)"> por viaje</span></div>
+    <div class="ppd">~15-25% estimado · Exclusividad forzada</div>
+    <ul>
+      <li>Comisión por cada viaje</li>
+      <li class="x">Exclusividad obligatoria</li>
+      <li class="x">Sin moto</li>
+      <li class="x">Sin delivery</li>
+      <li class="x">Sin factura SET</li>
+      <li class="x">Sin Guaraní</li>
+      <li>Opera en PJC y Ponta Porã</li>
+    </ul>
+  </div>
+  <div class="pc" style="border-color:var(--text2);opacity:.7">
+    <div class="pn">🟢 99 (99Pop)</div>
+    <div class="pp">~19.99%<span style="font-size:13px;color:var(--text2)"> comisión</span></div>
+    <div class="ppd">Solo lado brasileño</div>
+    <ul>
+      <li>~19.99% comisión</li>
+      <li class="x">Solo Brasil</li>
+      <li class="x">Sin factura SET</li>
+      <li>99Entrega disponible</li>
+      <li>99Pay integrado</li>
+      <li>Graba audio en viajes</li>
+    </ul>
+  </div>
+  <div class="pc" style="border-color:var(--text2);opacity:.7">
+    <div class="pn">⚫ Uber</div>
+    <div class="pp">20-60%<span style="font-size:13px;color:var(--text2)"> comisión</span></div>
+    <div class="ppd">La más alta · Solo Brasil</div>
+    <ul>
+      <li>20-60% comisión por viaje</li>
+      <li class="x">Solo lado brasileño</li>
+      <li class="x">Sin moto en Ponta Porã</li>
+      <li>Uber Reserve disponible</li>
+      <li>Multi-stop disponible</li>
+      <li>Share Trip disponible</li>
+    </ul>
+  </div>
+  <div class="pc" style="opacity:.6">
+    <div class="pn">🟢 Bolt (benchmark)</div>
+    <div class="pp">15-20%<span style="font-size:13px;color:var(--text2)"> comisión</span></div>
+    <div class="ppd">⚡ Nuestro norte en features</div>
+    <ul>
+      <li>15-20% comisión por viaje</li>
+      <li class="x">No opera en PY ni BR</li>
+      <li>Safety Toolkit más completo</li>
+      <li>Driver Rewards Program</li>
+      <li>Scheduled rides (90 días)</li>
+      <li>Bolt Food + Bolt Send</li>
+    </ul>
+  </div>
+</div>
+
+<div class="notes" style="margin-top:20px">
+<h3>💡 Ventaja Comparativa Clave</h3>
+<table class="bmt">
+<tr><th>Métrica</th><th style="color:var(--success)">InteliGO</th><th>Moovecar</th><th>99</th><th>Uber</th><th>Bolt (norte)</th></tr>
+<tr><td>Comisión efectiva</td><td style="color:var(--success)"><strong>0% o 10%</strong> (a elección)</td><td>~20%</td><td>~20%</td><td>20-60%</td><td>15-20%</td></tr>
+<tr><td>Conductor recibe viaje ₲15,000</td><td style="color:var(--success)"><strong>₲15,000 / ₲13,500</strong></td><td>~₲12,000</td><td>~₲12,000</td><td>₲6,000-12,000</td><td>~₲12,000-12,750</td></tr>
+<tr><td>Cross-border PJC↔PP</td><td style="color:var(--success)"><strong>✅ Sí</strong></td><td>✅ Sí (exclusivo)</td><td>❌ No</td><td>❌ No</td><td>❌ N/A</td></tr>
+<tr><td>Safety Toolkit completo</td><td style="color:var(--success)"><strong>✅ F2</strong></td><td>❌ Básico</td><td>⚠️ Parcial</td><td>⚠️ Parcial</td><td>✅ Completo</td></tr>
+<tr><td>Factura SET</td><td style="color:var(--success)"><strong>✅ Sí</strong></td><td>❌ No</td><td>❌ No</td><td>❌ No</td><td>❌ No</td></tr>
+<tr><td>Guaraní</td><td style="color:var(--success)"><strong>✅ Sí</strong></td><td>❌ No</td><td>❌ No</td><td>❌ No</td><td>❌ No</td></tr>
+</table>
+</div>
+</div>
+</div>
+
+<!-- TAB BUSINESS PLAN & VIABILIDAD -->
+<div class="tab-content" id="tab-business">
+  <style>
+    .bus-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .bus-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; position: relative; transition: all 0.3s; }
+    .bus-card:hover { border-color: var(--primary); }
+    .bus-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    .bus-control { margin-bottom: 15px; }
+    .bus-control label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 600; }
+    .bus-val-display { float: right; font-family: monospace; color: var(--text); font-weight: bold; }
+    .bus-slider { width: 100%; height: 6px; background: var(--graylight); border-radius: 5px; outline: none; -webkit-appearance: none; }
+    .bus-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; transition: transform 0.1s; }
+    .bus-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    .bus-results { background: var(--graylight); border-radius: 12px; padding: 18px; margin-top: 15px; border: 1px solid var(--border); }
+    .bus-res-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 12px; border-bottom: 1px dashed var(--border); }
+    .bus-res-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .bus-res-row.total { font-weight: 800; font-size: 14px; border-top: 1px solid var(--border); border-bottom: none; margin-top: 8px; padding-top: 8px; }
+    
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; text-align: center; }
+    .status-badge.ok { background: var(--suclight); color: var(--success); }
+    .status-badge.warn { background: var(--warnlight); color: var(--warning); }
+    .status-badge.danger { background: var(--danglight); color: var(--danger); }
+    
+    /* Interactive accordion cards */
+    .acc-item { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: var(--graylight); transition: all 0.3s; }
+    .acc-item:hover { border-color: var(--primary); }
+    .acc-head { padding: 14px 18px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+    .acc-head span.icon { font-size: 16px; transition: transform 0.3s; }
+    .acc-item.open .acc-head span.icon { transform: rotate(180deg); }
+    .acc-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; padding: 0 18px; font-size: 12px; color: var(--text2); line-height: 1.6; }
+    .acc-item.open .acc-body { max-height: 500px; padding: 0 18px 16px; border-top: 1px solid var(--border); margin-top: 2px; padding-top: 14px; }
+    
+    /* Segmented pill selectors */
+    .pill-selector { display: flex; gap: 4px; background: var(--graylight); padding: 4px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px; }
+    .pill-btn { flex: 1; padding: 6px 12px; border-radius: 6px; border: none; background: transparent; color: var(--text2); cursor: pointer; font-weight: 600; font-size: 11px; transition: all 0.2s; }
+    .pill-btn.active { background: var(--primary); color: #fff; }
+
+    .vs-box { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; margin-top: 10px; }
+    .vs-side { background: var(--card); padding: 14px; }
+    .vs-side h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+    .vs-side ul { list-style: none; padding: 0; font-size: 11px; color: var(--text2); }
+    .vs-side ul li { margin-bottom: 4px; }
+    .vs-side ul li::before { content: "• "; color: var(--primary); }
+    .vs-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: bold; margin-left: 5px; }
+    .vs-badge.green { background: var(--suclight); color: var(--success); }
+    .vs-badge.red { background: var(--danglight); color: var(--danger); }
+    
+    .infotip { background: var(--primlight); color: var(--text); border: 1px solid var(--primary); border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 11px; display: none; }
+  </style>
+
+  <div class="progress-card">
+    <div class="ph">
+      <h2>💼 Plan de Negocio & Viabilidad Económica (Frontera PJC–Ponta Porã)</h2>
+      <span>Análisis estratégico interactivo para bootstrapping (lanzamiento con presupuesto $0 o cercano)</span>
+    </div>
+  </div>
+
+  <div class="bus-grid">
+    <!-- CALCULADORA INTERACTIVA DE VIABILIDAD -->
+    <div class="bus-card" style="grid-column: span 2;">
+      <h3>📊 Simulador Financiero Interactivo (Bootstrapping)</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 16px;">
+        Ajustá los valores para calcular las proyecciones de ingresos y costos operativos. Descubrí cuándo alcanzás el punto de equilibrio.
+      </p>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+        <div>
+          <!-- Control 1 -->
+          <div class="bus-control">
+            <label>🏍️/🚗 Conductores Activos (Suscripción Semanal) <span class="bus-val-display" id="sim-drivers-disp">80</span></label>
+            <input type="range" class="bus-slider" id="sim-drivers" min="0" max="500" value="80" oninput="runSimulation()">
+            <span style="font-size: 9px; color: var(--text2);">Suscripción semanal de ₲75.000 (0% comisión en viajes).</span>
+          </div>
+
+          <!-- Control 2 -->
+          <div class="bus-control">
+            <label>📊 Viajes Totales de la App al Mes <span class="bus-val-display" id="sim-trips-disp">2,500</span></label>
+            <input type="range" class="bus-slider" id="sim-trips" min="100" max="15000" value="2500" step="100" oninput="runSimulation()">
+            <span style="font-size: 9px; color: var(--text2);">Suma de todos los viajes realizados en el mes.</span>
+          </div>
+
+          <!-- Control 3 -->
+          <div class="bus-control">
+            <label>⚡ Proporción Viajes en Plan Flex (10% com.) <span class="bus-val-display" id="sim-flex-disp">30%</span></label>
+            <input type="range" class="bus-slider" id="sim-flex" min="0" max="100" value="30" oninput="runSimulation()">
+            <span style="font-size: 9px; color: var(--text2);">Conductores que pagan 10% de comisión en vez de suscripción. Promedio viaje: ₲15.000.</span>
+          </div>
+        </div>
+
+        <div>
+          <!-- Resultados Simulador -->
+          <div class="bus-results">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-weight: 700; font-size: 13px; color: var(--text);">Proyección Mensual</span>
+              <div class="status-badge" id="sim-status">Punto de Equilibrio</div>
+            </div>
+            
+            <div class="bus-res-row">
+              <span>Ingresos por Suscripciones:</span>
+              <span id="sim-res-subs">₲0</span>
+            </div>
+            <div class="bus-res-row">
+              <span>Ingresos por Comisión Flex (10%):</span>
+              <span id="sim-res-flex">₲0</span>
+            </div>
+            <div class="bus-res-row" style="color: var(--success); font-weight: bold;">
+              <span>Ingreso Mensual Bruto (₲):</span>
+              <span id="sim-res-gross">₲0</span>
+            </div>
+            <div class="bus-res-row">
+              <span>Ingreso Mensual Bruto (USD):</span>
+              <span id="sim-res-gross-usd">$0</span>
+            </div>
+            <div class="bus-res-row" style="color: var(--danger);">
+              <span>Costo Server & APIs Estimado (USD):</span>
+              <span id="sim-res-cost-usd">-$0</span>
+            </div>
+            <div class="bus-res-row total" style="color: var(--primary);">
+              <span>Ganancia Mensual Neta (USD):</span>
+              <span id="sim-res-net-usd">$0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALCULADORA GOOGLE MAPS -->
+    <div class="bus-card">
+      <h3>🗺️ Optimizador de Presupuesto Google Maps</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 10px;">
+        Calculá el uso de llamadas y mantené tu cuenta dentro de los <strong>USD 200 de crédito mensual gratuito</strong> de Google.
+      </p>
+
+      <div class="bus-control">
+        <label>🚗 Sesiones de Viaje / Búsquedas al Mes <span class="bus-val-display" id="map-sessions-disp">12,000</span></label>
+        <input type="range" class="bus-slider" id="map-sessions" min="1000" max="40000" value="12000" step="500" oninput="runMapOptimization()">
+        <span style="font-size: 9px; color: var(--text2);">Sesiones donde el usuario abre el mapa o busca direcciones.</span>
+      </div>
+
+      <div class="pill-selector">
+        <button class="pill-btn active" id="map-pill-sdk" onclick="switchMapDetails('sdk')">Mapas Móviles</button>
+        <button class="pill-btn" id="map-pill-places" onclick="switchMapDetails('places')">Autocomplete</button>
+        <button class="pill-btn" id="map-pill-routes" onclick="switchMapDetails('routes')">Directions</button>
+      </div>
+
+      <div class="bus-results" style="padding: 10px 14px; margin-top: 10px;">
+        <div class="bus-res-row">
+          <span>Mapas Móviles (SDK Nativo):</span>
+          <span style="color: var(--success); font-weight: bold;">¡Gratis Ilimitado!</span>
+        </div>
+        <div class="bus-res-row">
+          <span>Autocomplete (Places API):</span>
+          <span id="map-cost-autocomplete">$0.00</span>
+        </div>
+        <div class="bus-res-row">
+          <span>Rutas (Directions API):</span>
+          <span id="map-cost-directions">$0.00</span>
+        </div>
+        <div class="bus-res-row" style="font-weight: 700; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px;">
+          <span>Costo Bruto Maps:</span>
+          <span id="map-cost-gross">$0.00</span>
+        </div>
+        <div class="bus-res-row">
+          <span>Crédito Gratis Mensual Google:</span>
+          <span style="color: var(--success); font-weight: bold;">-USD 200.00</span>
+        </div>
+        <div class="bus-res-row total" id="map-net-row">
+          <span>Costo Neto Final:</span>
+          <span id="map-cost-net">$0.00</span>
+        </div>
+      </div>
+      
+      <!-- Interactive Tooltips maps -->
+      <div class="infotip" id="map-tip-sdk" style="display: block;">
+        <strong>Mapas Móviles Gratis:</strong> Al usar el SDK nativo de Android e iOS en `react-native-maps`, Google y Apple no cobran por las visualizaciones de mapas en dispositivos móviles. Solo cobra en Web (donde usaremos MapLibre GL / OpenStreetMap para mantenerlo en $0).
+      </div>
+      <div class="infotip" id="map-tip-places">
+        <strong>Autocomplete Session Tokens:</strong> Agrupa las consultas por teclado. En lugar de cobrar por cada letra escrita, cobra una sola sesión cuando el usuario selecciona el destino. Esto permite hasta 70.000 búsquedas gratis al mes.
+      </div>
+      <div class="infotip" id="map-tip-routes">
+        <strong>Directions (Fórmula Haversine):</strong> Estimamos el costo al usuario usando la distancia matemática en línea recta multiplicada por 1.27 (factor de desvío de PJC). Solo llamamos a Google Directions API cuando el viaje es aceptado por el chofer, reduciendo el gasto al mínimo.
+      </div>
+    </div>
+
+    <!-- ESTRATEGIA DE HOSPEDAJE (INTERACTIVO) -->
+    <div class="bus-card">
+      <h3>🚂 Railway vs VPS: Comparativa de Tráfico</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 10px;">
+        Para una app de movilidad con pings de geolocalización cada 5 segundos, Railway se encarece. Analizá por qué una VPS es tu mejor aliada para lanzar con costo fijo bajo.
+      </p>
+
+      <div class="pill-selector">
+        <button class="pill-btn active" id="host-pill-vps" onclick="switchHostDetails('vps')">VPS Hetzner/Contabo</button>
+        <button class="pill-btn" id="host-pill-rail" onclick="switchHostDetails('rail')">Railway Pro</button>
+      </div>
+
+      <div class="vs-box" id="host-vps-box">
+        <div class="vs-side" style="grid-column: span 2; width: 100%;">
+          <h4 style="color: var(--success);">VPS Propia (Docker) <span class="vs-badge green">USD 5-7/mes (Fijo)</span></h4>
+          <p style="font-size: 11px; color: var(--text2); margin-bottom: 8px;">La mejor opción para producción.</p>
+          <ul>
+            <li><strong>Costo predecible:</strong> No importa cuántos WebSockets estén conectados o cuánta RAM use, pagas lo mismo.</li>
+            <li><strong>Base de Datos Ilimitada:</strong> PostgreSQL se hospeda localmente sin límite de almacenamiento.</li>
+            <li><strong>Optimizado para Socket.IO:</strong> Ideal para gestionar las ubicaciones GPS de cientos de choferes en background.</li>
+          </ul>
+          <button class="pbtn" onclick="showVpsGuide()" style="width: 100%; margin-top: 10px; padding: 6px; text-align: center; border-color: var(--success); color: var(--success);">⚙️ Ver Guía Técnica Linux VPS</button>
+        </div>
+      </div>
+
+      <div class="vs-box" id="host-rail-box" style="display: none;">
+        <div class="vs-side" style="grid-column: span 2; width: 100%;">
+          <h4 style="color: var(--warning);">Railway Pro <span class="vs-badge red">Pago por consumo</span></h4>
+          <p style="font-size: 11px; color: var(--text2); margin-bottom: 8px;">Ideal para desarrollo, riesgoso en producción.</p>
+          <ul>
+            <li><strong>Facturación variable:</strong> Cobro por segundo de CPU/RAM. Los WebSockets 24/7 pinguendo GPS elevarán tu factura.</li>
+            <li><strong>Límite de Base de Datos:</strong> El plan gratuito se llenará rápidamente con los historiales de geolocalización de rutas.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- OTROS COSTOS OCULTOS & PASARELAS -->
+    <div class="bus-card">
+      <h3>💳 Simulador de Pasarelas & Costos Ocultos</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 12px;">
+        Simula las tasas financieras sobre tus cobros digitales y otros costos indispensables de infraestructura y legal.
+      </p>
+
+      <div class="bus-control">
+        <label>💳 Cobros por Tarjeta (Bancard/Pagopar) <span class="bus-val-display" id="gate-card-disp">4%</span></label>
+        <input type="range" class="bus-slider" id="gate-card" min="2" max="6" value="4" oninput="runGateSimulation()">
+      </div>
+
+      <div class="bus-control">
+        <label>🇧🇷 Comisión por Pix (Brasil) <span class="bus-val-display" id="gate-pix-disp">1%</span></label>
+        <input type="range" class="bus-slider" id="gate-pix" min="0" max="3" value="1" step="0.5" oninput="runGateSimulation()">
+      </div>
+
+      <div class="bus-results" style="padding: 10px 14px; margin-top: 10px;">
+        <div class="bus-res-row">
+          <span>Comisión Bancard/Pagopar Est. (Mensual):</span>
+          <span id="gate-res-card">₲0</span>
+        </div>
+        <div class="bus-res-row">
+          <span>Comisión Pix Est. (Mensual):</span>
+          <span id="gate-res-pix">₲0</span>
+        </div>
+        <div class="bus-res-row">
+          <span>Licencias Developer (Anualizado/Mes):</span>
+          <span style="color: var(--text); font-weight: bold;">USD 10.33 (~₲77.500)</span>
+        </div>
+        <div class="bus-res-row">
+          <span>Dominio web (.com.py / .com):</span>
+          <span style="color: var(--text);">~₲110.000 / año</span>
+        </div>
+        <div class="bus-res-row total" style="color: var(--danger);">
+          <span>Costo Pasarelas Mensual Estimado:</span>
+          <span id="gate-res-total-pyg">₲0</span>
+        </div>
+      </div>
+      <div style="font-size: 9px; color: var(--success); margin-top: 8px; display: flex; align-items: flex-start; gap: 4px; border: 1px solid var(--success); padding: 8px; border-radius: 8px; background: rgba(34, 197, 94, 0.05);">
+        <span>💡</span>
+        <span>
+          <strong>Modelo P2P (Costo 0%):</strong> En Fase 1 los cobros de viajes son 100% en efectivo, Pix de celular a celular, o transferencias directas. El pasajero le paga al chofer sin intermediario. El único ingreso de la app es la suscripción de conductores, lo cual evita costos de pasarelas.
+        </span>
+      </div>
+    </div>
+
+    <!-- ESTRATEGIA DE MARKETING DE GUERRILLA ($0) - INTERACTIVA -->
+    <div class="bus-card" style="grid-column: span 2;">
+      <h3>📣 Estrategias de Marketing de Guerrilla (Costo USD 0)</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 12px;">
+        En la frontera, el boca a boca y la segmentación física valen más que miles de dólares en publicidad digital. Haz clic en las tarjetas para ver el plan detallado.
+      </p>
+      
+      <div class="acc-item open" id="acc-med" onclick="toggleAccordion('med')">
+        <div class="acc-head">
+          <span>🎓 1. El Target de Oro: Estudiantes de Medicina Brasileños</span>
+          <span class="icon">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>
+            Representan el flujo diario más rentable (viajan desde sus departamentos a universidades y hospitales).
+          </p>
+          <ul style="padding-left: 16px; margin-top: 8px;">
+            <li><strong>Centros de Estudiantes:</strong> Ofrece patrocinio para sus fiestas o torneos a cambio de descargas de la app usando códigos de cupón únicos.</li>
+            <li><strong>QR en Copisterías:</strong> Coloca carteles físicos en las fotocopiadoras donde todos los estudiantes imprimen sus resúmenes académicos.</li>
+            <li><strong>Infiltración en Canales Estudiantiles:</strong> Publica beneficios directos en los grupos cerrados de WhatsApp y Telegram de estudiantes.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="acc-item" id="acc-drivers" onclick="toggleAccordion('drivers')">
+        <div class="acc-head">
+          <span>🏍️ 2. Captación de Conductores en Terreno</span>
+          <span class="icon">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>
+            La mejor forma de conseguir choferes es ir a buscarlos donde ya trabajan de forma informal.
+          </p>
+          <ul style="padding-left: 16px; margin-top: 8px;">
+            <li><strong>Línea Internacional:</strong> Visita las paradas de moto-taxis y taxis informales sobre la Avenida Internacional que divide PJC y Ponta Porã.</li>
+            <li><strong>Prueba sin Costo (₲0):</strong> Ofréceles 3 semanas de prueba completamente gratis (sin suscripción) para que prueben la app sin riesgo.</li>
+            <li><strong>Diferencial de Seguridad:</strong> El botón SOS y la validación KYC de pasajeros son tus mayores argumentos de venta para cuidarlos en la frontera.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="acc-item" id="acc-media" onclick="toggleAccordion('media')">
+        <div class="acc-head">
+          <span>📱 3. Foco en Redes Sociales (Reels & TikTok Orgánico)</span>
+          <span class="icon">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>
+            No inviertas en anuncios generales. Crea videos bilingües enfocados en los dolores típicos de la frontera.
+          </p>
+          <ul style="padding-left: 16px; margin-top: 8px;">
+            <li><strong>Contenido de Impacto:</strong> Reels/TikToks mostrando lo fácil y seguro que es cruzar de PJC a Ponta Porã con la app.</li>
+            <li><strong>Educación Financiera:</strong> Videos explicando cómo los brasileños pueden pagar en la app usando Pix o Reales en efectivo.</li>
+            <li><strong>Programa de Referidos:</strong> Incentiva a los estudiantes a invitar a sus compañeros regalándoles créditos de viaje.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="acc-item" id="acc-insurance" onclick="toggleAccordion('insurance')">
+        <div class="acc-head">
+          <span style="color: var(--warning)">🛡️ 4. Seguros y Mitigación de Riesgos en Paraguay</span>
+          <span class="icon">▼</span>
+        </div>
+        <div class="acc-body">
+          <p>
+            La legalidad y la cobertura de siniestros son críticas en PJC. Aquí está la política de mercado de seguros para pasajeros y conductores:
+          </p>
+          <ul style="padding-left: 16px; margin-top: 8px;">
+            <li><strong>SOAT (Obligatorio en Paraguay):</strong> Todo conductor debe subir su póliza SOAT vigente al registrarse en el KYC. El SOAT cubre lesiones médicas inmediatas del conductor, pasajero y terceros en hospitales públicos hasta ₲30 millones.</li>
+            <li><strong>Seguro de Responsabilidad Civil (RC):</strong> Pólizas flotantes grupales (con aseguradoras paraguayas como Mapfre, Patria o El Comercio). Cubren gastos de curación mayores, invalidez o decesos en viajes activos.</li>
+            <li><strong>¿Qué pasa si un Moto-rider choca?</strong> El SOAT cubre gastos primarios (Hospital de Trauma/Regional). La póliza de RC de la plataforma actúa en segundo nivel.</li>
+            <li><strong>Asaltos e Incidentes Graves:</strong> El seguro estándar no cubre robos de celular/dinero. La mitigación es preventiva: KYC obligatorio por selfie para pasajeros y botón de pánico (SOS) con tracking en background conectado al panel de administración.</li>
+            <li><strong>Objetos Perdidos:</strong> Política estándar de no-responsabilidad civil de la app. Ofrecemos un puente de chat anónimo por 24 horas para que chofer y pasajero coordinen la entrega.</li>
+            <li><strong>Chofer Inapropiado / Acoso:</strong> Suspensión inmediata de la cuenta. El sistema de calificaciones (Driver Score de últimos 100 viajes) y el bloqueo automático previenen incidentes.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRONOGRAMA Y PLAN DE IMPLEMENTACION LEAN -->
+    <div class="bus-card" style="grid-column: span 3;">
+      <h3>🚀 Plan de Implementación Lean (MVP Rápido)</h3>
+      <div style="overflow-x: auto;">
+        <table class="bmt" style="width:100%; margin-top:10px;">
+          <tr>
+            <th>Fase</th>
+            <th>Duración</th>
+            <th>Objetivos Críticos</th>
+            <th>Costo Estimado</th>
+            <th>Acciones Tecnológicas Clave</th>
+          </tr>
+          <tr>
+            <td><strong>F0: Cimentación</strong></td>
+            <td>1 Semana</td>
+            <td>Montar repositorio e infraestructura base</td>
+            <td style="color:var(--success); font-weight:bold;">USD 0</td>
+            <td>Configuración monorepo, backend Dockerfile, base de datos local y CI/CD.</td>
+          </tr>
+          <tr>
+            <td><strong>F1: MVP Ride + Moto</strong></td>
+            <td>3 Semanas</td>
+            <td>Flujo básico de solicitar y completar viajes</td>
+            <td style="color:var(--success); font-weight:bold;">USD 25 (Tiendas) + VPS ($6)</td>
+            <td>Auth SMS gratis (Firebase), geocercas fronterizas, botón SOS y cálculo tarifario Haversine.</td>
+          </tr>
+          <tr>
+            <td><strong>F2: Safety + Send</strong></td>
+            <td>3 Semanas</td>
+            <td>Seguridad estilo Bolt y envíos de paquetes</td>
+            <td style="color:var(--success); font-weight:bold;">VPS ($6) + SMS (~$5)</td>
+            <td>Share Trip link, Audio Recording encriptado, detección de paradas y PIN de seguridad para deliveries.</td>
+          </tr>
+          <tr>
+            <td><strong>F3: Food + Business</strong></td>
+            <td>4 Semanas</td>
+            <td>Marketplace gastronómico y corporate B2B</td>
+            <td style="color:var(--success); font-weight:bold;">VPS ($6) + SMS (~$10)</td>
+            <td>Onboarding de 30 restaurantes, panel web para pedidos, split fare y facturación electrónica SET.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleAccordion(id) {
+      document.querySelectorAll('.acc-item').forEach(item => {
+        if (item.id === 'acc-' + id) {
+          item.classList.toggle('open');
+        } else {
+          item.classList.remove('open');
+        }
+      });
+    }
+
+    function switchMapDetails(type) {
+      document.querySelectorAll('#tab-business .pill-btn').forEach(btn => {
+        if(btn.id.startsWith('map-pill')) btn.classList.remove('active');
+      });
+      document.getElementById('map-pill-' + type).classList.add('active');
+      
+      document.querySelectorAll('#tab-business .infotip').forEach(tip => {
+        if(tip.id.startsWith('map-tip')) tip.style.display = 'none';
+      });
+      document.getElementById('map-tip-' + type).style.display = 'block';
+    }
+
+    function switchHostDetails(type) {
+      document.getElementById('host-pill-vps').classList.remove('active');
+      document.getElementById('host-pill-rail').classList.remove('active');
+      document.getElementById('host-pill-' + type).classList.add('active');
+
+      if (type === 'vps') {
+        document.getElementById('host-vps-box').style.display = 'grid';
+        document.getElementById('host-rail-box').style.display = 'none';
+      } else {
+        document.getElementById('host-vps-box').style.display = 'none';
+        document.getElementById('host-rail-box').style.display = 'grid';
+      }
+    }
+
+    function runSimulation() {
+      const drivers = parseInt(document.getElementById('sim-drivers').value);
+      const trips = parseInt(document.getElementById('sim-trips').value);
+      const flexPct = parseInt(document.getElementById('sim-flex').value) / 100;
+
+      document.getElementById('sim-drivers-disp').textContent = drivers;
+      document.getElementById('sim-trips-disp').textContent = trips.toLocaleString();
+      document.getElementById('sim-flex-disp').textContent = Math.round(flexPct * 100) + '%';
+
+      // Constantes de simulación
+      const usdExchange = 7500; // 1 USD = 7500 PYG
+      const subPriceWeekly = 75000; // Suscripción semanal de ₲75.000
+      const subPriceMonthly = subPriceWeekly * 4.3; // Mensualizado
+      const avgTripPyg = 15000; // Promedio viaje ₲15.000
+      const flexComission = 0.10; // 10% comision
+
+      // Cálculos de ingreso
+      const subDrivers = drivers * (1 - flexPct);
+      const flexTrips = trips * flexPct;
+
+      const monthlySubsPyg = subDrivers * subPriceMonthly;
+      const monthlyFlexPyg = flexTrips * avgTripPyg * flexComission;
+      const grossPyg = monthlySubsPyg + monthlyFlexPyg;
+      const grossUsd = grossPyg / usdExchange;
+
+      // Costos de hosting y SMS gratis con Firebase Auth
+      let serverCostUsd = 6.00; // VPS Fijo Hetzner/Contabo
+
+      const netUsd = grossUsd - serverCostUsd;
+
+      // Actualizar DOM
+      document.getElementById('sim-res-subs').textContent = '₲' + Math.round(monthlySubsPyg).toLocaleString('es-PY');
+      document.getElementById('sim-res-flex').textContent = '₲' + Math.round(monthlyFlexPyg).toLocaleString('es-PY');
+      document.getElementById('sim-res-gross').textContent = '₲' + Math.round(grossPyg).toLocaleString('es-PY');
+      document.getElementById('sim-res-gross-usd').textContent = '$' + grossUsd.toFixed(2);
+      document.getElementById('sim-res-cost-usd').textContent = '-$' + serverCostUsd.toFixed(2);
+      
+      const netEl = document.getElementById('sim-res-net-usd');
+      netEl.textContent = (netUsd >= 0 ? '$' : '-$') + Math.abs(netUsd).toFixed(2);
+      netEl.style.color = netUsd >= 0 ? 'var(--success)' : 'var(--danger)';
+
+      // Actualizar Status Badge
+      const statusEl = document.getElementById('sim-status');
+      const minEquilibriumSubs = 80;
+      if (drivers >= minEquilibriumSubs) {
+        statusEl.textContent = " Rentable ";
+        statusEl.className = "status-badge ok";
+      } else if (drivers >= 30) {
+        statusEl.textContent = " Viable (Sustentable) ";
+        statusEl.className = "status-badge warn";
+      } else {
+        statusEl.textContent = " Requiere Capital ";
+        statusEl.className = "status-badge danger";
+      }
+
+      // Proporcionar datos a la simulación de pasarelas
+      runGateSimulation();
+    }
+
+    function runMapOptimization() {
+      const sessions = parseInt(document.getElementById('map-sessions').value);
+      document.getElementById('map-sessions-disp').textContent = sessions.toLocaleString();
+
+      // Tarifas de Google Maps por cada 1000 llamadas
+      const autocompleteRate = 0.00283 * 2; // Places Autocomplete con session tokens
+      const directionsRate = 0.005; // Directions routing
+      
+      const costAutocomplete = sessions * autocompleteRate;
+      const costDirections = sessions * directionsRate;
+      const costGross = costAutocomplete + costDirections;
+      
+      const freeCredit = 200.00;
+      const costNet = Math.max(0, costGross - freeCredit);
+
+      document.getElementById('map-cost-autocomplete').textContent = '$' + costAutocomplete.toFixed(2);
+      document.getElementById('map-cost-directions').textContent = '$' + costDirections.toFixed(2);
+      document.getElementById('map-cost-gross').textContent = '$' + costGross.toFixed(2);
+      
+      const netEl = document.getElementById('map-cost-net');
+      netEl.textContent = '$' + costNet.toFixed(2);
+
+      const netRow = document.getElementById('map-net-row');
+      if (costNet === 0) {
+        netEl.style.color = 'var(--success)';
+        netEl.textContent = '$0.00 (¡Gratis!)';
+      } else {
+        netEl.style.color = 'var(--danger)';
+      }
+    }
+
+    function runGateSimulation() {
+      const trips = parseInt(document.getElementById('sim-trips').value);
+      const cardRate = parseInt(document.getElementById('gate-card').value) / 100;
+      const pixRate = parseFloat(document.getElementById('gate-pix').value) / 100;
+
+      document.getElementById('gate-card-disp').textContent = Math.round(cardRate * 100) + '%';
+      document.getElementById('gate-pix-disp').textContent = (pixRate * 100).toFixed(1) + '%';
+
+      const avgTripPyg = 15000;
+      const totalVolumePyg = trips * avgTripPyg;
+
+      // Estimación: 40% pagos tarjeta, 40% Pix (estudiantes brasileños), 20% efectivo
+      const cardVolume = totalVolumePyg * 0.40;
+      const pixVolume = totalVolumePyg * 0.40;
+
+      const cardFee = cardVolume * cardRate;
+      const pixFee = pixVolume * pixRate;
+      const totalFees = cardFee + pixFee;
+
+      document.getElementById('gate-res-card').textContent = '₲' + Math.round(cardFee).toLocaleString('es-PY');
+      document.getElementById('gate-res-pix').textContent = '₲' + Math.round(pixFee).toLocaleString('es-PY');
+      document.getElementById('gate-res-total-pyg').textContent = '₲' + Math.round(totalFees).toLocaleString('es-PY');
+    }
+
+    // Ejecutar cálculos iniciales
+    setTimeout(() => {
+      runSimulation();
+      runMapOptimization();
+    }, 200);
+  </script>
+</div>
+
+<!-- TAB PLAN DE MARKETING -->
+<div class="tab-content" id="tab-marketing">
+  <style>
+    .mkt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .mkt-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; position: relative; transition: all 0.3s; }
+    .mkt-card:hover { border-color: var(--primary); }
+    .mkt-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+    
+    .creative-box { background: var(--graylight); border-radius: 12px; padding: 16px; border: 1px solid var(--border); margin-top: 15px; }
+    .creative-tag { display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+    .creative-tag.hook { background: var(--primlight); color: var(--primary); }
+    .creative-tag.copy { background: var(--suclight); color: var(--success); }
+    .creative-tag.design { background: var(--warnlight); color: var(--warning); }
+    
+    .budget-res-box { background: var(--graylight); border-radius: 12px; padding: 18px; margin-top: 15px; border: 1px solid var(--border); }
+    .budget-res-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 12px; border-bottom: 1px dashed var(--border); }
+    .budget-res-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .budget-res-row.total { font-weight: 800; font-size: 14px; border-top: 1px solid var(--border); border-bottom: none; margin-top: 8px; padding-top: 8px; }
+  </style>
+
+  <div class="progress-card">
+    <div class="ph">
+      <h2>📣 Plan de Marketing Fronterizo (3 Meses Lean)</h2>
+      <span>Acciones offline (radio, folletos, facultades) y online (redes sociales) adaptadas a la frontera de PJC y Ponta Porã</span>
+    </div>
+  </div>
+
+  <div class="mkt-grid">
+    <!-- SIMULADOR DE PRESUPUESTO DE MARKETING DE 3 MESES -->
+    <div class="mkt-card" style="grid-column: span 2;">
+      <h3>📊 Calculadora de Presupuesto Lean de Marketing (Primeros 3 Meses)</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 16px;">
+        Ajusta la inversión mensual. El Mes 1 requiere mayor fuerza para captar choferes y lanzar la "Semana Gratis", reduciendo progresivamente en el Mes 2 y Mes 3.
+      </p>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+        <div>
+          <!-- Slider Mes 1 -->
+          <div class="bus-control">
+            <label>🚀 Mes 1: Lanzamiento y Adquisición <span class="bus-val-display" id="mkt-m1-disp">₲4,500,000</span></label>
+            <input type="range" class="bus-slider" id="mkt-m1" min="1000000" max="12000000" value="4500000" step="250000" oninput="runMarketingSimulation()">
+            <span style="font-size: 9px; color: var(--text2);">Enfoque: BTL en facultades, Semana 0 gratis, radio local e impresión masiva de panfletos.</span>
+          </div>
+
+          <!-- Slider Mes 2 -->
+          <div class="bus-control">
+            <label>🤝 Mes 2: Fidelización y Ajustes <span class="bus-val-display" id="mkt-m2-disp">₲2,500,000</span></label>
+            <input type="range" class="bus-slider" id="mkt-m2" min="500000" max="8000000" value="2500000" step="250000" oninput="runMarketingSimulation()">
+            <span style="font-size: 9px; color: var(--text2);">Enfoque: Programa de referidos de estudiantes, micro-ads en Instagram y barters.</span>
+          </div>
+
+          <!-- Slider Mes 3 -->
+          <div class="bus-control">
+            <label>📈 Mes 3: Crecimiento Orgánico <span class="bus-val-display" id="mkt-m3-disp">₲1,500,000</span></label>
+            <input type="range" class="bus-slider" id="mkt-m3" min="500000" max="6000000" value="1500000" step="250000" oninput="runMarketingSimulation()">
+            <span style="font-size: 9px; color: var(--text2);">Enfoque: Campañas de TikTok orgánicas y referidos boca-a-boca.</span>
+          </div>
+        </div>
+
+        <div>
+          <!-- Resultados Proyección Marketing -->
+          <div class="budget-res-box">
+            <div style="font-weight: 700; font-size: 13px; color: var(--text); margin-bottom: 12px;">Desglose Estimado de Inversión</div>
+            
+            <div class="budget-res-row">
+              <span>Marketing Tradicional (Offline 35%):</span>
+              <span id="mkt-res-trad">₲0</span>
+            </div>
+            <div class="budget-res-row">
+              <span>Activación Universidades (BTL 30%):</span>
+              <span id="mkt-res-btl">₲0</span>
+            </div>
+            <div class="budget-res-row">
+              <span>Campañas en Redes (Online 20%):</span>
+              <span id="mkt-res-online">₲0</span>
+            </div>
+            <div class="budget-res-row">
+              <span>Bonos de Referidos (15%):</span>
+              <span id="mkt-res-ref">₲0</span>
+            </div>
+            <div class="budget-res-row total" style="color: var(--primary);">
+              <span>Presupuesto Total (₲):</span>
+              <span id="mkt-res-total-pyg">₲0</span>
+            </div>
+            <div class="budget-res-row">
+              <span>Presupuesto Total (USD):</span>
+              <span id="mkt-res-total-usd">$0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARKETING TRADICIONAL (RADIO Y PANFLETOS) -->
+    <div class="mkt-card">
+      <h3>📻 Radio Local & Folletería (Acciones Offline)</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 10px;">
+        La radio sigue siendo el principal medio de consumo masivo para los conductores locales en PJC y Ponta Porã.
+      </p>
+
+      <div class="acc-item open" id="acc-mkt-radio" onclick="toggleMktAccordion('radio')">
+        <div class="acc-head">
+          <span>📻 Spots de Radio Tradicionales</span>
+          <span class="icon">▼</span>
+        </div>
+        <div class="acc-body">
+          <strong>Estaciones Clave:</strong>
+          <ul style="padding-left: 16px; margin: 4px 0 8px;">
+            <li>*Radio Amambay 570 AM* (Paraguay - Líder para choferes).</li>
+            <li>*Radio Imperio 102.9 FM* (Paraguay - Juvenil/General).</li>
+            <li>*Radio Líder FM 102.1* (Ponta Porã - Estudiantes y residentes del lado BR).</li>
+          </ul>
+          <strong>Estrategia de Emisión:</strong>
+          <p style="margin-top: 4px;">Pautar micros de 15 segundos en horarios pico de transporte (07:00 a 08:30 y 17:30 a 19:00) enfocados en reclutamiento de choferes: *"Trabajá sin pagar comisiones por viaje en la frontera. IntelliGO te permite ganar el 100% de tus viajes"*.</p>
+          <strong style="display:block; margin-top: 6px;">Costo Est.: ₲15.000 a ₲25.000 por pasada.</strong>
+        </div>
+      </div>
+
+      <div class="acc-item" id="acc-mkt-flyer" onclick="toggleMktAccordion('flyer')">
+        <div class="acc-head">
+          <span>📄 Distribución de Folletos & Volantes</span>
+          <span class="icon">▼</span>
+        </div>
+        <div class="acc-body">
+          <strong>Puntos Estratégicos de Distribución:</strong>
+          <ul style="padding-left: 16px; margin: 4px 0 8px;">
+            <li>Puestos de aduanas y control migratorio (Avenida Internacional).</li>
+            <li>Estacionamientos de grandes centros de compra (Shopping China, Planet Outlet).</li>
+            <li>Alrededores de los edificios de departamentos de estudiantes.</li>
+          </ul>
+          <strong>Formato del Flyer:</strong>
+          <p>Un papel de tamaño 10x15cm impreso a dos caras. Cara A (Portugués) para estudiantes con el QR de descarga y promo de viaje gratis. Cara B (Español) para choferes con el reclutamiento.</p>
+          <strong style="display:block; margin-top: 6px;">Costo Est.: ₲180.000 por cada 1.000 volantes.</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- REDES SOCIALES E INFLUENCERS (PJC - PONTA PORA) -->
+    <div class="mkt-card">
+      <h3>📱 Redes Sociales & Influencers de Frontera</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 10px;">
+        La frontera opera en dos mundos: WhatsApp y Facebook para paraguayos; Instagram, Pix y TikTok para estudiantes brasileños.
+      </p>
+
+      <div class="acc-item open" id="acc-mkt-insta" onclick="toggleMktAccordion('insta')">
+        <div class="acc-head">
+          <span>📸 Instagram & Facebook Ads (Hiperlocal)</span>
+          <span class="icon">▼</span>
+        </div>
+        <div class="acc-body">
+          <strong>Configuración de Campaña:</strong>
+          <p>Configurar anuncios con un radio de geolocalización de 7 kilómetros centrado en la frontera seca PJC-Ponta Porã. Segmentar por rango de edad de 18 a 30 años (estudiantes) con intereses en "Medicina", "Universidades" e "Intercambio".</p>
+          <strong style="display:block; margin-top: 6px;">Presupuesto sugerido: USD 3 a USD 5 por día.</strong>
+        </div>
+      </div>
+
+      <div class="acc-item" id="acc-mkt-nano" onclick="toggleMktAccordion('nano')">
+        <div class="acc-head">
+          <span>🤝 Micro-Influencers Universitarios (Canje)</span>
+          <span class="icon">▼</span>
+        </div>
+        <div class="acc-body">
+          <strong>Acción:</strong>
+          <p>Identificar a 10 estudiantes brasileños en PJC que tengan entre 1.500 y 5.000 seguidores orgánicos en Instagram y que suban vlogs diarios de su vida universitaria.</p>
+          <strong>El Trato:</strong>
+          <p style="margin-top: 4px;">Ofrecerles **viajes mensuales gratuitos** en la app (con un tope de ₲300.000 al mes) a cambio de que publiquen 3 Stories semanales mostrando cómo se trasladan de forma segura de sus departamentos a las clases usando InteliGO.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIRECTRICES CREATIVAS (LOS CREATIVOS) -->
+    <div class="mkt-card" style="grid-column: span 3;">
+      <h3>🎨 Directrices Creativas & Copywriting Recomendado</h3>
+      <p style="font-size: 11px; color: var(--text2); margin-bottom: 12px;">
+        Los creativos visuales deben ser limpios, con alto contraste y utilizar el característico **Verde Bolt** (#34e27e) para evocar tecnología, combinado con contrastes negros y dorados.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+        <div class="creative-box">
+          <div class="creative-tag hook">Visual Hook (Pasajero Estudiante)</div>
+          <p style="font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text);">"Cruzar a clases ya no es un dolor de cabeza."</p>
+          <p style="font-size: 11px; color: var(--text2);">
+            <strong>Diseño:</strong> Imagen partida a la mitad. Lado izquierdo: Foto real de un estudiante caminando bajo el calor de PJC con cara de frustración. Lado derecho: El mismo estudiante sonriendo dentro de un auto fresco mirando su celular. En el centro, un código QR destacado y el logo de InteliGO.
+          </p>
+        </div>
+
+        <div class="creative-box">
+          <div class="creative-tag copy">Copywriting Bilingüe (Portuñol)</div>
+          <p style="font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text);">"¿Vai de carro ou de moto? Você escolhe."</p>
+          <p style="font-size: 11px; color: var(--text2);">
+            <strong>Mensaje:</strong> *"Tarifa transparente sem sorpresas na fronteira. Pague em Reais, Pix ou Guaraníes. IntelliGO conecta você de forma segura."*
+            <br><strong style="color: var(--primary);">Llamado a la acción:</strong> Descarga la app y obtén tu primer viaje gratis con el código **PJCGO**.
+          </p>
+        </div>
+
+        <div class="creative-box">
+          <div class="creative-tag design">Diseño de Reclutamiento (Choferes)</div>
+          <p style="font-size: 12px; font-weight: bold; margin-bottom: 6px; color: var(--text);">"El 100% de lo que viajes es para vos."</p>
+          <p style="font-size: 11px; color: var(--text2);">
+            <strong>Diseño:</strong> Fondo negro de alta gama con el lema en verde Bolt gigante. Una moto deportiva limpia a la derecha. Abajo un texto claro: *"Membresía fija semanal de ₲75.000. Sin comisiones abusivas por viaje. Sé dueño de tu tiempo."*
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleMktAccordion(id) {
+      document.querySelectorAll('#tab-marketing .acc-item').forEach(item => {
+        if (item.id === 'acc-mkt-' + id) {
+          item.classList.toggle('open');
+        } else {
+          item.classList.remove('open');
+        }
+      });
+    }
+
+    function runMarketingSimulation() {
+      const m1 = parseInt(document.getElementById('mkt-m1').value);
+      const m2 = parseInt(document.getElementById('mkt-m2').value);
+      const m3 = parseInt(document.getElementById('mkt-m3').value);
+
+      document.getElementById('mkt-m1-disp').textContent = '₲' + m1.toLocaleString('es-PY');
+      document.getElementById('mkt-m2-disp').textContent = '₲' + m2.toLocaleString('es-PY');
+      document.getElementById('mkt-m3-disp').textContent = '₲' + m3.toLocaleString('es-PY');
+
+      const totalPyg = m1 + m2 + m3;
+      const usdExchange = 7500;
+      const totalUsd = totalPyg / usdExchange;
+
+      // Distribución recomendada: 35% Tradicional, 30% BTL Universitarios, 20% Ads Digitales, 15% Referidos
+      const tradPyg = totalPyg * 0.35;
+      const btlPyg = totalPyg * 0.30;
+      const onlinePyg = totalPyg * 0.20;
+      const refPyg = totalPyg * 0.15;
+
+      document.getElementById('mkt-res-trad').textContent = '₲' + Math.round(tradPyg).toLocaleString('es-PY');
+      document.getElementById('mkt-res-btl').textContent = '₲' + Math.round(btlPyg).toLocaleString('es-PY');
+      document.getElementById('mkt-res-online').textContent = '₲' + Math.round(onlinePyg).toLocaleString('es-PY');
+      document.getElementById('mkt-res-ref').textContent = '₲' + Math.round(refPyg).toLocaleString('es-PY');
+      
+      document.getElementById('mkt-res-total-pyg').textContent = '₲' + Math.round(totalPyg).toLocaleString('es-PY');
+      document.getElementById('mkt-res-total-usd').textContent = '$' + totalUsd.toFixed(2);
+    }
+
+    // Ejecutar inicialización del simulador de marketing
+    setTimeout(() => {
+      runMarketingSimulation();
+    }, 300);
+  </script>
+</div>
+
+<script>
+const DATA={phases:[
+{id:"f0",title:"F0: Cimentación",weeks:"Sem 1",color:"#2563eb",status:"pending",icon:"🏗️",modules:[
+{id:"f0-mono",title:"Monorepo + Infraestructura",desc:"pnpm-workspace, turbo.json, tsconfig.base — estructura del proyecto",status:"pending",badge:"Infra",tech:["pnpm","Turbo","TypeScript"],tasks:["Crear pnpm-workspace.yaml (backend, apps/*)","Crear turbo.json build/dev/lint pipeline","Crear tsconfig.base.json con paths compartidos","Crear .gitignore (node_modules, .env, dist, .expo)","Ejecutar pnpm install, verificar funciona"]},
+{id:"f0-backend",title:"Backend: Config + Docker",desc:"tsconfig, .env, Dockerfile, docker-compose — que compile y deploye",status:"pending",badge:"Backend",tech:["Express","TypeScript","Docker"],tasks:["Crear tsconfig.json backend (ES2022, NodeNext)","Crear .env.example (DATABASE_URL, REDIS_URL, JWT_SECRET, TWILIO, FIREBASE)","Crear Dockerfile multi-stage + docker-compose.yml","Verificar backend compila y /health responde","Configurar Prisma generate + migrate dev + seed"]},
+{id:"f0-admin",title:"Admin: Next.js config",desc:"next.config, tailwind, layout, auth — admin funcional",status:"pending",badge:"Frontend",tech:["Next.js","Tailwind","TypeScript"],tasks:["Crear next.config.js + tailwind.config.ts (#104c91, #00a651)","Crear layout.tsx global con sidebar + navbar","Crear middleware.ts para auth guard","Crear login page stub (admin@inteligo.com)","Verificar admin arranca en :3001"]},
+{id:"f0-mobile",title:"Mobile: Expo config",desc:"app.json, tsconfig, babel — que la app arranque",status:"pending",badge:"App Mobile",tech:["Expo","React Native","TypeScript"],tasks:["Crear app.json (nombre InteliGO, slug, scheme, plugins)","Crear tsconfig.json Expo + babel.config.js + metro.config.js","Verificar npx expo start funciona"]},
+{id:"f0-cicd",title:"CI/CD + Deploy",desc:"GitHub Actions + Railway + Vercel — primeros deploys automáticos",status:"pending",badge:"DevOps",tech:["GitHub","Railway","Vercel"],tasks:["Crear .github/workflows/ci.yml (lint+typecheck on PR)","Crear deploy-backend.yml (Railway) + deploy-admin.yml (Vercel)","Configurar Sentry backend+admin","Hacer primer deploy a Railway y Vercel"]}
+]},
+{id:"f1",title:"F1: MVP Ride 🚗",weeks:"Sems 2-5",color:"#7c3aed",status:"pending",icon:"🚗",modules:[
+{id:"f1-auth",title:"Auth Completo (Bolt-style)",desc:"Registro teléfono + OTP Twilio + JWT + persistencia sesión + multi-idioma ES/GU/PT",status:"pending",badge:"Backend+Mobile",tech:["Express","Twilio","JWT","Zustand"],tasks:["Login screen: input teléfono + selector país (PY+595 / BR+55)","OTP screen: 6 dígitos, countdown, auto-submit","POST /auth/register y /auth/verify-otp verificados","Persistencia sesión AsyncStorage (Zustand persist)","Auth guard en layout mobile","Refresh token automático en api.ts interceptor","Multi-idioma: ES + GU + PT (i18n setup)"]},
+{id:"f1-passenger",title:"Pasajero: Home + Viaje + Calificar + Share Trip",desc:"Pantallas: mapa, solicitar viaje, tracking, calificación, compartir viaje",status:"pending",badge:"App Mobile",tech:["Expo","React Native","Socket.IO"],tasks:["Home: mapa + ubicación actual + input destino (Google Places)","Selección de servicio: Ride / InteliMoto / Send","Upfront pricing (POST /trips/estimate)","Pantalla 'Buscando conductor' con animación + cancelar","Pantalla 'Viaje en curso': info conductor, ETA, SOS, Share Trip link","Multi-stop: agregar paradas intermedias (Bolt-style)","Calificación 1-5 estrellas + comentario","WebSocket: trip:accepted, driver:location, trip:completed"]},
+{id:"f1-driver",title:"Conductor: Home + Viaje + Earnings + Heat Maps",desc:"Pantallas: toggle online, solicitudes, navegación, earnings, hotspots",status:"pending",badge:"App Mobile",tech:["Expo","React Native","Socket.IO","expo-location"],tasks:["Driver home: mapa + toggle online/offline + earnings del día + heat maps","Solicitud entrante: countdown 15s, info pasajero, aceptar/rechazar","Viaje activo: navegación + info pasajero + chat/call anónimo","GPS tracking background cada 5s","Earnings screen: diario/semanal, desglose comisión","Perfil conductor: documentos, KYC status, rating","Destination filter: elegir dirección preferida","WebSocket emit: driver:location, driver:status_toggle"]},
+{id:"f1-moto",title:"InteliMoto 🛵",desc:"Servicio de moto-taxi con tarifa justa, GPS y seguro",status:"pending",badge:"Backend+Mobile",tech:["Express","Prisma","Expo"],tasks:["Backend: modelo InteliMoto con precios (base + distancia)","Matching de moto reutilizando engine existente","Mobile: selección de servicio 'InteliMoto' en passenger home","Mobile: flujo completo de solicitud de moto","Seguro incluido por viaje"]},
+{id:"f1-crossborder",title:"Cross-border PJC↔Ponta Porã",desc:"Operación legal en ambos lados de la frontera con GPS y precios justos",status:"pending",badge:"Backend+Mobile",tech:["Express","Prisma","Google Maps"],tasks:["Configurar geocercas: PJC (PY) + Ponta Porã (BR)","Tarifas cross-border con tipo de cambio Gs/BRL automático","Notificación al cruzar frontera (SMS/WhatsApp al pasajero)","KYC reforzado para viajes internacionales","Tracking aduanero: origen, destino, documento cruce"]},
+{id:"f1-sos",title:"SOS + Safety Básico",desc:"Botón SOS funcional + alerta admin + GPS + notificación",status:"pending",badge:"Backend+Mobile",tech:["Express","Socket.IO","Firebase"],tasks:["Verificar POST /sos (ya existe en código)","Mobile: botón SOS en pantalla de viaje en curso","Admin: alerta SOS en tiempo real (WebSocket trip:sos_alert)","Notificación push al admin cuando hay SOS","Resolve SOS flow: admin resuelve, se notifica al pasajero"]}
+]},
+{id:"f2",title:"F2: Safety + Delivery 🚚",weeks:"Sems 6-9",color:"#0d9488",status:"pending",icon:"🛡️",modules:[
+{id:"f2-safety",title:"Safety Toolkit Completo (Bolt-style)",desc:"Share Trip, Audio Recording, Ride Check, Driver Score, Selfie KYC",status:"pending",badge:"Backend+Mobile",tech:["Express","Socket.IO","Expo"],tasks:["Share Trip: generar link con ubicación en tiempo real + datos del conductor","Audio Recording: grabación encriptada durante el viaje (almacenar 24h)","Ride Check: detectar paradas inesperadas largas + preguntar '¿Estás bien?'","Ride Check escalation: si no responde, alertar a admin + contactos","End Trip Early: pasajero termina viaje antes","Driver Score: rating basado en últimos 100 viajes (Bolt-style)","Rider Unmatching: 1★ = no repetir match","Driver shift limits: límite de horas consecutivas"]},
+{id:"f2-delivery-back",title:"InteliGO Send Backend (Bolt Send)",desc:"Delivery de paquetes: modelos, CRUD, estados, matching, precios",status:"pending",badge:"Backend",tech:["Express","Prisma","Redis"],tasks:["Modelo Send en Prisma (sender, receiver, package, weight, photos)","Estados: PENDING → ASSIGNED → PICKED_UP → IN_TRANSIT → DELIVERED","Reutilizar matching engine para sends","Precio: base + peso + distancia","Evidencia: foto + PIN 4 dígitos del receptor","Restricciones: max 20kg, dimensiones límite","Notificación al receptor (sin app, vía WhatsApp/SMS)"]},
+{id:"f2-delivery-mobile",title:"InteliGO Send Mobile",desc:"Pantallas: crear envío, tracking, solicitudes conductor",status:"pending",badge:"App Mobile",tech:["Expo","React Native","MapLibre"],tasks:["Pasajero: crear envío (origen/destino/peso/receptor/foto)","Pasajero: tracking del envío en mapa","Conductor: solicitudes de send entrantes","Conductor: flujo recolección → entrega → foto + PIN","Historial de envíos del pasajero"]},
+{id:"f2-driver-pay",title:"Driver Earnings + Early Cashout",desc:"Ganancias en tiempo real, retiro anticipado, heat maps",status:"pending",badge:"Backend+Mobile",tech:["Express","Prisma","Expo"],tasks:["Earnings dashboard: diario/semanal/mensual con desglose","Early Cashout: retiro anticipado de ganancias (tarifa pequeña)","Heat maps en driver app: zonas de alta demanda","Destination filter: conductor elige dirección","Driver Rewards: puntos por viaje (programado, implementar F3)"]},
+{id:"f2-chat",title:"In-app Chat + Call Anónimo",desc:"Mensajería y llamadas anónimas entre pasajero y conductor",status:"pending",badge:"Backend+Mobile",tech:["Socket.IO","WebRTC","Expo"],tasks:["Chat en tiempo real (Socket.IO rooms) con auto-traducción ES/GU/PT","Llamada anónima: números ocultos (Twilio proxy)","Chat disponible durante y después del viaje (30 min)","Reporte de chat inapropiado"]}
+]},
+{id:"f3",title:"F3: Food + Business 🍕",weeks:"Sems 10-13",color:"#d97706",status:"pending",icon:"🍕",modules:[
+{id:"f3-food-back",title:"InteliGO Food Backend (Bolt Food)",desc:"Restaurantes, menú, pedidos, comisión 15%, delivery tracking",status:"pending",badge:"Backend",tech:["Express","Prisma","Socket.IO"],tasks:["Modelo Restaurant: name, cuisine, phone, address, lat/lng, imageUrl, horarios","Modelo MenuCategory + MenuItem: name, price, photo, available, desc","CRUD restaurantes + menú con fotos (Cloudflare R2)","Modelo Order + OrderItem con estados","Flujo pedido: PENDING → CONFIRMED → PREPARING → READY → PICKED_UP → DELIVERED","Comisión 15% sobre cada pedido","Notificación push al restaurante (pedido nuevo) + al cliente (cambios estado)"]},
+{id:"f3-food-mobile",title:"InteliGO Food Mobile",desc:"Cliente: explorar restaurantes, menú, carrito, checkout, tracking",status:"pending",badge:"App Mobile",tech:["Expo","React Native"],tasks:["Home restaurantes: lista con fotos, cocina, rating, distancia","Menú del restaurante con fotos + precios + carrito","Checkout: dirección, método pago, resumen","Tracking del pedido en tiempo real (preparación → delivery)","Conductor: recoger en restaurante + entregar al cliente","Historial de pedidos con opción 'repetir'"]},
+{id:"f3-food-panel",title:"Panel Restaurante Web",desc:"Portal para restaurantes: menú, pedidos en vivo, reportes",status:"pending",badge:"Frontend",tech:["Next.js","Tailwind"],tasks:["Login restaurante con JWT","Dashboard: pedidos en vivo con cola y notificaciones","Gestión de menú: CRUD platos con fotos, precios, disponibilidad","Configuración: horarios, zona delivery, mínimo pedido","Reportes de ventas semanales/mensuales"]},
+{id:"f3-business",title:"InteliGO Business (Bolt Business)",desc:"Servicio corporativo: dashboard, drivers dedicados, factura SET, reportes",status:"pending",badge:"Frontend+Backend",tech:["Next.js","Express","Prisma"],tasks:["Dashboard corporativo: gestión de empleados, viajes, gastos","Perfiles duales: personal/business toggle","Crear/agendar viajes para empleados","Factura SET corporativa por cada viaje","Reportes exportables (PDF/XLSX)","Límites de gasto por empleado/departamento","API de integración para empresas","Driver dedicado con SLA 45 min"]},
+{id:"f3-split",title:"Split Fare + Scheduled Rides + Women Only",desc:"Dividir costo, agendar viajes, mujeres con mujeres",status:"pending",badge:"App Mobile",tech:["Expo","React Native","Socket.IO"],tasks:["Split Fare: dividir costo entre varios pasajeros (Bolt NO lo tiene)","Scheduled Rides: agendar viaje hasta 30 días antes","Women Only: pasajeras mujeres con conductoras mujeres","Family Profiles: hasta 9 miembros, límites de gasto"]},
+{id:"f3-factura",title:"Factura Electrónica SET",desc:"Factura SET/SIFEN para cada viaje, corporativa y particular",status:"pending",badge:"Backend",tech:["Express","XML","SET API"],tasks:["Generar factura SET con todos los campos requeridos","CDC (Código de Seguridad) validado contra SET","Enviar factura por email al pasajero al completar viaje","Dashboard admin de facturación electrónica","Factura corporativa con RUC de la empresa"]}
+]},
+{id:"f4",title:"F4: Hardening + Stores 🔒",weeks:"Sems 14-18",color:"#dc2626",status:"pending",icon:"🔒",modules:[
+{id:"f4-rewards",title:"Driver Rewards + InteliGO Plus (Bolt Plus)",desc:"Programa de fidelidad conductores 4 niveles + suscripción pasajeros",status:"pending",badge:"Backend+Mobile",tech:["Express","Prisma","Expo"],tasks:["Driver Rewards 4 niveles: puntos por viaje, bonos hora pico","Beneficios: desc. combustible, seguro, mantenimiento, lavado","InteliGO Plus (pasajeros): cashback 10%, surge protection","Priority pickups para Plus subscribers","Dashboard admin de rewards"]},
+{id:"f4-tests",title:"Testing Completo",desc:"Tests unitarios, integración, E2E flujo completo",status:"pending",badge:"QA",tech:["Jest","Supertest","RTL"],tasks:["Tests unitarios servicios backend (auth, trips, send, food)","Tests integración API endpoints","Tests matching engine (edge cases)","Tests E2E: register → request → ride → complete → rate","Tests mobile con React Testing Library"]},
+{id:"f4-seguridad",title:"Seguridad + Anti-fraud",desc:"Rate limiting, anti-spoofing, HTTPS, secrets management",status:"pending",badge:"Security",tech:["Express","Helmet","Redis"],tasks:["Auditoría seguridad: SQL injection, XSS, CSRF","Rate limiting agresivo OTP","Validación teléfono PY/BR estricta","HTTPS enforcement","Anti-fraud: detección GPS spoofing, viajes sospechosos","Data encryption at rest"]},
+{id:"f4-stores",title:"Deploy + App Stores",desc:"Publicar en Play Store y App Store, deploy final backend y admin",status:"pending",badge:"DevOps+Stores",tech:["Railway","Vercel","EAS Build"],tasks:["Railway deploy final (backend + PostgreSQL + Redis)","Vercel deploy final (admin panel)","EAS Build: APK/AAB Android + IPA iOS","Publicar Google Play Store","Publicar Apple App Store","Configurar dominio inteliggo.com.py","Privacy Policy + Terms of Service"]}
+]}
+]};
+let state=loadState();let curFilter="all";let curTab="roadmap";let fileHandle=null;let fileName=null
+function defState(){const m={},t={}
+DATA.phases.forEach(p=>{p.modules.forEach(mod=>{if(mod.status&&mod.status!=='pending')m[mod.id]=mod.status
+mod.tasks.forEach((tk,i)=>{if(tk.startsWith('✅'))t[mod.id+'-t'+i]='done';else if(tk.startsWith('🔄'))m[mod.id]=m[mod.id]||'in-progress'})})})
+return{modules:m,tasks:t,notes:'',briefings:[],lastUpdated:new Date().toISOString()}}
+function loadState(){try{const s=localStorage.getItem('inteligo_roadmap');if(s){showStatus('📁 localStorage (fallback)');return JSON.parse(s)}}catch(e){}return defState()}
+function showStatus(m){const e=document.getElementById('fileStatus');if(e)e.textContent=m}
+async function openFile(){try{if(!window.showOpenFilePicker){showStatus('⚠️ Browser no soporta File API. Usá Export manual.');return}
+const[f]=await window.showOpenFilePicker({types:[{description:'Progreso InteliGO',accept:{'application/json':['.json']}}]});fileHandle=f;const file=await f.getFile();const text=await file.text();const data=JSON.parse(text)
+state={...defState(),...data};fileName=f.name;showStatus('📁 '+fileName);localStorage.setItem('inteligo_roadmap',JSON.stringify(state));render();showSave('✅ Cargado: '+fileName)}catch(e){if(e.name!='AbortError')showStatus('⚠️ '+e.message)}}
+async function saveAs(){try{if(!window.showSaveFilePicker){const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='inteligo-progress.json';a.click();URL.revokeObjectURL(u);showStatus('📁 Descargado manual');return}
+const f=await window.showSaveFilePicker({suggestedName:'inteligo-progress.json',types:[{description:'Progreso InteliGO',accept:{'application/json':['.json']}}]});fileHandle=f;fileName=f.name
+const w=await f.createWritable();await w.write(JSON.stringify(state,null,2));await w.close();showStatus('📁 '+fileName);showSave('✅ Guardado en '+fileName)}catch(e){if(e.name!='AbortError')showStatus('⚠️ '+e.message)}}
+const saveState=(()=>{let to;return function(){clearTimeout(to);to=setTimeout(()=>{state.lastUpdated=new Date().toISOString();localStorage.setItem('inteligo_roadmap',JSON.stringify(state));updateUI();if(fileHandle){const w=fileHandle.createWritable().then(w=>{w.write(JSON.stringify(state,null,2));w.close()}).catch(()=>{})};showSave('💾 Guardado!')},500)}})()
+function showSave(m){const e=document.getElementById('ss');if(e){e.textContent=m;setTimeout(()=>{e.textContent='💡 Usá "Abrir" para cargar progreso desde .json en OneDrive'},2500)}}
+function render(){const c=document.getElementById('phasesContainer');if(!c)return;c.innerHTML=''
+DATA.phases.forEach(p=>{const d=document.createElement('div');d.className='phase';d.dataset.phaseId=p.id;let t=0,dn=0;p.modules.forEach(m=>{const ms=state.modules[m.id]||'pending';if(ms==='done')dn++;t++})
+const pct=t>0?Math.round((dn/t)*100):0;let sc='pending';if(dn===t&&t>0)sc='completed';else if(dn>0)sc='in-progress'
+d.innerHTML='<div class="phhead" onclick="togglePhase(\''+p.id+'\')"><div class="phl"><div class="phnum" style="background:'+p.color+'20;color:'+p.color+'">'+p.icon+'</div><div class="phinfo"><h3>'+p.title+'</h3><div class="w">'+p.weeks+'</div></div></div><div class="phr"><div class="phind '+sc+'"></div><div class="pminibar"><div class="pminifill" style="width:'+pct+'%;background:'+p.color+'"></div></div><div class="phpct" style="color:'+p.color+'">'+pct+'%</div><div class="pharr">▼</div></div></div><div class="phbody">'+p.modules.map(m=>renderMod(m,p)).join('')+'</div>';c.appendChild(d)})
+updateUI();renderBriefings();const f1=document.querySelector('[data-phase-id="f0"]');if(f1&&!f1.classList.contains('open'))f1.classList.add('open')}
+function getTS(t){if(t.startsWith('✅'))return'done';if(t.startsWith('🔄'))return'in-progress';return'pending'}
+function renderMod(md,ph){const ms=state.modules[md.id]||md.status||'pending'
+const bc=ms==='done'?'bdone':ms==='in-progress'?'bip':'bpend'
+const bt=ms==='done'?'✅ Completo':ms==='in-progress'?'🔄 En Progreso':'⏳ Pendiente'
+const cbc=ms==='done'?'done':ms==='in-progress'?'partial':'pending'
+const cbi=ms==='done'?'✓':ms==='in-progress'?'◐':''
+let tt=md.tasks.length,dt=0
+md.tasks.forEach((tk,i)=>{const s=state.tasks[md.id+'-t'+i];if(s==='done')dt++;else if(!s&&getTS(tk)==='done')dt++})
+return '<div class="mod" data-mod-id="'+md.id+'" data-st="'+ms+'"><div class="mhead" onclick="toggleMod(\''+md.id+'\')"><div class="mcb '+cbc+'" onclick="event.stopPropagation();cycleMod(\''+md.id+'\')">'+cbi+'</div><div class="minfo"><div class="t">'+md.title+'</div><div class="d">'+md.desc+'</div><div class="tech">'+md.tech.map(t=>'<span>'+t+'</span>').join('')+'</div></div><span class="mbadge '+bc+'">'+bt+'</span><button class="pbtn" onclick="event.stopPropagation();showPrompt(\''+md.id+'\')">🤖 Prompt</button><span style="font-size:11px;color:var(--text2);flex-shrink:0;">'+dt+'/'+tt+'</span></div><div class="mbody"><div class="mbody-inner">'+md.tasks.map((tk,i)=>{const k=md.id+'-t'+i;const s=state.tasks[k]||getTS(tk);const boltTag=tk.toLowerCase().includes('bolt')||tk.toLowerCase().includes('share trip')||tk.toLowerCase().includes('safety')||tk.toLowerCase().includes('heat map')||tk.toLowerCase().includes('early cashout')||tk.toLowerCase().includes('destination filter')||tk.toLowerCase().includes('scheduled')||tk.toLowerCase().includes('multi-stop')||tk.toLowerCase().includes('split fare')||tk.toLowerCase().includes('women only')||tk.toLowerCase().includes('family profile')||tk.toLowerCase().includes('driver score')||tk.toLowerCase().includes('audio recording')||tk.toLowerCase().includes('ride check')||tk.toLowerCase().includes('rewards')||tk.toLowerCase().includes('plus')?'<span class="bolt">⚡ Bolt</span>':''
+return '<div class="tsk '+(s==='done'?'done':'')+'" data-tk="'+k+'"><input type="checkbox" '+(s==='done'?'checked':'')+' onchange="toggleTask(\''+md.id+'\','+i+')" /><label>'+boltTag+' '+tk+'</label></div>'}).join('')+'</div></div></div>'}
+function togglePhase(id){const el=document.querySelector('[data-phase-id="'+id+'"]');if(el)el.classList.toggle('open')}
+function toggleMod(id){const el=document.querySelector('[data-mod-id="'+id+'"]');if(el)el.classList.toggle('open')}
+function cycleMod(id){const c=state.modules[id]||'pending';const n=c==='pending'?'in-progress':c==='in-progress'?'done':'pending'
+const mod=findMod(id);state.modules[id]=n
+if(n==='done'&&mod){mod.tasks.forEach((_,i)=>{state.tasks[id+'-t'+i]='done'})}
+saveState()}
+function toggleTask(mid,idx){const k=mid+'-t'+idx;const c=state.tasks[k]||'pending';const w=c!=='done';state.tasks[k]=w?'done':'pending'
+const mod=findMod(mid)
+if(mod){let t=mod.tasks.length,d=0;mod.tasks.forEach((_,i)=>{if(state.tasks[mid+'-t'+i]==='done')d++})
+if(d===t)state.modules[mid]='done';else if(d>0)state.modules[mid]='in-progress';else state.modules[mid]='pending'}
+if(w){const now=new Date().toLocaleString('es-PY',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+const tt=mod?mod.tasks[idx]:'';const mn=mod?mod.title:''
+const b=state.briefings||[];b.unshift({date:now,text:'✅ '+mn+': '+tt.replace(/^[✅🔄]\s*/,'').replace(/<[^>]*>/g,'')})
+state.briefings=b.slice(0,50)}
+saveState()}
+function findMod(id){for(const p of DATA.phases){for(const m of p.modules){if(m.id===id)return m}}return null}
+function findPhaseByMod(id){for(const p of DATA.phases){for(const m of p.modules){if(m.id===id)return p}}return null}
+function genPrompt(mid){const mod=findMod(mid);if(!mod)return'Error'
+const pn=findPhaseByMod(mid)?.title||'InteliGO'
+const td=mod.tasks.map((t,i)=>{const k=mid+'-t'+i;const s=state.tasks[k]||getTS(t);return(s==='done'?'[HECHO]':s==='in-progress'?'[EN PROGRESO]':'[PENDIENTE]')+' '+t.replace(/<[^>]*>/g,'')}).join('\n')
+return '## Implementar: '+mod.title+'\n\n**Contexto:** InteliGO — Plataforma de Movilidad para PJC/Ponta Porã. Inspirado en Bolt. Express + TypeScript + Prisma + PostgreSQL + Redis + Socket.IO.\n**Fase:** '+pn+'\n**Descripción:** '+mod.desc+'\n**Tech Stack:** '+mod.tech.join(', ')+'\n\n### Requerimientos\n\n'+mod.desc+'\n\n### Tareas\n\n'+td+'\n\n### Referencias\n- Backend: `backend/src/modules/` (router → controller → service → types)\n- Prisma: `backend/prisma/schema.prisma`\n- Frontend: `apps/admin/app/` (Next.js App Router)\n- Mobile: `apps/mobile/app/` (Expo Router)\n- Socket: `apps/mobile/services/socket.ts`\n- API: `apps/mobile/services/api.ts`\n- Store: `apps/mobile/stores/` (Zustand)\n\n### Stack Gratuito\n- Backend: Railway (PostgreSQL + Redis)\n- Frontend: Vercel\n- Mobile: Expo + EAS Build\n- SMS: Twilio (~$5-10/mes)\n- Push: Firebase FCM\n- Maps: MapLibre (web) + Google Maps (mobile, $200 crédito)\n- Storage: Cloudflare R2\n\n### Instrucciones\n\nImplementá esta funcionalidad completa siguiendo Bolt-level quality:\n1. Modelos Prisma → Schemas → Service → Router → Frontend\n2. Persistencia, errores, validación con Zod\n3. Logging y monitoreo (Sentry)\n4. Todo commit funcional y probado\n\nHacerlo con innovación y profesionalismo y siempre registrar los avances y la información pertinente en el roadmap.'}
+function showVpsGuide(){
+  document.querySelectorAll('.po').forEach(e=>e.remove());
+  const o=document.createElement('div');o.className='po';o.onclick=function(e){if(e.target===o)o.remove()}
+  const code = `## Guía de Configuración Técnica para Linux VPS (Ubuntu)
+
+### 1. Requisitos de Infraestructura
+- **Sistema Operativo:** Ubuntu 24.04 LTS (o Ubuntu 22.04 LTS).
+- **Especificaciones Recomendadas:** 
+  - *Opción Económica:* Hetzner CX22 (€3.79/mes, 2 vCPU, 4GB RAM) o Contabo Cloud VPS S (€4.50/mes, 4 vCPU, 8GB RAM).
+  - *Ubicación del Servidor:* Región más cercana (p. ej. Sao Paulo o Miami para latencias < 80ms).
+
+### 2. Preparar el Entorno en Linux (SSH & Docker)
+Una vez contratado el VPS, conéctate por terminal y ejecuta:
+
+\`\`\`bash
+# Actualizar repositorios
+sudo apt update && sudo apt upgrade -y
+
+# Instalar Docker & Docker Compose
+sudo apt install docker.io docker-compose -y
+
+# Habilitar servicios
+sudo systemctl enable --now docker
+\`\`\`
+
+### 3. Crear el docker-compose.yml de Producción
+En un directorio del VPS (p. ej., \`/opt/inteligo\`), crea el archivo con la definición de tu stack:
+
+\`\`\`yaml
+version: '3.8'
+
+services:
+  backend:
+    image: inteligo-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:pass@postgres:5432/inteligo?schema=public
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=tu_secreto_seguro
+      - FIREBASE_SERVICE_ACCOUNT=path_to_firebase_key
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
+  postgres:
+    image: postgres:15-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=inteligo
+    ports:
+      - "5432:5432"
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    restart: always
+
+volumes:
+  pgdata:
+  redisdata:
+\`\`\`
+
+### 4. Configurar Nginx Reverse Proxy (SSL HTTPS / WSS)
+Instala Nginx en el sistema operativo host para recibir el tráfico web y mandarlo a Docker:
+
+\`\`\`bash
+sudo apt install nginx certbot python3-certbot-nginx -y
+\`\`\`
+
+Edita la configuración de Nginx (\`/etc/nginx/sites-available/default\`):
+
+\`\`\`nginx
+server {
+    server_name api.inteligo.com.py; # Tu dominio
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade"; # Habilita WebSockets para GPS
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+\`\`\`
+
+Activa el certificado SSL gratuito:
+\`\`\`bash
+sudo certbot --nginx -d api.inteligo.com.py
+\`\`\`
+`;
+  o.innerHTML='<div class="pm" onclick="event.stopPropagation()"><div class="pmh"><h3>⚙️ Guía de Servidor VPS (Linux + Docker)</h3><button class="pmc" onclick="this.closest(\'.po\').remove()">✕</button></div><div class="pmb"><pre id="pct-vps">'+code+'</pre></div><div class="pmf"><button class="cpbtn" onclick="this.closest(\'.po\').remove()" style="background:var(--graylight);color:var(--text)">Cerrar</button><button class="cpbtn" onclick="copyP2(this)">📋 Copiar Guía</button></div></div>';
+  document.body.appendChild(o);
+}
+
+function copyP2(btn){
+  const pre=document.getElementById('pct-vps');
+  if(!pre)return;
+  navigator.clipboard.writeText(pre.textContent).then(()=>{
+    btn.textContent='✅ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 Copiar Guía';btn.classList.remove('copied')},2000);
+  });
+}
+
+function showPrompt(mid){const mod=findMod(mid);if(!mod)return;const txt=genPrompt(mid)
+document.querySelectorAll('.po').forEach(e=>e.remove())
+const o=document.createElement('div');o.className='po';o.onclick=function(e){if(e.target===o)o.remove()}
+o.innerHTML='<div class="pm" onclick="event.stopPropagation()"><div class="pmh"><h3>🤖 Prompt — '+mod.title+'</h3><button class="pmc" onclick="this.closest(\'.po\').remove()">✕</button></div><div class="pmb"><pre id="pct">'+txt+'</pre></div><div class="pmf"><button class="cpbtn" onclick="this.closest(\'.po\').remove()" style="background:var(--graylight);color:var(--text)">Cerrar</button><button class="cpbtn" onclick="copyP(this)">📋 Copiar</button></div></div>'
+document.body.appendChild(o)}
+function copyP(btn){const pre=document.getElementById('pct');if(!pre)return
+navigator.clipboard.writeText(pre.textContent).then(()=>{btn.textContent='✅ Copiado!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='📋 Copiar';btn.classList.remove('copied')},2000)}).catch(()=>{const ta=document.createElement('textarea');ta.value=pre.textContent;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);btn.textContent='✅ Copiado!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='📋 Copiar';btn.classList.remove('copied')},2000)})}
+function updateUI(){let tt=0,dt=0,tm=0,dm=0,ipm=0,pm=0
+DATA.phases.forEach(p=>{p.modules.forEach(m=>{tm++;const ms=state.modules[m.id]||m.status||'pending';if(ms==='done')dm++;else if(ms==='in-progress')ipm++;else pm++
+m.tasks.forEach((tk,i)=>{tt++;const s=state.tasks[m.id+'-t'+i]||getTS(tk);if(s==='done')dt++})})})
+document.getElementById('s-done').textContent=dm;document.getElementById('s-ip').textContent=ipm;document.getElementById('s-pend').textContent=pm;document.getElementById('s-total').textContent=tt
+const pct=tm>0?Math.round((dm/tm)*100):0;const pf=document.getElementById('pf');if(pf)pf.style.width=pct+'%'
+const ps=document.getElementById('ps');if(ps)ps.textContent=dm+'/'+tm+' módulos · '+dt+'/'+tt+' tareas'
+DATA.phases.forEach(p=>{let d=0,t=0;p.modules.forEach(m=>{t++;if((state.modules[m.id]||m.status||'pending')==='done')d++});const pp=t>0?Math.round((d/t)*100):0
+const el=document.querySelector('[data-phase-id="'+p.id+'"]');if(el){const f=el.querySelector('.pminifill');const pctEl=el.querySelector('.phpct');const ind=el.querySelector('.phind');if(f)f.style.width=pp+'%';if(pctEl)pctEl.textContent=pp+'%';if(ind)ind.className='phind '+(d===t&&t>0?'completed':d>0?'in-progress':'pending')}})
+DATA.phases.forEach(p=>{p.modules.forEach(m=>{const ms=state.modules[m.id]||m.status||'pending';const el=document.querySelector('[data-mod-id="'+m.id+'"]');if(!el)return
+const badge=el.querySelector('.mbadge');const cb=el.querySelector('.mcb')
+if(badge){const l={done:'✅ Completo','in-progress':'🔄 En Progreso',pending:'⏳ Pendiente'};badge.textContent=l[ms]||'⏳ Pendiente';badge.className='mbadge '+(ms==='done'?'bdone':ms==='in-progress'?'bip':'bpend')}
+if(cb){cb.className='mcb '+(ms==='done'?'done':ms==='in-progress'?'partial':'pending');cb.textContent=ms==='done'?'✓':ms==='in-progress'?'◐':''}
+let dt=0,tt=m.tasks.length;m.tasks.forEach((tk,i)=>{const s=state.tasks[m.id+'-t'+i];if(s==='done')dt++;else if(!s&&getTS(tk)==='done')dt++})
+const cnt=el.querySelector('.mhead > span:last-child');if(cnt)cnt.textContent=dt+'/'+tt
+m.tasks.forEach((tk,i)=>{const k=m.id+'-t'+i;const s=state.tasks[k]||getTS(tk);const el2=el.querySelector('[data-tk="'+k+'"]');if(el2){el2.className='tsk '+(s==='done'?'done':'');const cb2=el2.querySelector('input[type=checkbox]');if(cb2)cb2.checked=s==='done'}})})})
+const rn=document.getElementById('rn');if(rn)rn.value=state.notes||''}
+function applySearch(){const q=(document.getElementById('gs')?.value||'').toLowerCase()
+document.querySelectorAll('.mod').forEach(el=>{if(q){el.style.display=el.textContent.toLowerCase().includes(q)?'':'none'}else{applyFilter()}})}
+function setFilter(f,btn){document.querySelectorAll('.flt-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');curFilter=f;applyFilter()}
+function applyFilter(){const q=(document.getElementById('gs')?.value||'').toLowerCase()
+document.querySelectorAll('.mod').forEach(el=>{const mid=el.dataset.modId;const ms=state.modules[mid]||'pending'
+if(q){el.style.display=el.textContent.toLowerCase().includes(q)?'':'none';return}
+if(curFilter==='all')el.style.display='';else if(curFilter==='done')el.style.display=ms==='done'?'':'none';else if(curFilter==='in-progress')el.style.display=ms==='in-progress'?'':'none';else if(curFilter==='pending')el.style.display=ms==='pending'?'':'none'})}
+function renderBriefings(){const s=document.getElementById('bs');const l=document.getElementById('bl');if(!s||!l)return
+const b=state.briefings||[];if(b.length===0){s.style.display='none';return}
+s.style.display='';l.innerHTML=b.slice(0,30).map(b=>'<div class="brf-item"><div class="brf-date">'+b.date+'</div><div class="brf-summary">'+b.text+'</div></div>').join('')}
+document.getElementById('rn')?.addEventListener('input',function(){state.notes=this.value;saveState()})
+function switchTab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'))
+document.querySelector('.tab[data-tab="'+tab+'"]')?.classList.add('active');document.getElementById('tab-'+tab)?.classList.add('active');curTab=tab
+if(tab==='marketing'&&typeof runMarketingSimulation==='function'){runMarketingSimulation();}}
+function toggleTheme(){const h=document.documentElement;const isD=h.getAttribute('data-theme')==='dark'
+h.setAttribute('data-theme',isD?'light':'dark');document.getElementById('tt').textContent=isD?'🌙':'☀️';localStorage.setItem('inteligo_theme',isD?'light':'dark')}
+const st=localStorage.getItem('inteligo_theme');if(st){document.documentElement.setAttribute('data-theme',st);document.getElementById('tt').textContent=st==='dark'?'☀️':'🌙'}
+function expJSON(){const data={exportedAt:new Date().toISOString(),...state};const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='inteligo-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(u)}
+(function logSession(){const now=new Date().toLocaleString('es-PY',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+const b=state.briefings||[];const summary='⚡ ROADMAP actualizado con benchmark real Ponta Porã + Bolt-inspired features. F1-F4 incluyen Safety Toolkit, Share Trip, Multi-stop, InteliMoto, Send, Food, Business, Split Fare, Rewards. 30 features mapeadas vs Bolt.'
+const last=b[0];if(!last||last.text!==summary){b.unshift({date:now,text:summary});state.briefings=b.slice(0,50);localStorage.setItem('inteligo_roadmap',JSON.stringify(state));renderBriefings()}})()
+render()
+</script>
+</body>
+</html>

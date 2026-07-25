@@ -76,11 +76,11 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shrink-0">
                 <span className="text-white font-medium text-sm">
-                  {(user?.user_metadata?.name || user?.email || "U").slice(0, 2).toUpperCase()}
+                  {(user?.name || user?.email || "U").slice(0, 2).toUpperCase()}
                 </span>
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.user_metadata?.name || "Usuario"}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.name || "Usuario"}</p>
                 <p className="text-[10px] text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
@@ -113,9 +113,9 @@ function ProfileTab({ user, entity }: { user: any; entity: any }) {
       <div>
         <h2 className="text-base font-medium text-gray-900 dark:text-white mb-4">Información Personal</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField label="Nombre" value={user?.user_metadata?.name || ""} />
+          <FormField label="Nombre" value={user?.name || ""} />
           <FormField label="Email" value={user?.email || ""} type="email" />
-          <FormField label="Rol" value={user?.user_metadata?.role || ""} disabled />
+          <FormField label="Rol" value={entity?.role || ""} disabled />
           <FormField label="Teléfono" value="+595 21 123 456" />
         </div>
       </div>

@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "exports": {
     ".": "./src/domain.ts",
+    "./db": "./db/index.ts",
+    "./db/schema": "./db/schema.ts",
+    "./cgr-report": "./src/cgr-report.ts",
     "./fiscal-py": "./src/fiscal-py.ts",
     "./ledger-engine": "./ledger-engine.ts",
     "./retention-calculator": "./src/retention-calculator.ts",
@@ -16,6 +19,8 @@
     "db:seed-auth": "tsx db/seed-auth.ts"
   },
   "dependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.5"
   },

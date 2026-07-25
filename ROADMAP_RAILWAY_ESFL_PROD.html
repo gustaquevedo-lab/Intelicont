@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InteliCont — Roadmap Maestro (Railway + ESFL + Prod)</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#f1f5f9;--text2:#94a3b8;--primary:#6366f1;--primlight:#1e1b4b;--success:#10b981;--suclight:#064e3b;--warning:#f59e0b;--warnlight:#451a03;--danger:#ef4444;--danglight:#450a0a;--purple:#a855f7;--purplight:#3b0764;--teal:#14b8a6;--teallight:#134e4a;--gray:#9ca3af;--graylight:#1f2937;--font:'Segoe UI',system-ui,-apple-system,sans-serif;--bolt:#34e27e}
+[data-theme=light]{--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#0f172a;--text2:#64748b;--primary:#4f46e5;--primlight:#e0e7ff;--success:#059669;--suclight:#d1fae5;--warning:#d97706;--warnlight:#fef3c7;--danger:#dc2626;--danglight:#fee2e2;--purple:#7c3aed;--purplight:#ede9fe;--teal:#0d9488;--teallight:#ccfbf1;--gray:#6b7280;--graylight:#f3f4f6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);padding:20px;transition:background .3s,color .3s}
+.c{max-width:1400px;margin:0 auto}
+.tabs{display:flex;gap:4px;margin-bottom:24px;flex-wrap:wrap}
+.tab{padding:10px 20px;border-radius:12px 12px 0 0;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:600;font-size:13px;color:var(--text2);transition:all .2s;font-family:var(--font)}
+.tab:hover{color:var(--text);border-color:var(--primary)}
+.tab.active{background:var(--card);color:var(--primary);border-color:var(--primary)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.header h1{font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--bolt));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text2);font-size:13px}
+.hdr{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hdr button{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;font-size:11px;transition:all .2s;font-family:var(--font)}
+.hdr button:hover{border-color:var(--primary);color:var(--primary);background:var(--primlight)}
+#fileStatus{font-size:10px;color:var(--text2);padding:4px 10px;border-radius:6px;background:var(--graylight);display:inline-block;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.progress-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px}
+.progress-card .ph{display:flex;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+.progress-card .ph h2{font-size:16px;font-weight:700}
+.progress-card .ph span{font-size:12px;color:var(--text2)}
+.pbar{height:8px;background:var(--graylight);border-radius:99px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,var(--primary),var(--bolt));border-radius:99px;transition:width .5s}
+.plabels{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text2)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+.scard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.scard .num{font-size:24px;font-weight:800;display:block}
+.scard .lbl{font-size:11px;color:var(--text2);margin-top:4px}
+.scard.c .num{color:var(--success)}.scard.ip .num{color:var(--primary)}.scard.p .num{color:var(--text2)}
+.phase{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:14px;overflow:hidden}
+.phhead{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;cursor:pointer;gap:12px}
+.phl{display:flex;align-items:center;gap:14px;flex:1}.phnum{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.phinfo h3{font-size:15px;font-weight:700}.phinfo .w{font-size:11px;color:var(--text2);margin-top:2px}
+.phr{display:flex;align-items:center;gap:12px;flex-shrink:0}.phpct{font-size:13px;font-weight:700;min-width:36px;text-align:right}
+.pharr{transition:transform .3s;font-size:16px;color:var(--text2)}.phase.open .pharr{transform:rotate(180deg)}
+.pminibar{width:90px;height:5px;background:var(--graylight);border-radius:99px;overflow:hidden}
+.pminifill{height:100%;border-radius:99px;transition:width .5s}
+.phbody{max-height:0;overflow:hidden;transition:max-height .4s,padding .3s;padding:0 20px}
+.phase.open .phbody{max-height:80000px;padding:0 20px 16px}
+.mod{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.mhead{display:flex;align-items:center;padding:12px 14px;gap:10px;cursor:pointer}
+.mcb{width:18px;height:18px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s;background:transparent;color:transparent}
+.mcb.done{background:var(--success);border-color:var(--success);color:#fff}
+.mcb.partial{background:var(--warning);border-color:var(--warning);color:#fff}
+.mcb.pending{border-color:var(--border)}
+.minfo{flex:1;min-width:0}.minfo .t{font-weight:600;font-size:13px}
+.minfo .d{font-size:11px;color:var(--text2);margin-top:2px}
+.minfo .tech{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px}
+.minfo .tech span{font-size:9px;padding:1px 5px;border-radius:3px;background:var(--graylight);color:var(--text2)}
+.mbadge{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;flex-shrink:0}
+.bdone{background:var(--suclight);color:var(--success)}.bip{background:var(--primlight);color:var(--primary)}.bpend{background:var(--graylight);color:var(--gray)}
+.pbtn{font-size:10px;padding:4px 9px;border-radius:6px;border:1px solid var(--purple);background:var(--purplight);color:var(--purple);cursor:pointer;font-weight:600;flex-shrink:0;font-family:var(--font);transition:all .2s}
+.pbtn:hover{background:var(--purple);color:#fff}
+.mbody{max-height:0;overflow:hidden;transition:max-height .3s}
+.mod.open .mbody{max-height:5000px}
+.mbody-inner{padding:0 14px 12px 44px;display:flex;flex-direction:column;gap:6px}
+.tsk{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--text2)}
+.tsk input[type=checkbox]{width:14px;height:14px;border-radius:3px;accent-color:var(--primary);cursor:pointer;margin-top:2px;flex-shrink:0}
+.tsk label{cursor:pointer;flex:1;line-height:1.4}
+.tsk.done label{text-decoration:line-through;opacity:.6}
+.brf-item{padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px}
+.brf-date{font-size:10px;color:var(--primary);font-weight:600;margin-bottom:2px}
+.brf-summary{font-size:12px;line-height:1.5;color:var(--text)}
+.po{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.pm{background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:750px;width:100%;max-height:85vh;display:flex;flex-direction:column}
+.pmh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
+.pmh h3{font-size:15px;font-weight:700}.pmc{width:28px;height:28px;border-radius:6px;border:none;background:var(--graylight);cursor:pointer;font-size:16px;color:var(--text2);display:flex;align-items:center;justify-content:center}
+.pmb{padding:14px 20px;overflow-y:auto;flex:1}
+.pmb pre{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;word-break:break-word;color:var(--text);font-family:'Fira Code',Monaco,monospace}
+.pmf{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--border)}
+.cpbtn{padding:6px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-weight:600;cursor:pointer;font-size:12px;font-family:var(--font)}
+.cpbtn:hover{opacity:.9}.cpbtn.copied{background:var(--success)}
+.notes{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:20px}
+.notes h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.notes textarea{width:100%;min-height:60px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:var(--font);font-size:12px;color:var(--text);resize:vertical}
+.notes textarea:focus{outline:none;border-color:var(--primary)}
+.filters{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.search-i{padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;font-family:var(--font);min-width:150px;outline:none}
+.search-i:focus{border-color:var(--primary)}
+.flt-btn{padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font)}
+.flt-btn:hover{border-color:var(--primary)}.flt-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.phind{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.phind.completed{background:var(--success)}.phind.in-progress{background:var(--primary);animation:pulse 2s infinite}.phind.pending{background:var(--gray)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+<div class="c">
+<div class="header">
+  <div><h1>🚀 InteliCont — Roadmap Maestro</h1><p style="font-size:12px">Migración a Railway · Especialización ESFL (ONGs / Fondos Públicos PGN) · Salida a Producción</p></div>
+  <div class="hdr">
+    <span id="fileStatus">📁 Almacenamiento Persistente Local</span>
+    <button onclick="saveAs()">💾 Guardar</button>
+    <button onclick="expJSON()">📥 Exportar JSON</button>
+    <button id="tt" onclick="toggleTheme()">☀️</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="roadmap" onclick="switchTab('roadmap')">📋 Roadmap Interactivo</div>
+  <div class="tab" data-tab="briefings" onclick="switchTab('briefings')">📝 Historial de Sesiones</div>
+</div>
+
+<!-- TAB ROADMAP -->
+<div class="tab-content active" id="tab-roadmap">
+<div class="progress-card">
+  <div class="ph"><h2>Progreso General de Lanzamiento</h2><span id="ps">0/0 módulos</span></div>
+  <div class="pbar"><div class="pfill" id="pf" style="width:0%"></div></div>
+  <div class="plabels"><span>0%</span><span>50%</span><span>100%</span></div>
+</div>
+
+<div class="stats">
+  <div class="scard c"><span class="num" id="s-done">0</span><span class="lbl">Módulos Listos</span></div>
+  <div class="scard ip"><span class="num" id="s-ip">0</span><span class="lbl">En Progreso</span></div>
+  <div class="scard p"><span class="num" id="s-pend">0</span><span class="lbl">Pendientes</span></div>
+  <div class="scard"><span class="num" id="s-total">0</span><span class="lbl">Total Tareas</span></div>
+</div>
+
+<div class="filters">
+  <input type="text" class="search-i" id="gs" placeholder="Buscar módulo o tarea..." oninput="applySearch()">
+  <button class="flt-btn active" onclick="setFilter('all',this)">Todos</button>
+  <button class="flt-btn" onclick="setFilter('in-progress',this)">En Progreso</button>
+  <button class="flt-btn" onclick="setFilter('pending',this)">Pendientes</button>
+  <button class="flt-btn" onclick="setFilter('done',this)">Completados</button>
+</div>
+
+<div id="phases-container"></div>
+
+<div class="notes">
+  <h3>📝 Notas del Proyecto & Progreso</h3>
+  <textarea id="rn" placeholder="Escribe notas aquí... Se guardarán automáticamente en localStorage"></textarea>
+</div>
+</div>
+
+<!-- TAB BRIEFINGS -->
+<div class="tab-content" id="tab-briefings">
+<div class="progress-card">
+  <h2>📝 Registro de Avances</h2>
+  <div id="bl" style="margin-top:12px"></div>
+</div>
+</div>
+
+</div>
+
+<script>
+const DATA = {
+  phases: [
+    {
+      id: "f1",
+      num: "1",
+      title: "Migración de Supabase a Railway & Autenticación Nativa",
+      weeks: "Mes 1 — Prioridad Alta",
+      color: "#8b5cf6",
+      bgLight: "#2e1065",
+      modules: [
+        {
+          id: "m-railway-db",
+          title: "Provisionamiento de PostgreSQL 16 & Drizzle ORM en Railway",
+          desc: "Desconectar Supabase Auth/DB e implementar Postgres directo en Railway con PgBouncer para connection pooling.",
+          status: "done",
+          tech: ["Railway", "PostgreSQL 16", "Drizzle ORM", "PgBouncer"],
+          tasks: [
+            { txt: "Provisionar PostgreSQL 16 de alta disponibilidad en Railway", done: true },
+            { txt: "Configurar variables DATABASE_URL y DATABASE_POOLED_URL en apps/web y packages/ledger", done: true },
+            { txt: "Reemplazar Supabase Auth por Lucia Auth / Auth.js sobre PostgreSQL nativo", done: true },
+            { txt: "Actualizar middleware multi-tenant con header x-entity-id leyendo la tabla memberships en Drizzle", done: true }
+          ]
+        },
+        {
+          id: "m-railway-storage",
+          title: "Storage Cloudflare R2 / S3 & Workers en Railway",
+          desc: "Almacenamiento de XMLs/PDFs SIFEN en Cloudflare R2/S3 y ejecución de background jobs masivos.",
+          status: "done",
+          tech: ["Cloudflare R2", "AWS S3 SDK", "Trigger.dev", "Inngest"],
+          tasks: [
+            { txt: "Implementar wrapper de Storage S3 en packages/core para subida/descarga de comprobantes XML/PDF", done: true },
+            { txt: "Configurar worker de Inngest/Trigger.dev para parsing de facturas sin timeouts de Vercel", done: true },
+            { txt: "Verificar compatibilidad de storage en desarrollo local vs producción en Railway", done: true }
+          ]
+        }
+      ]
+    },
+    {
+      id: "f2",
+      num: "2",
+      title: "Core Ledger Especializado para ESFL (ONGs / Fondos Públicos PGN)",
+      weeks: "Mes 2 — Dominio Fiscal",
+      color: "#3b82f6",
+      bgLight: "#1e3a5f",
+      modules: [
+        {
+          id: "m-esfl-schema",
+          title: "Extensión del Esquema Drizzle para ESFL y Convenios",
+          desc: "Incorporar tipos de entidad, proyectos, convenios y el Clasificador Presupuestario PGN / CGR.",
+          status: "done",
+          tech: ["Drizzle Schema", "PGN Classifier", "Grant Management"],
+          tasks: [
+            { txt: "Añadir entity_type (COMMERCIAL, NON_PROFIT_NGO, NON_PROFIT_PUBLIC, ASSOCIATION) en tabla entities", done: true },
+            { txt: "Crear tablas grants (convenios), projects y pgn_expense_objects (Objetos del Gasto Estado PY)", done: true },
+            { txt: "Agregar campos opcionales project_id y pgn_expense_object_id en journal_lines y tax_document_lines", done: true },
+            { txt: "Generar y ejecutar la migración db:generate en Drizzle", done: true }
+          ]
+        },
+        {
+          id: "m-esfl-ai",
+          title: "Parser SIFEN con Triple Imputación Inteligente por IA",
+          desc: "Entrenar el prompt de Claude para imputar Cuenta Contable, Impuesto RG90 y Objeto del Gasto PGN.",
+          status: "done",
+          tech: ["Anthropic API", "Claude Sonnet", "XML Parsing"],
+          tasks: [
+            { txt: "Actualizar prompt de IA en apps/web/lib/ai/ingest.ts para soportar entidades ESFL", done: true },
+            { txt: "Auto-clasificar Objetos del Gasto PGN leyendo los ítems del XML SIFEN", done: true },
+            { txt: "Calcular prorrateo automático de IVA Crédito Fiscal a Gasto para actividades exoneradas según RG90", done: true }
+          ]
+        },
+        {
+          id: "m-esfl-cgr",
+          title: "Módulo de Rendición de Cuentas PGN / CGR (Estado PY)",
+          desc: "Exportación automática de informes de rendición exigidos por la Contraloría General de la República.",
+          status: "done",
+          tech: ["CGR Reports", "Excel Export", "PDF Generation"],
+          tasks: [
+            { txt: "Crear función generateCgrReport en packages/ledger vinculando journal_lines a Objetos del Gasto PGN", done: true },
+            { txt: "Diseñar vista UI de previsualización de Rendición de Cuentas por Proyecto y Donante", done: true },
+            { txt: "Exportar matriz de rendición CGR en formatos Excel (.xlsx) y PDF oficiales", done: true }
+          ]
+        }
+      ]
+    },
+    {
+      id: "f3",
+      num: "3",
+      title: "Cierre Fiscal, Testing e2e & Salida a Producción",
+      weeks: "Mes 3 — Quality & Launch",
+      color: "#10b981",
+      bgLight: "#064e3b",
+      modules: [
+        {
+          id: "m-qa-e2e",
+          title: "Suite de Pruebas Automatizadas (Vitest + Playwright)",
+          desc: "Verificación rigurosa de partida doble, formulación impositiva y flujos e2e de ingesta.",
+          status: "done",
+          tech: ["Vitest", "Playwright", "Partida Doble Check"],
+          tasks: [
+            { txt: "Escribir pruebas unitarias Vitest en ledger para validar sum(debit) === sum(credit) en todas las entries", done: true },
+            { txt: "Crear test e2e en Playwright para el flujo completo: Ingesta SIFEN -> Aprobación IA -> Rendición CGR", done: true }
+          ]
+        },
+        {
+          id: "m-prod-launch",
+          title: "Despliegue Final en Railway & Observabilidad",
+          desc: "Lanzamiento de producción con monitoreo Sentry y analítica de uso en tiempo real.",
+          status: "done",
+          tech: ["Railway Prod", "Sentry", "PostHog"],
+          tasks: [
+            { txt: "Integrar Sentry para captura de excepciones en cliente y servidor", done: true },
+            { txt: "Configurar PostHog para telemetría de uso del dashboard contable", done: true },
+            { txt: "Ejecutar pnpm build final limpio y dar de alta el entorno de producción en Railway", done: true }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// PERSISTENCE & STATE MANAGEMENT
+let state = {
+  modules: {},
+  tasks: {},
+  notes: "",
+  briefings: []
+};
+
+function loadState() {
+  const saved = localStorage.getItem('intelicont_roadmap');
+  if (saved) {
+    try {
+      state = JSON.parse(saved);
+    } catch(e) {
+      console.error("Error cargando estado:", e);
+    }
+  }
+}
+
+function saveState() {
+  localStorage.setItem('intelicont_roadmap', JSON.stringify(state));
+  updateUI();
+}
+
+function toggleTask(taskId, modId) {
+  const cur = state.tasks[taskId] || 'pending';
+  state.tasks[taskId] = (cur === 'done') ? 'pending' : 'done';
+  
+  // Actualizar automáticamente estado del módulo si todas las tareas están completadas
+  const mod = findMod(modId);
+  if (mod) {
+    let allDone = true;
+    let anyDone = false;
+    mod.tasks.forEach((t, idx) => {
+      const s = state.tasks[modId + '-t' + idx] || (t.done ? 'done' : 'pending');
+      if (s === 'done') anyDone = true;
+      else allDone = false;
+    });
+    
+    if (allDone) state.modules[modId] = 'done';
+    else if (anyDone) state.modules[modId] = 'in-progress';
+    else state.modules[modId] = 'pending';
+  }
+  
+  saveState();
+}
+
+function toggleModule(modId) {
+  const cur = state.modules[modId] || 'pending';
+  let next = 'pending';
+  if (cur === 'pending') next = 'in-progress';
+  else if (cur === 'in-progress') next = 'done';
+  else next = 'pending';
+  
+  state.modules[modId] = next;
+  
+  // Si se marca como 'done', marcar todas sus tareas como done
+  const mod = findMod(modId);
+  if (mod) {
+    mod.tasks.forEach((t, idx) => {
+      state.tasks[modId + '-t' + idx] = (next === 'done') ? 'done' : 'pending';
+    });
+  }
+  
+  saveState();
+}
+
+function findMod(modId) {
+  for (const p of DATA.phases) {
+    for (const m of p.modules) {
+      if (m.id === modId) return m;
+    }
+  }
+  return null;
+}
+
+function genPrompt(mid) {
+  const m = findMod(mid);
+  if (!m) return "";
+  
+  let promptText = `PROMPT PARA IMPLEMENTAR EL MÓDULO: ${m.title.toUpperCase()}\n`;
+  promptText += `CONTEXTO DEL PROYECTO: InteliCont (SaaS Contable AI-First en Paraguay)\n`;
+  promptText += `DESCRIPCIÓN DE LA TAREA: ${m.desc}\n\n`;
+  promptText += `TECNOLOGÍAS INVOLUCRADAS: ${m.tech.join(', ')}\n\n`;
+  promptText += `REQUISITOS Y PASOS DE IMPLEMENTACIÓN:\n`;
+  m.tasks.forEach((t, i) => {
+    promptText += `${i + 1}. ${t.txt}\n`;
+  });
+  promptText += `\nINSTRUCCIÓN FINAL AL FINALIZAR:\n`;
+  promptText += `Una vez que hayas completado todos los cambios, compilado sin errores y verificado las pruebas, actualiza el archivo ROADMAP Maestro indicando que la tarea/módulo "${m.title}" ha sido completada.\n`;
+  
+  return promptText;
+}
+
+function showPrompt(mid) {
+  const mod = findMod(mid);
+  if (!mod) return;
+  const txt = genPrompt(mid);
+  
+  document.querySelectorAll('.po').forEach(e => e.remove());
+  const o = document.createElement('div');
+  o.className = 'po';
+  o.onclick = function(e) { if (e.target === o) o.remove(); };
+  o.innerHTML = `
+    <div class="pm" onclick="event.stopPropagation()">
+      <div class="pmh">
+        <h3>🤖 AI Prompt — ${mod.title}</h3>
+        <button class="pmc" onclick="this.closest('.po').remove()">✕</button>
+      </div>
+      <div class="pmb">
+        <pre id="pct">${txt}</pre>
+      </div>
+      <div class="pmf">
+        <button class="cpbtn" onclick="this.closest('.po').remove()" style="background:var(--graylight);color:var(--text)">Cerrar</button>
+        <button class="cpbtn" onclick="copyP(this)">📋 Copiar Prompt Completo</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(o);
+}
+
+function copyP(btn) {
+  const pre = document.getElementById('pct');
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = '✅ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copiar Prompt Completo'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function render() {
+  loadState();
+  const container = document.getElementById('phases-container');
+  container.innerHTML = '';
+
+  DATA.phases.forEach(p => {
+    const phaseEl = document.createElement('div');
+    phaseEl.className = 'phase open';
+    phaseEl.dataset.phaseId = p.id;
+
+    let modulesHTML = '';
+    p.modules.forEach(m => {
+      const ms = state.modules[m.id] || m.status || 'pending';
+      const badgeClass = ms === 'done' ? 'bdone' : (ms === 'in-progress' ? 'bip' : 'bpend');
+      const badgeText = ms === 'done' ? '✅ Completo' : (ms === 'in-progress' ? '🔄 En Progreso' : '⏳ Pendiente');
+
+      let tasksHTML = '';
+      m.tasks.forEach((t, idx) => {
+        const tid = m.id + '-t' + idx;
+        const ts = state.tasks[tid] || (t.done ? 'done' : 'pending');
+        const isChecked = ts === 'done' ? 'checked' : '';
+
+        tasksHTML += `
+          <div class="tsk ${ts === 'done' ? 'done' : ''}" data-tk="${tid}">
+            <input type="checkbox" ${isChecked} onchange="toggleTask('${tid}', '${m.id}')">
+            <label onclick="this.previousElementSibling.click()">${t.txt}</label>
+          </div>
+        `;
+      });
+
+      modulesHTML += `
+        <div class="mod open" data-mod-id="${m.id}">
+          <div class="mhead">
+            <div class="mcb ${ms === 'done' ? 'done' : (ms === 'in-progress' ? 'partial' : 'pending')}" onclick="toggleModule('${m.id}')">
+              ${ms === 'done' ? '✓' : (ms === 'in-progress' ? '◐' : '')}
+            </div>
+            <div class="minfo" onclick="this.parentElement.parentElement.classList.toggle('open')">
+              <div class="t">${m.title}</div>
+              <div class="d">${m.desc}</div>
+              <div class="tech">${m.tech.map(tc => `<span>${tc}</span>`).join('')}</div>
+            </div>
+            <span class="mbadge ${badgeClass}">${badgeText}</span>
+            <button class="pbtn" onclick="showPrompt('${m.id}')">🤖 Prompt AI</button>
+          </div>
+          <div class="mbody">
+            <div class="mbody-inner">
+              ${tasksHTML}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    phaseEl.innerHTML = `
+      <div class="phhead" onclick="this.parentElement.classList.toggle('open')">
+        <div class="phl">
+          <div class="phnum" style="background:${p.bgLight};color:${p.color}">${p.num}</div>
+          <div class="phinfo">
+            <h3>${p.title}</h3>
+            <div class="w">${p.weeks}</div>
+          </div>
+        </div>
+        <div class="phr">
+          <div class="phind pending"></div>
+          <div class="pminibar"><div class="pminifill" style="width:0%;background:${p.color}"></div></div>
+          <div class="phpct">0%</div>
+          <div class="pharr">▼</div>
+        </div>
+      </div>
+      <div class="phbody">
+        ${modulesHTML}
+      </div>
+    `;
+
+    container.appendChild(phaseEl);
+  });
+
+  updateUI();
+}
+
+function updateUI() {
+  let totalTasks = 0, doneTasks = 0, totalMods = 0, doneMods = 0, ipMods = 0, pendMods = 0;
+
+  DATA.phases.forEach(p => {
+    p.modules.forEach(m => {
+      totalMods++;
+      const ms = state.modules[m.id] || m.status || 'pending';
+      if (ms === 'done') doneMods++;
+      else if (ms === 'in-progress') ipMods++;
+      else pendMods++;
+
+      m.tasks.forEach((t, i) => {
+        totalTasks++;
+        const s = state.tasks[m.id + '-t' + i] || (t.done ? 'done' : 'pending');
+        if (s === 'done') doneTasks++;
+      });
+    });
+  });
+
+  document.getElementById('s-done').textContent = doneMods;
+  document.getElementById('s-ip').textContent = ipMods;
+  document.getElementById('s-pend').textContent = pendMods;
+  document.getElementById('s-total').textContent = totalTasks;
+
+  const pct = totalMods > 0 ? Math.round((doneMods / totalMods) * 100) : 0;
+  const pf = document.getElementById('pf');
+  if (pf) pf.style.width = pct + '%';
+  const ps = document.getElementById('ps');
+  if (ps) ps.textContent = doneMods + '/' + totalMods + ' módulos completados';
+
+  DATA.phases.forEach(p => {
+    let d = 0, t = 0;
+    p.modules.forEach(m => {
+      t++;
+      if ((state.modules[m.id] || m.status || 'pending') === 'done') d++;
+    });
+    const pp = t > 0 ? Math.round((d / t) * 100) : 0;
+    const el = document.querySelector(`[data-phase-id="${p.id}"]`);
+    if (el) {
+      const f = el.querySelector('.pminifill');
+      const pctEl = el.querySelector('.phpct');
+      const ind = el.querySelector('.phind');
+      if (f) f.style.width = pp + '%';
+      if (pctEl) pctEl.textContent = pp + '%';
+      if (ind) ind.className = 'phind ' + (d === t && t > 0 ? 'completed' : (d > 0 ? 'in-progress' : 'pending'));
+    }
+  });
+
+  const rn = document.getElementById('rn');
+  if (rn) rn.value = state.notes || '';
+}
+
+function applySearch() {
+  const q = (document.getElementById('gs')?.value || '').toLowerCase();
+  document.querySelectorAll('.mod').forEach(el => {
+    if (q) {
+      el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+    } else {
+      el.style.display = '';
+    }
+  });
+}
+
+function setFilter(f, btn) {
+  document.querySelectorAll('.flt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.mod').forEach(el => {
+    const mid = el.dataset.modId;
+    const ms = state.modules[mid] || 'pending';
+    if (f === 'all') el.style.display = '';
+    else if (f === 'done') el.style.display = ms === 'done' ? '' : 'none';
+    else if (f === 'in-progress') el.style.display = ms === 'in-progress' ? '' : 'none';
+    else if (f === 'pending') el.style.display = ms === 'pending' ? '' : 'none';
+  });
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tab}"]`)?.classList.add('active');
+  document.getElementById('tab-' + tab)?.classList.add('active');
+}
+
+function toggleTheme() {
+  const h = document.documentElement;
+  const isD = h.getAttribute('data-theme') === 'dark';
+  h.setAttribute('data-theme', isD ? 'light' : 'dark');
+  document.getElementById('tt').textContent = isD ? '🌙' : '☀️';
+  localStorage.setItem('intelicont_theme', isD ? 'light' : 'dark');
+}
+
+function expJSON() {
+  const data = { exportedAt: new Date().toISOString(), ...state };
+  const b = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u;
+  a.download = 'intelicont-roadmap-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(u);
+}
+
+const PRE_SEEDED_BRIEFINGS = [
+  {
+    date: "25/07/2026",
+    summary: "Se instaló y aprovisionó con éxito el servicio nativo de Redis en Railway para cache de sesiones y optimización de latencia en producción."
+  },
+  {
+    date: "25/07/2026",
+    summary: "Implementada autenticación nativa completa (JWT sobre cookies seguras HTTP-only y esquema users) en apps/web, desacoplando Supabase Auth al 100% de middleware y actions."
+  },
+  {
+    date: "25/07/2026",
+    summary: "Creado cliente singleton ioredis en apps/web/src/lib/redis.ts y conectado a la base de datos Redis de producción en Railway."
+  },
+  {
+    date: "25/07/2026",
+    summary: "Se integró el cache de Redis en el middleware y validación de session.ts con TTL dinámico e invalidación en sign-out."
+  },
+  {
+    date: "25/07/2026",
+    summary: "Se corrigieron los errores de compilación TypeScript en top-bar y configuracion/page apuntando directamente a las propiedades del esquema de usuario nativo."
+  },
+  {
+    date: "25/07/2026",
+    summary: "Se re-escribió el script de seed db:seed-auth y se sembró el usuario 'admin@intelicont.com' (Admin123!) con hash encriptado por bcrypt directamente en Railway Postgres."
+  },
+  {
+    date: "25/07/2026",
+    summary: "Verificación de compilación Next.js 15.5 completada de manera exitosa y limpia con pnpm build en el entorno local y Railway."
+  }
+];
+
+function renderBriefings() {
+  const bl = document.getElementById('bl');
+  if (!bl) return;
+  bl.innerHTML = PRE_SEEDED_BRIEFINGS.map(b => `
+    <div class="brf-item">
+      <div class="brf-date">${b.date}</div>
+      <div class="brf-summary">${b.summary}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('rn')?.addEventListener('input', function() {
+  state.notes = this.value;
+  saveState();
+});
+
+// Carga Inicial
+render();
+renderBriefings();
+</script>
+</body>
+</html>

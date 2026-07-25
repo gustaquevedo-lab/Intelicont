@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import {
   Mail, Lock, Eye, EyeOff, Sparkles, AlertCircle,
   CheckCircle2, ArrowRight, Loader2,
 } from "lucide-react";
+import { sendMagicLink, signInWithPassword } from "@/lib/auth";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,17 +18,6 @@ type FormState =
   | { status: "loading" }
   | { status: "success"; message: string }
   | { status: "error";   message: string };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-// Production URL — magic link emails must always redirect here.
-// NEVER use window.location.origin: if the user triggers login from localhost,
-// the email would contain a localhost link which is inaccessible on mobile.
-const PRODUCTION_URL = "https://intelicont.vercel.app";
-
-function getRedirectTo() {
-  return `${PRODUCTION_URL}/auth/callback`;
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -43,11 +32,11 @@ export default function LoginPage() {
   const [password, setPassword]   = useState("");
   const [showPass, setShowPass]   = useState(false);
   const [formState, setFormState] = useState<FormState>(
-    callbackError ? { status: "error", message: "El enlace expiró o es inválido. Intentá de nuevo." } : { status: "idle" }
+    callbackError
+      ? { status: "error", message: "El enlace expiró o es inválido. Solicitá uno nuevo." }
+      : { status: "idle" }
   );
   const [isPending, startTransition] = useTransition();
-
-  const supabase = createClient();
 
   // ── Magic link ──────────────────────────────────────────────────────────────
   async function handleMagicLink(e: React.FormEvent) {
@@ -56,20 +45,14 @@ export default function LoginPage() {
 
     setFormState({ status: "loading" });
     startTransition(async () => {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: {
-          emailRedirectTo: `${getRedirectTo()}?redirectTo=${redirectTo}`,
-          shouldCreateUser: true,
-        },
-      });
+      const result = await sendMagicLink(email.trim().toLowerCase());
 
-      if (error) {
-        setFormState({ status: "error", message: error.message });
+      if (!result.success) {
+        setFormState({ status: "error", message: result.error ?? "Error al enviar el enlace." });
       } else {
         setFormState({
           status: "success",
-          message: `¡Listo! Revisá tu bandeja de entrada en ${email}. El enlace expira en 1 hora.`,
+          message: result.message ?? `¡Listo! Revisá tu bandeja de entrada en ${email}. El enlace expira en 1 hora.`,
         });
       }
     });
@@ -82,18 +65,11 @@ export default function LoginPage() {
 
     setFormState({ status: "loading" });
     startTransition(async () => {
-      const { error } = await supabase.auth.signInWithPassword({
-        email:    email.trim().toLowerCase(),
-        password,
-      });
+      const result = await signInWithPassword(email.trim().toLowerCase(), password);
 
-      if (error) {
-        setFormState({ status: "error", message: error.message === "Invalid login credentials"
-          ? "Email o contraseña incorrectos."
-          : error.message
-        });
+      if (!result.success) {
+        setFormState({ status: "error", message: result.error ?? "Error al iniciar sesión." });
       } else {
-        // Middleware will redirect after session is set
         setFormState({ status: "success", message: "Acceso correcto, redirigiendo…" });
         router.refresh();
         setTimeout(() => {
@@ -230,12 +206,12 @@ export default function LoginPage() {
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Contraseña
                   </label>
-                  <button
-                    type="button"
+                  <a
+                    href="/auth/forgot-password"
                     className="text-xs text-primary hover:text-primary-dark font-medium"
                   >
                     ¿Olvidaste tu contraseña?
-                  </button>
+                  </a>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />

@@ -310,7 +310,7 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                 className="flex items-center gap-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg shadow-primary/20">
-                  <span className="text-white font-black text-[10px] uppercase">{(user?.user_metadata?.name || user?.email || "IC").substring(0, 2).toUpperCase()}</span>
+                  <span className="text-white font-black text-[10px] uppercase">{(user?.name || user?.email || "IC").substring(0, 2).toUpperCase()}</span>
                 </div>
                 <ChevronDown className="h-3.5 w-3.5 text-gray-400 hidden sm:block" />
               </button>
@@ -320,7 +320,7 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                   <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
                   <div className="absolute right-0 top-10 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl shadow-black/20 dark:shadow-black/50 overflow-hidden z-50">
                     <div className="p-3 border-b border-gray-200 dark:border-gray-800">
-                      <p className="text-gray-900 dark:text-white text-sm font-medium">{user?.user_metadata?.name || "Usuario"}</p>
+                      <p className="text-gray-900 dark:text-white text-sm font-medium">{user?.name || "Usuario"}</p>
                       <p className="text-gray-500 dark:text-gray-400 text-xs">{user?.email || ""}</p>
                     </div>
                     <div className="p-1">

@@ -2,78 +2,46 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, and } from "drizzle-orm";
 import * as schema from "./schema";
+import bcrypt from "bcryptjs";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const DB_URL = process.env.DATABASE_URL || "";
 
 async function main() {
-  if (!SUPABASE_URL || !SERVICE_KEY || !DB_URL) {
-    console.error("Faltan variables de entorno: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL");
+  if (!DB_URL) {
+    console.error("Falta la variable de entorno: DATABASE_URL");
     process.exit(1);
   }
 
-  console.log("🔐 Sembrando usuario admin + membership...\n");
+  console.log("🔐 Sembrando usuario admin + membership nativo...\n");
 
-  // 1. Crear usuario en Supabase Auth via admin API
   const email = "admin@intelicont.com";
   const password = "Admin123!";
+  const name = "Gustavo Admin";
 
-  console.log(`   Creando usuario ${email}...`);
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SERVICE_KEY,
-      "Authorization": `Bearer ${SERVICE_KEY}`,
-    },
-    body: JSON.stringify({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { name: "Gustavo Admin", role: "admin" },
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    // Ignore "User already exists" error
-    if (res.status === 409) {
-      console.log(`   ✓ Usuario ya existe (email: ${email})`);
-    } else {
-      console.error(`   ✗ Error creando usuario: ${res.status} ${body}`);
-      process.exit(1);
-    }
-  } else {
-    console.log(`   ✓ Usuario creado: ${email}`);
-  }
-
-  // 2. Obtener user ID
-  const listRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`, {
-    headers: {
-      "apikey": SERVICE_KEY,
-      "Authorization": `Bearer ${SERVICE_KEY}`,
-    },
-  });
-
-  if (!listRes.ok) {
-    console.error(`   ✗ Error obteniendo usuario: ${listRes.status}`);
-    process.exit(1);
-  }
-
-  const { users } = await listRes.json();
-  if (!users || users.length === 0) {
-    console.error("   ✗ Usuario no encontrado después de crear");
-    process.exit(1);
-  }
-
-  const userId = users[0].id;
-  console.log(`   ✓ User ID: ${userId}`);
-
-  // 3. Obtener primera entidad
   const sql = postgres(DB_URL, { prepare: false });
   const db = drizzle(sql, { schema });
 
+  // 1. Check if user already exists
+  let [user] = await db.select().from(schema.users).where(eq(schema.users.email, email));
+
+  if (!user) {
+    console.log(`   Creando usuario nativo ${email}...`);
+    const passwordHash = await bcrypt.hash(password, 12);
+    [user] = await db
+      .insert(schema.users)
+      .values({
+        email,
+        passwordHash,
+        name,
+        emailVerified: true,
+      })
+      .returning();
+    console.log(`   ✓ Usuario creado: ${email}`);
+  } else {
+    console.log(`   ✓ Usuario ya existe: ${email}`);
+  }
+
+  // 2. Obtener primera entidad
   const entities = await db.select().from(schema.entities).limit(1);
   if (entities.length === 0) {
     console.error("   ✗ No hay entidades. Ejecutá primero `pnpm db:seed`");
@@ -82,13 +50,13 @@ async function main() {
 
   const entity = entities[0];
 
-  // 4. Crear membership
+  // 3. Crear membership
   const existing = await db
     .select()
     .from(schema.memberships)
     .where(
       and(
-        eq(schema.memberships.userId, userId),
+        eq(schema.memberships.userId, user.id),
         eq(schema.memberships.entityId, entity.id)
       )
     );
@@ -97,14 +65,14 @@ async function main() {
     console.log(`   ✓ Membership ya existe para ${entity.legalName}`);
   } else {
     await db.insert(schema.memberships).values({
-      userId,
+      userId: user.id,
       entityId: entity.id,
       role: "admin",
     });
     console.log(`   ✓ Membership creada: admin → ${entity.legalName} (${entity.ruc})`);
   }
 
-  console.log("\n✅ Seed de autenticación completado");
+  console.log("\n✅ Seed de autenticación nativa completado");
   console.log(`\n📝 Podés iniciar sesión con:\n   Email: ${email}\n   Contraseña: ${password}\n`);
   await sql.end();
 }
