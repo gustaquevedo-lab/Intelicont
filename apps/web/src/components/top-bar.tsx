@@ -36,7 +36,7 @@ import Link from "next/link";
 
 export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () => void; onCommandPalette: () => void }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { user } = useUser();
+  const { user, signOut } = useUser();
   const { entities: availableEntities, selectedEntity, selectEntity } = useEntity(user?.id);
   const notifications = useNotificationStore((s) => s.notifications);
   const unreadCount = useNotificationStore((s) => s.getUnreadCount());
@@ -342,13 +342,15 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                       ))}
                     </div>
                     <div className="p-1 border-t border-gray-200 dark:border-gray-800">
-          <a
-            href="/auth/signout"
-            onClick={() => setShowUserMenu(false)}
+          <button
+            onClick={() => {
+              setShowUserMenu(false);
+              signOut();
+            }}
             className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
             <LogOut className="h-4 w-4" />
             Cerrar Sesión
-          </a>
+          </button>
                     </div>
                   </div>
                 </>

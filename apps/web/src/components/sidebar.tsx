@@ -101,7 +101,7 @@ export function Sidebar({
   onMobileClose?: () => void;
 }) {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user, signOut } = useUser();
   const { entities: availableEntities, selectedEntity, selectEntity } = useEntity(user?.id);
   const [showEntityPicker, setShowEntityPicker] = useState(false);
 
@@ -269,7 +269,10 @@ export function Sidebar({
             </div>
           </div>
         )}
-        <button className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest text-blue-200/50 hover:text-white hover:bg-white/10 transition-all border border-white/5">
+        <button 
+          onClick={signOut}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest text-blue-200/50 hover:text-white hover:bg-white/10 transition-all border border-white/5"
+        >
           <LogOut size={14} />
           {!collapsed && "Cerrar Sesión"}
         </button>
