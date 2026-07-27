@@ -21,13 +21,12 @@ const SECTIONS = [
           Bienvenido al manual oficial e interactivo de <strong className="text-white font-semibold">InteliCont™</strong>, la plataforma de contabilidad inteligente SaaS diseñada para el mercado tributario de Paraguay.
         </p>
 
-        {/* Jerarquia */}
         <div className="bg-gradient-to-br from-blue-950/20 to-transparent border border-blue-900/30 rounded-2xl p-5">
           <h4 className="text-sm font-bold text-blue-300 uppercase tracking-wider mb-3 flex items-center gap-2">
             <Shield className="h-4.5 w-4.5" /> Estructura del Ecosistema SaaS
           </h4>
           <p className="text-gray-400 text-xs mb-4 leading-relaxed">
-            El sistema se rige bajo una arquitectura multi-tenant donde los clientes son los estudios y no los contribuyentes individuales.
+            El sistema se rige bajo una arquitectura de Estudios Contables principales que actúan como suscriptores pagadores y las empresas de sus clientes a quienes administran contablemente.
           </p>
           <div className="space-y-4 text-xs">
             <div className="flex items-start gap-3">
@@ -47,7 +46,6 @@ const SECTIONS = [
           </div>
         </div>
 
-        {/* mock visual */}
         <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 space-y-2">
           <div className="flex justify-between items-center text-[10px] text-gray-500 pb-2 border-b border-gray-900">
             <span>MOCK DE ARQUITECTURA DE SUSCRIPCIÓN</span>
@@ -241,18 +239,32 @@ const SECTIONS = [
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
             <ChevronRight className="h-4 w-4 text-blue-400" /> 4.2 Caja Chica
           </h4>
-          <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Rendición de fondos fijos de gastos menores del personal. Automatiza el desglose impositivo de tickets pequeños, control de límites por fondo y emisión de órdenes de reposición bancaria.
+          <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6 font-semibold">
+            Flujo de rendición y reposición de caja chica:
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Bajo <strong className="text-white">Caja Chica</strong>, selecciona tu fondo fijo activo.</li>
+            <li>Haz clic en <strong className="text-white">Rendir Ticket / Gasto</strong>.</li>
+            <li>Ingresa los datos del comprobante: fecha, RUC, número de factura y monto total.</li>
+            <li>Selecciona el IVA correspondiente y la categoría del gasto (ej: Alimentación).</li>
+            <li>Presiona guardar. Una vez acumulado, presiona <strong className="text-white">Reponer Fondo</strong> para generar la póliza contable automática.</li>
+          </ol>
         </div>
 
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
             <ChevronRight className="h-4 w-4 text-blue-400" /> 4.3 Órdenes de Pago
           </h4>
-          <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Flujo de autorización y desembolsos. El administrador genera y aprueba órdenes de pago de facturas de proveedores que se liquidan directamente vinculando las cuentas de banco habilitadas.
+          <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6 font-semibold">
+            Flujo de Órdenes de Pago:
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Accede a <strong className="text-white">Órdenes de Pago</strong>.</li>
+            <li>Haz clic en <strong className="text-white">Crear Orden de Pago</strong>.</li>
+            <li>Elige el proveedor y selecciona las facturas pendientes de cobro asociadas.</li>
+            <li>Completa el medio de pago (Banco o Caja Chica), importe y fecha de vencimiento.</li>
+            <li>Contabiliza la salida de fondos para liquidar el pasivo.</li>
+          </ol>
         </div>
       </div>
     )
@@ -294,18 +306,30 @@ const SECTIONS = [
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
             <ChevronRight className="h-4 w-4 text-blue-400" /> 5.4 Retenciones Tesakã
           </h4>
-          <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Módulo de generación de comprobantes de retención tributaria. Calcula las alícuotas correspondientes e integra el proceso de timbrado virtual de retención en Paraguay.
+          <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6 font-semibold">
+            Flujo de emisión de Retención Tesakã:
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Navega a <strong className="text-white">Retenciones Tesakã</strong>.</li>
+            <li>Haz clic en <strong className="text-white">Emitir Retención</strong>.</li>
+            <li>Ingresa los datos del proveedor y selecciona la factura que origina la retención.</li>
+            <li>Selecciona el tipo de impuesto a retener (IVA, IRE, IRP). El sistema calculará el porcentaje de retención correspondiente.</li>
+            <li>Registra la transacción para emitir el comprobante digital.</li>
+          </ol>
         </div>
 
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
             <ChevronRight className="h-4 w-4 text-blue-400" /> 5.5 Timbrados y Autoimpresores
           </h4>
-          <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Configuración y control de vigencia del rango de facturación física y del número de timbrado emitido por la administración tributaria.
+          <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6 font-semibold">
+            Configuración y registro de Timbrados:
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Navega a <strong className="text-white">Timbrados y Autoimp.</strong></li>
+            <li>Registra un nuevo número de timbrado especificando la vigencia (fecha de inicio y fin) y los rangos de facturación permitidos (Ej: 001-001-0000001 a 001-001-0001000).</li>
+            <li>El sistema emitirá alertas de vencimiento automáticas cuando falte menos de un mes para su caducidad.</li>
+          </ol>
         </div>
       </div>
     )
