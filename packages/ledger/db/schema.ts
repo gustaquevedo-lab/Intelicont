@@ -19,6 +19,7 @@ import { relations } from "drizzle-orm";
 
 export const entityStatusEnum = pgEnum("entity_status", ["active", "inactive", "closed"]);
 export const entityTypeEnum = pgEnum("entity_type", ["COMMERCIAL", "NON_PROFIT_NGO", "NON_PROFIT_PUBLIC", "ASSOCIATION"]);
+export const tenantTypeEnum = pgEnum("tenant_type", ["STUDIO", "TAXPAYER"]);
 export const fiscalPeriodStatusEnum = pgEnum("fiscal_period_status", ["open", "closing", "closed", "reopened"]);
 export const journalEntryStatusEnum = pgEnum("journal_entry_status", ["draft", "posted", "reversed"]);
 export const accountNatureEnum = pgEnum("account_nature", ["asset", "liability", "equity", "income", "expense"]);
@@ -59,6 +60,10 @@ export const entities = pgTable("entities", {
   plan: varchar("plan", { length: 50 }).default("starter").notNull(),
   features: jsonb("features").default({ sifenSync: true, aiTripleImputation: true, cgrReports: false }).notNull(),
   mrr: integer("mrr").default(180000).notNull(), // standard default starter plan is 180,000 PYG
+  tenantType: tenantTypeEnum("tenant_type").default("TAXPAYER").notNull(),
+  studioId: uuid("studio_id").references((): any => entities.id, { onDelete: "set null" }),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

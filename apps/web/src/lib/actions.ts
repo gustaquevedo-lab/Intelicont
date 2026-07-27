@@ -1406,6 +1406,10 @@ export async function createTenantAction(input: {
   taxRegimes?: string[];
   plan?: string;
   mrr?: number;
+  tenantType?: "STUDIO" | "TAXPAYER";
+  studioId?: string;
+  contactEmail?: string;
+  contactPhone?: string;
 }) {
   const actorId = await getCurrentActorId();
   if (!actorId) return { success: false, error: "Usuario no autenticado" };
@@ -1442,7 +1446,7 @@ export async function createTenantAction(input: {
     revalidatePath("/empresas");
     return { success: true, data: newEntity };
   } catch (err: any) {
-    return { success: false, error: err.message || "Error al crear la empresa" };
+    return { success: false, error: err.message || "Error al crear la entidad" };
   }
 }
 
@@ -1465,6 +1469,8 @@ export async function updateTenantCommercialsAction(
     features?: Record<string, boolean>;
     mrr?: number;
     status?: "active" | "inactive" | "closed";
+    contactEmail?: string;
+    contactPhone?: string;
   }
 ) {
   const actorId = await getCurrentActorId();

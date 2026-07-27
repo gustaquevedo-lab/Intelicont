@@ -406,6 +406,10 @@ export async function createEntity(data: {
   taxRegimes?: string[];
   plan?: string;
   mrr?: number;
+  tenantType?: "STUDIO" | "TAXPAYER";
+  studioId?: string;
+  contactEmail?: string;
+  contactPhone?: string;
 }) {
   const db = getDb();
   const [row] = await db.insert(schema.entities).values({
@@ -417,6 +421,10 @@ export async function createEntity(data: {
     plan: data.plan || "starter",
     mrr: data.mrr || 180000,
     status: "active",
+    tenantType: data.tenantType || "TAXPAYER",
+    studioId: data.studioId || null,
+    contactEmail: data.contactEmail || null,
+    contactPhone: data.contactPhone || null,
   }).returning();
   return row;
 }
@@ -428,6 +436,8 @@ export async function updateEntityCommercials(
     features?: Record<string, boolean>;
     mrr?: number;
     status?: "active" | "inactive" | "closed";
+    contactEmail?: string;
+    contactPhone?: string;
   }
 ) {
   const db = getDb();
@@ -437,6 +447,8 @@ export async function updateEntityCommercials(
       ...(data.features !== undefined && { features: data.features }),
       ...(data.mrr !== undefined && { mrr: data.mrr }),
       ...(data.status !== undefined && { status: data.status }),
+      ...(data.contactEmail !== undefined && { contactEmail: data.contactEmail }),
+      ...(data.contactPhone !== undefined && { contactPhone: data.contactPhone }),
       updatedAt: new Date(),
     })
     .where(eq(schema.entities.id, entityId))

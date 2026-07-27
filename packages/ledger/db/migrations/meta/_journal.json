@@ -43,6 +43,13 @@
       "when": 1785115451118,
       "tag": "0005_condemned_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785121621431,
+      "tag": "0006_mighty_winter_soldier",
+      "breakpoints": true
     }
   ]
 }
