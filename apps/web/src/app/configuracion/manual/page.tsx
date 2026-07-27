@@ -16,31 +16,31 @@ const SECTIONS = [
     title: "1. Introducción y Conceptos del SaaS",
     icon: BookOpen,
     content: (
-      <div className="space-y-6">
-        <p className="text-gray-300 leading-relaxed text-sm">
-          Bienvenido al manual oficial e interactivo de <strong className="text-white font-semibold">InteliCont™</strong>, la plataforma de contabilidad inteligente SaaS diseñada para el mercado tributario de Paraguay.
+      <div className="space-y-6 text-sm text-gray-300 leading-relaxed">
+        <p>
+          Bienvenido al manual oficial e interactivo de <strong className="text-white font-semibold">InteliCont™</strong>, la plataforma de contabilidad inteligente SaaS diseñada para el mercado tributario de Paraguay. Este documento provee instrucciones detalladas paso a paso, flujos lógicos de control y mocks de datos del mundo real para guiar a los usuarios desde el onboarding inicial hasta operaciones contables complejas.
         </p>
 
         <div className="bg-gradient-to-br from-blue-950/20 to-transparent border border-blue-900/30 rounded-2xl p-5">
           <h4 className="text-sm font-bold text-blue-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Shield className="h-4.5 w-4.5" /> Estructura del Ecosistema SaaS
+            <Shield className="h-4.5 w-4.5" /> Arquitectura Jerárquica del Sistema
           </h4>
-          <p className="text-gray-400 text-xs mb-4 leading-relaxed">
-            El sistema se rige bajo una arquitectura de Estudios Contables principales que actúan como suscriptores pagadores y las empresas de sus clientes a quienes administran contablemente.
+          <p className="text-xs text-gray-400 mb-4">
+            InteliCont opera bajo una estructura de niveles diseñada para estudios contables independientes o departamentos de auditoría interna de grandes grupos empresariales:
           </p>
           <div className="space-y-4 text-xs">
             <div className="flex items-start gap-3">
               <div className="h-6 w-6 rounded bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0 font-bold text-blue-400">1</div>
               <div>
-                <p className="font-semibold text-white">Estudios Contables (Tenant principal)</p>
-                <p className="text-gray-400">Es el cliente directo que paga la membresía mensual de InteliCont según su plan (Starter, Pro, InHouse/ESFL, Enterprise).</p>
+                <p className="font-semibold text-white">Estudios Contables (Tenant principal / Cuenta de Pago)</p>
+                <p className="text-gray-400">Representa la entidad legal que contrata la suscripción a InteliCont. Es responsable del pago del MRR según el plan contratado. Administra sus propios usuarios internos (contadores, auditores, asistentes).</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="h-6 w-6 rounded bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0 font-bold text-blue-400">2</div>
               <div>
-                <p className="font-semibold text-white">Empresas Contribuyentes (Gestionados)</p>
-                <p className="text-gray-400">Son los clientes que el estudio contable crea y opera bajo su propio panel administrativo sin cargos adicionales por parte de InteliCont.</p>
+                <p className="font-semibold text-white">Empresas Contribuyentes (Sub-entidades / Clientes del Estudio)</p>
+                <p className="text-gray-400">Son las empresas particulares cuyos libros son procesados. Cada contribuyente posee su propio plan de cuentas, libro diario, timbrados y reportes RG90.</p>
               </div>
             </div>
           </div>
@@ -53,8 +53,8 @@ const SECTIONS = [
           </div>
           <div className="text-xs space-y-1 font-mono">
             <p className="text-purple-400">🏢 ESTUDIO: García &amp; Asociados (Plan: PRO · MRR: Gs. 385.000)</p>
-            <p className="text-gray-500 pl-4">└── 💼 Contribuyente: Comercial Paraguaya S.A. (RUC: 3456789-0)</p>
-            <p className="text-gray-500 pl-4">└── 💼 Contribuyente: Importadora del Este S.A. (RUC: 80012345-1)</p>
+            <p className="text-gray-500 pl-4">└── 💼 Contribuyente A: Comercial Paraguaya S.A. (RUC: 3456789-0)</p>
+            <p className="text-gray-500 pl-4">└── 💼 Contribuyente B: Importadora del Este S.A. (RUC: 80012345-1)</p>
           </div>
         </div>
       </div>
@@ -65,22 +65,30 @@ const SECTIONS = [
     title: "2. Gestión Principal",
     icon: LayoutDashboard,
     content: (
-      <div className="space-y-6">
+      <div className="space-y-6 text-sm text-gray-300 leading-relaxed">
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
-            <ChevronRight className="h-4 w-4 text-blue-400" /> 2.1 Panel General
+            <ChevronRight className="h-4 w-4 text-blue-400" /> 2.1 Panel General (Dashboard)
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Ofrece un vistazo general de la salud financiera de la empresa activa. Muestra KPI clave como ingresos totales, gastos del mes, saldos consolidados en cuentas de efectivo, y atajos rápidos a los módulos más visitados.
+            Provee una perspectiva global en tiempo real de la situación de la empresa activa. Presenta tres indicadores principales: Ingresos Acumulados, Gastos del Mes y Efectivo Disponible.
           </p>
+          <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 mt-3 ml-6 font-mono text-xs space-y-2">
+            <p className="text-gray-400">MOCK DASHBOARD INTEGRADO</p>
+            <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+              <div className="bg-gray-900 p-2 rounded"><p className="text-gray-500">INGRESOS</p><p className="text-green-400 font-bold">Gs. 45.000.000</p></div>
+              <div className="bg-gray-900 p-2 rounded"><p className="text-gray-500">EGRESOS</p><p className="text-red-400 font-bold">Gs. 18.250.000</p></div>
+              <div className="bg-gray-900 p-2 rounded"><p className="text-gray-500">DISPONIBLE</p><p className="text-white font-bold">Gs. 26.750.000</p></div>
+            </div>
+          </div>
         </div>
 
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
-            <ChevronRight className="h-4 w-4 text-blue-400" /> 2.2 Carga SIFEN
+            <ChevronRight className="h-4 w-4 text-blue-400" /> 2.2 Carga SIFEN (Ingesta Electrónica)
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Captura directa de comprobantes electrónicos del Paraguay. Arrastrando el archivo XML emitido por el facturador electrónico del emisor, la IA analiza y desglosa montos exentos, base imponible e IVA (10% o 5%).
+            Procesa e importa comprobantes XML de facturas electrónicas oficiales en Paraguay. Desglosa los montos exentos y calcula de forma automática el crédito o débito fiscal de la transacción.
           </p>
           <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 mt-3 ml-6 space-y-3 font-mono text-[11px]">
             <div className="flex justify-between border-b border-gray-900 pb-2">
@@ -98,6 +106,12 @@ const SECTIONS = [
               <div className="flex justify-between"><span>2.1.01 Proveedores</span><span>H: Gs. 1.100.000</span></div>
             </div>
           </div>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-4">
+            <li>Navega a <strong className="text-white">Carga SIFEN</strong>.</li>
+            <li>Arrastra el archivo <strong className="text-white">.xml</strong> de tu factura de compra o venta al contenedor de carga.</li>
+            <li>El sistema mostrará en pantalla la razón social del emisor, RUC, número y timbrado del documento.</li>
+            <li>La IA propondrá un mapeo de cuentas contables. Confirma los campos y haz clic en <strong className="text-white">Crear Asiento Contable</strong>.</li>
+          </ol>
         </div>
 
         <div>
@@ -105,8 +119,13 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 2.3 Historial SIFEN
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Muestra el registro completo de todos los XMLs importados a la base de datos de InteliCont. Permite auditar y buscar facturas por Razón Social, RUC o número de comprobante.
+            Muestra el registro cronológico de todos los XMLs importados a la base de datos.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Accede a <strong className="text-white">Historial SIFEN</strong>.</li>
+            <li>Usa la barra de búsqueda superior para encontrar documentos por número de factura o RUC del emisor.</li>
+            <li>Bajo el listado, haz clic en cualquier fila para desplegar la información y ver el asiento contable asociado.</li>
+          </ol>
         </div>
 
         <div>
@@ -114,17 +133,28 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 2.4 Bandeja de Comprobantes
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Bandeja de entrada centralizada donde se guardan temporalmente los comprobantes escaneados o subidos antes de ser procesados e imputados en el libro diario.
+            Almacena de forma temporal los documentos escaneados o PDF de facturas pendientes de imputación.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Accede a <strong className="text-white">Bandeja Comprobantes</strong>.</li>
+            <li>Sube el archivo de imagen o PDF de tu factura.</li>
+            <li>Haz clic en <strong className="text-white">Procesar con IA</strong> para autocompletar los campos fiscales, o en <strong className="text-white">Imputar Manualmente</strong>.</li>
+          </ol>
         </div>
 
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
-            <ChevronRight className="h-4 w-4 text-blue-400" /> 2.5 Empresas
+            <ChevronRight className="h-4 w-4 text-blue-400" /> 2.5 Empresas (Contribuyentes)
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Permite al estudio contable crear, configurar y alternar entre los diferentes contribuyentes asignados a su cuenta. Permite ajustar RUC, tipo de entidad comercial o sin fines de lucro (ESFL).
+            Módulo para la creación de empresas contribuyentes asociadas al Estudio.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Navega a <strong className="text-white">Empresas</strong> en la barra lateral.</li>
+            <li>Haz clic en <strong className="text-white">Agregar Empresa</strong>.</li>
+            <li>Completa el RUC con dígito verificador, Razón Social, Dirección Comercial y tipo de entidad (IRE General / Simple o ESFL).</li>
+            <li>Pulsa guardar. La nueva empresa aparecerá disponible en el selector rápido en la barra superior.</li>
+          </ol>
         </div>
       </div>
     )
@@ -134,14 +164,20 @@ const SECTIONS = [
     title: "3. Contabilidad",
     icon: FileText,
     content: (
-      <div className="space-y-6">
+      <div className="space-y-6 text-sm text-gray-300 leading-relaxed">
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
-            <ChevronRight className="h-4 w-4 text-blue-400" /> 3.1 Asientos Contables
+            <ChevronRight className="h-4 w-4 text-blue-400" /> 3.1 Asientos Contables (Diario Diario)
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Libro diario del sistema. Permite agregar asientos manuales con doble columna tradicional (Débito/Crédito) y reversar o anular transacciones. Muestra balances y si el asiento cuadra a la perfección.
+            Muestra todos los asientos contables manuales y automáticos registrados.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Navega a <strong className="text-white">Asientos Contables</strong> y haz clic en <strong className="text-white">Nuevo Asiento</strong>.</li>
+            <li>Ingresa la fecha contable, número de referencia interna y concepto general de la operación.</li>
+            <li>En la grilla de cuentas, selecciona la cuenta del debe, ingresa el importe. Añade una fila para la cuenta del haber.</li>
+            <li>Verifica que la diferencia sea cero. Presiona <strong className="text-white">Postear Asiento</strong>.</li>
+          </ol>
         </div>
 
         <div>
@@ -149,17 +185,27 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 3.2 Plan de Cuentas
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Estructura contable parametrizada para Paraguay (Activo, Pasivo, Patrimonio Neto, Ingresos y Egresos). Puedes añadir subcuentas contables según la necesidad operativa del contribuyente.
+            Estructura jerárquica de cuentas de la empresa.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Accede a <strong className="text-white">Plan de Cuentas</strong>.</li>
+            <li>Selecciona una cuenta del listado para ver su naturaleza (Activo, Pasivo, Gasto).</li>
+            <li>Haz clic en <strong className="text-white">Nueva Cuenta</strong>, define el código jerárquico (ej: <code className="font-mono bg-gray-800 px-1 py-0.5 rounded text-blue-300">1.1.02.05</code>) y el nombre de la cuenta. Pulsa guardar.</li>
+          </ol>
         </div>
 
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
-            <ChevronRight className="h-4 w-4 text-blue-400" /> 3.3 Libros Diarios / Mayores
+            <ChevronRight className="h-4 w-4 text-blue-400" /> 3.3 Libros Diarios y Mayores
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Filtro interactivo y exportación del libro mayor por cuenta contable o por período mensual/anual. Muestra saldos deudores y acreedores listos para la presentación de informes.
+            Muestra el detalle contable de movimientos mensuales.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Accede a <strong className="text-white">Libros Diarios/Mayores</strong>.</li>
+            <li>Filtra seleccionando la cuenta a auditar y el período de fechas de interés.</li>
+            <li>Haz clic en <strong className="text-white">Generar Mayor</strong>. El sistema listará todos los débitos, créditos y saldos acumulados deudores/acreedores.</li>
+          </ol>
         </div>
 
         <div>
@@ -182,8 +228,13 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 3.5 Cierre de Períodos
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Módulo de bloqueo temporal. Una vez cerrado el mes o año fiscal, ningún usuario puede alterar, borrar ni insertar nuevos asientos contables, asegurando la integridad de los datos reportados.
+            Módulo de resguardo y seguridad contable.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Navega a <strong className="text-white">Cierre de Períodos</strong>.</li>
+            <li>Selecciona el mes y año contable a cerrar.</li>
+            <li>Haz clic en <strong className="text-white">Cerrar Período Contable</strong>. Esto bloqueará toda edición y creación de asientos del mes seleccionado.</li>
+          </ol>
         </div>
 
         <div>
@@ -191,8 +242,13 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 3.6 Estados Financieros
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Generación al instante del Balance General y Estado de Resultados consolidado. Se calculan dinámicamente basándose en la totalidad de los asientos contabilizados del período.
+            Genera e imprime los estados financieros reglamentarios de la SET/DNIT.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Navega a <strong className="text-white">Estados Financieros</strong>.</li>
+            <li>Selecciona el ejercicio fiscal de interés.</li>
+            <li>Haz clic en <strong className="text-white">Balance General</strong> o <strong className="text-white">Estado de Resultados</strong> para emitir los reportes consolidados.</li>
+          </ol>
         </div>
 
         <div>
@@ -200,8 +256,14 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 3.7 Clientes / Proveedores (Terceros)
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Directorio centralizado de clientes y proveedores. Permite guardar datos clave como RUC, Razón Social, dirección de contacto y timbrado predeterminado de facturas.
+            Directorio de las contrapartes comerciales del contribuyente.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Accede a <strong className="text-white">Clientes / Proveedores</strong>.</li>
+            <li>Haz clic en <strong className="text-white">Nuevo Tercero</strong>.</li>
+            <li>Carga la Razón Social, RUC, Teléfono y Correo.</li>
+            <li>Define su rol (Cliente, Proveedor o Ambos) y presiona guardar.</li>
+          </ol>
         </div>
       </div>
     )
@@ -211,13 +273,13 @@ const SECTIONS = [
     title: "4. Tesorería y Finanzas",
     icon: Coins,
     content: (
-      <div className="space-y-6">
+      <div className="space-y-6 text-sm text-gray-300 leading-relaxed">
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
             <ChevronRight className="h-4 w-4 text-blue-400" /> 4.1 Conciliación Bancaria
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Este módulo automatiza el cuadre entre los movimientos de los extractos bancarios cargados y los registros del libro mayor de bancos del contribuyente.
+            Modulo para cruzar movimientos del extracto bancario físico con el libro mayor de banco del sistema.
           </p>
           <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 mt-3 ml-6 space-y-3 font-mono text-[11px]">
             <div className="flex justify-between border-b border-gray-900 pb-2">
@@ -233,6 +295,12 @@ const SECTIONS = [
               <span>Gs. 11.000.000 (H)</span>
             </div>
           </div>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-4">
+            <li>Ingresa a <strong className="text-white">Conciliación Bancaria</strong> e importa el archivo CSV de movimientos bancarios del mes.</li>
+            <li>El sistema comparará las fechas y montos y propondrá matches automáticos en la pantalla.</li>
+            <li>Para cada coincidencia correcta, haz clic en el botón de confirmación verde (asiento cuadrado).</li>
+            <li>Si hay movimientos sin coincidencia (ej: comisiones bancarias), presiona <strong className="text-white">Registrar Gasto</strong> para generar la póliza directo desde la grilla.</li>
+          </ol>
         </div>
 
         <div>
@@ -246,7 +314,7 @@ const SECTIONS = [
             <li>Bajo <strong className="text-white">Caja Chica</strong>, selecciona tu fondo fijo activo.</li>
             <li>Haz clic en <strong className="text-white">Rendir Ticket / Gasto</strong>.</li>
             <li>Ingresa los datos del comprobante: fecha, RUC, número de factura y monto total.</li>
-            <li>Selecciona el IVA correspondiente y la categoría del gasto (ej: Alimentación).</li>
+            <li>Selecciona el IVA correspondiente (10%, 5% o exento) y la categoría del gasto.</li>
             <li>Presiona guardar. Una vez acumulado, presiona <strong className="text-white">Reponer Fondo</strong> para generar la póliza contable automática.</li>
           </ol>
         </div>
@@ -256,7 +324,7 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 4.3 Órdenes de Pago
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6 font-semibold">
-            Flujo de Órdenes de Pago:
+            Flujo de egresos autorizados:
           </p>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Accede a <strong className="text-white">Órdenes de Pago</strong>.</li>
@@ -274,13 +342,13 @@ const SECTIONS = [
     title: "5. Gestión Fiscal y Formularios",
     icon: Calculator,
     content: (
-      <div className="space-y-6">
+      <div className="space-y-6 text-sm text-gray-300 leading-relaxed">
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
             <ChevronRight className="h-4 w-4 text-blue-400" /> 5.1 Calendario Fiscal
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Muestra los vencimientos de la DNIT para el contribuyente, ordenados según la terminación del RUC de la empresa para evitar multas de presentación tardía.
+            Muestra de manera interactiva las fechas de vencimiento de las obligaciones tributarias (IVA, IRE, etc.) asociadas a la terminación del RUC de la empresa.
           </p>
         </div>
 
@@ -289,8 +357,13 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 5.2 Libro IVA / RG90
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Generador de archivos CSV compatibles para la importación directa de la RG 90 en el software tributario Marangatú de la SET/DNIT.
+            Consolida las ventas y compras registradas y genera los archivos CSV requeridos para la carga masiva en el aplicativo de la SET.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Accede a <strong className="text-white">Libro IVA / RG90</strong>.</li>
+            <li>Selecciona el mes y año contable.</li>
+            <li>Presiona <strong className="text-white">Exportar CSV RG90</strong>. El sistema descargará los archivos de compras y ventas listos para su importación directa en Marangatú.</li>
+          </ol>
         </div>
 
         <div>
@@ -298,8 +371,14 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 5.3 Liquidación Impuestos
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Cálculo estimado de tasas para IVA, IRE e IRP. Cuenta con el **Copiloto Fiscal IA** que lee tus montos calculados y te brinda alertas tributarias y optimizaciones legales con Gemini.
+            Estimador rápido de impuestos en base a los datos operativos del contribuyente.
           </p>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Ve a <strong className="text-white">Liquidación Impuestos</strong>.</li>
+            <li>Completa los datos en la pestaña correspondiente (ej: Ventas y Compras en IVA).</li>
+            <li>Presiona <strong className="text-white">Calcular</strong> para ver el saldo a favor o el impuesto a pagar.</li>
+            <li>Haz clic en <strong className="text-white">Copiloto Fiscal IA</strong> para recibir un informe de contingencia y sugerencias de ahorro tributario legal en Paraguay.</li>
+          </ol>
         </div>
 
         <div>
@@ -307,7 +386,7 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 5.4 Retenciones Tesakã
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6 font-semibold">
-            Flujo de emisión de Retención Tesakã:
+            Emisión de comprobante de retenciones:
           </p>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Navega a <strong className="text-white">Retenciones Tesakã</strong>.</li>
@@ -323,11 +402,11 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 5.5 Timbrados y Autoimpresores
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6 font-semibold">
-            Configuración y registro de Timbrados:
+            Control de Timbrados:
           </p>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Navega a <strong className="text-white">Timbrados y Autoimp.</strong></li>
-            <li>Registra un nuevo número de timbrado especificando la vigencia (fecha de inicio y fin) y los rangos de facturación permitidos (Ej: 001-001-0000001 a 001-001-0001000).</li>
+            <li>Registra un nuevo número de timbrado especificando la vigencia (fecha de inicio y fin) y los rangos de facturación permitidos.</li>
             <li>El sistema emitirá alertas de vencimiento automáticas cuando falte menos de un mes para su caducidad.</li>
           </ol>
         </div>
@@ -339,13 +418,13 @@ const SECTIONS = [
     title: "6. Soporte y Configuración",
     icon: Settings,
     content: (
-      <div className="space-y-6">
+      <div className="space-y-6 text-sm text-gray-300 leading-relaxed">
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
             <ChevronRight className="h-4 w-4 text-blue-400" /> 6.1 Reportes Varios
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Exportación de balances de sumas y saldos, informes auxiliares de clientes, evolución patrimonial y plantillas financieras en formato Excel y PDF.
+            Muestra el listado de todos los reportes operativos del sistema. Permite exportar en un par de clics balances de sumas y saldos, balances generales consolidados en Excel o archivos PDF firmados digitalmente.
           </p>
         </div>
 
@@ -354,7 +433,7 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 6.2 Auditoría Contable (InteliAudit™)
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Motor inteligente que audita los últimos asientos contables generados buscando desbalances, inconsistencias, o anomalías de registro, asignando una calificación contable (ej: A+).
+            Módulo que audita de forma inteligente los últimos 10 asientos contables del libro diario utilizando Gemini. Busca descuadres, falta de desglose de IVA y riesgos contables generales.
           </p>
         </div>
 
@@ -363,7 +442,7 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 6.3 Mi Estudio
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Configuraciones generales de la cuenta del estudio contable: datos de facturación, logo corporativo y asignación de permisos de colaboradores.
+            Configuración general de la suscripción del estudio contable. Permite ajustar datos del emisor del estudio, cuentas de cobro e invitar o remover usuarios de la organización.
           </p>
         </div>
 
