@@ -84,6 +84,7 @@ const navGroups = [
       { path: "/reportes", icon: BarChart3, label: "Reportes Varios" },
       { path: "/auditoria", icon: Activity, label: "Auditoría Contable" },
       { path: "/configuracion", icon: Settings, label: "Mi Estudio" },
+      { path: "/superadmin", icon: Shield, label: "Superadmin SaaS" },
     ],
   },
 ];
