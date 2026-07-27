@@ -1390,3 +1390,101 @@ export async function getAiDecisions(entityId: string) {
   await setEntityContext(entityId);
   return repo.getAiDecisions(entityId);
 }
+
+// ─── Superadmin Operations ────────────────────────────────────────────────
+
+export async function createTenantAction(input: {
+  ruc: string;
+  legalName: string;
+  tradeName?: string;
+  entityType?: "COMMERCIAL" | "NON_PROFIT_NGO" | "NON_PROFIT_PUBLIC" | "ASSOCIATION";
+  taxRegimes?: string[];
+  plan?: string;
+  mrr?: number;
+}) {
+  const actorId = await getCurrentActorId();
+  if (!actorId) return { success: false, error: "Usuario no autenticado" };
+
+  try {
+    const db = getDb();
+    const newEntity = await repo.createEntity(input);
+
+    await db.insert(schema.memberships).values({
+      userId: actorId,
+      entityId: newEntity.id,
+      role: "admin",
+    });
+
+    const [coa] = await db
+      .insert(schema.chartOfAccounts)
+      .values({
+        entityId: newEntity.id,
+        kind: "fiscal_py",
+        name: "Plan de Cuentas PY",
+      })
+      .returning();
+
+    await db.insert(schema.accounts).values([
+      { coaId: coa.id, code: "1.1.01", name: "Caja", nature: "asset", allowsPosting: true },
+      { coaId: coa.id, code: "1.1.02", name: "Banco Cta. Cte.", nature: "asset", allowsPosting: true },
+      { coaId: coa.id, code: "2.1.01", name: "Proveedores", nature: "liability", allowsPosting: true },
+      { coaId: coa.id, code: "3.1.01", name: "Capital", nature: "equity", allowsPosting: true },
+      { coaId: coa.id, code: "4.1.01", name: "Ventas", nature: "income", allowsPosting: true },
+      { coaId: coa.id, code: "5.1.01", name: "Gastos Generales", nature: "expense", allowsPosting: true },
+    ]);
+
+    revalidatePath("/superadmin");
+    revalidatePath("/empresas");
+    return { success: true, data: newEntity };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Error al crear la empresa" };
+  }
+}
+
+export async function getSuperadminTenantsAction() {
+  const actorId = await getCurrentActorId();
+  if (!actorId) throw new Error("No autenticado");
+  return repo.getEntities();
+}
+
+export async function getSuperadminUsersAction() {
+  const actorId = await getCurrentActorId();
+  if (!actorId) throw new Error("No autenticado");
+  return repo.getUsersList();
+}
+
+export async function updateTenantCommercialsAction(
+  entityId: string,
+  data: {
+    plan?: string;
+    features?: Record<string, boolean>;
+    mrr?: number;
+    status?: "active" | "inactive" | "closed";
+  }
+) {
+  const actorId = await getCurrentActorId();
+  if (!actorId) return { success: false, error: "No autenticado" };
+
+  try {
+    const updated = await repo.updateEntityCommercials(entityId, data);
+    revalidatePath("/superadmin");
+    return { success: true, data: updated };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function resetUserPasswordAction(userId: string, newPassword: string) {
+  const actorId = await getCurrentActorId();
+  if (!actorId) return { success: false, error: "No autenticado" };
+
+  try {
+    const bcrypt = await import("bcryptjs");
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await repo.updateUserPassword(userId, passwordHash);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+

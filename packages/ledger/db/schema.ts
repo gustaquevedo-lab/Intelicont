@@ -56,6 +56,9 @@ export const entities = pgTable("entities", {
   status: entityStatusEnum("status").default("active"),
   aiProvider: varchar("ai_provider", { length: 50 }).notNull().default("gemini"),
   aiApiKey: text("ai_api_key"),
+  plan: varchar("plan", { length: 50 }).default("starter").notNull(),
+  features: jsonb("features").default({ sifenSync: true, aiTripleImputation: true, cgrReports: false }).notNull(),
+  mrr: integer("mrr").default(180000).notNull(), // standard default starter plan is 180,000 PYG
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

@@ -395,3 +395,75 @@ export async function getAiDecisions(entityId: string): Promise<AiDecision[]> {
     .where(eq(schema.aiDecisions.entityId, entityId))
     .orderBy(desc(schema.aiDecisions.createdAt));
 }
+
+// ─── SaaS Superadmin Operations ───────────────────────────────────────────
+
+export async function createEntity(data: {
+  ruc: string;
+  legalName: string;
+  tradeName?: string;
+  entityType?: "COMMERCIAL" | "NON_PROFIT_NGO" | "NON_PROFIT_PUBLIC" | "ASSOCIATION";
+  taxRegimes?: string[];
+  plan?: string;
+  mrr?: number;
+}) {
+  const db = getDb();
+  const [row] = await db.insert(schema.entities).values({
+    ruc: data.ruc,
+    legalName: data.legalName,
+    tradeName: data.tradeName || null,
+    entityType: data.entityType || "COMMERCIAL",
+    taxRegimes: data.taxRegimes || ["IVA_GRAL"],
+    plan: data.plan || "starter",
+    mrr: data.mrr || 180000,
+    status: "active",
+  }).returning();
+  return row;
+}
+
+export async function updateEntityCommercials(
+  entityId: string,
+  data: {
+    plan?: string;
+    features?: Record<string, boolean>;
+    mrr?: number;
+    status?: "active" | "inactive" | "closed";
+  }
+) {
+  const db = getDb();
+  const [row] = await db.update(schema.entities)
+    .set({
+      ...(data.plan !== undefined && { plan: data.plan }),
+      ...(data.features !== undefined && { features: data.features }),
+      ...(data.mrr !== undefined && { mrr: data.mrr }),
+      ...(data.status !== undefined && { status: data.status }),
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.entities.id, entityId))
+    .returning();
+  return row;
+}
+
+export async function updateUserPassword(userId: string, passwordHash: string) {
+  const db = getDb();
+  const [row] = await db.update(schema.users)
+    .set({
+      passwordHash,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.users.id, userId))
+    .returning();
+  return row;
+}
+
+export async function getUsersList() {
+  const db = getDb();
+  return db.select({
+    id: schema.users.id,
+    email: schema.users.email,
+    name: schema.users.name,
+    emailVerified: schema.users.emailVerified,
+    createdAt: schema.users.createdAt,
+  }).from(schema.users).orderBy(desc(schema.users.createdAt));
+}
+

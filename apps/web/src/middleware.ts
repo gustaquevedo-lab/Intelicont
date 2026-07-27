@@ -21,6 +21,7 @@ const PUBLIC_PATHS = [
 
 function isPublic(pathname: string): boolean {
   return (
+    pathname === "/" ||
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth") ||     // auth API routes are public
