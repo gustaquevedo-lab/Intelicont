@@ -24,7 +24,7 @@ type FormState =
 export default function LoginPage() {
   const router        = useRouter();
   const searchParams  = useSearchParams();
-  const redirectTo    = searchParams.get("redirectTo") ?? "/";
+  const redirectTo    = searchParams.get("redirectTo") ?? "/dashboard";
   const callbackError = searchParams.get("error");
 
   const [mode, setMode]           = useState<AuthMode>("magic");

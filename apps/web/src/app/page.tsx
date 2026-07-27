@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useUser } from "@/hooks/use-user";
 import {
   Sparkles, CheckCircle2, Shield, ArrowRight, Zap,
@@ -9,6 +11,13 @@ import {
 
 export default function LandingPage() {
   const { user } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard");
+    }
+  }, [user, router]);
 
   const pricingPlans = [
     {
