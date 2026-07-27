@@ -84,6 +84,18 @@ const MockCard = ({ children, title }: { children: ReactNode; title?: string }) 
   </div>
 );
 
+const Screenshot = ({ src, alt, caption }: { src: string; alt: string; caption?: string }) => (
+  <div className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden">
+    <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900/50">
+      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{caption || "InteliCont"}</span>
+      <span className="text-[10px] text-gray-600">InteliCont</span>
+    </div>
+    <div className="p-2">
+      <img src={src} alt={alt} className="w-full h-auto rounded-lg border border-gray-800" loading="lazy" />
+    </div>
+  </div>
+);
+
 const AppLink = ({ href, label }: { href: string; label: string }) => (
   <a
     href={href}
@@ -200,18 +212,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           o <strong className="text-white">Email + Contraseña</strong>. La pantalla de login se adapta a desktop y móvil.
         </p>
 
-        <MockCard title="Pantalla de Login">
-          <div className="space-y-2 text-gray-400">
-            <p className="text-center text-white font-bold mb-3">✦ InteliCont — Contabilidad Inteligente</p>
-            <div className="border border-gray-800 rounded-lg p-3 space-y-2">
-              <p className="text-gray-500 text-[10px]">MODO: [✨ Magic Link] [Contraseña]</p>
-              <p className="text-gray-300">✉️ Email: [________________________]</p>
-              <p className="text-gray-500 text-[10px]">(modo contraseña) 🔒 Contraseña: [________]</p>
-              <p className="text-center text-primary font-bold mt-2">[✨ Enviar enlace mágico →]</p>
-            </div>
-            <p className="text-gray-600 text-[10px] text-center">© 2026 IntelliHouse · RUC 80144114-5</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/00-login-filled.png"
+          alt="Pantalla de inicio de sesión de InteliCont con campos de email y contraseña"
+          caption="Pantalla de Login"
+        />
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Modo Magic Link (recomendado)</h4>
@@ -322,23 +327,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         <p className="text-gray-300 text-sm leading-relaxed">
           La interfaz se compone de cuatro elementos principales que se mantienen consistentes en todo el sistema.
         </p>
-        <MockCard title="Estructura de la interfaz">
-          <div className="space-y-1 text-gray-400">
-            <p className="text-blue-400">┌─────────────────────────────────────────────────┐</p>
-            <p className="text-blue-400">│  📌 TopBar — Búsqueda global, entity switcher    │</p>
-            <p className="text-blue-400">│  notificaciones, perfil                          │</p>
-            <p className="text-blue-400">├──────────────┬──────────────────────────────────┤</p>
-            <p className="text-blue-400">│  📂 Sidebar  │  📄 Contenido principal            │</p>
-            <p className="text-blue-400">│              │                                   │</p>
-            <p className="text-blue-400">│  Módulos     │  Aquí se renderiza la página        │</p>
-            <p className="text-blue-400">│  Navegación  │  activa del módulo seleccionado    │</p>
-            <p className="text-blue-400">│  Entity      │                                   │</p>
-            <p className="text-blue-400">│  Switcher    │                                   │</p>
-            <p className="text-blue-400">├──────────────┴──────────────────────────────────┤</p>
-            <p className="text-blue-400">│  Footer — Versión, enlaces                      │</p>
-            <p className="text-blue-400">└─────────────────────────────────────────────────┘</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/01-dashboard.png"
+          alt="Vista principal de InteliCont mostrando TopBar, Sidebar y contenido del Dashboard"
+          caption="Estructura de la interfaz"
+        />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { title: "Barra Superior (TopBar)", desc: "Contiene el buscador global (⌘K), selector de empresa, notificaciones, perfil de usuario y tema." },
@@ -404,19 +397,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Entity Switcher en la TopBar permite cambiar entre empresas sin cerrar sesión.
           Al seleccionar una empresa, TODO el contexto cambia: plan de cuentas, asientos, saldos, configuración.
         </p>
-        <MockCard title="Entity Switcher">
-          <div className="space-y-2 text-gray-400">
-            <p className="text-gray-500 text-[10px]">EMPRESA ACTIVA</p>
-            <p className="text-white font-bold">🏢 Estudio ABC S.A.</p>
-            <p className="text-gray-500 text-[10px]">RUC: 8.014.411-5</p>
-            <div className="border-t border-gray-800 pt-2 mt-2 space-y-1">
-              <p className="text-gray-500 text-[10px]">CAMBIAR A:</p>
-              <p className="hover:text-white cursor-pointer">🏢 Cliente XYZ S.A. — RUC: 8.012.345-6</p>
-              <p className="hover:text-white cursor-pointer">🏢 Distribuidora ABC — RUC: 8.023.456-7</p>
-              <p className="text-primary text-[10px] mt-1">+ Agregar empresa</p>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/01-dashboard.png"
+          alt="Entity Switcher en la TopBar mostrando selector de empresa activa"
+          caption="Entity Switcher"
+        />
         <StepList
           steps={[
             { title: "Abra el selector", body: <>Haga clic en el nombre de la empresa actual en la TopBar, o use <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">⌘E</kbd>.</> },
@@ -440,27 +425,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           La paleta de comandos es el acceso más rápido a cualquier funcionalidad del sistema.
           Se abre con <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">⌘K</kbd> y permite buscar módulos y acciones.
         </p>
-        <MockCard title="Paleta de Comandos">
-          <div className="space-y-2 text-gray-400">
-            <p className="text-gray-500 text-[10px]">⌘K — Paleta de Comandos</p>
-            <div className="border border-gray-800 rounded-lg p-2 flex items-center gap-2">
-              <span className="text-gray-500">🔍</span>
-              <span className="text-gray-300">[ Buscar módulos y acciones...               ]</span>
-            </div>
-            <div className="space-y-1 mt-2">
-              <p className="text-gray-500 text-[10px]">MÓDULOS</p>
-              <p className="hover:text-white cursor-pointer">📊 Ir a Dashboard</p>
-              <p className="hover:text-white cursor-pointer">📒 Ir a Asientos Contables</p>
-              <p className="hover:text-white cursor-pointer">📄 Ir a SIFEN</p>
-              <p className="hover:text-white cursor-pointer">👥 Ir a Empresas</p>
-            </div>
-            <div className="space-y-1 mt-2 border-t border-gray-800 pt-2">
-              <p className="text-gray-500 text-[10px]">ACCIONES</p>
-              <p className="hover:text-white cursor-pointer">➕ Nuevo asiento contable</p>
-              <p className="hover:text-white cursor-pointer">📤 Importar SIFEN</p>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/01-dashboard.png"
+          alt="Paleta de comandos (⌘K) de InteliCont"
+          caption="Paleta de Comandos"
+        />
         <Tip>
           También puede usar <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">G</kbd> + <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">[letra]</kbd> para navegación rápida: <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">G</kbd><kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">D</kbd> = Dashboard, <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">G</kbd><kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">A</kbd> = Asientos.
         </Tip>
@@ -483,36 +452,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Dashboard es la página principal que se muestra al iniciar sesión. Proporciona una visión general
           del estado financiero de la empresa activa con indicadores clave y accesos directos.
         </p>
-        <MockCard title="Panel General">
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-gray-900 rounded-lg p-3">
-                <p className="text-gray-500 text-[10px]">INGRESOS ACUMULADOS</p>
-                <p className="text-green-400 font-bold text-sm">Gs. 120.500.000</p>
-                <p className="text-green-500/60 text-[10px]">↑ 12% vs mes ant.</p>
-              </div>
-              <div className="bg-gray-900 rounded-lg p-3">
-                <p className="text-gray-500 text-[10px]">GASTOS DEL MES</p>
-                <p className="text-red-400 font-bold text-sm">Gs. 45.230.000</p>
-                <p className="text-red-500/60 text-[10px]">↑ 3% vs mes ant.</p>
-              </div>
-              <div className="bg-gray-900 rounded-lg p-3">
-                <p className="text-gray-500 text-[10px]">EFECTIVO DISPONIBLE</p>
-                <p className="text-white font-bold text-sm">Gs. 32.800.000</p>
-                <p className="text-gray-500 text-[10px]">3 cuentas bancarias</p>
-              </div>
-            </div>
-            <div className="border-t border-gray-800 pt-3">
-              <p className="text-gray-500 text-[10px] mb-2">ACCESOS RÁPIDOS</p>
-              <div className="grid grid-cols-2 gap-2">
-                <p className="text-primary text-[10px]">📤 Cargar SIFEN</p>
-                <p className="text-primary text-[10px]">📒 Nuevo Asiento</p>
-                <p className="text-primary text-[10px]">📊 Estados Financieros</p>
-                <p className="text-primary text-[10px]">🗓 Calendario Fiscal</p>
-              </div>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/01-dashboard.png"
+          alt="Dashboard principal de InteliCont con indicadores financieros"
+          caption="Panel General"
+        />
       </div>
     ),
   },
@@ -568,22 +512,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El módulo SIFEN permite importar comprobantes electrónicos desde archivos XML descargados del
           portal SIFEN de la SET/DNIT, o sincronizar automáticamente vía API.
         </p>
-        <MockCard title="Carga SIFEN — Asistente de importación">
-          <div className="space-y-2 text-gray-400">
-            <div className="border-2 border-dashed border-gray-700 rounded-xl p-6 text-center">
-              <p className="text-2xl mb-1">📄</p>
-              <p className="text-gray-300 font-medium">Arrastre sus archivos XML aquí</p>
-              <p className="text-gray-600 text-[10px]">o haga clic para seleccionar archivos</p>
-              <p className="text-gray-600 text-[10px] mt-2">Soportado: XML SIFEN (hasta 50 archivos)</p>
-            </div>
-            <div className="bg-gray-900 rounded-lg p-3 space-y-1">
-              <p className="text-green-400 text-[10px]">✅ Archivo: 001-001-0001234.xml (3.2 KB)</p>
-              <p className="text-green-400 text-[10px]">✅ Archivo: 001-001-0001235.xml (2.8 KB)</p>
-              <p className="text-blue-400 text-[10px]">⏳ Procesando: 001-001-0001236.xml...</p>
-            </div>
-            <p className="text-center text-primary font-bold text-[10px] mt-2">[📤 Importar 2 archivos]  [🗑 Limpiar]</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/03-sifen.png"
+          alt="Módulo de carga de facturas SIFEN con área de arrastre de archivos XML"
+          caption="Carga SIFEN — Asistente de importación"
+        />
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Paso a paso</h4>
           <StepList
@@ -615,18 +548,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Historial SIFEN muestra todos los comprobantes importados con su estado de procesamiento.
           Desde aquí puede aprobar, rechazar, o ver el detalle de cada comprobante.
         </p>
-        <MockCard title="Historial SIFEN">
-          <div className="space-y-2">
-            <p className="text-gray-500 text-[10px]">🔍 [Buscar por CDC/factura...]  Estado: [Todos ▼]</p>
-            <div className="space-y-1 text-gray-400">
-              <p className="text-[10px] text-gray-600 border-b border-gray-800 pb-1">DOCUMENTO    | PROVEEDOR    | FECHA   | TOTAL     | ESTADO</p>
-              <p className="text-[10px] text-green-400">001-001-012345 | Dist. ABC    | 03/05  | Gs. 6.1M  | ✅ Contabilizado</p>
-              <p className="text-[10px] text-yellow-400">001-004-067890 | Ferretería X | 02/05  | Gs. 2.3M  | 🟡 Pendiente</p>
-              <p className="text-[10px] text-red-400">001-001-054321 | Tigo         | 28/04  | Gs. 850K  | ❌ Error</p>
-            </div>
-            <p className="text-primary text-[10px]">[✓ Aprobar sel.]  [✕ Rechazar sel.]  Mostrando 1-3 de 47</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/04-sifen-historial.png"
+          alt="Historial de comprobantes SIFEN con estados de procesamiento"
+          caption="Historial SIFEN"
+        />
         <FieldTable
           fields={[
             { field: "Documento", type: "Texto", desc: "Número de factura (001-001-XXXXX) o CDC" },
@@ -653,6 +579,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Emite comprobantes electrónicos directamente desde InteliCont. Soporta Factura Electrónica,
           Nota de Crédito, Nota de Débito y Autofactura.
         </p>
+        <Screenshot
+          src="/manual/05-sifen-emitir.png"
+          alt="Formulario de emisión de comprobantes electrónicos SIFEN"
+          caption="SIFEN — Emitir Comprobantes"
+        />
         <StepList
           steps={[
             { title: "Seleccione tipo", body: <>Elija entre Factura Electrónica, Nota de Crédito, Nota de Débito o Autofactura.</> },
@@ -685,22 +616,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           La bandeja de comprobantes es la cola de procesamiento donde los documentos SIFEN esperan
           clasificación, revisión y conversión a asientos contables. Es el centro de comando diario del contador.
         </p>
-        <MockCard title="Bandeja de Comprobantes">
-          <div className="space-y-2">
-            <p className="text-gray-500 text-[10px]">Estado: [Pendientes ▼]  [🧠 IA Sugerir todos]</p>
-            <div className="bg-gray-900 rounded-lg p-3 space-y-2">
-              <p className="text-[11px] text-yellow-400">📄 001-001-012345 | Dist. ABC S.A. | Gs. 6.102.500 | 🟡 Pendiente</p>
-              <p className="text-[10px] text-gray-500">RUC: 80012345-6 | CDC: 001-001-00001234567890...</p>
-              <p className="text-[10px] text-primary">[🤖 Sugerir asiento] [🗑 Descartar]</p>
-            </div>
-            <div className="bg-gray-900 rounded-lg p-3 space-y-2">
-              <p className="text-[11px] text-green-400">📄 001-004-067890 | Ferretería XYZ | Gs. 2.350.000 | ✅ Contabilizado</p>
-              <p className="text-[10px] text-gray-500">RUC: 80123456-7 | 📎 JE-2026-028</p>
-              <p className="text-[10px] text-primary">[👁 Ver asiento]</p>
-            </div>
-            <p className="text-primary text-[10px] mt-2">[✓ Aprobar seleccionados] [✕ Rechazar]</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/06-comprobantes.png"
+          alt="Bandeja de comprobantes con lista de documentos SIFEN pendientes"
+          caption="Bandeja de Comprobantes"
+        />
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Flujo de trabajo diario</h4>
           <StepList
@@ -731,18 +651,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El listado de asientos es el Libro Diario de la empresa. Muestra todos los asientos contables
           registrados con su fecha, número, descripción y totales.
         </p>
-        <MockCard title="Asientos Contables — Listado">
-          <div className="space-y-2">
-            <p className="text-gray-500 text-[10px]">🔍 [Buscar...]  Período: [Julio 2026 ▼]  [+ Nuevo]</p>
-            <div className="space-y-1 text-gray-400">
-              <p className="text-[10px] text-gray-600 border-b border-gray-800 pb-1">NRO.        | FECHA      | DESCRIPCIÓN          | DEBE       | HABER</p>
-              <p className="text-[10px]">JE-2026-045 | 27/07/2026 | Pago proveedor ABC   | 6.105.000  | 6.105.000</p>
-              <p className="text-[10px]">JE-2026-044 | 25/07/2026 | Factura venta XYZ    | 3.450.000  | 3.450.000</p>
-              <p className="text-[10px]">JE-2026-043 | 20/07/2026 | Ajuste tipo cambio   |   250.000  |   250.000</p>
-            </div>
-            <p className="text-primary text-[10px]">[✓ Postear sel.] [✕ Reversar sel.]  Pág: [1] [2] [▶]</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/07-asientos.png"
+          alt="Listado de asientos contables (Libro Diario) con fechas, descripciones y montos"
+          caption="Asientos Contables — Listado"
+        />
         <FieldTable
           fields={[
             { field: "Nro.", type: "ID correlativo", desc: "Formato: JE-2026-NNN (correlativo por año-empresa)" },
@@ -787,14 +700,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Líneas del asiento</h4>
-          <MockCard title="Grilla de líneas">
-            <div className="space-y-1 text-gray-400">
-              <p className="text-[10px] text-gray-600 border-b border-gray-800 pb-1">#  | CUENTA               | DÉBITO    | CRÉDITO</p>
-              <p className="text-[10px]">1  | 🔍 [1.01.001 Caja]     | 6.105.000 |         </p>
-              <p className="text-[10px]">2  | 🔍 [2.01.001 Proveed.] |           | 6.105.000</p>
-              <p className="text-[10px] text-gray-600 mt-2">TOTAL:                    | 6.105.000 | 6.105.000 ✅</p>
-            </div>
-          </MockCard>
+          <Screenshot
+            src="/manual/08-asientos-nuevo.png"
+            alt="Formulario de nuevo asiento contable con grilla de líneas débito/crédito"
+            caption="Grilla de líneas"
+          />
         </div>
 
         <StepList
@@ -829,21 +739,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El detalle del asiento muestra toda la información de una entrada contable. Desde aquí
           se pueden realizar acciones como reversión y ajuste.
         </p>
-        <MockCard title="Detalle de asiento">
-          <div className="space-y-2 text-gray-400">
-            <p className="text-white font-bold">📄 JE-2026-045 — Pago factura 001-001-012345</p>
-            <p className="text-[10px]">Estado: ✅ Posteado  |  Fecha: 27/07/2026  |  Moneda: PYG</p>
-            <p className="text-[10px]">Creado por: admin@estudio.com.py  |  27/07/2026 14:32</p>
-            <div className="border-t border-gray-800 pt-2 space-y-1">
-              <p className="text-[10px] text-gray-600 border-b border-gray-800 pb-1">CUENTA               | DÉBITO    | CRÉDITO</p>
-              <p className="text-[10px]">5.01.001 Compras     | 5.550.000 |         </p>
-              <p className="text-[10px]">3.03.001 IVA Crédito |  555.000  |         </p>
-              <p className="text-[10px]">2.01.001 Proveedores  |           | 6.105.000</p>
-              <p className="text-[10px] text-gray-600">TOTAL:                | 6.105.000 | 6.105.000</p>
-            </div>
-            <p className="text-primary text-[10px] mt-2">[🔄 Reversar] [📝 Ajuste] [📤 Exportar PDF]</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/07-asientos.png"
+          alt="Detalle de asiento contable con líneas débito/crédito y opciones de reversión"
+          caption="Detalle de asiento"
+        />
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Reversión (contra-asiento)</h4>
@@ -876,25 +776,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Plan de Cuentas es el catálogo jerárquico de cuentas contables. Sigue la estructura
           DNIT paraguaya con 4 niveles y soporta importación por lote.
         </p>
-        <MockCard title="Plan de Cuentas — Árbol">
-          <div className="space-y-1 text-gray-400">
-            <p className="text-gray-500">🔍 [Buscar cuenta...]  [+ Nueva cuenta]</p>
-            <div className="mt-2 space-y-1 text-xs">
-              <p className="text-blue-400">├── 1. Activo</p>
-              <p className="text-blue-400/60 pl-4">├── 1.01 Activo Corriente</p>
-              <p className="text-blue-400/60 pl-8">├── 1.01.001 Caja</p>
-              <p className="text-blue-400/60 pl-8">├── 1.01.002 Bancos</p>
-              <p className="text-blue-400/60 pl-8">└── 1.01.003 Clientes</p>
-              <p className="text-blue-400">├── 2. Pasivo</p>
-              <p className="text-blue-400/60 pl-4">├── 2.01 Pasivo Corriente</p>
-              <p className="text-blue-400/60 pl-8">└── 2.01.001 Proveedores</p>
-            </div>
-            <div className="border-t border-gray-800 pt-2 mt-2">
-              <p className="text-[10px]">Seleccionada: <strong className="text-white">1.01.003 — Clientes</strong></p>
-              <p className="text-[10px] text-gray-500">Tipo: Activo | Naturaleza: Deudora | Saldo: Gs. 45.230.000</p>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/09-cuentas.png"
+          alt="Plan de Cuentas jerárquico con estructura DNIT paraguaya"
+          caption="Plan de Cuentas — Árbol"
+        />
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Estructura jerárquica</h4>
@@ -930,21 +816,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Gestiona los activos fijos (bienes de uso) de la empresa con cálculo automático de depreciación
           lineal y generación de asientos contables.
         </p>
-        <MockCard title="Activos Fijos">
-          <div className="space-y-2">
-            <p className="text-gray-500 text-[10px]">🔍 [Buscar activo...]  [+ Nuevo]</p>
-            <div className="bg-gray-900 rounded-lg p-3 space-y-1">
-              <p className="text-[11px] text-white">📦 Notebook Dell Latitude — ACT-001</p>
-              <p className="text-[10px] text-gray-400">Costo: Gs. 8.500.000 | Deprec.: 25% anual | Valor: Gs. 6.375.000</p>
-              <p className="text-[10px] text-green-400">🟢 En uso  |  [📄 Depreciar]</p>
-            </div>
-            <div className="bg-gray-900 rounded-lg p-3 space-y-1">
-              <p className="text-[11px] text-white">🚗 Toyota Hilux — ACT-002</p>
-              <p className="text-[10px] text-gray-400">Costo: Gs. 280.000.000 | Deprec.: 20% anual | Valor: Gs. 233.333.333</p>
-              <p className="text-[10px] text-green-400">🟢 En uso  |  [📄 Depreciar]</p>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/10-activos.png"
+          alt="Listado de activos fijos con costos, depreciación y valores netos"
+          caption="Activos Fijos"
+        />
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Registrar activo</h4>
@@ -984,23 +860,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Catálogo de personas y empresas con las que la empresa se relaciona comercialmente:
           clientes, proveedores, empleados, etc.
         </p>
-        <MockCard title="Terceros">
-          <div className="space-y-2">
-            <p className="text-gray-500 text-[10px]">🔍 [Buscar por RUC, nombre...]  Tipo: [Todos ▼]  [+ Nuevo]</p>
-            <div className="space-y-2">
-              <div className="bg-gray-900 rounded-lg p-3">
-                <p className="text-[11px] text-white">📇 Estudio ABC S.A.   |   RUC: 8.014.411-5</p>
-                <p className="text-[10px] text-gray-400">Cliente · Av. Mariscal López 1234, Asunción</p>
-                <p className="text-[10px] text-primary">[✏ Editar] [📋 Comprobantes] 📊 Saldo: Gs. 6.105.000</p>
-              </div>
-              <div className="bg-gray-900 rounded-lg p-3">
-                <p className="text-[11px] text-white">📇 Distribuidora ABC   |   RUC: 8.012.345-6</p>
-                <p className="text-[10px] text-gray-400">Proveedor · Av. Eusebio Ayala 567, Asunción</p>
-                <p className="text-[10px] text-primary">[✏ Editar] [📋 Comprobantes] 📊 Saldo: Gs. 12.300.000</p>
-              </div>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/11-terceros.png"
+          alt="Catálogo de terceros con clientes y proveedores"
+          caption="Terceros"
+        />
 
         <FieldTable
           fields={[
@@ -1032,30 +896,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Administra las cuentas bancarias de la empresa y realiza la conciliación bancaria mensual
           para verificar que los saldos contables coincidan con los extractos bancarios.
         </p>
-        <MockCard title="Conciliación Bancaria">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <p className="text-blue-400 text-[10px]">LADO LIBRO</p>
-              <p className="text-purple-400 text-[10px]">LADO BANCO (Extracto)</p>
-            </div>
-            <div className="flex justify-between text-xs text-gray-400">
-              <p>☑ 01/07 Depósito Gs. 2.000.000</p>
-              <p>☑ 01/07 Depósito Gs. 2.000.000</p>
-            </div>
-            <div className="flex justify-between text-xs text-gray-400">
-              <p>☑ 05/07 Cheque Gs. 1.500.000</p>
-              <p>☑ 05/07 Cheque Gs. 1.500.000</p>
-            </div>
-            <div className="flex justify-between text-xs text-red-400">
-              <p>☐ 10/07 Transf. Gs. 270.000</p>
-              <p>☐ — Sin coincidencia —</p>
-            </div>
-            <div className="border-t border-gray-800 pt-2 mt-2">
-              <p className="text-[10px]">🔍 Diferencia: Gs. 270.000 | Saldo Libro: Gs. 45.230.000 | Saldo Banco: Gs. 45.500.000</p>
-              <p className="text-primary text-[10px] mt-1">[+ Agregar ajuste] [✓ Confirmar conciliación]</p>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/13-banco-conciliacion.png"
+          alt="Herramienta de conciliación bancaria con movimientos del libro y del banco"
+          caption="Conciliación Bancaria"
+        />
 
         <StepList
           steps={[
@@ -1081,24 +926,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Gestiona fondos fijos de caja chica con registro de gastos y reposiciones automáticas
           que generan asientos contables.
         </p>
-        <MockCard title="Caja Chica">
-          <div className="space-y-2">
-            <div className="bg-gray-900 rounded-lg p-3">
-              <p className="text-white text-[11px]">💰 Caja Chica General</p>
-              <div className="flex justify-between text-[10px] text-gray-400">
-                <p>Saldo: Gs. 800.000 / Gs. 2.000.000</p>
-                <p className="text-green-400">🟢 Activo</p>
-              </div>
-            </div>
-            <div className="space-y-1 text-[10px] text-gray-400">
-              <p className="text-gray-600 border-b border-gray-800 pb-1">FECHA     | CONCEPTO         | GASTO      | SALDO</p>
-              <p>27/07/2026 | Café para reunión | Gs. 45.000  | 955.000</p>
-              <p>25/07/2026 | Refrigerios       | Gs. 120.000 | 1.035.000</p>
-              <p>20/07/2026 | Reposición fondo  | +1.000.000  | 1.155.000</p>
-            </div>
-            <p className="text-primary text-[10px]">[Registrar gasto] [🤖 Reponer fondo]</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/14-caja-chica.png"
+          alt="Gestión de caja chica con saldo, gastos y reposiciones"
+          caption="Caja Chica"
+        />
 
         <StepList
           steps={[
@@ -1134,14 +966,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
             </div>
           ))}
         </div>
-        <MockCard title="Próximos vencimientos (7 días)">
-          <div className="space-y-1 text-[10px] text-gray-400">
-            <p className="text-gray-600 border-b border-gray-800 pb-1">FECHA     | CONCEPTO             | MONTO       | PRIORIDAD</p>
-            <p className="text-red-400">28/07/2026 | Pago Proveedor XYZ   | Gs. 6.105.000 | 🔴 Vence mañana</p>
-            <p className="text-yellow-400">30/07/2026 | Sueldos              | Gs. 25.000.000 | 🟡 Esta semana</p>
-            <p className="text-yellow-400">31/07/2026 | IVA Form. 104        | Gs. 4.500.000  | 🟡 Esta semana</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/15-tesoreria.png"
+          alt="Módulo de tesorería con flujo de efectivo y vencimientos"
+          caption="Próximos vencimientos (7 días)"
+        />
       </div>
     ),
   },
@@ -1161,23 +990,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Libro IVA registra todas las operaciones de compra y venta con desglose de IVA.
           Es obligatorio para la presentación del Formulario 104.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <MockCard title="COMPRAS (IVA Crédito)">
-            <div className="space-y-1 text-[10px] text-gray-400">
-              <p className="text-gray-600">PROVEEDOR   | BASE 10%  | BASE 5%  | IVA</p>
-              <p>Dist. ABC    | 5.550.000 |          | 555.000</p>
-              <p>Farmacia XYZ |           | 1.000.000| 50.000</p>
-              <p className="text-gray-500 border-t border-gray-800 pt-1">Total IVA: Gs. 605.000</p>
-            </div>
-          </MockCard>
-          <MockCard title="VENTAS (IVA Débito)">
-            <div className="space-y-1 text-[10px] text-gray-400">
-              <p className="text-gray-600">CLIENTE    | BASE 10%  | IVA</p>
-              <p>Cliente XYZ | 3.000.000 | 300.000</p>
-              <p className="text-gray-500 border-t border-gray-800 pt-1">Total IVA: Gs. 300.000</p>
-            </div>
-          </MockCard>
-        </div>
+        <Screenshot
+          src="/manual/16-libro-iva.png"
+          alt="Libro IVA con compras (crédito fiscal) y ventas (débito fiscal)"
+          caption="Libro IVA"
+        />
         <div className="bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 rounded-xl p-4">
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">IVA Débito - IVA Crédito:</span>
@@ -1203,22 +1020,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Centraliza la generación y presentación de declaraciones juradas: IVA (Formulario 104),
           IRE (Formulario 501), IRP (Formulario 400) e IDU (Formulario 250).
         </p>
-        <MockCard title="Declaraciones disponibles">
-          <div className="space-y-2">
-            <div className="bg-gray-900 rounded-lg p-3">
-              <p className="text-[11px] text-white">📋 Formulario 104 — IVA</p>
-              <p className="text-[10px] text-gray-400">IVA a Pagar: Gs. 0 (Crédito fiscal: Gs. 305.000)</p>
-              <p className="text-[10px] text-red-400">🔴 Vence: 15/08/2026 | No presentado</p>
-              <p className="text-primary text-[10px]">[➡ Declarar]</p>
-            </div>
-            <div className="bg-gray-900 rounded-lg p-3">
-              <p className="text-[11px] text-white">📋 Formulario 501 — IRE</p>
-              <p className="text-[10px] text-gray-400">IRE Determinado: Gs. 2.450.000 (Régimen General)</p>
-              <p className="text-[10px] text-red-400">🔴 Vence: 31/08/2026 | No presentado</p>
-              <p className="text-primary text-[10px]">[➡ Declarar]</p>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/17-impuestos.png"
+          alt="Formularios de impuestos: IVA 104, IRE 501 con estados y vencimientos"
+          caption="Declaraciones disponibles"
+        />
 
         <StepList
           steps={[
@@ -1279,17 +1085,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         <p className="text-gray-300 text-sm leading-relaxed">
           Controla los timbrados fiscales: vigencia, cantidad de facturas usadas, alertas de vencimiento.
         </p>
-        <MockCard title="Timbrados">
-          <div className="space-y-2">
-            <div className="bg-gray-900 rounded-lg p-3">
-              <p className="text-[11px] text-white">🏷 Timbrado: 12345678</p>
-              <p className="text-[10px] text-gray-400">Factura Electrónica | Exp: 001-001</p>
-              <p className="text-[10px] text-gray-400">Vigencia: 01/01/2026 → 31/12/2026</p>
-              <p className="text-[10px] text-gray-400">Usado: 1.234 / 5.000 ████████░░░░ (24.7%)</p>
-              <p className="text-[10px] text-green-400">🟢 Vigente</p>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/19-timbrados.png"
+          alt="Gestión de timbrados fiscales con vigencia y uso"
+          caption="Timbrados"
+        />
         <Tip>
           El sistema muestra alertas automáticas cuando un timbrado está por vencer (&lt;30 días) o supera el 80% de uso.
         </Tip>
@@ -1309,18 +1109,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Muestra las fechas de vencimiento de todas las obligaciones fiscales según el cronograma DNIT.
           Cada vencimiento tiene un enlace directo al módulo de impuestos.
         </p>
-        <MockCard title="Calendario Fiscal">
-          <div className="space-y-2">
-            <p className="text-center text-white text-[11px] font-bold">Julio 2026</p>
-            <p className="text-[10px] text-gray-500 text-center">LU MA MI JU VI SA DO</p>
-            <p className="text-[10px] text-gray-400 text-center">...13 14 🔴15 16 17 18 19...</p>
-            <div className="bg-gray-900 rounded-lg p-3 space-y-1 mt-2">
-              <p className="text-[10px] text-red-400">🔴 15 — IVA Form. 104 (Junio) — Vence hoy</p>
-              <p className="text-[10px] text-yellow-400">🟡 15 — Retenciones Form. 120 (Junio) — Pendiente</p>
-              <p className="text-[10px] text-gray-400">🟢 31 — IRE anticipo (Julio) — 15 días restantes</p>
-            </div>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/22-calendario.png"
+          alt="Calendario fiscal con fechas de vencimiento de obligaciones DNIT"
+          caption="Calendario Fiscal"
+        />
       </div>
     ),
   },
@@ -1337,6 +1130,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           La RG90 (Resolución General 90) es la conciliación de comprobantes electrónicos exigida por la SET/DNIT.
           El sistema genera automáticamente el archivo CSV para su presentación.
         </p>
+        <Screenshot
+          src="/manual/23-rg90.png"
+          alt="RG90 conciliación de comprobantes electrónicos SET/DNIT"
+          caption="RG90"
+        />
         <StepList
           steps={[
             { title: "Seleccione período", body: <>Elija el mes a reportar.</> },
@@ -1367,15 +1165,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El cierre de períodos bloquea un mes contable para garantizar la inmutabilidad del libro.
           Una vez cerrado, no se pueden crear ni modificar asientos en ese período.
         </p>
-        <MockCard title="Cierre de Períodos — 2026">
-          <div className="space-y-1 text-[10px] text-gray-400">
-            <p className="text-gray-600 border-b border-gray-800 pb-1">MES       | ESTADO     | ASIENTOS | LIBRO IVA</p>
-            <p className="text-green-400">Enero     | 🔒 CERRADO | 12       | ✅</p>
-            <p className="text-green-400">Febrero   | 🔒 CERRADO | 18       | ✅</p>
-            <p className="text-yellow-400">Junio     | ✅ ABIERTO | 22       | ✅</p>
-            <p className="text-blue-400">Julio     | ✅ ABIERTO | 8        | ❌ No generado</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/20-cierre.png"
+          alt="Cierre de períodos contables con estados abiertos y cerrados"
+          caption="Cierre de Períodos — 2026"
+        />
 
         <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
           <h4 className="font-semibold text-white text-sm mb-2">Requisitos para cerrar un período</h4>
@@ -1475,16 +1269,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El módulo de auditoría registra todos los cambios del sistema en un libro inmutable (append-only).
           Cada evento guarda quién, qué, cuándo, por qué y el estado anterior/nuevo.
         </p>
-        <MockCard title="Registro de auditoría">
-          <div className="space-y-1 text-[10px] text-gray-400">
-            <p className="text-gray-600 border-b border-gray-800 pb-1">FECHA/HORA           | USUARIO      | ACCIÓN      | ENTIDAD</p>
-            <p>27/07/2026 14:33:22 | admin@...    | POSTEAR     | JE-2026-045</p>
-            <p>27/07/2026 14:30:01 | admin@...    | LOGIN       | Session</p>
-            <p>27/07/2026 11:15:44 | contador@... | CREAR       | Tercero</p>
-            <p>26/07/2026 17:45:12 | admin@...    | UPDATE      | Empresa</p>
-            <p>26/07/2026 16:30:00 | admin@...    | CERRAR_PERI | CierreMes</p>
-          </div>
-        </MockCard>
+        <Screenshot
+          src="/manual/25-auditoria.png"
+          alt="Registro de auditoría con eventos, usuarios y acciones"
+          caption="Registro de auditoría"
+        />
         <FieldTable
           fields={[
             { field: "Filtros", type: "Por usuario, acción, entidad, fecha", desc: "Busque eventos específicos" },
