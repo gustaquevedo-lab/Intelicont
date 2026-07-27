@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useTransition } from "react";
 import {
   Upload, CheckCircle2, X, AlertCircle, Search, ArrowRight,
   Download, FileText, TrendingUp, TrendingDown, Sparkles,
   Eye, ChevronDown, ChevronUp, CreditCard, Banknote, Filter,
-  Calendar, DollarSign, BarChart3, Zap,
+  Calendar, DollarSign, BarChart3, Zap, Brain, Info, Loader2,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { FeatureGate } from "@/app/_components/feature-gate";
@@ -55,6 +55,11 @@ export default function ConciliacionBancariaPage() {
   const [bankName, setBankName] = useState("gnb");
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
   const [tolerance, setTolerance] = useState(2);
+
+  // New state for match detail modal and AI suggestions
+  const [showMatchDetail, setShowMatchDetail] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<Record<string, string>>({});
+  const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
 
   const handleImport = () => {
     const text = csvText.trim() || SAMPLE_CSV;
@@ -139,6 +144,27 @@ export default function ConciliacionBancariaPage() {
 
   const handleFinish = () => {
     setStep("done");
+  };
+
+  // AI suggestion for unmatched items
+  const handleAiSuggest = async (bm: BankMovement) => {
+    setAiLoadingId(bm.id);
+    // Simulate AI analysis with delay
+    await new Promise(r => setTimeout(r, 1500));
+    const suggestions: string[] = [];
+    const desc = bm.description?.toLowerCase() || "";
+    if (desc.includes("comisión") || desc.includes("comision") || desc.includes("cargo")) {
+      suggestions.push(`Cuenta sugerida: 5.1.09 — Comisiones Bancarias (${bm.direction === "debit" ? "gasto bancario" : "ingreso financiero"})`); 
+    } else if (desc.includes("interes") || desc.includes("interés")) {
+      suggestions.push(bm.direction === "credit" ? "Cuenta sugerida: 4.3.01 — Intereses Ganados" : "Cuenta sugerida: 5.3.01 — Intereses Pagados");
+    } else if (desc.includes("transfer") || desc.includes("trf")) {
+      suggestions.push("Posible transferencia interna. Verificá si existe asiento de egreso/ingreso bancario correspondiente.");
+    } else {
+      suggestions.push(`Movimiento sin match identificado. Monto: Gs. ${bm.amount.toLocaleString("es-PY")}. Tipo: ${bm.direction === "debit" ? "débito" : "crédito"}.`);
+      suggestions.push("Revisá el extracto bancario físico y buscá el concepto en los asientos del mayor.");
+    }
+    setAiSuggestions(prev => ({ ...prev, [bm.id]: suggestions.join("\n\n") }));
+    setAiLoadingId(null);
   };
 
   return (
@@ -253,51 +279,94 @@ export default function ConciliacionBancariaPage() {
                   const gl = getGLTransaction(match.glTransactionId);
                   if (!bm || !gl) return null;
 
+                  const isDetailOpen = showMatchDetail === match.bankMovementId;
                   return (
-                    <div key={match.bankMovementId} className={cn("p-3", match.confirmed && "bg-green-50/30 dark:bg-green-500/5")}>
+                    <div key={match.bankMovementId} className={cn("p-3 transition-colors", match.confirmed && "bg-green-950/5 dark:bg-green-500/5")}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                            match.confidence === "high" ? "bg-green-50 dark:bg-green-500/10" :
-                            match.confidence === "medium" ? "bg-yellow-50 dark:bg-yellow-500/10" : "bg-red-50 dark:bg-red-500/10"
+                            match.confidence === "high" ? "bg-green-500/10" :
+                            match.confidence === "medium" ? "bg-yellow-500/10" : "bg-red-500/10"
                           )}>
                             {match.confirmed ? <CheckCircle2 className="h-4 w-4 text-green-500" /> :
-                              match.confidence === "high" ? <Sparkles className="h-4 w-4 text-green-500" /> :
+                              match.confidence === "high" ? <Sparkles className="h-4 w-4 text-green-400" /> :
                               <AlertCircle className="h-4 w-4 text-yellow-500" />}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-mono text-gray-900 dark:text-white">{bm.date}</span>
-                              <span className="text-xs text-gray-500 truncate">{bm.description}</span>
+                              <span className="text-xs font-mono text-white">{bm.date}</span>
+                              <span className="text-xs text-gray-400 truncate">{bm.description}</span>
                             </div>
                             <div className="flex items-center gap-1 mt-0.5">
-                              <span className="text-[10px] px-1 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 text-purple-600">
+                              <span className="text-[10px] px-1 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-800/30">
                                 Score: {match.score}
                               </span>
-                              <span className="text-[10px] text-gray-400">{match.reason}</span>
+                              <span className={cn("text-[10px] px-1 py-0.5 rounded font-medium",
+                                match.confidence === "high" ? "text-green-400" : match.confidence === "medium" ? "text-yellow-400" : "text-red-400"
+                              )}>{match.confidence}</span>
+                              <span className="text-[10px] text-gray-500">{match.reason}</span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs font-mono font-bold text-gray-900 dark:text-white">
+                          <span className="text-xs font-mono font-bold text-white">
                             Gs. {bm.amount.toLocaleString("es-PY")}
                           </span>
+                          <button
+                            onClick={() => setShowMatchDetail(isDetailOpen ? null : match.bankMovementId)}
+                            className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            title="Ver detalle"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </button>
                           {!match.confirmed ? (
                             <>
                               <button onClick={() => confirmMatch(match.bankMovementId)}
-                                className="p-1.5 rounded-lg bg-green-50 dark:bg-green-500/10 text-green-600 hover:bg-green-100 no-tap-highlight">
+                                className="p-1.5 rounded-lg bg-green-500/10 text-green-500 hover:bg-green-500/20 no-tap-highlight">
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                               </button>
                               <button onClick={() => rejectMatch(match.bankMovementId)}
-                                className="p-1.5 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 hover:bg-red-100 no-tap-highlight">
+                                className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 no-tap-highlight">
                                 <X className="h-3.5 w-3.5" />
                               </button>
                             </>
                           ) : (
-                            <span className="text-xs text-green-600 font-medium">Confirmado</span>
+                            <span className="text-xs text-green-400 font-semibold bg-green-500/10 px-2 py-0.5 rounded-full">✓ OK</span>
                           )}
                         </div>
                       </div>
+
+                      {/* Match Detail Expand */}
+                      {isDetailOpen && (
+                        <div className="mt-3 ml-11 grid grid-cols-2 gap-3 animate-in fade-in duration-150">
+                          <div className="bg-blue-950/20 border border-blue-800/30 rounded-xl p-3">
+                            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2">Lado Banco (Extracto)</p>
+                            <div className="space-y-1 text-[11px] font-mono">
+                              <div className="flex justify-between"><span className="text-gray-500">Fecha</span><span className="text-gray-200">{bm.date}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-500">Monto</span><span className={cn("font-bold", bm.direction === "credit" ? "text-green-400" : "text-red-400")}>Gs. {bm.amount.toLocaleString("es-PY")}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-500">Tipo</span><span className="text-gray-300">{bm.direction === "credit" ? "Crédito" : "Débito"}</span></div>
+                              {bm.ref && <div className="flex justify-between"><span className="text-gray-500">Ref.</span><span className="text-gray-300">{bm.ref}</span></div>}
+                            </div>
+                          </div>
+                          <div className="bg-purple-950/20 border border-purple-800/30 rounded-xl p-3">
+                            <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider mb-2">Lado Mayor (GL)</p>
+                            <div className="space-y-1 text-[11px] font-mono">
+                              <div className="flex justify-between"><span className="text-gray-500">Fecha</span><span className="text-gray-200">{gl.date}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-500">Monto</span><span className={cn("font-bold", gl.direction === "credit" ? "text-green-400" : "text-red-400")}>Gs. {gl.amount.toLocaleString("es-PY")}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-500">Cuenta</span><span className="text-gray-300">{gl.accountCode}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-500">Partner</span><span className="text-gray-300 truncate ml-4">{gl.partnerName}</span></div>
+                            </div>
+                          </div>
+                          <div className={cn("col-span-2 rounded-xl p-2 border text-[10px] flex items-center justify-between",
+                            Math.abs(bm.amount - gl.amount) < 10
+                              ? "bg-green-950/10 border-green-800/30 text-green-400"
+                              : "bg-amber-950/10 border-amber-800/30 text-amber-400"
+                          )}>
+                            <span>Diferencia: Gs. {Math.abs(bm.amount - gl.amount).toLocaleString("es-PY")}</span>
+                            <span className="font-semibold">{Math.abs(bm.amount - gl.amount) < 10 ? "✓ Cuadra perfectamente" : "⚠ Diferencia dentro de tolerancia"}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -313,9 +382,10 @@ export default function ConciliacionBancariaPage() {
                   <AlertCircle className="h-4 w-4 text-orange-500" /> Sin Match — Banco ({unmatchedBank.length})
                 </h3>
               </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+              <div className="divide-y divide-gray-800/50">
                 {unmatchedBank.map((bm) => {
                   const isRegistering = registeringBmId === bm.id;
+                  const aiSugg = aiSuggestions[bm.id];
                   return (
                     <div key={bm.id} className="p-3 space-y-3">
                       <div className="flex items-center justify-between">
@@ -324,9 +394,18 @@ export default function ConciliacionBancariaPage() {
                           <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">{bm.description}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-mono font-bold text-gray-900 dark:text-white">
+                          <span className="text-xs font-mono font-bold text-white">
                             Gs. {bm.amount.toLocaleString("es-PY")}
                           </span>
+                          {/* AI Suggest Button */}
+                          <button
+                            onClick={() => handleAiSuggest(bm)}
+                            disabled={aiLoadingId === bm.id}
+                            className="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-md transition-colors no-tap-highlight border border-purple-800/30"
+                          >
+                            {aiLoadingId === bm.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
+                            {aiLoadingId === bm.id ? "IA..." : "Sugerir"}
+                          </button>
                           {!isRegistering ? (
                             <button
                               onClick={() => {
@@ -334,12 +413,12 @@ export default function ConciliacionBancariaPage() {
                                 setExpenseDesc(bm.description);
                                 setExpenseAccount("5.1.10");
                               }}
-                              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 rounded-md transition-colors no-tap-highlight"
+                              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-md transition-colors no-tap-highlight border border-blue-800/30"
                             >
                               <CreditCard className="h-3 w-3" /> Registrar Gasto
                             </button>
                           ) : (
-                            <span className="text-xs text-blue-500 font-medium animate-pulse">Registrando...</span>
+                            <span className="text-xs text-blue-400 font-medium animate-pulse">Registrando...</span>
                           )}
                         </div>
                       </div>
@@ -390,6 +469,17 @@ export default function ConciliacionBancariaPage() {
                               <CheckCircle2 className="h-3.5 w-3.5" /> Registrar y Conciliar
                             </button>
                           </div>
+                        </div>
+                      )}
+
+                      {/* AI suggestion result */}
+                      {aiSugg && (
+                        <div className="bg-purple-950/20 border border-purple-800/30 rounded-xl p-3 space-y-1.5 animate-in slide-in-from-top-1 duration-200">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Brain className="h-3.5 w-3.5 text-purple-400" />
+                            <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Sugerencia del Copiloto IA</span>
+                          </div>
+                          <p className="text-[11px] text-gray-300 leading-relaxed whitespace-pre-wrap">{aiSugg}</p>
                         </div>
                       )}
                     </div>
