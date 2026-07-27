@@ -15,6 +15,7 @@ const PUBLIC_PATHS = [
   "/opengraph-image",
   "/twitter-image",
   "/brand",
+  "/landing",
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
