@@ -106,11 +106,12 @@ const SECTIONS = [
               <div className="flex justify-between"><span>2.1.01 Proveedores</span><span>H: Gs. 1.100.000</span></div>
             </div>
           </div>
-          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-4">
-            <li>Navega a <strong className="text-white">Carga SIFEN</strong>.</li>
-            <li>Arrastra el archivo <strong className="text-white">.xml</strong> de tu factura de compra o venta al contenedor de carga.</li>
-            <li>El sistema mostrará en pantalla la razón social del emisor, RUC, número y timbrado del documento.</li>
-            <li>La IA propondrá un mapeo de cuentas contables. Confirma los campos y haz clic en <strong className="text-white">Crear Asiento Contable</strong>.</li>
+          <h5 className="font-bold text-white text-xs pl-6 mt-4">Instrucciones Paso a Paso:</h5>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
+            <li>Navega al módulo <strong className="text-white">Carga SIFEN</strong> en el menú lateral de Gestión Principal.</li>
+            <li>Haz clic en el área central o arrastra el archivo <strong className="text-white">.xml</strong> obtenido del facturador de la SET. El sistema comenzará a procesarlo con un indicador de carga animado.</li>
+            <li>En la pantalla de revisión, valida que el emisor de la factura, el RUC, timbrado y número del comprobante sean correctos.</li>
+            <li>Verifica la previsualización del asiento propuesta por el motor de IA. Si estás de acuerdo, presiona el botón <strong className="text-white">Aprobar e Imputar Asiento</strong>.</li>
           </ol>
         </div>
 
@@ -119,12 +120,13 @@ const SECTIONS = [
             <ChevronRight className="h-4 w-4 text-blue-400" /> 2.3 Historial SIFEN
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
-            Muestra el registro cronológico de todos los XMLs importados a la base de datos.
+            Muestra el registro cronológico de todos los XMLs importados a la base de datos de InteliCont.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Accede a <strong className="text-white">Historial SIFEN</strong>.</li>
             <li>Usa la barra de búsqueda superior para encontrar documentos por número de factura o RUC del emisor.</li>
-            <li>Bajo el listado, haz clic en cualquier fila para desplegar la información y ver el asiento contable asociado.</li>
+            <li>Haz clic en cualquier fila para desplegar la información y ver el asiento contable asociado.</li>
           </ol>
         </div>
 
@@ -135,6 +137,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Almacena de forma temporal los documentos escaneados o PDF de facturas pendientes de imputación.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Accede a <strong className="text-white">Bandeja Comprobantes</strong>.</li>
             <li>Sube el archivo de imagen o PDF de tu factura.</li>
@@ -149,6 +152,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Módulo para la creación de empresas contribuyentes asociadas al Estudio.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Navega a <strong className="text-white">Empresas</strong> en la barra lateral.</li>
             <li>Haz clic en <strong className="text-white">Agregar Empresa</strong>.</li>
@@ -167,11 +171,12 @@ const SECTIONS = [
       <div className="space-y-6 text-sm text-gray-300 leading-relaxed">
         <div>
           <h4 className="font-bold text-white text-sm flex items-center gap-2">
-            <ChevronRight className="h-4 w-4 text-blue-400" /> 3.1 Asientos Contables (Diario Diario)
+            <ChevronRight className="h-4 w-4 text-blue-400" /> 3.1 Asientos Contables (Libro Diario)
           </h4>
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Muestra todos los asientos contables manuales y automáticos registrados.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Navega a <strong className="text-white">Asientos Contables</strong> y haz clic en <strong className="text-white">Nuevo Asiento</strong>.</li>
             <li>Ingresa la fecha contable, número de referencia interna y concepto general de la operación.</li>
@@ -187,6 +192,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Estructura jerárquica de cuentas de la empresa.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Accede a <strong className="text-white">Plan de Cuentas</strong>.</li>
             <li>Selecciona una cuenta del listado para ver su naturaleza (Activo, Pasivo, Gasto).</li>
@@ -201,6 +207,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Muestra el detalle contable de movimientos mensuales.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Accede a <strong className="text-white">Libros Diarios/Mayores</strong>.</li>
             <li>Filtra seleccionando la cuenta a auditar y el período de fechas de interés.</li>
@@ -230,6 +237,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Módulo de resguardo y seguridad contable.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Navega a <strong className="text-white">Cierre de Períodos</strong>.</li>
             <li>Selecciona el mes y año contable a cerrar.</li>
@@ -244,6 +252,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Genera e imprime los estados financieros reglamentarios de la SET/DNIT.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Navega a <strong className="text-white">Estados Financieros</strong>.</li>
             <li>Selecciona el ejercicio fiscal de interés.</li>
@@ -258,6 +267,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Directorio de las contrapartes comerciales del contribuyente.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Accede a <strong className="text-white">Clientes / Proveedores</strong>.</li>
             <li>Haz clic en <strong className="text-white">Nuevo Tercero</strong>.</li>
@@ -295,7 +305,8 @@ const SECTIONS = [
               <span>Gs. 11.000.000 (H)</span>
             </div>
           </div>
-          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-4">
+          <h5 className="font-bold text-white text-xs pl-6 mt-4">Instrucciones Paso a Paso:</h5>
+          <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Ingresa a <strong className="text-white">Conciliación Bancaria</strong> e importa el archivo CSV de movimientos bancarios del mes.</li>
             <li>El sistema comparará las fechas y montos y propondrá matches automáticos en la pantalla.</li>
             <li>Para cada coincidencia correcta, haz clic en el botón de confirmación verde (asiento cuadrado).</li>
@@ -359,6 +370,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Consolida las ventas y compras registradas y genera los archivos CSV requeridos para la carga masiva en el aplicativo de la SET.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Accede a <strong className="text-white">Libro IVA / RG90</strong>.</li>
             <li>Selecciona el mes y año contable.</li>
@@ -373,6 +385,7 @@ const SECTIONS = [
           <p className="text-gray-400 text-xs mt-1.5 leading-relaxed pl-6">
             Estimador rápido de impuestos en base a los datos operativos del contribuyente.
           </p>
+          <h5 className="font-bold text-white text-xs pl-6 mt-3">Instrucciones Paso a Paso:</h5>
           <ol className="list-decimal list-inside space-y-2 text-xs text-gray-300 pl-6 mt-2">
             <li>Ve a <strong className="text-white">Liquidación Impuestos</strong>.</li>
             <li>Completa los datos en la pestaña correspondiente (ej: Ventas y Compras en IVA).</li>
