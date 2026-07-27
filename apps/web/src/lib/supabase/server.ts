@@ -31,6 +31,10 @@ export async function createServerSupabaseClient() {
 }
 
 export async function setEntityContext(entityId: string) {
-  const supabase = await createServerSupabaseClient();
-  await supabase.rpc("set_entity_context", { entity_uuid: entityId });
+  try {
+    const { setActiveEntity } = await import("@/lib/session");
+    await setActiveEntity(entityId);
+  } catch (err) {
+    console.error("Failed to set entity context native:", err);
+  }
 }

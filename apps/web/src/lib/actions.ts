@@ -36,9 +36,9 @@ import { revalidatePath } from "next/cache";
 
 async function getCurrentActorId(): Promise<string | null> {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data } = await supabase.auth.getUser();
-    return data.user?.id || null;
+    const { getSession } = await import("@/lib/session");
+    const session = await getSession();
+    return session?.user?.id || null;
   } catch {
     return null;
   }

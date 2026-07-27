@@ -19,6 +19,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "pnpm --filter @intelicont/ledger db:seed",
     "db:seed-auth": "pnpm --filter @intelicont/ledger db:seed-auth",
+    "db:backup": "tsx scripts/db-backup.ts",
     "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {

@@ -1,3 +1,5 @@
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+
 export type StorageConfig = {
   endpoint?: string;
   region?: string;
@@ -17,26 +19,56 @@ export interface FileStorage {
   deleteFile(key: string): Promise<void>;
 }
 
-// Client Provider: R2 / S3 / Local Fallback
 export class S3StorageProvider implements FileStorage {
-  private config: StorageConfig;
+  private client: S3Client;
+  private bucket: string;
+  private endpoint: string;
 
   constructor(config: StorageConfig) {
-    this.config = config;
+    this.bucket = config.bucket;
+    this.endpoint = config.endpoint || `https://${config.bucket}.s3.amazonaws.com`;
+    
+    const accessKeyId = config.accessKeyId || process.env.R2_ACCESS_KEY_ID || "";
+    const secretAccessKey = config.secretAccessKey || process.env.R2_SECRET_ACCESS_KEY || "";
+
+    this.client = new S3Client({
+      endpoint: config.endpoint || process.env.R2_ENDPOINT,
+      region: config.region || "us-east-1",
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+      forcePathStyle: true,
+    });
   }
 
   async uploadFile(key: string, body: Buffer | Uint8Array, options?: UploadOptions): Promise<string> {
-    console.log(`[Storage] Mock/R2 Upload: ${key} (${body.length} bytes), Content-Type: ${options?.contentType || 'application/octet-stream'}`);
-    const endpoint = this.config.endpoint || 'https://storage.intelicont.com';
-    return `${endpoint}/${this.config.bucket}/${key}`;
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: body,
+        ContentType: options?.contentType,
+        Metadata: options?.metadata,
+      })
+    );
+    return this.getFileUrl(key);
   }
 
   async getFileUrl(key: string): Promise<string> {
-    const endpoint = this.config.endpoint || 'https://storage.intelicont.com';
-    return `${endpoint}/${this.config.bucket}/${key}`;
+    const customDomain = process.env.R2_CUSTOM_DOMAIN;
+    if (customDomain) {
+      return `${customDomain}/${key}`;
+    }
+    return `${this.endpoint}/${key}`;
   }
 
   async deleteFile(key: string): Promise<void> {
-    console.log(`[Storage] Deleted key: ${key}`);
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      })
+    );
   }
 }
