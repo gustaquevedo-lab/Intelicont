@@ -1022,9 +1022,9 @@ export async function createBankAccount(data: {
   currencyCode?: string;
   glAccountId?: string;
 }) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getCurrentActorId();
+  if (!userId) throw new Error("Unauthorized");
+  const user = { id: userId };
 
   const account = await repo.createBankAccount(data);
 
@@ -1042,9 +1042,9 @@ export async function createBankAccount(data: {
 }
 
 export async function uploadBankCsv(entityId: string, bankAccountId: string, csvContent: string, bankHint?: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getCurrentActorId();
+  if (!userId) throw new Error("Unauthorized");
+  const user = { id: userId };
 
   const { parseBankCSV } = await import("@/lib/bank-parser");
   const result = parseBankCSV(csvContent, bankHint);
@@ -1102,9 +1102,9 @@ export async function uploadBankCsv(entityId: string, bankAccountId: string, csv
 }
 
 export async function matchBankToGL(entityId: string, bankAccountId: string, tolerance = 0.02) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getCurrentActorId();
+  if (!userId) throw new Error("Unauthorized");
+  const user = { id: userId };
 
   const { matchBankToGL: matchFn } = await import("@/lib/bank-matcher");
 
@@ -1192,9 +1192,9 @@ export async function matchBankToGL(entityId: string, bankAccountId: string, tol
 }
 
 export async function confirmReconciliation(entityId: string, reconciliationId: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getCurrentActorId();
+  if (!userId) throw new Error("Unauthorized");
+  const user = { id: userId };
 
   const updated = await repo.confirmReconciliation(reconciliationId);
 
@@ -1212,9 +1212,9 @@ export async function confirmReconciliation(entityId: string, reconciliationId: 
 }
 
 export async function rejectReconciliation(entityId: string, reconciliationId: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getCurrentActorId();
+  if (!userId) throw new Error("Unauthorized");
+  const user = { id: userId };
 
   const updated = await repo.rejectReconciliation(reconciliationId);
 
@@ -1232,9 +1232,9 @@ export async function rejectReconciliation(entityId: string, reconciliationId: s
 }
 
 export async function deleteReconciliation(entityId: string, reconciliationId: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getCurrentActorId();
+  if (!userId) throw new Error("Unauthorized");
+  const user = { id: userId };
 
   await repo.deleteReconciliation(reconciliationId);
 
@@ -1261,9 +1261,9 @@ export async function createEntryFromBankMovement(
   glAccountId: string,
   description: string
 ) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getCurrentActorId();
+  if (!userId) throw new Error("Unauthorized");
+  const user = { id: userId };
 
   const bankAccount = await repo.getBankAccountById(bankAccountId);
   if (!bankAccount) throw new Error("Bank account not found");
@@ -1331,21 +1331,26 @@ export async function uploadBankStatementFile(
   periodStart: string,
   periodEnd: string
 ) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getCurrentActorId();
+  if (!userId) throw new Error("Unauthorized");
+  const user = { id: userId };
 
   const filePath = `${entityId}/${bankAccountId}/${Date.now()}_${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from("bank-statements")
-    .upload(filePath, Buffer.from(fileContent, "utf-8"), {
-      contentType: "text/csv",
-      upsert: false,
+  try {
+    const { S3StorageProvider } = await import("../../../../packages/core/src/storage");
+    const storage = new S3StorageProvider({
+      bucket: process.env.R2_BUCKET || "intelicont-documents",
+      endpoint: process.env.R2_ENDPOINT,
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     });
 
-  if (uploadError) {
-    throw new Error(`Upload failed: ${uploadError.message}`);
+    await storage.uploadFile(filePath, Buffer.from(fileContent, "utf-8"), {
+      contentType: "text/csv",
+    });
+  } catch (err: any) {
+    throw new Error(`Upload failed: ${err.message}`);
   }
 
   const statement = await repo.createBankStatement({
