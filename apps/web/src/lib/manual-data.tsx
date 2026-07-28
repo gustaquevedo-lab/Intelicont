@@ -5,7 +5,8 @@ import {
   Wallet, TrendingUp, BookMarked, Calculator, Receipt, Ticket,
   Lock, BarChart3, Calendar, FileSearch, Settings, Shield, Keyboard,
   AlertTriangle, HelpCircle, Building2, Sparkles, ArrowRight,
-  CheckCircle2, CreditCard, Globe, DollarSign
+  CheckCircle2, CreditCard, Globe, DollarSign, Search, Bell, User,
+  ChevronDown, FileUp, X, Zap
 } from "lucide-react";
 
 export interface ManualSection {
@@ -73,26 +74,78 @@ const FieldTable = ({ fields }: { fields: { field: string; type: string; desc: s
 );
 
 const MockCard = ({ children, title }: { children: ReactNode; title?: string }) => (
-  <div className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden">
+  <div className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden shadow-xl shadow-black/20">
     {title && (
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900/50">
         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{title}</span>
         <span className="text-[10px] text-gray-600">InteliCont</span>
       </div>
     )}
-    <div className="p-4 font-mono text-xs leading-relaxed">{children}</div>
+    <div className="p-4 text-sm leading-relaxed">{children}</div>
   </div>
 );
 
-const Screenshot = ({ src, alt, caption }: { src: string; alt: string; caption?: string }) => (
-  <div className="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden">
-    <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900/50">
-      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{caption || "InteliCont"}</span>
-      <span className="text-[10px] text-gray-600">InteliCont</span>
+const MockTopbar = () => (
+  <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800 rounded-t-xl">
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 bg-gray-800 rounded-lg px-3 py-1.5">
+        <Search className="h-3 w-3 text-gray-500" />
+        <span className="text-[10px] text-gray-500">Buscar...</span>
+        <kbd className="text-[9px] text-gray-600 border border-gray-700 rounded px-1 ml-2">⌘K</kbd>
+      </div>
     </div>
-    <div className="p-2">
-      <img src={src} alt={alt} className="w-full h-auto rounded-lg border border-gray-800" loading="lazy" />
+    <div className="flex items-center gap-3">
+      <div className="bg-primary/20 border border-primary/30 text-primary rounded-lg px-3 py-1 text-[10px] font-semibold">
+        Empresa ABC S.A.
+      </div>
+      <Bell className="h-3.5 w-3.5 text-gray-500" />
+      <div className="h-6 w-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+        <User className="h-3 w-3 text-primary" />
+      </div>
     </div>
+  </div>
+);
+
+const MockSidebarItem = ({ label, active }: { label: string; active?: boolean }) => (
+  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] transition-colors ${active ? 'bg-primary/15 text-primary font-semibold' : 'text-gray-500 hover:text-gray-300'}`}>
+    <div className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-primary' : 'bg-gray-700'}`} />
+    {label}
+  </div>
+);
+
+const MockBadge = ({ variant, children }: { variant: "green" | "yellow" | "red" | "blue" | "gray"; children: ReactNode }) => {
+  const styles = {
+    green: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
+    yellow: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+    red: "bg-red-500/15 text-red-400 border-red-500/20",
+    blue: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+    gray: "bg-gray-500/15 text-gray-400 border-gray-500/20",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold border ${styles[variant]}`}>
+      {children}
+    </span>
+  );
+};
+
+const MockProgress = ({ value, max, label }: { value: number; max: number; label?: string }) => {
+  const pct = Math.round((value / max) * 100);
+  const color = pct > 80 ? "bg-red-500" : pct > 50 ? "bg-amber-500" : "bg-emerald-500";
+  return (
+    <div className="space-y-1">
+      {label && <div className="flex justify-between text-[10px]"><span className="text-gray-500">{label}</span><span className="text-gray-400">{pct}%</span></div>}
+      <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+};
+
+const MockStat = ({ label, value, sub, color = "text-white" }: { label: string; value: string; sub?: string; color?: string }) => (
+  <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 text-center">
+    <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">{label}</p>
+    <p className={`font-bold text-lg ${color}`}>{value}</p>
+    {sub && <p className="text-gray-600 text-[10px] mt-1">{sub}</p>}
   </div>
 );
 
@@ -212,11 +265,36 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           o <strong className="text-white">Email + Contraseña</strong>. La pantalla de login se adapta a desktop y móvil.
         </p>
 
-        <Screenshot
-          src="/manual/00-login-filled.png"
-          alt="Pantalla de inicio de sesión de InteliCont con campos de email y contraseña"
-          caption="Pantalla de Login"
-        />
+        <MockCard title="Pantalla de Login">
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-6 max-w-sm mx-auto space-y-5">
+            <div className="text-center space-y-1">
+              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-primary font-bold text-sm">InteliCont</span>
+              </div>
+              <p className="text-gray-400 text-xs">Contabilidad Inteligente</p>
+            </div>
+            <div className="flex bg-gray-800 rounded-lg p-0.5">
+              <button className="flex-1 text-[10px] py-1.5 rounded-md bg-primary text-white font-semibold">Magic Link</button>
+              <button className="flex-1 text-[10px] py-1.5 rounded-md text-gray-500">Contraseña</button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-gray-500 mb-1 block">Email</label>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300">admin@estudio.com.py</div>
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 mb-1 block">Contraseña</label>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300">••••••••</div>
+              </div>
+            </div>
+            <button className="w-full bg-gradient-to-r from-primary to-primary/80 text-white text-xs font-semibold py-2.5 rounded-lg shadow-lg shadow-primary/20">
+              Ingresar →
+            </button>
+            <p className="text-center text-[10px] text-gray-600">¿Olvidaste tu contraseña?</p>
+          </div>
+          <p className="text-center text-[10px] text-gray-600 mt-4">© 2026 IntelliHouse · RUC 80144114-5</p>
+        </MockCard>
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Modo Magic Link (recomendado)</h4>
@@ -327,11 +405,36 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         <p className="text-gray-300 text-sm leading-relaxed">
           La interfaz se compone de cuatro elementos principales que se mantienen consistentes en todo el sistema.
         </p>
-        <Screenshot
-          src="/manual/01-dashboard.png"
-          alt="Vista principal de InteliCont mostrando TopBar, Sidebar y contenido del Dashboard"
-          caption="Estructura de la interfaz"
-        />
+        <MockCard title="Estructura de la interfaz">
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+            <MockTopbar />
+            <div className="flex border-t border-gray-800">
+              <div className="w-44 bg-gray-900/80 border-r border-gray-800 p-2 space-y-0.5">
+                <MockSidebarItem label="Panel General" active />
+                <MockSidebarItem label="Carga SIFEN" />
+                <MockSidebarItem label="Historial SIFEN" />
+                <MockSidebarItem label="Comprobantes" />
+                <MockSidebarItem label="Empresas" />
+                <div className="border-t border-gray-800 my-2" />
+                <MockSidebarItem label="Asientos Contables" />
+                <MockSidebarItem label="Plan de Cuentas" />
+                <MockSidebarItem label="Libro IVA" />
+                <MockSidebarItem label="Impuestos" />
+                <MockSidebarItem label="Configuración" />
+              </div>
+              <div className="flex-1 p-4">
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <MockStat label="Ingresos" value="Gs. 120.5M" color="text-emerald-400" />
+                  <MockStat label="Gastos" value="Gs. 45.2M" color="text-red-400" />
+                  <MockStat label="Efectivo" value="Gs. 32.8M" />
+                </div>
+                <div className="bg-gray-800/50 rounded-lg h-24 border border-gray-800 flex items-center justify-center text-[10px] text-gray-600">
+                  Contenido principal del módulo seleccionado
+                </div>
+              </div>
+            </div>
+          </div>
+        </MockCard>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { title: "Barra Superior (TopBar)", desc: "Contiene el buscador global (⌘K), selector de empresa, notificaciones, perfil de usuario y tema." },
@@ -397,11 +500,48 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Entity Switcher en la TopBar permite cambiar entre empresas sin cerrar sesión.
           Al seleccionar una empresa, TODO el contexto cambia: plan de cuentas, asientos, saldos, configuración.
         </p>
-        <Screenshot
-          src="/manual/01-dashboard.png"
-          alt="Entity Switcher en la TopBar mostrando selector de empresa activa"
-          caption="Entity Switcher"
-        />
+        <MockCard title="Entity Switcher">
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden max-w-xs shadow-xl shadow-black/30">
+            <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/80">
+              <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1">Empresa activa</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+                    <Building2 className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-white">Empresa ABC S.A.</p>
+                    <p className="text-[10px] text-gray-500">RUC: 8.014.411-5</p>
+                  </div>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+              </div>
+            </div>
+            <div className="px-2 py-2 space-y-0.5">
+              <p className="text-[9px] text-gray-600 uppercase tracking-wider px-2 py-1">Cambiar a</p>
+              {[
+                { name: "Distribuidora XYZ S.A.", ruc: "8.012.345-6", active: false },
+                { name: "Importaciones del Sur", ruc: "8.023.456-7", active: false },
+                { name: "Comercial Norte S.R.L.", ruc: "8.034.567-8", active: false },
+              ].map((e, i) => (
+                <div key={i} className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors">
+                  <div className="h-6 w-6 rounded-md bg-gray-800 border border-gray-700 flex items-center justify-center">
+                    <Building2 className="h-3 w-3 text-gray-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-gray-300 truncate">{e.name}</p>
+                    <p className="text-[9px] text-gray-600">RUC: {e.ruc}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="px-2 py-2 mt-1 border-t border-gray-800">
+                <button className="text-[10px] text-primary font-semibold flex items-center gap-1">
+                  <PlusCircle className="h-3 w-3" /> Agregar empresa
+                </button>
+              </div>
+            </div>
+          </div>
+        </MockCard>
         <StepList
           steps={[
             { title: "Abra el selector", body: <>Haga clic en el nombre de la empresa actual en la TopBar, o use <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">⌘E</kbd>.</> },
@@ -425,11 +565,44 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           La paleta de comandos es el acceso más rápido a cualquier funcionalidad del sistema.
           Se abre con <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">⌘K</kbd> y permite buscar módulos y acciones.
         </p>
-        <Screenshot
-          src="/manual/01-dashboard.png"
-          alt="Paleta de comandos (⌘K) de InteliCont"
-          caption="Paleta de Comandos"
-        />
+        <MockCard title="Paleta de Comandos">
+          <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden max-w-lg mx-auto shadow-2xl shadow-black/40">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
+              <Search className="h-4 w-4 text-gray-500" />
+              <span className="text-xs text-gray-400 flex-1">Buscar módulos y acciones...</span>
+              <kbd className="text-[9px] text-gray-600 border border-gray-700 rounded px-1.5 py-0.5">ESC</kbd>
+            </div>
+            <div className="px-2 py-2 max-h-64 overflow-y-auto">
+              <p className="text-[9px] text-gray-600 uppercase tracking-wider px-2 py-1.5 font-semibold">Módulos</p>
+              {[
+                { label: "Panel General", shortcut: "GD", icon: LayoutDashboard },
+                { label: "Carga SIFEN", shortcut: "GS", icon: Upload },
+                { label: "Asientos Contables", shortcut: "GA", icon: FileText },
+                { label: "Plan de Cuentas", shortcut: "GP", icon: FolderTree },
+                { label: "Empresas", shortcut: "GE", icon: Building2 },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors group">
+                  <item.icon className="h-3.5 w-3.5 text-gray-500 group-hover:text-primary" />
+                  <span className="text-xs text-gray-300 flex-1">{item.label}</span>
+                  <div className="flex gap-0.5">
+                    {item.shortcut.split("").map((k, j) => (
+                      <kbd key={j} className="text-[9px] text-gray-600 border border-gray-700 rounded px-1 bg-gray-800/50">{k}</kbd>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="border-t border-gray-800 mt-1 pt-1">
+                <p className="text-[9px] text-gray-600 uppercase tracking-wider px-2 py-1.5 font-semibold">Acciones</p>
+                {["Nuevo asiento contable", "Importar comprobantes SIFEN", "Generar Libro IVA"].map((action, i) => (
+                  <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 cursor-pointer transition-colors">
+                    <Zap className="h-3.5 w-3.5 text-amber-500/60" />
+                    <span className="text-xs text-gray-400">{action}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </MockCard>
         <Tip>
           También puede usar <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">G</kbd> + <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">[letra]</kbd> para navegación rápida: <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">G</kbd><kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">D</kbd> = Dashboard, <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">G</kbd><kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-white text-xs">A</kbd> = Asientos.
         </Tip>
@@ -452,11 +625,56 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Dashboard es la página principal que se muestra al iniciar sesión. Proporciona una visión general
           del estado financiero de la empresa activa con indicadores clave y accesos directos.
         </p>
-        <Screenshot
-          src="/manual/01-dashboard.png"
-          alt="Dashboard principal de InteliCont con indicadores financieros"
-          caption="Panel General"
-        />
+        <MockCard title="Panel General">
+          <div className="space-y-4">
+            <MockTopbar />
+            <div className="bg-gray-900 rounded-b-xl border border-gray-800 border-t-0 p-4 space-y-4">
+              <div className="grid grid-cols-4 gap-3">
+                <MockStat label="Ingresos" value="Gs. 120.5M" sub="↑ 12% vs ant." color="text-emerald-400" />
+                <MockStat label="Gastos" value="Gs. 45.2M" sub="↑ 3% vs ant." color="text-red-400" />
+                <MockStat label="Efectivo" value="Gs. 32.8M" sub="3 cuentas" color="text-white" />
+                <MockStat label="IVA Crédito" value="Gs. 305K" sub="Acumulado" color="text-blue-400" />
+              </div>
+              <div className="bg-gray-800/50 rounded-xl border border-gray-800 p-4">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-3">Ingresos vs Gastos — 2026</p>
+                <div className="flex items-end gap-1 h-20">
+                  {[30, 45, 35, 55, 40, 65, 50, 70, 45, 80, 60, 75].map((h, i) => (
+                    <div key={i} className="flex-1 flex flex-col gap-0.5">
+                      <div className="bg-emerald-500/30 rounded-t" style={{ height: `${h * 0.6}px` }} />
+                      <div className="bg-red-500/30 rounded-b" style={{ height: `${h * 0.3}px` }} />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between text-[9px] text-gray-600 mt-2">
+                  <span>Ene</span><span>Mar</span><span>Jun</span><span>Sep</span><span>Dic</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-800/50 rounded-xl border border-gray-800 p-3">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Últimos asientos</p>
+                  {[
+                    { desc: "Pago proveedor ABC", monto: "Gs. 6.105.000", badge: "green" as const },
+                    { desc: "Factura venta XYZ", monto: "Gs. 3.450.000", badge: "green" as const },
+                    { desc: "Ajuste tipo cambio", monto: "Gs. 250.000", badge: "yellow" as const },
+                  ].map((e, i) => (
+                    <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-800 last:border-0">
+                      <span className="text-[11px] text-gray-300">{e.desc}</span>
+                      <MockBadge variant={e.badge}>{e.monto}</MockBadge>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-gray-800/50 rounded-xl border border-gray-800 p-3">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Accesos rápidos</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["Cargar SIFEN", "Nuevo Asiento", "Libro IVA", "Conciliar"].map((a, i) => (
+                      <button key={i} className="bg-primary/10 border border-primary/20 text-primary text-[10px] font-semibold py-2 rounded-lg hover:bg-primary/20 transition-colors">{a}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </MockCard>
       </div>
     ),
   },
@@ -512,11 +730,47 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El módulo SIFEN permite importar comprobantes electrónicos desde archivos XML descargados del
           portal SIFEN de la SET/DNIT, o sincronizar automáticamente vía API.
         </p>
-        <Screenshot
-          src="/manual/03-sifen.png"
-          alt="Módulo de carga de facturas SIFEN con área de arrastre de archivos XML"
-          caption="Carga SIFEN — Asistente de importación"
-        />
+        <MockCard title="Carga SIFEN — Asistente de importación">
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-gray-700 hover:border-primary/50 rounded-xl p-8 text-center transition-colors cursor-pointer bg-gray-900/50">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 mb-3">
+                <FileUp className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm font-semibold text-white mb-1">Arrastre sus archivos XML aquí</p>
+              <p className="text-[11px] text-gray-500">o haga clic para seleccionar · XML SIFEN · Hasta 50 archivos</p>
+            </div>
+            <div className="space-y-2">
+              {[
+                { name: "001-001-0001234.xml", size: "3.2 KB", status: "ok" },
+                { name: "001-001-0001235.xml", size: "2.8 KB", status: "ok" },
+                { name: "001-001-0001236.xml", size: "4.1 KB", status: "loading" },
+              ].map((f, i) => (
+                <div key={i} className="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2.5">
+                  <FileText className="h-4 w-4 text-gray-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-gray-300 truncate">{f.name}</p>
+                    <p className="text-[9px] text-gray-600">{f.size}</p>
+                  </div>
+                  {f.status === "ok" ? (
+                    <MockBadge variant="green">✓ Válido</MockBadge>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <span className="text-[10px] text-primary">Procesando</span>
+                    </div>
+                  )}
+                  <button className="text-gray-600 hover:text-gray-400"><X className="h-3 w-3" /></button>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-gray-800">
+              <span className="text-[11px] text-gray-500">2 archivos válidos · 1 procesando</span>
+              <button className="bg-primary text-white text-[11px] font-semibold px-4 py-2 rounded-lg shadow-lg shadow-primary/20">
+                Importar 2 archivos
+              </button>
+            </div>
+          </div>
+        </MockCard>
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Paso a paso</h4>
           <StepList
@@ -548,11 +802,53 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Historial SIFEN muestra todos los comprobantes importados con su estado de procesamiento.
           Desde aquí puede aprobar, rechazar, o ver el detalle de cada comprobante.
         </p>
-        <Screenshot
-          src="/manual/04-sifen-historial.png"
-          alt="Historial de comprobantes SIFEN con estados de procesamiento"
-          caption="Historial SIFEN"
-        />
+        <MockCard title="Historial SIFEN">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
+                <Search className="h-3.5 w-3.5 text-gray-500" />
+                <span className="text-[11px] text-gray-500">Buscar por CDC, factura, proveedor...</span>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 flex items-center gap-2">
+                <span className="text-[11px] text-gray-400">Todos</span>
+                <ChevronDown className="h-3 w-3 text-gray-500" />
+              </div>
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-12 gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900/80 text-[9px] text-gray-600 uppercase tracking-wider font-semibold">
+                <div className="col-span-3">Documento</div>
+                <div className="col-span-3">Proveedor</div>
+                <div className="col-span-2">Fecha</div>
+                <div className="col-span-2 text-right">Total</div>
+                <div className="col-span-2 text-right">Estado</div>
+              </div>
+              {[
+                { doc: "001-001-012345", prov: "Dist. ABC S.A.", fecha: "03/07/2026", total: "Gs. 6.105.000", status: "green" as const, label: "Contabilizado" },
+                { doc: "001-004-067890", prov: "Ferretería XYZ", fecha: "02/07/2026", total: "Gs. 2.350.000", status: "yellow" as const, label: "Pendiente" },
+                { doc: "001-001-054321", prov: "Tigo S.A.", fecha: "28/06/2026", total: "Gs. 850.000", status: "red" as const, label: "Error" },
+                { doc: "001-003-098765", prov: "Petrobras PY", fecha: "25/06/2026", total: "Gs. 1.200.000", status: "blue" as const, label: "Analizando" },
+              ].map((r, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2.5 border-b border-gray-800 last:border-0 hover:bg-gray-800/50 transition-colors">
+                  <div className="col-span-3 font-mono text-[11px] text-white">{r.doc}</div>
+                  <div className="col-span-3 text-[11px] text-gray-300 truncate">{r.prov}</div>
+                  <div className="col-span-2 text-[11px] text-gray-500">{r.fecha}</div>
+                  <div className="col-span-2 text-[11px] text-gray-300 text-right font-mono">{r.total}</div>
+                  <div className="col-span-2 text-right"><MockBadge variant={r.status}>{r.label}</MockBadge></div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-gray-600">
+              <span>Mostrando 1-4 de 47 comprobantes</span>
+              <div className="flex items-center gap-1">
+                <button className="px-2 py-1 rounded bg-gray-800 text-gray-400 hover:bg-gray-700">←</button>
+                <button className="px-2 py-1 rounded bg-primary text-white">1</button>
+                <button className="px-2 py-1 rounded bg-gray-800 text-gray-400 hover:bg-gray-700">2</button>
+                <button className="px-2 py-1 rounded bg-gray-800 text-gray-400 hover:bg-gray-700">3</button>
+                <button className="px-2 py-1 rounded bg-gray-800 text-gray-400 hover:bg-gray-700">→</button>
+              </div>
+            </div>
+          </div>
+        </MockCard>
         <FieldTable
           fields={[
             { field: "Documento", type: "Texto", desc: "Número de factura (001-001-XXXXX) o CDC" },
@@ -579,11 +875,65 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Emite comprobantes electrónicos directamente desde InteliCont. Soporta Factura Electrónica,
           Nota de Crédito, Nota de Débito y Autofactura.
         </p>
-        <Screenshot
-          src="/manual/05-sifen-emitir.png"
-          alt="Formulario de emisión de comprobantes electrónicos SIFEN"
-          caption="SIFEN — Emitir Comprobantes"
-        />
+        <MockCard title="SIFEN — Emitir Comprobantes">
+          <div className="space-y-4">
+            <div className="grid grid-cols-4 gap-2">
+              {["Factura Electrónica", "Nota de Crédito", "Nota de Débito", "Autofactura"].map((t, i) => (
+                <button key={i} className={`text-[10px] py-2 rounded-lg border font-semibold transition-colors ${i === 0 ? 'bg-primary/15 border-primary/30 text-primary' : 'bg-gray-900 border-gray-800 text-gray-500 hover:text-gray-300'}`}>{t}</button>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-500">Timbrado</label>
+                <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-300 font-mono">12345678</div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-500">Punto de expedición</label>
+                <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-300 font-mono">001-001</div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-500">Fecha de emisión</label>
+                <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-300">27/07/2026</div>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-gray-500">Cliente / Proveedor</label>
+              <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 flex items-center justify-between">
+                <span className="text-xs text-gray-300">Distribuidora ABC S.A. — RUC: 8.012.345-6</span>
+                <button className="bg-primary/15 text-primary text-[10px] font-semibold px-2 py-1 rounded-md">Nuevo</button>
+              </div>
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-5 gap-2 px-3 py-2 border-b border-gray-800 text-[9px] text-gray-600 uppercase font-semibold">
+                <div className="col-span-2">Descripción</div>
+                <div className="text-center">Cant.</div>
+                <div className="text-right">P. Unitario</div>
+                <div className="text-right">Total</div>
+              </div>
+              {[
+                { desc: "Servicio de consultoría", cant: 1, precio: "Gs. 5.000.000", total: "Gs. 5.000.000", iva: "10%" },
+                { desc: "Material de oficina", cant: 10, precio: "Gs. 55.000", total: "Gs. 550.000", iva: "10%" },
+                { desc: "Flete internacional", cant: 1, precio: "Gs. 850.000", total: "Gs. 850.000", iva: "Exento" },
+              ].map((item, i) => (
+                <div key={i} className="grid grid-cols-5 gap-2 px-3 py-2 border-b border-gray-800 last:border-0 text-[11px]">
+                  <div className="col-span-2 text-gray-300">{item.desc}</div>
+                  <div className="text-center text-gray-400">{item.cant}</div>
+                  <div className="text-right text-gray-300 font-mono">{item.precio}</div>
+                  <div className="text-right text-gray-300 font-mono">{item.total}</div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-gray-800">
+              <div className="text-[10px] text-gray-500 space-y-0.5">
+                <p>Exenta: Gs. 850.000 · Base 10%: Gs. 5.550.000 · IVA 10%: Gs. 555.000</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-gray-500">Total</p>
+                <p className="text-lg font-bold text-white">Gs. 6.955.000</p>
+              </div>
+            </div>
+          </div>
+        </MockCard>
         <StepList
           steps={[
             { title: "Seleccione tipo", body: <>Elija entre Factura Electrónica, Nota de Crédito, Nota de Débito o Autofactura.</> },
@@ -616,11 +966,56 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           La bandeja de comprobantes es la cola de procesamiento donde los documentos SIFEN esperan
           clasificación, revisión y conversión a asientos contables. Es el centro de comando diario del contador.
         </p>
-        <Screenshot
-          src="/manual/06-comprobantes.png"
-          alt="Bandeja de comprobantes con lista de documentos SIFEN pendientes"
-          caption="Bandeja de Comprobantes"
-        />
+        <MockCard title="Bandeja de Comprobantes">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 flex items-center gap-2">
+                  <span className="text-[11px] text-gray-400">Pendientes</span>
+                  <MockBadge variant="yellow">4</MockBadge>
+                </div>
+                <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 flex items-center gap-2">
+                  <span className="text-[11px] text-gray-500">Contabilizados</span>
+                  <MockBadge variant="green">23</MockBadge>
+                </div>
+              </div>
+              <button className="bg-gradient-to-r from-primary to-primary/80 text-white text-[11px] font-semibold px-3 py-2 rounded-lg shadow-lg shadow-primary/20 flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3" /> IA Sugerir todos
+              </button>
+            </div>
+            <div className="space-y-2">
+              {[
+                { doc: "001-001-012345", prov: "Distribuidora ABC S.A.", monto: "Gs. 6.105.000", ruc: "80012345-6", status: "yellow" as const, label: "Pendiente", hasAI: true },
+                { doc: "001-004-067890", prov: "Ferretería XYZ", monto: "Gs. 2.350.000", ruc: "80123456-7", status: "yellow" as const, label: "Pendiente", hasAI: false },
+                { doc: "001-003-098765", prov: "Petrobras PY S.A.", monto: "Gs. 1.200.000", ruc: "80234567-8", status: "yellow" as const, label: "Pendiente", hasAI: false },
+                { doc: "001-002-034567", prov: "Papelería Central", monto: "Gs. 450.000", ruc: "80345678-9", status: "green" as const, label: "Contabilizado", hasAI: false, je: "JE-2026-044" },
+              ].map((c, i) => (
+                <div key={i} className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${c.status === 'green' ? 'opacity-70' : ''}`}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-gray-500" />
+                      <span className="font-mono text-[11px] text-white">{c.doc}</span>
+                      <MockBadge variant={c.status}>{c.label}</MockBadge>
+                    </div>
+                    <span className="text-[11px] text-gray-300 font-semibold">{c.monto}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] text-gray-500">
+                      {c.prov} · RUC: {c.ruc}
+                      {c.je && <span className="ml-2 text-primary">📎 {c.je}</span>}
+                    </div>
+                    {c.status !== "green" && (
+                      <div className="flex items-center gap-1.5">
+                        {c.hasAI && <MockBadge variant="blue">🤖 IA lista</MockBadge>}
+                        <button className="bg-primary/15 text-primary text-[10px] font-semibold px-2 py-1 rounded-md">Sugerir asiento</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </MockCard>
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Flujo de trabajo diario</h4>
           <StepList
@@ -651,11 +1046,54 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El listado de asientos es el Libro Diario de la empresa. Muestra todos los asientos contables
           registrados con su fecha, número, descripción y totales.
         </p>
-        <Screenshot
-          src="/manual/07-asientos.png"
-          alt="Listado de asientos contables (Libro Diario) con fechas, descripciones y montos"
-          caption="Asientos Contables — Listado"
-        />
+        <MockCard title="Asientos Contables — Listado">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
+                <Search className="h-3.5 w-3.5 text-gray-500" />
+                <span className="text-[11px] text-gray-500">Buscar por descripción, número...</span>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 flex items-center gap-2">
+                <span className="text-[11px] text-gray-400">Julio 2026</span>
+                <ChevronDown className="h-3 w-3 text-gray-500" />
+              </div>
+              <button className="bg-primary text-white text-[11px] font-semibold px-3 py-2 rounded-lg">+ Nuevo</button>
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-12 gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900/80 text-[9px] text-gray-600 uppercase tracking-wider font-semibold">
+                <div className="col-span-2">Nro.</div>
+                <div className="col-span-2">Fecha</div>
+                <div className="col-span-4">Descripción</div>
+                <div className="col-span-2 text-right">Debe</div>
+                <div className="col-span-2 text-right">Haber</div>
+              </div>
+              {[
+                { nro: "JE-2026-045", fecha: "27/07/2026", desc: "Pago factura 001-001-012345 — Dist. ABC S.A.", debe: "6.105.000", haber: "6.105.000", status: "green" as const },
+                { nro: "JE-2026-044", fecha: "25/07/2026", desc: "Factura venta — Cliente XYZ S.A.", debe: "3.450.000", haber: "3.450.000", status: "green" as const },
+                { nro: "JE-2026-043", fecha: "20/07/2026", desc: "Ajuste tipo cambio USD/PYG", debe: "250.000", haber: "250.000", status: "green" as const },
+                { nro: "JE-2026-042", fecha: "18/07/2026", desc: "Pago servicios públicos julio", debe: "1.850.000", haber: "1.850.000", status: "green" as const },
+                { nro: "JE-2026-041", fecha: "15/07/2026", desc: "Depreciación mensual activos fijos", debe: "3.500.000", haber: "3.500.000", status: "green" as const },
+              ].map((a, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2.5 border-b border-gray-800 last:border-0 hover:bg-gray-800/50 transition-colors cursor-pointer">
+                  <div className="col-span-2 font-mono text-[11px] text-primary">{a.nro}</div>
+                  <div className="col-span-2 text-[11px] text-gray-500">{a.fecha}</div>
+                  <div className="col-span-4 text-[11px] text-gray-300 truncate">{a.desc}</div>
+                  <div className="col-span-2 text-[11px] text-gray-300 text-right font-mono">{a.debe}</div>
+                  <div className="col-span-2 text-[11px] text-gray-300 text-right font-mono">{a.haber}</div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-gray-600">
+              <span>Mostrando 1-5 de 22 asientos · Julio 2026</span>
+              <div className="flex items-center gap-1">
+                <button className="px-2 py-1 rounded bg-gray-800 text-gray-400">←</button>
+                <button className="px-2 py-1 rounded bg-primary text-white">1</button>
+                <button className="px-2 py-1 rounded bg-gray-800 text-gray-400">2</button>
+                <button className="px-2 py-1 rounded bg-gray-800 text-gray-400">→</button>
+              </div>
+            </div>
+          </div>
+        </MockCard>
         <FieldTable
           fields={[
             { field: "Nro.", type: "ID correlativo", desc: "Formato: JE-2026-NNN (correlativo por año-empresa)" },
@@ -700,11 +1138,42 @@ export const MANUAL_SECTIONS: ManualSection[] = [
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Líneas del asiento</h4>
-          <Screenshot
-            src="/manual/08-asientos-nuevo.png"
-            alt="Formulario de nuevo asiento contable con grilla de líneas débito/crédito"
-            caption="Grilla de líneas"
-          />
+          <MockCard title="Grilla de líneas">
+            <div className="space-y-2">
+              <div className="grid grid-cols-12 gap-2 px-3 py-1.5 text-[9px] text-gray-600 uppercase tracking-wider font-semibold">
+                <div className="col-span-1">#</div>
+                <div className="col-span-5">Cuenta</div>
+                <div className="col-span-3 text-right">Débito</div>
+                <div className="col-span-3 text-right">Crédito</div>
+              </div>
+              {[
+                { num: 1, cuenta: "1.01.001 — Caja General", debe: "6.105.000", haber: "" },
+                { num: 2, cuenta: "2.01.001 — Proveedores Nacionales", debe: "", haber: "6.105.000" },
+              ].map((l, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
+                  <div className="col-span-1 text-[11px] text-gray-500">{l.num}</div>
+                  <div className="col-span-5 text-[11px] text-white font-mono">{l.cuenta}</div>
+                  <div className="col-span-3 text-right">
+                    {l.debe ? <span className="text-[11px] text-emerald-400 font-mono font-semibold">{l.debe}</span> : <span className="text-[11px] text-gray-700">—</span>}
+                  </div>
+                  <div className="col-span-3 text-right">
+                    {l.haber ? <span className="text-[11px] text-red-400 font-mono font-semibold">{l.haber}</span> : <span className="text-[11px] text-gray-700">—</span>}
+                  </div>
+                </div>
+              ))}
+              <button className="w-full border border-dashed border-gray-700 hover:border-primary/50 rounded-lg py-2 text-[11px] text-gray-500 hover:text-primary transition-colors flex items-center justify-center gap-1">
+                <PlusCircle className="h-3 w-3" /> Agregar línea
+              </button>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-800 px-1">
+                <span className="text-[11px] text-gray-500">Total 2 líneas</span>
+                <div className="flex items-center gap-4 text-[11px] font-mono">
+                  <span>Debe: <span className="text-emerald-400 font-semibold">6.105.000</span></span>
+                  <span>Haber: <span className="text-red-400 font-semibold">6.105.000</span></span>
+                  <MockBadge variant="green">✓ Cuadra</MockBadge>
+                </div>
+              </div>
+            </div>
+          </MockCard>
         </div>
 
         <StepList
@@ -739,11 +1208,63 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El detalle del asiento muestra toda la información de una entrada contable. Desde aquí
           se pueden realizar acciones como reversión y ajuste.
         </p>
-        <Screenshot
-          src="/manual/07-asientos.png"
-          alt="Detalle de asiento contable con líneas débito/crédito y opciones de reversión"
-          caption="Detalle de asiento"
-        />
+        <MockCard title="Detalle de asiento">
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-sm text-primary font-bold">JE-2026-045</span>
+                  <MockBadge variant="green">Posteado</MockBadge>
+                </div>
+                <p className="text-xs text-gray-400">Pago factura 001-001-012345 — Distribuidora ABC S.A.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="bg-amber-500/15 text-amber-400 text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-amber-500/20 flex items-center gap-1">
+                  <GitBranch className="h-3 w-3" /> Reversar
+                </button>
+                <button className="bg-gray-800 text-gray-400 text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-gray-700 flex items-center gap-1">
+                  <FileText className="h-3 w-3" /> Exportar PDF
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-[10px] text-gray-500">
+              <span>Fecha: <span className="text-gray-300">27/07/2026</span></span>
+              <span>Moneda: <span className="text-gray-300">PYG</span></span>
+              <span>Creado por: <span className="text-gray-300">admin@estudio.com.py</span></span>
+              <span>27/07/2026 14:32</span>
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-12 gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900/80 text-[9px] text-gray-600 uppercase tracking-wider font-semibold">
+                <div className="col-span-5">Cuenta</div>
+                <div className="col-span-3 text-right">Débito</div>
+                <div className="col-span-3 text-right">Crédito</div>
+                <div className="col-span-1" />
+              </div>
+              {[
+                { cuenta: "5.01.001 — Compras Mercaderías", debe: "5.550.000", haber: "" },
+                { cuenta: "3.03.001 — IVA Crédito Fiscal", debe: "555.000", haber: "" },
+                { cuenta: "2.01.001 — Proveedores Nacionales", debe: "", haber: "6.105.000" },
+              ].map((l, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2.5 border-b border-gray-800 last:border-0">
+                  <div className="col-span-5 text-[11px] text-gray-300 font-mono">{l.cuenta}</div>
+                  <div className="col-span-3 text-right">
+                    {l.debe ? <span className="text-[11px] text-emerald-400 font-mono">{l.debe}</span> : <span className="text-[11px] text-gray-700">—</span>}
+                  </div>
+                  <div className="col-span-3 text-right">
+                    {l.haber ? <span className="text-[11px] text-red-400 font-mono">{l.haber}</span> : <span className="text-[11px] text-gray-700">—</span>}
+                  </div>
+                  <div className="col-span-1" />
+                </div>
+              ))}
+              <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-900/80 border-t border-gray-700">
+                <div className="col-span-5 text-[11px] text-gray-500 font-semibold">TOTAL</div>
+                <div className="col-span-3 text-right text-[11px] text-emerald-400 font-mono font-bold">6.105.000</div>
+                <div className="col-span-3 text-right text-[11px] text-red-400 font-mono font-bold">6.105.000</div>
+                <div className="col-span-1" />
+              </div>
+            </div>
+          </div>
+        </MockCard>
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Reversión (contra-asiento)</h4>
@@ -776,11 +1297,43 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Plan de Cuentas es el catálogo jerárquico de cuentas contables. Sigue la estructura
           DNIT paraguaya con 4 niveles y soporta importación por lote.
         </p>
-        <Screenshot
-          src="/manual/09-cuentas.png"
-          alt="Plan de Cuentas jerárquico con estructura DNIT paraguaya"
-          caption="Plan de Cuentas — Árbol"
-        />
+        <MockCard title="Plan de Cuentas — Árbol">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
+              <Search className="h-3.5 w-3.5 text-gray-500" />
+              <span className="text-[11px] text-gray-500">Buscar por código o nombre...</span>
+            </div>
+            <div className="space-y-1 text-[11px]">
+              {[
+                { code: "1", name: "Activo", indent: 0, color: "text-blue-400", bold: true },
+                { code: "1.01", name: "Activo Corriente", indent: 1, color: "text-blue-400/70" },
+                { code: "1.01.001", name: "Caja General", indent: 2, color: "text-gray-300", saldo: "Gs. 4.250.000" },
+                { code: "1.01.002", name: "Banco Nacional", indent: 2, color: "text-gray-300", saldo: "Gs. 28.550.000" },
+                { code: "1.01.003", name: "Clientes", indent: 2, color: "text-gray-300", saldo: "Gs. 45.230.000", active: true },
+                { code: "1.02", name: "Activo No Corriente", indent: 1, color: "text-blue-400/70" },
+                { code: "1.02.001", name: "Inmuebles", indent: 2, color: "text-gray-300", saldo: "Gs. 180.000.000" },
+                { code: "2", name: "Pasivo", indent: 0, color: "text-red-400", bold: true },
+                { code: "2.01", name: "Pasivo Corriente", indent: 1, color: "text-red-400/70" },
+                { code: "2.01.001", name: "Proveedores Nacionales", indent: 2, color: "text-gray-300", saldo: "Gs. 12.300.000" },
+                { code: "2.01.002", name: "IVA Débito Fiscal", indent: 2, color: "text-gray-300", saldo: "Gs. 250.000" },
+              ].map((c, i) => (
+                <div key={i} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors cursor-pointer ${c.active ? 'bg-primary/10 border border-primary/20' : 'hover:bg-gray-800/50'}`} style={{ paddingLeft: `${(c.indent + 1) * 12}px` }}>
+                  {!c.bold && <div className="h-px w-3 bg-gray-700 shrink-0" />}
+                  <span className={`font-mono ${c.color} ${c.bold ? 'font-bold' : ''}`}>{c.code}</span>
+                  <span className={`${c.color} ${c.bold ? 'font-semibold' : ''}`}>{c.name}</span>
+                  {c.saldo && <span className="ml-auto text-[10px] text-gray-500 font-mono">{c.saldo}</span>}
+                </div>
+              ))}
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] text-white font-semibold">1.01.003 — Clientes</p>
+                <p className="text-[10px] text-gray-500">Tipo: Activo · Naturaleza: Deudora · Moneda: PYG</p>
+              </div>
+              <span className="text-sm font-bold text-white font-mono">Gs. 45.230.000</span>
+            </div>
+          </div>
+        </MockCard>
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Estructura jerárquica</h4>
@@ -816,11 +1369,46 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Gestiona los activos fijos (bienes de uso) de la empresa con cálculo automático de depreciación
           lineal y generación de asientos contables.
         </p>
-        <Screenshot
-          src="/manual/10-activos.png"
-          alt="Listado de activos fijos con costos, depreciación y valores netos"
-          caption="Activos Fijos"
-        />
+        <MockCard title="Activos Fijos">
+          <div className="space-y-3">
+            {[
+              { cod: "ACT-001", nombre: "Notebook Dell Latitude 5540", tipo: "Equipo", fecha: "15/01/2026", costo: "Gs. 8.500.000", vidaUtil: 4, depreciacion: "25%", valorNeto: "Gs. 6.375.000", cuentaActivo: "1.02.003", cuentaDepr: "1.02.004" },
+              { cod: "ACT-002", nombre: "Toyota Hilux 2.8 CDI 4x4", tipo: "Vehículo", fecha: "01/03/2025", costo: "Gs. 280.000.000", vidaUtil: 5, depreciacion: "20%", valorNeto: "Gs. 212.800.000", cuentaActivo: "1.02.001", cuentaDepr: "1.02.002" },
+              { cod: "ACT-003", nombre: "Aire Acondicionado Inverter", tipo: "Equipo", fecha: "10/06/2026", costo: "Gs. 4.200.000", vidaUtil: 10, depreciacion: "10%", valorNeto: "Gs. 4.025.000", cuentaActivo: "1.02.003", cuentaDepr: "1.02.004" },
+            ].map((a, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-primary" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-white font-semibold">{a.nombre}</span>
+                        <span className="text-[9px] text-gray-600 font-mono">{a.cod}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-500">{a.tipo} · Adquirido: {a.fecha}</span>
+                    </div>
+                  </div>
+                  <MockBadge variant="green">En uso</MockBadge>
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-[10px]">
+                  <div>
+                    <p className="text-gray-600">Costo</p>
+                    <p className="text-gray-300 font-mono font-semibold">{a.costo}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Deprec. ({a.depreciacion}/año)</p>
+                    <p className="text-gray-300 font-mono">{a.vidaUtil} años</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Valor Neto</p>
+                    <p className="text-white font-mono font-bold">{a.valorNeto}</p>
+                  </div>
+                </div>
+                <MockProgress value={75} max={100} label="Vida útil" />
+              </div>
+            ))}
+          </div>
+        </MockCard>
 
         <div>
           <h4 className="font-semibold text-white text-sm mb-3">Registrar activo</h4>
@@ -860,11 +1448,48 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Catálogo de personas y empresas con las que la empresa se relaciona comercialmente:
           clientes, proveedores, empleados, etc.
         </p>
-        <Screenshot
-          src="/manual/11-terceros.png"
-          alt="Catálogo de terceros con clientes y proveedores"
-          caption="Terceros"
-        />
+        <MockCard title="Terceros">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
+                <Search className="h-3.5 w-3.5 text-gray-500" />
+                <span className="text-[11px] text-gray-500">Buscar por RUC, nombre...</span>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 flex items-center gap-2">
+                <span className="text-[11px] text-gray-400">Todos</span>
+                <ChevronDown className="h-3 w-3 text-gray-500" />
+              </div>
+              <button className="bg-primary text-white text-[11px] font-semibold px-3 py-2 rounded-lg">+ Nuevo</button>
+            </div>
+            <div className="space-y-2">
+              {[
+                { nombre: "Distribuidora ABC S.A.", ruc: "8.012.345-6", tipo: "Proveedor", direccion: "Av. Eusebio Ayala 567, Asunción", saldo: "Gs. 12.300.000", tipoColor: "blue" as const },
+                { nombre: "Cliente XYZ S.A.", ruc: "8.023.456-7", tipo: "Cliente", direccion: "Av. Mariscal López 1234, Asunción", saldo: "Gs. 6.105.000", tipoColor: "green" as const },
+                { nombre: "Ferretería XYZ S.R.L.", ruc: "8.034.567-8", tipo: "Proveedor", direccion: "Barrio San Roque, Luque", saldo: "Gs. 2.350.000", tipoColor: "blue" as const },
+                { nombre: "Estudio ABC S.A.", ruc: "8.045.678-9", tipo: "Cliente", direccion: "Shopping del Sol, Piso 3", saldo: "Gs. 1.800.000", tipoColor: "green" as const },
+              ].map((t, i) => (
+                <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-3 hover:border-gray-700 transition-colors cursor-pointer">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center">
+                        <Users className="h-4 w-4 text-gray-500" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-white font-semibold">{t.nombre}</p>
+                        <p className="text-[10px] text-gray-500 font-mono">RUC: {t.ruc}</p>
+                      </div>
+                    </div>
+                    <MockBadge variant={t.tipoColor}>{t.tipo}</MockBadge>
+                  </div>
+                  <div className="flex items-center justify-between ml-10">
+                    <p className="text-[10px] text-gray-500">{t.direccion}</p>
+                    <span className="text-[11px] text-gray-300 font-mono font-semibold">{t.saldo}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </MockCard>
 
         <FieldTable
           fields={[
@@ -896,11 +1521,74 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Administra las cuentas bancarias de la empresa y realiza la conciliación bancaria mensual
           para verificar que los saldos contables coincidan con los extractos bancarios.
         </p>
-        <Screenshot
-          src="/manual/13-banco-conciliacion.png"
-          alt="Herramienta de conciliación bancaria con movimientos del libro y del banco"
-          caption="Conciliación Bancaria"
-        />
+        <MockCard title="Conciliación Bancaria">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Landmark className="h-4 w-4 text-primary" />
+                <span className="text-xs text-white font-semibold">Banco Nacional del Paraguay — Cta. 1234567890</span>
+              </div>
+              <div className="flex items-center gap-4 text-[10px]">
+                <span className="text-gray-500">Saldo Libro: <span className="text-white font-mono font-semibold">Gs. 45.230.000</span></span>
+                <span className="text-gray-500">Saldo Banco: <span className="text-white font-mono font-semibold">Gs. 45.500.000</span></span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 border-b border-gray-800 bg-blue-500/5">
+                  <p className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">Libro Contable</p>
+                </div>
+                {[
+                  { fecha: "01/07", desc: "Depósito efectivo", monto: "Gs. 2.000.000", ok: true },
+                  { fecha: "05/07", desc: "Cheque #12345", monto: "Gs. 1.500.000", ok: true },
+                  { fecha: "10/07", desc: "Transferencia proveedor", monto: "Gs. 270.000", ok: false },
+                  { fecha: "15/07", desc: "Comisión bancaria", monto: "Gs. 35.000", ok: true },
+                ].map((m, i) => (
+                  <div key={i} className={`flex items-center gap-2 px-3 py-2 border-b border-gray-800 last:border-0 ${m.ok ? '' : 'bg-amber-500/5'}`}>
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${m.ok ? 'border-emerald-500 bg-emerald-500/20' : 'border-amber-500'}`}>
+                      {m.ok && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-gray-300 truncate">{m.desc}</p>
+                      <p className="text-[9px] text-gray-600">{m.fecha}</p>
+                    </div>
+                    <span className="text-[10px] text-gray-300 font-mono">{m.monto}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 border-b border-gray-800 bg-purple-500/5">
+                  <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">Extracto Bancario</p>
+                </div>
+                {[
+                  { fecha: "01/07", desc: "Depósito efectivo", monto: "Gs. 2.000.000", ok: true },
+                  { fecha: "05/07", desc: "Cheque #12345", monto: "Gs. 1.500.000", ok: true },
+                  { fecha: "08/07", desc: "Comisión mantenimiento", monto: "Gs. 85.000", ok: false },
+                  { fecha: "15/07", desc: "Comisión bancaria", monto: "Gs. 35.000", ok: true },
+                ].map((m, i) => (
+                  <div key={i} className={`flex items-center gap-2 px-3 py-2 border-b border-gray-800 last:border-0 ${m.ok ? '' : 'bg-amber-500/5'}`}>
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${m.ok ? 'border-emerald-500 bg-emerald-500/20' : 'border-amber-500'}`}>
+                      {m.ok && <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-gray-300 truncate">{m.desc}</p>
+                      <p className="text-[9px] text-gray-600">{m.fecha}</p>
+                    </div>
+                    <span className="text-[10px] text-gray-300 font-mono">{m.monto}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between bg-gray-900 border border-gray-800 rounded-xl p-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-400" />
+                <span className="text-[11px] text-amber-400 font-semibold">Diferencia: Gs. 355.000</span>
+                <span className="text-[10px] text-gray-500">(2 movimientos sin conciliar)</span>
+              </div>
+              <button className="bg-emerald-500/15 text-emerald-400 text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/20">Confirmar conciliación</button>
+            </div>
+          </div>
+        </MockCard>
 
         <StepList
           steps={[
@@ -926,11 +1614,48 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Gestiona fondos fijos de caja chica con registro de gastos y reposiciones automáticas
           que generan asientos contables.
         </p>
-        <Screenshot
-          src="/manual/14-caja-chica.png"
-          alt="Gestión de caja chica con saldo, gastos y reposiciones"
-          caption="Caja Chica"
-        />
+        <MockCard title="Caja Chica">
+          <div className="space-y-3">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-primary" />
+                  <span className="text-sm text-white font-bold">Caja Chica General</span>
+                  <MockBadge variant="green">Activo</MockBadge>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-500">Saldo disponible</p>
+                  <p className="text-lg font-bold text-white font-mono">Gs. 800.000 <span className="text-xs text-gray-500 font-normal">/ Gs. 2.000.000</span></p>
+                </div>
+              </div>
+              <MockProgress value={800000} max={2000000} label="Nivel de fondo" />
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="px-3 py-2 border-b border-gray-800 bg-gray-900/80">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Últimos movimientos</p>
+              </div>
+              {[
+                { fecha: "27/07/2026", desc: "Café y snacks reunión", monto: "-Gs. 45.000", cat: "Alimentos", saldo: "Gs. 800.000", tipo: "gasto" },
+                { fecha: "25/07/2026", desc: "Refrigerios oficina", monto: "-Gs. 120.000", cat: "Alimentos", saldo: "Gs. 845.000", tipo: "gasto" },
+                { fecha: "20/07/2026", desc: "Reposición de fondo", monto: "+Gs. 1.000.000", cat: "Reposición", saldo: "Gs. 965.000", tipo: "repo" },
+                { fecha: "18/07/2026", desc: "Impresiones y papelería", monto: "-Gs. 85.000", cat: "Oficina", saldo: "Gs. 1.965.000", tipo: "gasto" },
+                { fecha: "15/07/2026", desc: "Taxi reunión cliente", monto: "-Gs. 35.000", cat: "Transporte", saldo: "Gs. 2.050.000", tipo: "gasto" },
+              ].map((m, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2 border-b border-gray-800 last:border-0 text-[11px]">
+                  <div className="col-span-2 text-gray-500">{m.fecha}</div>
+                  <div className="col-span-3 text-gray-300 truncate">{m.desc}</div>
+                  <div className="col-span-2"><MockBadge variant={m.tipo === "repo" ? "green" : "gray"}>{m.cat}</MockBadge></div>
+                  <div className={`col-span-2 text-right font-mono font-semibold ${m.tipo === "repo" ? 'text-emerald-400' : 'text-red-400'}`}>{m.monto}</div>
+                  <div className="col-span-3 text-right font-mono text-gray-400">{m.saldo}</div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="bg-primary text-white text-[11px] font-semibold px-3 py-2 rounded-lg flex-1">Registrar gasto</button>
+              <button className="bg-emerald-500/15 text-emerald-400 text-[11px] font-semibold px-3 py-2 rounded-lg border border-emerald-500/20 flex-1">Reponer fondo</button>
+            </div>
+          </div>
+        </MockCard>
 
         <StepList
           steps={[
@@ -966,11 +1691,34 @@ export const MANUAL_SECTIONS: ManualSection[] = [
             </div>
           ))}
         </div>
-        <Screenshot
-          src="/manual/15-tesoreria.png"
-          alt="Módulo de tesorería con flujo de efectivo y vencimientos"
-          caption="Próximos vencimientos (7 días)"
-        />
+        <MockCard title="Próximos vencimientos (7 días)">
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <MockStat label="Ingresos mes" value="Gs. 120.5M" color="text-emerald-400" />
+              <MockStat label="Egresos mes" value="Gs. 98.2M" color="text-red-400" />
+              <MockStat label="Saldo operativo" value="Gs. 22.3M" />
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="px-3 py-2 border-b border-gray-800 bg-gray-900/80">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Vencimientos próximos</p>
+              </div>
+              {[
+                { fecha: "28/07/2026", desc: "Pago Proveedor XYZ", monto: "Gs. 6.105.000", prioridad: "red" as const, label: "Vence mañana" },
+                { fecha: "30/07/2026", desc: "Sueldos personal julio", monto: "Gs. 25.000.000", prioridad: "yellow" as const, label: "3 días" },
+                { fecha: "31/07/2026", desc: "IVA Formulario 104 (Junio)", monto: "Gs. 4.500.000", prioridad: "yellow" as const, label: "4 días" },
+                { fecha: "05/08/2026", desc: "Alquiler oficina agosto", monto: "Gs. 8.500.000", prioridad: "gray" as const, label: "9 días" },
+                { fecha: "15/08/2026", desc: "Anticipo IRE Q3", monto: "Gs. 3.200.000", prioridad: "gray" as const, label: "19 días" },
+              ].map((v, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2.5 border-b border-gray-800 last:border-0">
+                  <div className="col-span-2 text-[11px] text-gray-300 font-mono">{v.fecha}</div>
+                  <div className="col-span-4 text-[11px] text-gray-300">{v.desc}</div>
+                  <div className="col-span-2 text-right text-[11px] text-gray-300 font-mono font-semibold">{v.monto}</div>
+                  <div className="col-span-4 text-right"><MockBadge variant={v.prioridad}>{v.label}</MockBadge></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </MockCard>
       </div>
     ),
   },
@@ -990,11 +1738,54 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El Libro IVA registra todas las operaciones de compra y venta con desglose de IVA.
           Es obligatorio para la presentación del Formulario 104.
         </p>
-        <Screenshot
-          src="/manual/16-libro-iva.png"
-          alt="Libro IVA con compras (crédito fiscal) y ventas (débito fiscal)"
-          caption="Libro IVA"
-        />
+        <MockCard title="Libro IVA">
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 border-b border-gray-800 bg-emerald-500/5 flex items-center justify-between">
+                  <p className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">Compras — IVA Crédito</p>
+                  <span className="text-[10px] text-emerald-400 font-mono font-bold">Gs. 605.000</span>
+                </div>
+                {[
+                  { prov: "Dist. ABC S.A.", base10: "5.550.000", base5: "—", iva: "555.000" },
+                  { prov: "Farmacia XYZ", base10: "—", base5: "1.000.000", iva: "50.000" },
+                ].map((c, i) => (
+                  <div key={i} className="grid grid-cols-4 gap-1 px-3 py-2 border-b border-gray-800 last:border-0 text-[10px]">
+                    <div className="text-gray-300 truncate">{c.prov}</div>
+                    <div className="text-right text-gray-400 font-mono">{c.base10}</div>
+                    <div className="text-right text-gray-400 font-mono">{c.base5}</div>
+                    <div className="text-right text-gray-300 font-mono font-semibold">{c.iva}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 border-b border-gray-800 bg-red-500/5 flex items-center justify-between">
+                  <p className="text-[10px] text-red-400 font-semibold uppercase tracking-wider">Ventas — IVA Débito</p>
+                  <span className="text-[10px] text-red-400 font-mono font-bold">Gs. 300.000</span>
+                </div>
+                {[
+                  { client: "Cliente XYZ S.A.", base10: "3.000.000", iva: "300.000" },
+                ].map((v, i) => (
+                  <div key={i} className="grid grid-cols-3 gap-1 px-3 py-2 border-b border-gray-800 last:border-0 text-[10px]">
+                    <div className="text-gray-300 truncate">{v.client}</div>
+                    <div className="text-right text-gray-400 font-mono">{v.base10}</div>
+                    <div className="text-right text-gray-300 font-mono font-semibold">{v.iva}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-gray-500">IVA Débito: <span className="text-red-400 font-mono">Gs. 300.000</span></span>
+                <span className="text-gray-500">IVA Crédito: <span className="text-emerald-400 font-mono">Gs. 605.000</span></span>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-gray-500">Saldo a favor</p>
+                <p className="text-sm font-bold text-emerald-400 font-mono">Gs. 305.000</p>
+              </div>
+            </div>
+          </div>
+        </MockCard>
         <div className="bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 rounded-xl p-4">
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">IVA Débito - IVA Crédito:</span>
@@ -1020,11 +1811,39 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Centraliza la generación y presentación de declaraciones juradas: IVA (Formulario 104),
           IRE (Formulario 501), IRP (Formulario 400) e IDU (Formulario 250).
         </p>
-        <Screenshot
-          src="/manual/17-impuestos.png"
-          alt="Formularios de impuestos: IVA 104, IRE 501 con estados y vencimientos"
-          caption="Declaraciones disponibles"
-        />
+        <MockCard title="Declaraciones disponibles">
+          <div className="space-y-3">
+            {[
+              { form: "Formulario 104", impuesto: "IVA", monto: "Gs. 0 (Crédito fiscal: Gs. 305.000)", vence: "15/08/2026", estado: "red" as const, estadoLabel: "No presentado" },
+              { form: "Formulario 501", impuesto: "IRE General", monto: "Gs. 2.450.000", vence: "31/08/2026", estado: "red" as const, estadoLabel: "No presentado" },
+              { form: "Formulario 120", impuesto: "Retenciones", monto: "Gs. 180.000", vence: "15/08/2026", estado: "yellow" as const, estadoLabel: "Pendiente" },
+              { form: "Formulario 400", impuesto: "IRP", monto: "Gs. 0", vence: "30/09/2026", estado: "gray" as const, estadoLabel: "Próximo" },
+            ].map((d, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-3 hover:border-gray-700 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <p className="text-[11px] text-white font-semibold">{d.form} — {d.impuesto}</p>
+                      <p className="text-[10px] text-gray-500">Monto: <span className="text-gray-300 font-mono">{d.monto}</span></p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <MockBadge variant={d.estado}>{d.estadoLabel}</MockBadge>
+                    <p className="text-[10px] text-gray-500 mt-1">Vence: <span className="text-gray-300">{d.vence}</span></p>
+                  </div>
+                </div>
+                {d.estado !== "gray" && (
+                  <div className="flex justify-end">
+                    <button className="bg-primary/15 text-primary text-[10px] font-semibold px-3 py-1.5 rounded-lg border border-primary/20 flex items-center gap-1">
+                      Declarar <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </MockCard>
 
         <StepList
           steps={[
@@ -1085,11 +1904,38 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         <p className="text-gray-300 text-sm leading-relaxed">
           Controla los timbrados fiscales: vigencia, cantidad de facturas usadas, alertas de vencimiento.
         </p>
-        <Screenshot
-          src="/manual/19-timbrados.png"
-          alt="Gestión de timbrados fiscales con vigencia y uso"
-          caption="Timbrados"
-        />
+        <MockCard title="Timbrados">
+          <div className="space-y-3">
+            {[
+              { num: "12345678", tipo: "Factura Electrónica", punto: "001-001", desde: "01/01/2026", hasta: "31/12/2026", usado: 1234, total: 5000 },
+              { num: "87654321", tipo: "Nota de Crédito", punto: "001-001", desde: "01/01/2026", hasta: "31/12/2026", usado: 45, total: 500 },
+            ].map((t, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Ticket className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-[11px] text-white font-semibold font-mono">{t.num}</p>
+                      <p className="text-[10px] text-gray-500">{t.tipo} · Exp: {t.punto}</p>
+                    </div>
+                  </div>
+                  <MockBadge variant={t.usado / t.total > 0.8 ? "red" : "green"}>{t.usado / t.total > 0.8 ? "Alerta" : "Vigente"}</MockBadge>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-[10px] mb-3">
+                  <div>
+                    <p className="text-gray-600">Vigencia</p>
+                    <p className="text-gray-300">{t.desde} → {t.hasta}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Comprobantes</p>
+                    <p className="text-gray-300 font-mono">{t.usado.toLocaleString()} / {t.total.toLocaleString()}</p>
+                  </div>
+                </div>
+                <MockProgress value={t.usado} max={t.total} label="Uso del timbrado" />
+              </div>
+            ))}
+          </div>
+        </MockCard>
         <Tip>
           El sistema muestra alertas automáticas cuando un timbrado está por vencer (&lt;30 días) o supera el 80% de uso.
         </Tip>
@@ -1109,11 +1955,44 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           Muestra las fechas de vencimiento de todas las obligaciones fiscales según el cronograma DNIT.
           Cada vencimiento tiene un enlace directo al módulo de impuestos.
         </p>
-        <Screenshot
-          src="/manual/22-calendario.png"
-          alt="Calendario fiscal con fechas de vencimiento de obligaciones DNIT"
-          caption="Calendario Fiscal"
-        />
+        <MockCard title="Calendario Fiscal">
+          <div className="space-y-3">
+            <div className="text-center">
+              <p className="text-sm text-white font-bold">Julio 2026</p>
+              <div className="grid grid-cols-7 gap-1 mt-2 text-[10px]">
+                {["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"].map((d, i) => (
+                  <div key={i} className="text-center text-gray-600 py-1">{d}</div>
+                ))}
+                {Array.from({ length: 31 }, (_, i) => {
+                  const day = i + 1;
+                  const hasEvent = [15, 31].includes(day);
+                  const isToday = day === 27;
+                  return (
+                    <div key={i} className={`text-center py-1.5 rounded-lg transition-colors ${isToday ? 'bg-primary text-white font-bold' : hasEvent ? 'bg-amber-500/15 text-amber-400 font-semibold' : 'text-gray-500 hover:bg-gray-800'}`}>
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="px-3 py-2 border-b border-gray-800 bg-gray-900/80">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Obligaciones del mes</p>
+              </div>
+              {[
+                { dia: 15, desc: "IVA — Formulario 104 (Junio)", estado: "Vence hoy", color: "red" as const },
+                { dia: 15, desc: "Retenciones — Formulario 120 (Junio)", estado: "Pendiente", color: "yellow" as const },
+                { dia: 31, desc: "IRE — Anticipo Q3 (Julio)", estado: "15 días restantes", color: "gray" as const },
+              ].map((e, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2.5 border-b border-gray-800 last:border-0">
+                  <div className="col-span-1 text-[11px] font-mono text-gray-300 font-semibold">{e.dia}</div>
+                  <div className="col-span-7 text-[11px] text-gray-300">{e.desc}</div>
+                  <div className="col-span-4 text-right"><MockBadge variant={e.color}>{e.estado}</MockBadge></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </MockCard>
       </div>
     ),
   },
@@ -1130,11 +2009,50 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           La RG90 (Resolución General 90) es la conciliación de comprobantes electrónicos exigida por la SET/DNIT.
           El sistema genera automáticamente el archivo CSV para su presentación.
         </p>
-        <Screenshot
-          src="/manual/23-rg90.png"
-          alt="RG90 conciliación de comprobantes electrónicos SET/DNIT"
-          caption="RG90"
-        />
+        <MockCard title="RG90 — Conciliación de Comprobantes Electrónicos">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-white font-semibold">Período:</span>
+                <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-[11px] text-gray-300">Julio 2026</div>
+              </div>
+              <button className="bg-primary text-white text-[11px] font-semibold px-3 py-2 rounded-lg">Generar RG90</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 border-b border-gray-800 bg-emerald-500/5 flex items-center justify-between">
+                  <p className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">Emitidos</p>
+                  <MockBadge variant="green">23 docs</MockBadge>
+                </div>
+                <div className="p-2 space-y-1">
+                  {["001-001-012345 — Dist. ABC — Gs. 6.105.000", "001-004-067890 — Ferretería XYZ — Gs. 2.350.000", "001-003-098765 — Petrobras — Gs. 1.200.000"].map((d, i) => (
+                    <div key={i} className="text-[10px] text-gray-400 font-mono px-2 py-1 rounded bg-gray-800/50 truncate">{d}</div>
+                  ))}
+                  <p className="text-[9px] text-gray-600 text-center">+ 20 más</p>
+                </div>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 border-b border-gray-800 bg-blue-500/5 flex items-center justify-between">
+                  <p className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">Recibidos</p>
+                  <MockBadge variant="blue">47 docs</MockBadge>
+                </div>
+                <div className="p-2 space-y-1">
+                  {["001-001-054321 — Tigo — Gs. 850.000", "001-002-034567 — Papelería — Gs. 450.000", "001-005-011111 — ANDE — Gs. 1.800.000"].map((d, i) => (
+                    <div key={i} className="text-[10px] text-gray-400 font-mono px-2 py-1 rounded bg-gray-800/50 truncate">{d}</div>
+                  ))}
+                  <p className="text-[9px] text-gray-600 text-center">+ 44 más</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span className="text-[11px] text-emerald-300">Conciliación completa — Sin inconsistencias detectadas</span>
+            </div>
+            <button className="w-full bg-gray-900 border border-gray-800 text-gray-300 text-[11px] font-semibold py-2.5 rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+              Descargar archivo RG90 (CSV) <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+        </MockCard>
         <StepList
           steps={[
             { title: "Seleccione período", body: <>Elija el mes a reportar.</> },
@@ -1165,11 +2083,48 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El cierre de períodos bloquea un mes contable para garantizar la inmutabilidad del libro.
           Una vez cerrado, no se pueden crear ni modificar asientos en ese período.
         </p>
-        <Screenshot
-          src="/manual/20-cierre.png"
-          alt="Cierre de períodos contables con estados abiertos y cerrados"
-          caption="Cierre de Períodos — 2026"
-        />
+        <MockCard title="Cierre de Períodos — 2026">
+          <div className="space-y-3">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-5 gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900/80 text-[9px] text-gray-600 uppercase tracking-wider font-semibold">
+                <div>Mes</div>
+                <div>Estado</div>
+                <div className="text-center">Asientos</div>
+                <div className="text-center">Libro IVA</div>
+                <div className="text-right">Acción</div>
+              </div>
+              {[
+                { mes: "Enero", estado: "Cerrado", badge: "green" as const, asientos: 12, iva: true },
+                { mes: "Febrero", estado: "Cerrado", badge: "green" as const, asientos: 18, iva: true },
+                { mes: "Marzo", estado: "Cerrado", badge: "green" as const, asientos: 15, iva: true },
+                { mes: "Abril", estado: "Cerrado", badge: "green" as const, asientos: 20, iva: true },
+                { mes: "Mayo", estado: "Cerrado", badge: "green" as const, asientos: 16, iva: true },
+                { mes: "Junio", estado: "Cerrado", badge: "green" as const, asientos: 22, iva: true },
+                { mes: "Julio", estado: "Abierto", badge: "yellow" as const, asientos: 8, iva: false, current: true },
+              ].map((p, i) => (
+                <div key={i} className={`grid grid-cols-5 gap-2 px-3 py-2.5 border-b border-gray-800 last:border-0 ${p.current ? 'bg-primary/5' : 'hover:bg-gray-800/50'}`}>
+                  <div className={`text-[11px] ${p.current ? 'text-primary font-semibold' : 'text-gray-300'}`}>{p.mes}</div>
+                  <div><MockBadge variant={p.badge}>{p.estado}</MockBadge></div>
+                  <div className="text-center text-[11px] text-gray-400 font-mono">{p.asientos}</div>
+                  <div className="text-center">
+                    {p.iva ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 mx-auto" />
+                    ) : (
+                      <X className="h-3.5 w-3.5 text-gray-600 mx-auto" />
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {p.current ? (
+                      <button className="bg-primary/15 text-primary text-[10px] font-semibold px-2 py-1 rounded-md border border-primary/20">Cerrar mes</button>
+                    ) : (
+                      <button className="text-[10px] text-gray-600 hover:text-gray-400">Verificar</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </MockCard>
 
         <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
           <h4 className="font-semibold text-white text-sm mb-2">Requisitos para cerrar un período</h4>
@@ -1269,11 +2224,48 @@ export const MANUAL_SECTIONS: ManualSection[] = [
           El módulo de auditoría registra todos los cambios del sistema en un libro inmutable (append-only).
           Cada evento guarda quién, qué, cuándo, por qué y el estado anterior/nuevo.
         </p>
-        <Screenshot
-          src="/manual/25-auditoria.png"
-          alt="Registro de auditoría con eventos, usuarios y acciones"
-          caption="Registro de auditoría"
-        />
+        <MockCard title="Registro de auditoría">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2">
+                <Search className="h-3.5 w-3.5 text-gray-500" />
+                <span className="text-[11px] text-gray-500">Buscar por usuario, acción, entidad...</span>
+              </div>
+              <div className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 flex items-center gap-2">
+                <span className="text-[11px] text-gray-400">Últimos 7 días</span>
+                <ChevronDown className="h-3 w-3 text-gray-500" />
+              </div>
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-12 gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900/80 text-[9px] text-gray-600 uppercase tracking-wider font-semibold">
+                <div className="col-span-3">Fecha / Hora</div>
+                <div className="col-span-3">Usuario</div>
+                <div className="col-span-2">Acción</div>
+                <div className="col-span-2">Entidad</div>
+                <div className="col-span-2 text-right">Detalle</div>
+              </div>
+              {[
+                { fecha: "27/07 14:33:22", user: "admin@estudio.com.py", accion: "POSTEAR", entidad: "JE-2026-045", badge: "green" as const },
+                { fecha: "27/07 14:30:01", user: "admin@estudio.com.py", accion: "LOGIN", entidad: "Session", badge: "blue" as const },
+                { fecha: "27/07 11:15:44", user: "contador@estudio.com.py", accion: "CREAR", entidad: "Tercero", badge: "blue" as const },
+                { fecha: "26/07 17:45:12", user: "admin@estudio.com.py", accion: "UPDATE", entidad: "Empresa", badge: "yellow" as const },
+                { fecha: "26/07 16:30:00", user: "admin@estudio.com.py", accion: "CERRAR_PERI", entidad: "Julio 2026", badge: "yellow" as const },
+                { fecha: "26/07 10:15:33", user: "contador@estudio.com.py", accion: "IMPORTAR", entidad: "SIFEN (3 docs)", badge: "blue" as const },
+                { fecha: "25/07 09:00:00", user: "admin@estudio.com.py", accion: "REVERSAR", entidad: "JE-2026-040", badge: "red" as const },
+              ].map((e, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2 border-b border-gray-800 last:border-0 hover:bg-gray-800/50 transition-colors cursor-pointer">
+                  <div className="col-span-3 text-[10px] text-gray-500 font-mono">{e.fecha}</div>
+                  <div className="col-span-3 text-[10px] text-gray-300 truncate">{e.user}</div>
+                  <div className="col-span-2"><MockBadge variant={e.badge}>{e.accion}</MockBadge></div>
+                  <div className="col-span-2 text-[10px] text-gray-400 truncate">{e.entidad}</div>
+                  <div className="col-span-2 text-right">
+                    <button className="text-[10px] text-primary hover:text-primary/80">Ver JSON</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </MockCard>
         <FieldTable
           fields={[
             { field: "Filtros", type: "Por usuario, acción, entidad, fecha", desc: "Busque eventos específicos" },
