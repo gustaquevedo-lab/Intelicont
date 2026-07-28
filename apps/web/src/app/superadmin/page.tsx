@@ -12,7 +12,7 @@ import {
 import {
   Building2, Users, Search, ToggleLeft, ToggleRight, Check,
   Plus, DollarSign, Key, RefreshCw, Info, AlertCircle, Sparkles,
-  Shield, UserCheck, CheckCircle2, X, Briefcase, User
+  Shield, UserCheck, CheckCircle2, X, Briefcase, User, Zap, Globe, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +39,25 @@ type UserRecord = {
   name: string | null;
   emailVerified: boolean;
   createdAt: any;
+};
+
+const PLAN_DEFAULTS: Record<string, { mrr: number; features: Record<string, boolean> }> = {
+  starter: {
+    mrr: 180000,
+    features: { sifenSync: false, aiTripleImputation: false, cgrReports: false, bankApi: false, multiUser: false }
+  },
+  pro: {
+    mrr: 385000,
+    features: { sifenSync: true, aiTripleImputation: true, cgrReports: false, bankApi: true, multiUser: true }
+  },
+  inhouse: {
+    mrr: 440000,
+    features: { sifenSync: true, aiTripleImputation: true, cgrReports: true, bankApi: true, multiUser: true }
+  },
+  enterprise: {
+    mrr: 650000,
+    features: { sifenSync: true, aiTripleImputation: true, cgrReports: true, bankApi: true, multiUser: true }
+  }
 };
 
 export default function SuperadminPage() {
@@ -70,7 +89,14 @@ export default function SuperadminPage() {
     plan: "pro",
     mrr: 385000,
     contactEmail: "",
-    contactPhone: ""
+    contactPhone: "",
+    features: {
+      sifenSync: true,
+      aiTripleImputation: true,
+      cgrReports: false,
+      bankApi: true,
+      multiUser: true
+    } as Record<string, boolean>
   });
 
   const [newTaxpayer, setNewTaxpayer] = useState({
@@ -115,7 +141,14 @@ export default function SuperadminPage() {
         plan: "pro",
         mrr: 385000,
         contactEmail: "",
-        contactPhone: ""
+        contactPhone: "",
+        features: {
+          sifenSync: true,
+          aiTripleImputation: true,
+          cgrReports: false,
+          bankApi: true,
+          multiUser: true
+        }
       });
       setNewTaxpayer({
         ruc: "",
@@ -675,85 +708,248 @@ export default function SuperadminPage() {
 
       {/* Create Studio Modal */}
       {showCreateStudioModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="card max-w-lg w-full rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-gray-900 dark:text-white">Crear Nuevo Estudio Contable</h3>
-              <button onClick={() => setShowCreateStudioModal(false)} className="text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 max-w-4xl w-full rounded-2xl shadow-2xl p-6 lg:p-8 space-y-6 animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white">Crear Nuevo Estudio Contable</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Configurá la suscripción, información fiscal y habilitá los módulos correspondientes.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowCreateStudioModal(false)} 
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400">RUC del Estudio *</label>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
+              {/* Left Column: Basic Information */}
+              <div className="space-y-5">
+                <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider">Información Básica</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">RUC del Estudio *</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: 80012345-1"
+                      value={newStudio.ruc}
+                      onChange={e => setNewStudio(prev => ({ ...prev, ruc: e.target.value }))}
+                      className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Nombre Comercial</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Estudio Contable G&A"
+                      value={newStudio.tradeName}
+                      onChange={e => setNewStudio(prev => ({ ...prev, tradeName: e.target.value }))}
+                      className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Nombre / Razón Social *</label>
                   <input
                     type="text"
-                    placeholder="Ej: 80012345-1"
-                    value={newStudio.ruc}
-                    onChange={e => setNewStudio(prev => ({ ...prev, ruc: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="Ej: Estudio García & Asociados Sociedad Simple"
+                    value={newStudio.legalName}
+                    onChange={e => setNewStudio(prev => ({ ...prev, legalName: e.target.value }))}
+                    className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Plan Inicial *</label>
-                  <select
-                    value={newStudio.plan}
-                    onChange={e => {
-                      const prices: Record<string, number> = { starter: 180000, pro: 385000, inhouse: 440000, enterprise: 650000 };
-                      setNewStudio(prev => ({ ...prev, plan: e.target.value, mrr: prices[e.target.value] || 0 }));
-                    }}
-                    className="w-full py-2.5 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                  >
-                    <option value="starter">Starter (Gs. 180.000)</option>
-                    <option value="pro">Pro (Gs. 385.000)</option>
-                    <option value="inhouse">InHouse / ESFL (Gs. 440.000)</option>
-                    <option value="enterprise">Enterprise (Gs. 650.000)</option>
-                  </select>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Email de Contacto</label>
+                    <input
+                      type="email"
+                      placeholder="ejemplo@estudio.com"
+                      value={newStudio.contactEmail}
+                      onChange={e => setNewStudio(prev => ({ ...prev, contactEmail: e.target.value }))}
+                      className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Teléfono</label>
+                    <input
+                      type="text"
+                      placeholder="0981 123456"
+                      value={newStudio.contactPhone}
+                      onChange={e => setNewStudio(prev => ({ ...prev, contactPhone: e.target.value }))}
+                      className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Plan Selection Cards */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider">Plan del Cliente</h4>
+                    <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">
+                      Gs. {(newStudio.mrr).toLocaleString("es-PY")} / mes
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { key: "starter", name: "Starter", price: "Gs. 180.000", desc: "Microestudios" },
+                      { key: "pro", name: "Pro", price: "Gs. 385.000", desc: "Estudios Activos" },
+                      { key: "inhouse", name: "InHouse / ESFL", price: "Gs. 440.000", desc: "Organizaciones" },
+                      { key: "enterprise", name: "Enterprise", price: "Gs. 650.000", desc: "Grandes Firmas" },
+                    ].map(p => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => {
+                          const config = PLAN_DEFAULTS[p.key];
+                          setNewStudio(prev => ({
+                            ...prev,
+                            plan: p.key,
+                            mrr: config.mrr,
+                            features: { ...config.features }
+                          }));
+                        }}
+                        className={cn(
+                          "flex flex-col text-left p-3 rounded-xl border transition-all hover:scale-[1.01]",
+                          newStudio.plan === p.key
+                            ? "border-primary bg-primary/5 dark:bg-primary/10 dark:border-primary/60"
+                            : "border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 hover:bg-gray-100/50 dark:hover:bg-slate-800/50"
+                        )}
+                      >
+                        <span className="text-xs font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5">
+                          {p.name}
+                          {p.key === "pro" && (
+                            <span className="text-[9px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded font-black uppercase">
+                              Popular
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-[10px] text-primary font-bold mt-1">{p.price}</span>
+                        <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 font-medium">{p.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400">Nombre / Razón Social *</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Estudio García & Asociados"
-                  value={newStudio.legalName}
-                  onChange={e => setNewStudio(prev => ({ ...prev, legalName: e.target.value }))}
-                  className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                />
-              </div>
+              {/* Right Column: Feature Toggles */}
+              <div className="space-y-5">
+                <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider">Features del Tenant (Control de Módulos)</h4>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Email de Contacto</label>
-                  <input
-                    type="email"
-                    placeholder="ejemplo@estudio.com"
-                    value={newStudio.contactEmail}
-                    onChange={e => setNewStudio(prev => ({ ...prev, contactEmail: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Teléfono</label>
-                  <input
-                    type="text"
-                    placeholder="0981 123456"
-                    value={newStudio.contactPhone}
-                    onChange={e => setNewStudio(prev => ({ ...prev, contactPhone: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                  />
+                <div className="space-y-3.5">
+                  {[
+                    {
+                      key: "sifenSync",
+                      name: "Facturación Electrónica SIFEN",
+                      desc: "Integración directa de comprobantes (Kuatia/SIFEN) para importación de compras y ventas.",
+                      icon: Zap,
+                      color: "text-amber-500 bg-amber-500/10"
+                    },
+                    {
+                      key: "aiTripleImputation",
+                      name: "Cerebro Contable IA (Gemini)",
+                      desc: "Imputación inteligente automática en Libro IVA, Cuenta de Resultados y Balance General.",
+                      icon: Sparkles,
+                      color: "text-indigo-500 bg-indigo-500/10"
+                    },
+                    {
+                      key: "cgrReports",
+                      name: "Convenios & Proyectos (ESFL)",
+                      desc: "Módulo presupuestario con clasificadores PGN/CGR para ONGs y Asociaciones del Paraguay.",
+                      icon: FileText,
+                      color: "text-emerald-500 bg-emerald-500/10"
+                    },
+                    {
+                      key: "bankApi",
+                      name: "API de Conciliación Bancaria",
+                      desc: "Conexión automática de extractos y emparejamiento inteligente de movimientos con facturas.",
+                      icon: Globe,
+                      color: "text-blue-500 bg-blue-500/10"
+                    },
+                    {
+                      key: "multiUser",
+                      name: "Acceso Multiusuario y Roles",
+                      desc: "Roles jerárquicos de auxiliares y auditores con trazabilidad y logs de seguridad.",
+                      icon: Users,
+                      color: "text-rose-500 bg-rose-500/10"
+                    }
+                  ].map(feat => {
+                    const IconComp = feat.icon;
+                    const isEnabled = !!newStudio.features[feat.key];
+                    return (
+                      <div 
+                        key={feat.key} 
+                        onClick={() => setNewStudio(prev => ({
+                          ...prev,
+                          features: {
+                            ...prev.features,
+                            [feat.key]: !prev.features[feat.key]
+                          }
+                        }))}
+                        className={cn(
+                          "flex items-start justify-between p-3.5 rounded-xl border cursor-pointer select-none transition-all hover:bg-gray-50/50 dark:hover:bg-slate-800/40",
+                          isEnabled 
+                            ? "border-primary/20 bg-primary/[0.01] dark:bg-primary/[0.02]" 
+                            : "border-gray-150 dark:border-slate-800 bg-transparent opacity-85"
+                        )}
+                      >
+                        <div className="flex gap-3 pr-2">
+                          <div className={cn("h-8 w-8 rounded-lg shrink-0 flex items-center justify-center", feat.color)}>
+                            <IconComp className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-gray-950 dark:text-white">{feat.name}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed font-medium">{feat.desc}</p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={cn(
+                            "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-1",
+                            isEnabled ? "bg-primary" : "bg-gray-200 dark:bg-slate-700"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                              isEnabled ? "translate-x-4" : "translate-x-0"
+                            )}
+                          />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            </div>
 
+            {/* Actions Footer */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+              <button
+                onClick={() => setShowCreateStudioModal(false)}
+                className="px-5 py-2.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 transition-colors"
+              >
+                Cancelar
+              </button>
               <button
                 onClick={() => createTenantMutation.mutate({ ...newStudio, tenantType: "STUDIO" })}
-                disabled={!newStudio.ruc || !newStudio.legalName}
-                className="w-full py-3 bg-primary text-white rounded-lg text-xs font-black uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                disabled={!newStudio.ruc || !newStudio.legalName || createTenantMutation.isPending}
+                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-primary text-white hover:bg-primary-dark transition-all rounded-xl text-xs font-black shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none"
               >
-                Crear Estudio Contable
+                {createTenantMutation.isPending ? "Creando..." : "Crear Estudio Contable"}
               </button>
             </div>
           </div>

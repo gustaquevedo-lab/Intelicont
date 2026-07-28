@@ -68,6 +68,10 @@ export const entities = pgTable("entities", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+export type Entity = typeof entities.$inferSelect;
+export type NewEntity = typeof entities.$inferInsert;
+
+
 // ─── ESFL: Grants & Projects (Convenios y Donantes) ───────────────────────
 
 export const grants = pgTable("grants", {

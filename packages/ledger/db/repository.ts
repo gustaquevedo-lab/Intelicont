@@ -405,6 +405,7 @@ export async function createEntity(data: {
   entityType?: "COMMERCIAL" | "NON_PROFIT_NGO" | "NON_PROFIT_PUBLIC" | "ASSOCIATION";
   taxRegimes?: string[];
   plan?: string;
+  features?: Record<string, boolean>;
   mrr?: number;
   tenantType?: "STUDIO" | "TAXPAYER";
   studioId?: string;
@@ -419,6 +420,7 @@ export async function createEntity(data: {
     entityType: data.entityType || "COMMERCIAL",
     taxRegimes: data.taxRegimes || ["IVA_GRAL"],
     plan: data.plan || "starter",
+    features: data.features || { sifenSync: true, aiTripleImputation: true, cgrReports: false },
     mrr: data.mrr || 180000,
     status: "active",
     tenantType: data.tenantType || "TAXPAYER",

@@ -1405,6 +1405,7 @@ export async function createTenantAction(input: {
   entityType?: "COMMERCIAL" | "NON_PROFIT_NGO" | "NON_PROFIT_PUBLIC" | "ASSOCIATION";
   taxRegimes?: string[];
   plan?: string;
+  features?: Record<string, boolean>;
   mrr?: number;
   tenantType?: "STUDIO" | "TAXPAYER";
   studioId?: string;

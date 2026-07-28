@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
-import { getDb } from "@/lib/db";
-import { entities, type Entity } from "@/lib/db/schema";
+import { getDb } from "@ledger/db/index";
+import { entities, memberships, type Entity } from "@ledger/db/schema";
 import { validateRUC } from "@/lib/ruc";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/session";
 
 // ─── Result type ──────────────────────────────────────────────────────────────
 
@@ -26,9 +26,8 @@ export async function getEmpresas(): Promise<ActionResult<Entity[]>> {
     const db = getDb();
 
     // Auth check — we want to know who's requesting (for future row-level filter).
-    // With dev RLS (USING true), all rows are visible regardless.
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const session = await getSession();
+    const user = session?.user;
 
     // Fetch all entities (RLS on Supabase side handles multi-tenant isolation).
     // When entity_memberships table is added, add .where(inArray(entities.id, userEntityIds)).
@@ -119,12 +118,11 @@ export async function createEmpresa(
   formData: FormData
 ): Promise<ActionResult<Entity>> {
   // ── Auth ──────────────────────────────────────────────────────────────────
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
+  const user = session?.user;
 
-  // In dev (no real Supabase) we allow inserts; in prod, reject unauthenticated.
-  const isDevMode = !process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("placeholder") === false
-                    || process.env.NODE_ENV === "development";
+  // In dev (no real session / dev mode) we allow inserts; in prod, reject unauthenticated.
+  const isDevMode = process.env.NODE_ENV === "development";
 
   if (!user && !isDevMode) {
     return { ok: false, error: "Sesión expirada. Volvé a iniciar sesión." };
@@ -159,16 +157,32 @@ export async function createEmpresa(
   try {
     const db = getDb();
 
-    const [created] = await db
-      .insert(entities)
-      .values({
-        ruc:      normalizedRuc,
-        legalName,
-        tradeName,
-        taxRegimes,
-        status:   "active",
-      })
-      .returning();
+    const created = await db.transaction(async (tx) => {
+      const [newEntity] = await tx
+        .insert(entities)
+        .values({
+          ruc:      normalizedRuc,
+          legalName,
+          tradeName,
+          taxRegimes,
+          status:   "active",
+        })
+        .returning();
+
+      if (!newEntity) {
+        throw new Error("No se pudo crear la empresa en la base de datos.");
+      }
+
+      if (user?.id) {
+        await tx.insert(memberships).values({
+          userId: user.id,
+          entityId: newEntity.id,
+          role: "admin",
+        });
+      }
+
+      return newEntity;
+    });
 
     revalidatePath("/empresas");
 
