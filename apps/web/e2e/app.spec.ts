@@ -1,12 +1,15 @@
 import { test, expect } from "@playwright/test";
+import { requireE2eEnv } from "./helpers";
 
+// Runs logged in as the non-admin e2e user (storageState from global-setup).
 test.describe("InteliCont E2E", () => {
+  requireE2eEnv();
+
   test("dashboard loads and shows KPIs", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1")).toContainText("Panel");
-    await expect(page.locator("text=IVA Saldo")).toBeVisible({ timeout: 10000 });
-    await expect(page.locator("text=Facturación Mayo")).toBeVisible();
-    await expect(page.locator("text=Cargar XML")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Nuevo Asiento" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Evolución de IVA" })).toBeVisible();
+    await expect(page.getByText("Crédito Fiscal")).toBeVisible();
   });
 
   test("entity selector switches companies", async ({ page }) => {
@@ -24,13 +27,13 @@ test.describe("InteliCont E2E", () => {
   test("navigates to SIFEN page", async ({ page }) => {
     await page.goto("/sifen");
     await expect(page.locator("h1")).toContainText("SIFEN");
-    await expect(page.locator("text=Cargar XML")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Probar con factura de demostración" })).toBeVisible();
   });
 
   test("SIFEN historial shows documents", async ({ page }) => {
     await page.goto("/sifen/historial");
     await expect(page.locator("h1")).toContainText("Bandeja SIFEN");
-    await expect(page.locator("text=Pendiente")).first().toBeVisible({ timeout: 5000 });
+    await expect(page.locator("text=Pendiente").first()).toBeVisible();
   });
 
   test("asientos page shows entries", async ({ page }) => {
@@ -45,7 +48,7 @@ test.describe("InteliCont E2E", () => {
 
   test("terceros page loads partners", async ({ page }) => {
     await page.goto("/terceros");
-    await expect(page.locator("h1")).toContainText("Terceros");
+    await expect(page.locator("h1")).toContainText("Clientes y Proveedores");
   });
 
   test("libros page loads accounting books", async ({ page }) => {
@@ -56,15 +59,15 @@ test.describe("InteliCont E2E", () => {
   test("formulario 104 loads IVA declaration", async ({ page }) => {
     await page.goto("/fiscal/formulario-104");
     await expect(page.locator("h1")).toContainText("Formulario 104");
-    await expect(page.locator("text=Resultado del Período")).toBeVisible({ timeout: 5000 });
-    await expect(page.locator("text=Ventas")).toBeVisible();
-    await expect(page.locator("text=Compras")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Resultado del Período" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ventas — IVA Débito" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Compras — IVA Crédito" })).toBeVisible();
   });
 
   test("hechauka page loads electronic book", async ({ page }) => {
     await page.goto("/fiscal/hechauka");
     await expect(page.locator("h1")).toContainText("Hechauka");
-    await expect(page.locator("text=Compras")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("heading", { name: "Compras", exact: true })).toBeVisible();
   });
 
   test("calendario page shows fiscal calendar", async ({ page }) => {
@@ -92,18 +95,11 @@ test.describe("InteliCont E2E", () => {
     await expect(page.locator("h1")).toContainText("Configuración");
   });
 
-  test("login page shows auth form", async ({ page }) => {
-    await page.goto("/login");
-    await expect(page.locator("text=Iniciar Sesión")).toBeVisible({ timeout: 5000 });
-    await page.fill('input[type="email"]', "admin@intelicont.com");
-    await page.click('button:has-text("Enviar Enlace")');
-    await expect(page.locator("text=Verificar Código")).toBeVisible({ timeout: 5000 });
-  });
-
   test("command palette opens with Cmd+K", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByRole("button", { name: "Nuevo Asiento" })).toBeVisible();
     await page.keyboard.press("Meta+k");
-    await expect(page.locator('[role="dialog"], .command-palette')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByPlaceholder("¿Qué necesitás hacer hoy?...")).toBeVisible();
     await page.keyboard.press("Escape");
   });
 

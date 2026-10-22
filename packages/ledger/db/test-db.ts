@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import postgres, { type Sql } from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -11,13 +11,18 @@ export type TestDb = {
   owner: Sql;
   /** Connection as the runtime role (NOSUPERUSER NOBYPASSRLS); subject to RLS. */
   app: Sql;
+  /** Connection URLs for out-of-process clients (e.g. a web server under e2e). Contain credentials: never log. */
+  ownerUrl: string;
+  appUrl: string;
   /** Runs fn in a transaction as the app role with tenant scope + extra settings (set_config, local). */
   scoped<T>(entityIds: string[], fn: (tx: Sql) => Promise<T>, settings?: Record<string, string>): Promise<T>;
   /** Terminates connections and drops the temp database and role. */
   drop(): Promise<void>;
 };
 
-const MIGRATIONS = fileURLToPath(new URL("./migrations", import.meta.url));
+// __dirname, not import.meta: this file is also loaded by Playwright's CJS transform (e2e global setup);
+// Vitest provides __dirname too.
+const MIGRATIONS = join(__dirname, "migrations");
 
 function withDb(adminUrl: string, db: string, user?: string, password?: string): string {
   const u = new URL(adminUrl);
@@ -83,6 +88,8 @@ export async function createTestDb(): Promise<TestDb> {
   return {
     owner,
     app: appSql,
+    ownerUrl: withDb(adminUrl, dbName),
+    appUrl: withDb(adminUrl, dbName, role, password),
     scoped: (entityIds, fn, settings = {}) =>
       appSql.begin(async (tx) => {
         await tx`select set_config('app.entity_ids', ${entityIds.join(",")}, true)`;
