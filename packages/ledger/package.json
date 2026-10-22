@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/domain.ts",
     "./fiscal-py": "./src/fiscal-py.ts",
-    "./sifen": "./src/sifen.ts"
+    "./sifen": "./src/sifen.ts",
+    "./registro-codes": "./src/registro-codes.ts"
   },
   "scripts": {
     "db:seed": "tsx db/seed.ts"
