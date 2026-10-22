@@ -8,8 +8,13 @@ build/
 *.log
 thumbs.db
 coverage/
-pnpm-lock.yaml
 package-lock.json
 .vscode/
 .idea/
 *.tgz
+.env*.local
+*.pem
+.superpowers/
+.claude/worktrees/
+.claire/
+*.tsbuildinfo
