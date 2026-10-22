@@ -39,6 +39,14 @@ export default function SifenPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState("");
   const [pendingDocs, setPendingDocs] = useState<SifenInvoice[]>([]);
+  // One Idempotency-Key per parsed document: approving the same document again (double click,
+  // retry, batch re-run) replays the first result instead of booking a second entry.
+  const docKeys = useRef(new WeakMap<SifenInvoice, string>());
+  const keyFor = (doc: SifenInvoice) => {
+    let key = docKeys.current.get(doc);
+    if (!key) docKeys.current.set(doc, (key = crypto.randomUUID()));
+    return key;
+  };
 
   const handleFile = useCallback((file: File) => {
     if (!file.name.endsWith(".xml")) return;
@@ -124,7 +132,7 @@ export default function SifenPage() {
         currencyCode: "PYG",
         description: l.description,
       })),
-    });
+    }, keyFor(invoice));
     setIsProcessing(false);
     if (result.success) setStep("success");
   };
@@ -146,7 +154,7 @@ export default function SifenPage() {
             currencyCode: "PYG",
             description: l.description,
           })),
-        });
+        }, keyFor(doc));
       }
     }
     setIsProcessing(false);

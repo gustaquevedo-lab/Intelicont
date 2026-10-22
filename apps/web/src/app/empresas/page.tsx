@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Building2, Plus, Search, Filter, MoreHorizontal, Edit, Trash, AlertTriangle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/client";
-import { useEntities } from "@/lib/trpc-hooks";
+import { useEntities, useIdempotencyKey } from "@/lib/trpc-hooks";
 
 const REGIMES = ["IVA_GRAL", "IRE_GRAL", "IRE_SIMPLE", "IRE_RESIMPLE", "IRP", "INR", "IDU", "EXPORTADOR"] as const;
 const emptyForm = { ruc: "", legalName: "", tradeName: "", taxRegimes: ["IVA_GRAL"] as string[], baseCurrency: "PYG" };
@@ -12,8 +12,11 @@ const emptyForm = { ruc: "", legalName: "", tradeName: "", taxRegimes: ["IVA_GRA
 export default function EmpresasPage() {
   const { data: empresas = [], isLoading } = useEntities();
   const utils = api.useUtils();
+  const idem = useIdempotencyKey();
   const create = api.entities.create.useMutation({
+    trpc: idem.trpc,
     onSuccess: async () => {
+      idem.renew();
       await utils.entities.list.invalidate();
       setShowForm(false);
       setForm(emptyForm);
@@ -42,7 +45,10 @@ export default function EmpresasPage() {
           <p className="text-gray-400 text-sm mt-0.5">Gestiona las empresas de tu estudio</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (!showForm) idem.renew(); // opening the form starts a new action
+            setShowForm(!showForm);
+          }}
           className={cn(
             "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
             showForm

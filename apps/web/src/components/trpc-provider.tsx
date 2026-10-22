@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink } from "@trpc/client";
+import { httpBatchLink, httpLink, splitLink } from "@trpc/client";
 import { api } from "@/trpc/client";
 
 function getBaseUrl() {
@@ -24,8 +24,18 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const [trpcClient] = useState(() =>
     api.createClient({
       links: [
-        httpBatchLink({
-          url: `${getBaseUrl()}/api/trpc`,
+        // Mutations go one per request so each carries its own Idempotency-Key header
+        // (set per action through `useIdempotencyKey().trpc`, see lib/trpc-hooks.ts).
+        splitLink({
+          condition: (op) => op.type === "mutation",
+          true: httpLink({
+            url: `${getBaseUrl()}/api/trpc`,
+            headers: ({ op }) => {
+              const key = op.context.idempotencyKey;
+              return typeof key === "string" ? { "Idempotency-Key": key } : {};
+            },
+          }),
+          false: httpBatchLink({ url: `${getBaseUrl()}/api/trpc` }),
         }),
       ],
     })

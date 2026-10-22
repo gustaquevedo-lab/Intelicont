@@ -5,7 +5,7 @@ import { Users, Plus, Search, Edit, X } from "lucide-react";
 import { validateRuc } from "@intelicont/ledger/fiscal-py";
 import { api } from "@/trpc/client";
 import { useAuthStore } from "@/lib/auth-store";
-import { usePartners } from "@/lib/trpc-hooks";
+import { useIdempotencyKey, usePartners } from "@/lib/trpc-hooks";
 import { cn } from "@/lib/utils";
 
 type Kind = "customer" | "supplier" | "both";
@@ -141,8 +141,10 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
       ? { kind: editing.kind, ruc: editing.rucDisplay, legalName: editing.legalName, tradeName: editing.tradeName ?? "", country: editing.country ?? "PRY", terms: String(editing.defaultPaymentTerms ?? 30), email: editing.contacts?.email ?? "", phone: editing.contacts?.phone ?? "", address: editing.contacts?.address ?? "" }
       : emptyForm,
   );
-  const create = api.partners.create.useMutation({ onSuccess: onSaved });
-  const update = api.partners.update.useMutation({ onSuccess: onSaved });
+  // The modal is one user action: its key lives as long as the modal (closed on success).
+  const idem = useIdempotencyKey();
+  const create = api.partners.create.useMutation({ trpc: idem.trpc, onSuccess: onSaved });
+  const update = api.partners.update.useMutation({ trpc: idem.trpc, onSuccess: onSaved });
   const mutation = editing ? update : create;
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const rucError = !editing && form.ruc && form.country === "PRY" ? validateRuc(form.ruc).errors[0] : undefined;

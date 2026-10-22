@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createAsiento } from "@/lib/actions";
+import { useIdempotencyKey } from "@/lib/trpc-hooks";
 
 interface Linea {
   id: string;
@@ -131,6 +132,9 @@ export default function NuevoAsientoPage() {
     ]);
   };
 
+  // Kept across double clicks and failed attempts; renewed after a successful publish.
+  const idem = useIdempotencyKey();
+
   const handlePublicar = () => {
     setFeedback(null);
     startTransition(async () => {
@@ -148,9 +152,10 @@ export default function NuevoAsientoPage() {
             currencyCode: "PYG",
             description: l.descripcion,
           })),
-      });
+      }, idem.key);
 
       if (result.success) {
+        idem.renew();
         setFeedback({ type: "success", message: result.message });
         setTimeout(() => router.push("/asientos"), 1500);
       } else {

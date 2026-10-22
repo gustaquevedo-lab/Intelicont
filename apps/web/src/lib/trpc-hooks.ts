@@ -1,6 +1,22 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { api } from "@/trpc/client";
+
+// ─── Idempotency ───────────────────────────────────────────────────────
+
+/**
+ * One Idempotency-Key per user action. The key exists before the submit (it is created with the
+ * form), so a double click, a re-submit after a network error, or a retry all send the SAME key and
+ * the server runs the action once. Call `renew()` after success to start a new action. A failed
+ * request rolls the key back on the server, so keeping it after an error is safe.
+ * Use `trpc` in `useMutation({ trpc })` (the provider sends it as the header), or `key` for server actions.
+ */
+export function useIdempotencyKey() {
+  const [key, setKey] = useState(() => crypto.randomUUID());
+  const renew = useCallback(() => setKey(crypto.randomUUID()), []);
+  return { key, renew, trpc: { context: { idempotencyKey: key } } };
+}
 
 // ─── Entities ──────────────────────────────────────────────────────────
 
@@ -34,15 +50,6 @@ export function useJournalEntry(id: string) {
 
 export function useJournalEntryLines(entryId: string) {
   return api["journal-entries"].getLines.useQuery({ entryId }, { enabled: !!entryId });
-}
-
-export function useCreateJournalEntry() {
-  const utils = api.useUtils();
-  return api["journal-entries"].create.useMutation({
-    onSuccess: () => {
-      utils["journal-entries"].list.invalidate();
-    },
-  });
 }
 
 // ─── Tax Documents ────────────────────────────────────────────────────

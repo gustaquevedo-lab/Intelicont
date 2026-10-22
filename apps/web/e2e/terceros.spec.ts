@@ -23,4 +23,15 @@ test.describe("terceros", () => {
     await expect(row).toBeVisible();
     await expect(row).toContainText(`${body}-${mod11Dv(body)}`);
   });
+
+  test("a mutation needs an Idempotency-Key header; a retry with the same key returns the same record", async ({ page }) => {
+    const entityId = (await (await page.request.get("/api/trpc/entities.list")).json()).result.data[0].id;
+    const data = { entityId, kind: "customer", ruc: "1234500", legalName: "Cliente Idempotente" };
+    expect((await page.request.post("/api/trpc/partners.create", { data })).status()).toBe(400);
+    const headers = { "Idempotency-Key": crypto.randomUUID() };
+    const first = await page.request.post("/api/trpc/partners.create", { data, headers });
+    const retry = await page.request.post("/api/trpc/partners.create", { data, headers });
+    expect(first.status()).toBe(200);
+    expect((await retry.json()).result.data.id).toBe((await first.json()).result.data.id);
+  });
 });
