@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { eq, desc, asc, and, sql } from "drizzle-orm";
 import { tenantDb, isMockMode } from "./index";
 import * as schema from "./schema";
@@ -31,6 +32,47 @@ export async function getEntity(id: string): Promise<Entities | undefined> {
   return tenantDb(async (db) => {
     const rows = await db.select().from(schema.entities).where(eq(schema.entities.id, id));
     return rows[0];
+  });
+}
+
+export type NewEntity = { ruc: string; legalName: string; tradeName?: string; taxRegimes: string[]; baseCurrency: string };
+export type SeedAccount = { code: string; name: string; nature: Account["nature"]; parentCode: string | null; allowsPosting: boolean };
+
+/**
+ * Creates an entity (via the `create_entity` SQL function: entity + admin membership for the
+ * caller), its fiscal_py chart of accounts with `seed` accounts (parent codes resolved to
+ * parent_id) and the first open fiscal period. Runs in the enclosing `withTenant` transaction.
+ */
+export async function createEntityWithChart(
+  input: NewEntity,
+  seed: SeedAccount[],
+  period: { year: number; month: number },
+): Promise<string> {
+  return tenantDb(async (db) => {
+    const regimes = input.taxRegimes.length
+      ? sql`array[${sql.join(input.taxRegimes.map((r) => sql`${r}`), sql`, `)}]::text[]`
+      : sql`'{}'::text[]`;
+    const rows = await db.execute<{ id: string }>(
+      sql`select create_entity(${input.ruc}, ${input.legalName}, ${input.tradeName ?? null}, ${regimes}, ${input.baseCurrency}) as id`,
+    );
+    const entityId = rows[0].id;
+    const [coa] = await db.insert(schema.chartOfAccounts)
+      .values({ entityId, kind: "fiscal_py", name: "Plan de Cuentas PY" })
+      .returning({ id: schema.chartOfAccounts.id });
+    const idByCode = new Map(seed.map((a) => [a.code, randomUUID()]));
+    await db.insert(schema.accounts).values(
+      seed.map((a) => ({
+        id: idByCode.get(a.code)!,
+        coaId: coa.id,
+        code: a.code,
+        name: a.name,
+        nature: a.nature,
+        parentId: a.parentCode ? idByCode.get(a.parentCode) ?? null : null,
+        allowsPosting: a.allowsPosting,
+      })),
+    );
+    await db.insert(schema.fiscalPeriods).values({ entityId, year: period.year, month: period.month, status: "open" });
+    return entityId;
   });
 }
 

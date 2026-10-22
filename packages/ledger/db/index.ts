@@ -95,6 +95,8 @@ export async function withTenant<T>(userId: string, fn: (db: Db) => Promise<T>):
 /**
  * Internal accessor for repository/use-case code: the transaction of the enclosing
  * `withTenant`. Throws when there is none — never falls back to an unscoped connection.
+ * Warning: `fn` must be awaited inside the `withTenant` callback; detached async work (not awaited,
+ * setTimeout, queued jobs) can outlive the transaction and fail or run unscoped.
  */
 export async function tenantDb<T>(fn: (db: Db) => Promise<T>): Promise<T> {
   const scope = tenantTx.getStore();
