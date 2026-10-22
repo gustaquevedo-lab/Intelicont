@@ -1,4 +1,7 @@
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, z } from "../trpc";
+import { idempotentProcedure } from "../idempotent";
+import { ingestDocument } from "@ledger/src/usecases";
 import { getTaxDocuments, getTaxDocument, getPendingTaxDocuments, getTaxDocumentLines } from "@ledger/db/repository";
 
 export const taxDocumentsRouter = router({
@@ -16,6 +19,7 @@ export const taxDocumentsRouter = router({
         iva10: d.iva10, iva5: d.iva5, total: d.total,
         journalEntryId: d.journalEntryId, metadata: d.metadata,
         uploadedAt: d.uploadedAt, processedAt: d.processedAt,
+        docCode: d.docCode, isElectronic: d.isElectronic, counterpartyIdType: d.counterpartyIdType,
       }));
     }),
 
@@ -38,5 +42,18 @@ export const taxDocumentsRouter = router({
     .input(z.object({ documentId: z.string() }))
     .query(async ({ input }) => {
       return getTaxDocumentLines(input.documentId);
+    }),
+
+  /** Stores a SIFEN XML as a pending document. Warnings are returned, not persisted. */
+  ingestXml: idempotentProcedure
+    .input(z.object({
+      entityId: z.string().uuid(),
+      direction: z.enum(["received", "issued"]).default("received"),
+      xml: z.string().min(1).max(2_000_000),
+    }))
+    .mutation(async ({ input }) => {
+      const res = await ingestDocument(input.entityId, input.direction, input.xml);
+      if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
+      return res.value;
     }),
 });
