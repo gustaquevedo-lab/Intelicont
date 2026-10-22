@@ -5,6 +5,8 @@
  * a estructuras contables para sugerencia de asiento automático.
  */
 
+import { parseSifenDE, type SifenDocument } from "@intelicont/ledger/sifen";
+
 export interface SifenInvoice {
   cdc: string;
   numero: string;
@@ -43,123 +45,47 @@ export interface SifenItem {
   total: number;
 }
 
+const TIPO_DOC: Record<SifenDocument["docType"], SifenInvoice["tipoDoc"]> = {
+  invoice: "factura",
+  self_invoice: "factura",
+  remito: "factura",
+  credit_note: "nota_credito",
+  debit_note: "nota_debito",
+};
+
+/** Adapter over the server-side parser (parseSifenDE) for the existing UI shape. */
 export function parseSifenXML(xmlString: string): SifenInvoice | null {
-  try {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-
-    // Check for parse errors
-    const parseError = xmlDoc.querySelector("parsererror");
-    if (parseError) return null;
-
-    // CDC
-    const cdc = getTagValue(xmlDoc, "dEmis") || getTagValue(xmlDoc, "CDC") || "";
-
-    // Timbrado
-    const timbrado = getTagValue(xmlDoc, "dTimbrado") || getTagValue(xmlDoc, "Timbrado") || "";
-
-    // Number
-    const numeroEstablecimiento = getTagValue(xmlDoc, "dNroEstab") || "";
-    const numeroPuntoVenta = getTagValue(xmlDoc, "dPtoExp") || "";
-    const numeroDocumento = getTagValue(xmlDoc, "dNroDoc") || "";
-    const numero = `${numeroEstablecimiento}-${numeroPuntoVenta}-${numeroDocumento}`;
-
-    // Date
-    const fechaEmision = getTagValue(xmlDoc, "dFEEmis") || getTagValue(xmlDoc, "FechaEmision") || "";
-
-    // Type
-    const tipoDocumento = getTagValue(xmlDoc, "cTiOpe") || getTagValue(xmlDoc, "TipoDocumento") || "";
-    let tipoDoc: SifenInvoice["tipoDoc"] = "factura";
-    if (tipoDocumento === "2" || tipoDocumento.includes("credito")) tipoDoc = "nota_credito";
-    if (tipoDocumento === "3" || tipoDocumento.includes("debito")) tipoDoc = "nota_debito";
-    if (tipoDocumento === "4" || tipoDocumento.includes("recibo")) tipoDoc = "recibo";
-
-    // Condition
-    const condicion = getTagValue(xmlDoc, "cCond") || getTagValue(xmlDoc, "Condicion") || "";
-    const condicionFinal: "contado" | "credito" = condicion === "2" ? "credito" : "contado";
-
-    // Emitter
-    const emisorRuc = getTagValue(xmlDoc, "dRucEmis") || getTagValue(xmlDoc, "RucEmisor") || "";
-    const emisorNombre = getTagValue(xmlDoc, "dNomEmis") || getTagValue(xmlDoc, "NombreEmisor") || getTagValue(xmlDoc, "EmiNom") || "";
-    const emisorFantasia = getTagValue(xmlDoc, "dNomFanEmis") || getTagValue(xmlDoc, "NombreFantasia") || "";
-
-    // Receiver
-    const receptorRuc = getTagValue(xmlDoc, "dRucRece") || getTagValue(xmlDoc, "RucReceptor") || "";
-    const receptorNombre = getTagValue(xmlDoc, "dNomRece") || getTagValue(xmlDoc, "NombreReceptor") || "";
-
-    // Amounts
-    const gravado10 = parseFloat(getTagValue(xmlDoc, "dTotGrav10") || getTagValue(xmlDoc, "dTot Grav 10") || getTagValue(xmlDoc, "TotGralItem") || "0");
-    const gravado5 = parseFloat(getTagValue(xmlDoc, "dTotGrav5") || getTagValue(xmlDoc, "dTot Grav 5") || getTagValue(xmlDoc, "TotGralItem5") || "0");
-    const exento = parseFloat(getTagValue(xmlDoc, "dTot Exe") || getTagValue(xmlDoc, "TotExe") || "0");
-    const iva10 = parseFloat(getTagValue(xmlDoc, "dTotIVA10") || getTagValue(xmlDoc, "Iva10") || "0");
-    const iva5 = parseFloat(getTagValue(xmlDoc, "dTotIVA5") || getTagValue(xmlDoc, "Iva5") || "0");
-    const totalIva = iva10 + iva5;
-    const total = parseFloat(getTagValue(xmlDoc, "dTotOpe") || getTagValue(xmlDoc, "Total") || "0") || (gravado10 + gravado5 + exento + totalIva);
-
-    // Items
-    const items: SifenItem[] = [];
-    const itemElements = xmlDoc.querySelectorAll("dDetItem, Item");
-    itemElements.forEach((el) => {
-      const parent = el.parentElement;
-      if (parent) {
-        items.push({
-          codigo: getTagValue(xmlDoc, "dCodProd") || "",
-          descripcion: getTagValue(xmlDoc, "dDSProd") || "",
-          cantidad: parseFloat(getTagValue(xmlDoc, "dCant") || "1"),
-          precioUnitario: parseFloat(getTagValue(xmlDoc, "dPUni") || "0"),
-          ivaRate: parseFloat(getTagValue(xmlDoc, "cIVA") || "10"),
-          total: parseFloat(getTagValue(xmlDoc, "dTotItem") || "0"),
-        });
-      }
-    });
-
-    return {
-      cdc,
-      numero: numero || "S/N",
-      fechaEmision,
-      tipoDoc,
-      condicion: condicionFinal,
-      timbrado,
-      emisor: {
-        ruc: emisorRuc,
-        nombre: emisorNombre,
-        nombreFantasia: emisorFantasia || undefined,
-      },
-      receptor: {
-        ruc: receptorRuc,
-        nombre: receptorNombre,
-      },
-      montos: {
-        gravado10: gravado10 || 0,
-        gravado5: gravado5 || 0,
-        exento: exento || 0,
-        iva10: iva10 || 0,
-        iva5: iva5 || 0,
-        totalIva,
-        total,
-      },
-      items,
-      direccion: tipoDoc === "factura" ? "received" : "issued",
-    };
-  } catch {
-    return null;
-  }
-}
-
-function getTagValue(doc: Document, tagName: string): string {
-  // Try exact match first
-  let el = doc.getElementsByTagName(tagName)[0];
-  if (el?.textContent) return el.textContent.trim();
-
-  // Try case-insensitive search
-  const allElements = doc.getElementsByTagName("*");
-  for (let i = 0; i < allElements.length; i++) {
-    if (allElements[i].tagName.toLowerCase() === tagName.toLowerCase()) {
-      return allElements[i].textContent?.trim() || "";
-    }
-  }
-
-  return "";
+  const r = parseSifenDE(xmlString);
+  if (!r.ok) return null;
+  const d = r.value;
+  return {
+    cdc: d.cdc,
+    numero: d.number,
+    fechaEmision: d.issueDate,
+    tipoDoc: TIPO_DOC[d.docType],
+    condicion: d.condition === "credit" ? "credito" : "contado",
+    timbrado: d.timbrado,
+    emisor: { ruc: `${d.issuer.ruc}-${d.issuer.dv}`, nombre: d.issuer.name },
+    receptor: { ruc: `${d.receiver.ruc}-${d.receiver.dv}`, nombre: d.receiver.name },
+    montos: {
+      gravado10: d.gravado10,
+      gravado5: d.gravado5,
+      exento: d.exento,
+      iva10: d.iva10,
+      iva5: d.iva5,
+      totalIva: d.iva10 + d.iva5,
+      total: d.total,
+    },
+    items: d.lines.map((l) => ({
+      codigo: l.code,
+      descripcion: l.description,
+      cantidad: l.quantity,
+      precioUnitario: l.unitPrice,
+      ivaRate: l.ivaRate,
+      total: l.amount,
+    })),
+    direccion: TIPO_DOC[d.docType] === "factura" ? "received" : "issued",
+  };
 }
 
 /**
