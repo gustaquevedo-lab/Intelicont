@@ -119,14 +119,14 @@
 
 ### Task 8: Alcance de tenant desde la sesión
 
-**Files:** Modify `packages/ledger/db/index.ts`, `apps/web/src/trpc/trpc.ts`, `apps/web/.env.local`/`.env.example` (quitar `DEV_ENTITY_IDS`); Test `apps/web/src/__tests__/db/tenant.test.ts`.
+**Files:** Modify `packages/ledger/db/index.ts`, `apps/web/src/trpc/trpc.ts`, `apps/web/.env.local`/`.env.example` (quitar la variable de empresas de desarrollo); Test `apps/web/src/__tests__/db/tenant.test.ts`.
 
 **Interfaces:**
 - Consumes: `memberships`, `app_user_id()` (T6), `Context.userId` (T7).
-- Produces: `withTenant<T>(userId: string, fn: (db: Db) => Promise<T>): Promise<T>` (punto de entrada; los routers y los server actions de `actions.ts` lo usan, estos últimos obteniendo `userId` con un helper `requireUser()` basado en `headers()`) y `tenantDb<T>(fn): Promise<T>` (uso interno de `repository.ts`/usecases: reutiliza la transacción del contexto y **lanza** si no hay contexto, fail-closed) — abre transacción, fija `app.user_id`, lee `memberships` y fija `app.entity_ids`; `setTenantResolver` y `DEV_ENTITY_IDS` eliminados. Las funciones de `repository.ts` reciben el `Db` o usan el `AsyncLocalStorage` existente dentro de `withTenant`; los routers envuelven cada procedimiento con `ctx.userId`.
+- Produces: `withTenant<T>(userId: string, fn: (db: Db) => Promise<T>): Promise<T>` (punto de entrada; los routers y los server actions de `actions.ts` lo usan, estos últimos obteniendo `userId` con un helper `requireUser()` basado en `headers()`) y `tenantDb<T>(fn): Promise<T>` (uso interno de `repository.ts`/usecases: reutiliza la transacción del contexto y **lanza** si no hay contexto, fail-closed) — abre transacción, fija `app.user_id`, lee `memberships` y fija `app.entity_ids`; `setTenantResolver` y la variable de empresas de desarrollo eliminados. Las funciones de `repository.ts` reciben el `Db` o usan el `AsyncLocalStorage` existente dentro de `withTenant`; los routers envuelven cada procedimiento con `ctx.userId`.
 
 - [ ] **Step 1: Tests primero:** usuario A con membresía en E1 ve solo E1; usuario sin membresías ve vacío; llamada sin sesión → `UNAUTHORIZED`; `app.user_id` queda fijado (lo lee `audited` en T11).
-- [ ] **Step 2:** Implementar y adaptar routers. Verificar: `grep -rn DEV_ENTITY_IDS .` sin resultados; `pnpm test:db` y e2e verdes.
+- [ ] **Step 2:** Implementar y adaptar routers. Verificar: ninguna referencia a la variable de empresas de desarrollo; `pnpm test:db` y e2e verdes.
 - [ ] **Step 3:** Commit `feat(tenant): scope from session memberships`.
 
 ### Task 9: Empresas, plan de cuentas y períodos persistentes

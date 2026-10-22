@@ -1,9 +1,16 @@
 import { test, expect } from "@playwright/test";
-import { requireE2eEnv } from "./helpers";
+import { USER_ENTITY_NAME, requireE2eEnv } from "./helpers";
 
 // Runs logged in as the non-admin e2e user (storageState from global-setup).
 test.describe("InteliCont E2E", () => {
   requireE2eEnv();
+
+  test("tenant scope: the user sees only its own entity", async ({ page }) => {
+    const res = await page.request.get("/api/trpc/entities.list");
+    expect(res.status()).toBe(200);
+    const names = (await res.json()).result.data.map((e: { legalName: string }) => e.legalName);
+    expect(names).toEqual([USER_ENTITY_NAME]);
+  });
 
   test("dashboard loads and shows KPIs", async ({ page }) => {
     await page.goto("/");

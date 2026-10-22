@@ -74,8 +74,8 @@ haya correo; mientras tanto el restablecimiento lo hace un admin (script). Se el
 
 ### D2. Membresías y alcance de tenant
 Tabla `memberships(user_id, entity_id, role, permissions jsonb)` (roles `admin/accountant/assistant/
-auditor/client`). El resolver de `withTenant` (hoy `DEV_ENTITY_IDS`) lee las empresas de la sesión, y cada
-request fija `app.user_id`. `DEV_ENTITY_IDS` se elimina. Alta de empresa con función `SECURITY DEFINER
+auditor/client`). El resolver de `withTenant` (antes una variable de entorno de desarrollo) lee las empresas de la sesión, y cada
+request fija `app.user_id`. La variable de entorno de desarrollo se elimina. Alta de empresa con función `SECURITY DEFINER
 create_entity()` que crea la empresa **y** la membresía `admin` en una transacción. RLS en `memberships`.
 
 ### D3. Auditoría automática
@@ -201,7 +201,7 @@ solo existe en SQL.
 |---|---|---|
 | W0 | Dinero entero (D6, `0002`) | Sin `parseFloat` en el flujo contable; seed y tests en enteros; IVA con redondeo definido |
 | W1 | Auth con contraseña + 2FA (D1) y middleware real | Sin sesión → `/login`; usuario A no ve empresas de B |
-| W2 | Membresías, `create_entity`, resolver (D2) | `DEV_ENTITY_IDS` eliminado |
+| W2 | Membresías, `create_entity`, resolver (D2) | Variable de entorno de empresas de desarrollo eliminada |
 | W3 | Persistencia de empresas, plan de cuentas, terceros, períodos | Recargar conserva los datos |
 | W4 | `postJournalEntry`/`reverseJournalEntry` + auditoría (D3, D10) | Cada caso de uso emite `audit_events`; cobertura ≥ 90 % |
 | W5 | Idempotencia (D4) | Un reintento no duplica asientos |

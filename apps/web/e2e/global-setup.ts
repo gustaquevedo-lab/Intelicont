@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { request } from "@playwright/test";
 import { createTestDb, type TestDb } from "../../../packages/ledger/db/test-db";
-import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, USER_EMAIL, ADMIN_EMAIL } from "./helpers";
+import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, USER_EMAIL, ADMIN_EMAIL, USER_ENTITY_NAME } from "./helpers";
 
 const WEB_DIR = process.cwd(); // playwright runs from apps/web (pnpm test:e2e)
 
@@ -66,7 +66,6 @@ export default async function globalSetup() {
       BETTER_AUTH_SECRET: randomBytes(32).toString("base64"),
       BETTER_AUTH_URL: E2E_BASE_URL,
       NEXT_DIST_DIR: ".next-e2e",
-      DEV_ENTITY_IDS: "",
     };
 
     const userPassword = randomBytes(12).toString("hex");
@@ -74,10 +73,14 @@ export default async function globalSetup() {
     createUser(env, USER_EMAIL, userPassword, "Usuario E2E");
     createUser(env, ADMIN_EMAIL, adminPassword, "Admin E2E");
 
-    // Admin membership through the owner connection (runtime role cannot write memberships).
+    // Memberships through the owner connection (runtime role cannot write memberships).
+    // The user's tenant scope comes only from these rows: it must see its entity, not the admin's.
     const [{ id: entityId }] = await db.owner`insert into entities (ruc, legal_name) values ('80099998-1', 'Empresa E2E') returning id`;
     await db.owner`insert into memberships (user_id, entity_id, role)
       select id, ${entityId}, 'admin' from users where email = ${ADMIN_EMAIL}`;
+    const [{ id: userEntityId }] = await db.owner`insert into entities (ruc, legal_name) values ('80099997-3', ${USER_ENTITY_NAME}) returning id`;
+    await db.owner`insert into memberships (user_id, entity_id, role)
+      select id, ${userEntityId}, 'accountant' from users where email = ${USER_EMAIL}`;
 
     server = spawn("node_modules/.bin/next", ["dev", "--turbo", "-p", String(E2E_PORT)], {
       cwd: WEB_DIR,
