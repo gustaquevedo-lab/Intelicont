@@ -21,7 +21,7 @@ async function main() {
   const [entity] = await db
     .insert(schema.entities)
     .values({
-      ruc: "80012345-1",
+      ruc: "80012345-0",
       legalName: "Importadora del Este S.A.",
       tradeName: "ImportEste",
       taxRegimes: ["IVA_GRAL", "IRE_GRAL"],

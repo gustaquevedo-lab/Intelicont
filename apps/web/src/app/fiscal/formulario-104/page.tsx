@@ -12,7 +12,7 @@ import { downloadHechauka } from "@/lib/hechauka";
 
 const MOCK_DATA = {
   entity: {
-    ruc: "80012345-1",
+    ruc: "80012345-0",
     name: "Importadora del Este S.A.",
     period: "Mayo 2026",
     month: 5,
@@ -202,7 +202,7 @@ export default function Formulario104Page() {
                 <div className="flex items-center gap-1">
                   <AlertCircle className="h-3 w-3 text-red-500" />
                   <span className="text-[10px] text-red-600 dark:text-red-400">
-                    Vence: {getVencimiento(2026, 5, "80012345-1")}
+                    Vence: {getVencimiento(2026, 5, "80012345-0")}
                   </span>
                 </div>
               </div>

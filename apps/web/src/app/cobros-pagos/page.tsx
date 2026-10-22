@@ -30,10 +30,10 @@ const FACTURAS_CLIENTES: FacturaPendiente[] = [
 ];
 
 const FACTURAS_PROVEEDORES: FacturaPendiente[] = [
-  { id: "fp1", numero: "001-001-00234", partner: "Importadora del Este S.A.", ruc: "80012345-1", fecha: "2026-05-01", vencimiento: "2026-05-31", total: 11000000, saldoPendiente: 11000000, seleccionado: false, diasVencido: 0 },
+  { id: "fp1", numero: "001-001-00234", partner: "Importadora del Este S.A.", ruc: "80012345-0", fecha: "2026-05-01", vencimiento: "2026-05-31", total: 11000000, saldoPendiente: 11000000, seleccionado: false, diasVencido: 0 },
   { id: "fp2", numero: "002-001-00089", partner: "Servicios Contables Del Paraguay", ruc: "4567890-1", fecha: "2026-05-03", vencimiento: "2026-06-02", total: 2750000, saldoPendiente: 2750000, seleccionado: false, diasVencido: 0 },
   { id: "fp3", numero: "001-001-00345", partner: "Tecnología Asunción SRL", ruc: "80023456-2", fecha: "2026-05-02", vencimiento: "2026-06-01", total: 16500000, saldoPendiente: 16500000, seleccionado: false, diasVencido: 0 },
-  { id: "fp4", numero: "001-001-01145", partner: "Importadora del Este S.A.", ruc: "80012345-1", fecha: "2026-05-10", vencimiento: "2026-06-09", total: 9350000, saldoPendiente: 9350000, seleccionado: false, diasVencido: 0 },
+  { id: "fp4", numero: "001-001-01145", partner: "Importadora del Este S.A.", ruc: "80012345-0", fecha: "2026-05-10", vencimiento: "2026-06-09", total: 9350000, saldoPendiente: 9350000, seleccionado: false, diasVencido: 0 },
 ];
 
 const BANCOS = [

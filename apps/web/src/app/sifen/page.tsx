@@ -164,7 +164,7 @@ export default function SifenPage() {
   <dFEEmis>2026-05-01</dFEEmis>
   <cTiOpe>1</cTiOpe>
   <cCond>2</cCond>
-  <dRucEmis>80012345-1</dRucEmis>
+  <dRucEmis>80012345-0</dRucEmis>
   <dNomEmis>Importadora del Este S.A.</dNomEmis>
   <dNomFanEmis>ImportEste</dNomFanEmis>
   <dRucRece>80023456-2</dRucRece>

@@ -32,7 +32,7 @@ const SAMPLE_DATA: Record<ImportType, { headers: string[]; rows: string[][] }> =
   },
   facturas: {
     headers: ["number", "date", "ruc", "name", "gravado10", "iva10", "total"],
-    rows: [["001-001-99999", "2026-05-15", "80012345-1", "Importadora del Este", "3000000", "300000", "3300000"]],
+    rows: [["001-001-99999", "2026-05-15", "80012345-0", "Importadora del Este", "3000000", "300000", "3300000"]],
   },
 };
 

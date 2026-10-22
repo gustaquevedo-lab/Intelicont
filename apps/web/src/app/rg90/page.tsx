@@ -27,7 +27,7 @@ interface RG90Entry {
 const MOCK_RG90: RG90Entry[] = [
   {
     id: "r1", tipo: "recibido", cdc: "5897185478912345678901234567890123456789012345",
-    numero: "001-001-00234", ruc: "80012345-1", nombre: "Importadora del Este S.A.",
+    numero: "001-001-00234", ruc: "80012345-0", nombre: "Importadora del Este S.A.",
     fecha: "2026-05-01", total: 11000000, iva10: 1000000, iva5: 0,
     estadoEnLibro: "registrado", estadoEnSIFEN: "confirmado", diferencia: 0,
   },
@@ -45,7 +45,7 @@ const MOCK_RG90: RG90Entry[] = [
   },
   {
     id: "r4", tipo: "emitido", cdc: "5897185478912345678901234567890123456789012350",
-    numero: "001-001-00001", ruc: "80012345-1", nombre: "Importadora del Este S.A.",
+    numero: "001-001-00001", ruc: "80012345-0", nombre: "Importadora del Este S.A.",
     fecha: "2026-05-10", total: 6050000, iva10: 550000, iva5: 0,
     estadoEnLibro: "registrado", estadoEnSIFEN: "confirmado", diferencia: 0,
   },

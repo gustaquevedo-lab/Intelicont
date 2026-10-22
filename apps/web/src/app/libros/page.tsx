@@ -82,11 +82,11 @@ const NATURE_COLORS: Record<string, string> = {
 
 // Mock IVA Compras
 const MOCK_COMPRAS: IVAEntry[] = [
-  { id: "c1", fecha: "2026-05-01", numero: "001-001-00234", tipo: "factura", ruc: "80012345-1", nombre: "Importadora del Este S.A.", gravado10: 10000000, gravado5: 0, exento: 0, iva10: 1000000, iva5: 0, total: 11000000, cdc: "8001234510010010023402605010000000112345678" },
+  { id: "c1", fecha: "2026-05-01", numero: "001-001-00234", tipo: "factura", ruc: "80012345-0", nombre: "Importadora del Este S.A.", gravado10: 10000000, gravado5: 0, exento: 0, iva10: 1000000, iva5: 0, total: 11000000, cdc: "8001234510010010023402605010000000112345678" },
   { id: "c2", fecha: "2026-05-03", numero: "002-001-00089", tipo: "factura", ruc: "4567890-1", nombre: "Servicios Contables Del Paraguay", gravado10: 2000000, gravado5: 0, exento: 500000, iva10: 200000, iva5: 0, total: 2700000 },
   { id: "c3", fecha: "2026-05-05", numero: "001-001-00056", tipo: "nc", ruc: "1234567-8", nombre: "Distribuciones Ñandutí S.A.", gravado10: -500000, gravado5: 0, exento: 0, iva10: -50000, iva5: 0, total: -550000, cdc: "123456780010010005602605000000000112345678901" },
   { id: "c4", fecha: "2026-05-08", numero: "001-001-01123", tipo: "factura", ruc: "9876543-2", nombre: "Agropecuaria Guaraní", gravado10: 3000000, gravado5: 1500000, exento: 0, iva10: 300000, iva5: 75000, total: 4875000 },
-  { id: "c5", fecha: "2026-05-12", numero: "001-001-01145", tipo: "factura", ruc: "80012345-1", nombre: "Importadora del Este S.A.", gravado10: 8500000, gravado5: 0, exento: 0, iva10: 850000, iva5: 0, total: 9350000, cdc: "8001234510010010114502605120000000112345678" },
+  { id: "c5", fecha: "2026-05-12", numero: "001-001-01145", tipo: "factura", ruc: "80012345-0", nombre: "Importadora del Este S.A.", gravado10: 8500000, gravado5: 0, exento: 0, iva10: 850000, iva5: 0, total: 9350000, cdc: "8001234510010010114502605120000000112345678" },
 ];
 
 // Mock IVA Ventas

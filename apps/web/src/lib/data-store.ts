@@ -69,7 +69,7 @@ export interface ReporteFiscal {
 function seed() {
   // ── Empresas ──────────────────────────────────────────────────────────
   const empresas: Empresa[] = [
-    { id: "e1", ruc: "80012345-1", nombre: "Importadora del Este S.A.", nombreComercial: "ImportEste", regimen: "IVA General", estado: "activo", baseCurrency: "PYG", taxRegimes: ["IVA_GRAL", "IRE_GRAL"] },
+    { id: "e1", ruc: "80012345-0", nombre: "Importadora del Este S.A.", nombreComercial: "ImportEste", regimen: "IVA General", estado: "activo", baseCurrency: "PYG", taxRegimes: ["IVA_GRAL", "IRE_GRAL"] },
     { id: "e2", ruc: "80023456-2", nombre: "Tecnología Asunción SRL", nombreComercial: "TechAsu", regimen: "IRE Simple", estado: "activo", baseCurrency: "PYG", taxRegimes: ["IVA_GRAL", "IRE_SIMPLE"] },
     { id: "e3", ruc: "80034567-3", nombre: "Distribuciones Ñandutí SA", nombreComercial: "Ñandutí", regimen: "IVA General", estado: "activo", baseCurrency: "PYG", taxRegimes: ["IVA_GRAL", "IRE_GRAL"] },
     { id: "e4", ruc: "80045678-4", nombre: "Agropecuaria Guaraní SRL", nombreComercial: "AgroGuaraní", regimen: "IVA General", estado: "activo", baseCurrency: "PYG", taxRegimes: ["IVA_GRAL", "IRE_GRAL"] },
@@ -113,7 +113,7 @@ function seed() {
 
   // ── Terceros ──────────────────────────────────────────────────────────
   const terceros: Tercero[] = [
-    { id: "t1", tipo: "proveedor", ruc: "80012345-1", razonSocial: "Importadora del Este S.A.", nombreFantasia: "ImportEste", direccion: "Av. Mcal. López 1234", ciudad: "Asunción", telefono: "+595 21 500 100", email: "compras@importeste.com.py", regimen: "general", ivaCondition: "responsable", retenciones: null, saldo: 11000000, ultimaOperacion: "2026-05-01", estado: "activo" },
+    { id: "t1", tipo: "proveedor", ruc: "80012345-0", razonSocial: "Importadora del Este S.A.", nombreFantasia: "ImportEste", direccion: "Av. Mcal. López 1234", ciudad: "Asunción", telefono: "+595 21 500 100", email: "compras@importeste.com.py", regimen: "general", ivaCondition: "responsable", retenciones: null, saldo: 11000000, ultimaOperacion: "2026-05-01", estado: "activo" },
     { id: "t2", tipo: "proveedor", ruc: "4567890-1", razonSocial: "Servicios Contables Del Paraguay", nombreFantasia: "SerConPy", direccion: "Eligio Ayala 567", ciudad: "Asunción", telefono: "+595 21 300 400", email: "info@serconpy.com.py", regimen: "general", ivaCondition: "responsable", retenciones: [{ tipo: "ire", tasa: 0.5 }], saldo: 2737500, ultimaOperacion: "2026-05-03", estado: "activo" },
     { id: "t3", tipo: "proveedor", ruc: "80023456-2", razonSocial: "Tecnología Asunción SRL", nombreFantasia: "TechAsu", direccion: "Av. España 890", ciudad: "Asunción", telefono: "+595 21 600 700", email: "ventas@techasu.com.py", regimen: "simple", ivaCondition: "responsable", retenciones: null, saldo: 16500000, ultimaOperacion: "2026-05-02", estado: "activo" },
     { id: "t4", tipo: "proveedor", ruc: "1234567-8", razonSocial: "Distribuciones Ñandutí S.A.", nombreFantasia: null, direccion: "Ruta 2 Km 10", ciudad: "Capiatá", telefono: "+595 21 800 900", email: "pedidos@nanduti.com.py", regimen: "general", ivaCondition: "responsable", retenciones: null, saldo: -550000, ultimaOperacion: "2026-05-05", estado: "activo" },
@@ -162,7 +162,7 @@ function seed() {
 
   // ── IVA Compras ───────────────────────────────────────────────────────
   const ivaCompras: IVAEntry[] = [
-    { id: "ic1", fecha: "2026-05-01", numero: "001-001-00234", tipo: "factura", ruc: "80012345-1", nombre: "Importadora del Este S.A.", gravado10: 10000000, gravado5: 0, exento: 0, iva10: 1000000, iva5: 0, total: 11000000, cdc: "5897185478912345678901234567890123456789012345" },
+    { id: "ic1", fecha: "2026-05-01", numero: "001-001-00234", tipo: "factura", ruc: "80012345-0", nombre: "Importadora del Este S.A.", gravado10: 10000000, gravado5: 0, exento: 0, iva10: 1000000, iva5: 0, total: 11000000, cdc: "5897185478912345678901234567890123456789012345" },
     { id: "ic2", fecha: "2026-05-03", numero: "002-001-00089", tipo: "factura", ruc: "4567890-1", nombre: "Servicios Contables del Paraguay", gravado10: 2500000, gravado5: 0, exento: 0, iva10: 250000, iva5: 0, total: 2750000, cdc: "5897185478912345678901234567890123456789012346" },
     { id: "ic3", fecha: "2026-05-05", numero: "001-001-00056", tipo: "nc", ruc: "1234567-8", nombre: "Distribuciones Ñandutí S.A.", gravado10: -500000, gravado5: 0, exento: 0, iva10: -50000, iva5: 0, total: -550000 },
     { id: "ic4", fecha: "2026-05-02", numero: "001-001-00345", tipo: "factura", ruc: "80023456-2", nombre: "Tecnología Asunción SRL", gravado10: 15000000, gravado5: 0, exento: 0, iva10: 1500000, iva5: 0, total: 16500000 },

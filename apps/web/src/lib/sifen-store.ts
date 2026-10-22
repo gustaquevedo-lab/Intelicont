@@ -91,7 +91,7 @@ function seed(): { documents: TaxDocument[]; partners: Partner[]; entities: Enti
   const e1 = "5b3e8a1e-4c2d-4b6a-8000-000000000001";
 
   const partners: Partner[] = [
-    { id: "p1", entityId: e1, kind: "supplier", ruc: "80012345-1", legalName: "Importadora del Este S.A.", tradeName: "ImportEste" },
+    { id: "p1", entityId: e1, kind: "supplier", ruc: "80012345-0", legalName: "Importadora del Este S.A.", tradeName: "ImportEste" },
     { id: "p2", entityId: e1, kind: "supplier", ruc: "4567890-1", legalName: "Servicios Contables Del Paraguay", tradeName: "SerConPy" },
     { id: "p3", entityId: e1, kind: "supplier", ruc: "80023456-2", legalName: "Tecnología Asunción SRL", tradeName: "TechAsu" },
     { id: "p4", entityId: e1, kind: "supplier", ruc: "1234567-8", legalName: "Distribuciones Ñandutí S.A.", tradeName: "DÑandutí" },
@@ -250,7 +250,7 @@ function seed(): { documents: TaxDocument[]; partners: Partner[]; entities: Enti
   }
 
   const entities: Entity[] = [
-    { id: e1, ruc: "80012345-1", legalName: "Importadora del Este S.A.", tradeName: "ImportEste", taxRegimes: ["IVA_GRAL", "IRE_GRAL"] },
+    { id: e1, ruc: "80012345-0", legalName: "Importadora del Este S.A.", tradeName: "ImportEste", taxRegimes: ["IVA_GRAL", "IRE_GRAL"] },
   ];
 
   return { documents: docs, partners, entities };

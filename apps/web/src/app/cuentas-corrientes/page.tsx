@@ -37,7 +37,7 @@ interface FacturaItem {
 
 const MOCK_CC: CuentaCorriente[] = [
   {
-    id: "cc1", partner: "Importadora del Este S.A.", ruc: "80012345-1", tipo: "proveedor",
+    id: "cc1", partner: "Importadora del Este S.A.", ruc: "80012345-0", tipo: "proveedor",
     saldoActual: -11000000, vencido30: -5500000, vencido60: -5500000, vencido90: 0,
     ultimaOperacion: "2026-05-01", ultimoPago: "2026-04-15",
     facturas: [

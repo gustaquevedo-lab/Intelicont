@@ -120,7 +120,7 @@ const PARTNERS: Partner[] = [
     id: stableId("partner-importadora-este"),
     entityId: E1,
     kind: "supplier",
-    ruc: "80012345-1",
+    ruc: "80012345-0",
     legalName: "Importadora del Este S.A.",
     tradeName: "ImportEste",
     contacts: { email: "compras@importeste.com.py", phone: "+595 21 500 100", address: "Av. Mcal. López 1234, Asunción" },
@@ -219,7 +219,7 @@ const PARTNERS: Partner[] = [
 const ENTITIES: Entity[] = [
   {
     id: E1,
-    ruc: "80012345-1",
+    ruc: "80012345-0",
     legalName: "Importadora del Este S.A.",
     tradeName: "ImportEste",
     taxRegimes: ["IVA_GRAL", "IRE_GRAL"],

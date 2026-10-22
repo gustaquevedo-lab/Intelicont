@@ -78,7 +78,7 @@ export default function EmitirFacturaPage() {
       fecha,
     });
 
-    const qrData = generateQRData(data.cdc, "80012345-1", total, fecha);
+    const qrData = generateQRData(data.cdc, "80012345-0", total, fecha);
     setEmitida({ ...data, qrData });
   };
 
@@ -104,7 +104,7 @@ export default function EmitirFacturaPage() {
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div><span className="text-gray-400 text-[10px]">Emisor</span><p className="text-gray-900 dark:text-white">Importadora del Este S.A.</p></div>
-            <div><span className="text-gray-400 text-[10px]">RUC Emisor</span><p className="font-mono text-gray-900 dark:text-white">80012345-1</p></div>
+            <div><span className="text-gray-400 text-[10px]">RUC Emisor</span><p className="font-mono text-gray-900 dark:text-white">80012345-0</p></div>
             <div><span className="text-gray-400 text-[10px]">Cliente</span><p className="text-gray-900 dark:text-white">{nombreCliente}</p></div>
             <div><span className="text-gray-400 text-[10px]">RUC Cliente</span><p className="font-mono text-gray-900 dark:text-white">{rucCliente}</p></div>
           </div>
@@ -177,7 +177,7 @@ export default function EmitirFacturaPage() {
             <input
               value={rucCliente}
               onChange={(e) => setRucCliente(e.target.value)}
-              placeholder="80012345-1"
+              placeholder="80012345-0"
               className={cn(
                 "w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight",
                 rucCliente && rucValidation && !rucValidation.valid ? "border-red-300 dark:border-red-800" : "border-gray-200 dark:border-gray-700"

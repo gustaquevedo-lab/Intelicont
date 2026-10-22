@@ -12,7 +12,7 @@ const validInvoiceXML = `<?xml version="1.0" encoding="UTF-8"?>
   <dFEEmis>2026-05-01</dFEEmis>
   <cTiOpe>1</cTiOpe>
   <cCond>2</cCond>
-  <dRucEmis>80012345-1</dRucEmis>
+  <dRucEmis>80012345-0</dRucEmis>
   <dNomEmis>Importadora del Este S.A.</dNomEmis>
   <dNomFanEmis>ImportEste</dNomFanEmis>
   <dRucRece>5001234-0</dRucRece>
@@ -36,7 +36,7 @@ const creditNoteXML = `<?xml version="1.0" encoding="UTF-8"?>
   <cCond>2</cCond>
   <dRucEmis>1234567-8</dRucEmis>
   <dNomEmis>Distribuciones Nanduti</dNomEmis>
-  <dRucRece>80012345-1</dRucRece>
+  <dRucRece>80012345-0</dRucRece>
   <dNomRece>Importadora del Este</dNomRece>
   <dTotGrav10>-500000</dTotGrav10>
   <dTotExe>0</dTotExe>
@@ -55,7 +55,7 @@ const invoiceWithItemsXML = `<?xml version="1.0" encoding="UTF-8"?>
   <dFEEmis>2026-05-01</dFEEmis>
   <cTiOpe>1</cTiOpe>
   <cCond>1</cCond>
-  <dRucEmis>80012345-1</dRucEmis>
+  <dRucEmis>80012345-0</dRucEmis>
   <dNomEmis>Importadora del Este</dNomEmis>
   <dRucRece>5001234-0</dRucRece>
   <dNomRece>Tech Asuncion</dNomRece>
@@ -78,7 +78,7 @@ describe("parseSifenXML", () => {
 
   it("extracts emitter data correctly", () => {
     const result = parseSifenXML(validInvoiceXML);
-    expect(result!.emisor.ruc).toBe("80012345-1");
+    expect(result!.emisor.ruc).toBe("80012345-0");
     expect(result!.emisor.nombre).toBe("Importadora del Este S.A.");
     expect(result!.emisor.nombreFantasia).toBe("ImportEste");
   });
@@ -138,7 +138,7 @@ describe("suggestJournalEntry", () => {
     tipoDoc: "factura",
     condicion: "credito",
     timbrado: "12345678",
-    emisor: { ruc: "80012345-1", nombre: "Importadora del Este S.A." },
+    emisor: { ruc: "80012345-0", nombre: "Importadora del Este S.A." },
     receptor: { ruc: "5001234-0", nombre: "Tech Asuncion" },
     montos: { gravado10: 10000000, gravado5: 0, exento: 0, iva10: 1000000, iva5: 0, totalIva: 1000000, total: 11000000 },
     items: [],

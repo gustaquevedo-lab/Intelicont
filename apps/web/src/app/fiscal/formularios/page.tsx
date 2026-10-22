@@ -9,7 +9,7 @@ type FormType = "500" | "120";
 const FORM_500 = {
   periodo: "Mayo 2026",
   entity: "Importadora del Este S.A.",
-  ruc: "80012345-1",
+  ruc: "80012345-0",
   ventas: { gravado10: 5500000, gravado5: 0, exento: 0, ivaDebito10: 550000, ivaDebito5: 0, totalIvaDebito: 550000 },
   compras: { gravado10: 13500000, gravado5: -500000, exento: 0, ivaCredito10: 1350000, ivaCredito5: -25000, totalIvaCredito: 1325000 },
   retencionesRecibidas: 12500,
@@ -21,7 +21,7 @@ const FORM_500 = {
 const FORM_120 = {
   periodo: "Ejercicio 2025",
   entity: "Importadora del Este S.A.",
-  ruc: "80012345-1",
+  ruc: "80012345-0",
   regimen: "General",
   ingresosBrutos: 520000000,
   costos: 280000000,

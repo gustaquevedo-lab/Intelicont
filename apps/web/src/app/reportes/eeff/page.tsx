@@ -13,7 +13,7 @@ type Tab = "balance" | "pyg" | "flujo";
 const BALANCE_DATA = {
   periodo: "31 de Mayo 2026",
   entity: "Importadora del Este S.A.",
-  ruc: "80012345-1",
+  ruc: "80012345-0",
   activo: {
     corriente: [
       { code: "1.1.01", name: "Caja", amount: 2500000 },
@@ -99,7 +99,7 @@ export default function EstadosFinancierosPage() {
         <div>
           <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Estados Financieros</h1>
           <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
-            Importadora del Este S.A. — RUC 80012345-1
+            Importadora del Este S.A. — RUC 80012345-0
           </p>
         </div>
         <div className="flex items-center gap-2">

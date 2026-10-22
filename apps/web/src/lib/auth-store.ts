@@ -49,7 +49,7 @@ const MOCK_USERS: Record<string, User> = {
 };
 
 const MOCK_ENTITIES: Entity[] = [
-  { id: "e1", ruc: "80012345-1", legalName: "Importadora del Este S.A.", tradeName: "ImportEste" },
+  { id: "e1", ruc: "80012345-0", legalName: "Importadora del Este S.A.", tradeName: "ImportEste" },
   { id: "e2", ruc: "80023456-2", legalName: "Tecnología Asunción SRL", tradeName: "TechAsu" },
   { id: "e3", ruc: "80034567-3", legalName: "Distribuciones Ñandutí SA", tradeName: "Ñandutí" },
   { id: "e4", ruc: "80045678-4", legalName: "Agropecuaria Guaraní SRL", tradeName: "AgroGuaraní" },

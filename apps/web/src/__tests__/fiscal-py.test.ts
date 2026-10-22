@@ -3,6 +3,7 @@ import {
   validateRuc,
   validateTimbrado,
   validateCDC,
+  mod11Dv,
   validateInvoiceData,
   calculateTaxFromTotal,
   calculateTaxFromBase,
@@ -14,20 +15,9 @@ import {
 } from "@ledger/src/fiscal-py";
 
 describe("validateRuc", () => {
-  // Helper: compute check digit for a juridical RUC body
-  const dv = (body: string): number => {
-    const w = [2, 3, 4, 5, 6, 7, 2, 3];
-    const rev = body.split("").reverse();
-    let sum = 0;
-    for (let i = 0; i < rev.length && i < w.length; i++) sum += parseInt(rev[i]) * w[i];
-    const r = sum % 11;
-    return r <= 1 ? r : 11 - r;
-  };
-
-  // Valid juridical RUC: body + computed DV
-  const validJuridicoBody = "80000000";
-  const validJuridico = `${validJuridicoBody}-${dv(validJuridicoBody)}`;
-  const invalidJuridico = `${validJuridicoBody}-${(dv(validJuridicoBody) + 1) % 10}`;
+  // Real DNIT vectors (mod 11, weights 2..11 from the right)
+  const validJuridico = "80144114-5";
+  const invalidJuridico = "80144114-4";
   it("rejects empty RUC", () => {
     const r = validateRuc("");
     expect(r.valid).toBe(false);
@@ -50,14 +40,21 @@ describe("validateRuc", () => {
     expect(r.errors.some((e: string) => e.includes("Dígito verificador"))).toBe(true);
   });
 
-  it("validates natural person RUC (6 digits)", () => {
-    const r = validateRuc("123456-0");
-    expect(r.valid).toBe(true);
+  it("validates real DNIT RUCs (juridicas y fisicas)", () => {
+    for (const r of ["80144114-5", "80005427-0", "80120610-3", "80150377-9", "80014066-4", "4631314-1"]) {
+      expect(validateRuc(r).valid, r).toBe(true);
+    }
   });
 
-  it("validates natural person RUC (7 digits)", () => {
-    const r = validateRuc("1234567-8");
-    expect(r.valid).toBe(true);
+  it("rejects wrong DV with expected value", () => {
+    for (const r of ["80144114-4", "4631314-2", "80150477-9"]) expect(validateRuc(r).valid, r).toBe(false);
+    expect(validateRuc("80150477-9").errors).toContain("Dígito verificador inválido. Esperado: 5");
+  });
+
+  it("mod11Dv matches reference", () => {
+    expect(mod11Dv("80144114")).toBe(5);
+    expect(mod11Dv("4631314")).toBe(1);
+    expect(mod11Dv("80005427")).toBe(0);
   });
 
   it("validates cedula-only format", () => {
@@ -72,7 +69,7 @@ describe("validateRuc", () => {
   });
 
   it("warns for RUC starting with 600", () => {
-    const r = validateRuc("600123-0");
+    const r = validateRuc("600123-"+mod11Dv("600123"));
     expect(r.valid).toBe(true);
     expect(r.warnings.length).toBeGreaterThan(0);
   });
@@ -130,10 +127,16 @@ describe("validateCDC", () => {
     expect(r.errors.some((e: string) => e.includes("dígitos numéricos"))).toBe(true);
   });
 
-  it("validates 44-digit numeric CDC", () => {
-    const cdc44 = "12345678901234567890123456789012345678901234"; // 44 digits
-    const r = validateCDC(cdc44);
+  it("validates a real CDC (DV = mod11 of first 43)", () => {
+    const r = validateCDC("01800140664024004004999422026080911264669314");
     expect(r.valid).toBe(true);
+    expect(r.warnings).toHaveLength(0);
+  });
+
+  it("rejects CDC with wrong DV", () => {
+    const r = validateCDC("01800140664024004004999422026080911264669315");
+    expect(r.valid).toBe(false);
+    expect(r.errors.some((e: string) => e.includes("Dígito verificador"))).toBe(true);
   });
 });
 
@@ -145,7 +148,7 @@ describe("validateInvoiceData", () => {
       puntoEmision: "001",
       numeroDocumento: "00234",
       fechaEmision: "2026-05-01",
-      cdc: "12345678901234567890123456789012345678901234",
+      cdc: "01800140664024004004999422026080911264669314",
     });
     expect(r.valid).toBe(true);
     expect(r.errors).toHaveLength(0);
@@ -297,10 +300,10 @@ describe("calculateIre", () => {
 
 describe("getVencimientoIVA", () => {
   it("calculates due date based on RUC last digit", () => {
-    const v = getVencimientoIVA(2026, 4, "80012345-1");
+    const v = getVencimientoIVA(2026, 4, "80012345-0");
     expect(v.getFullYear()).toBe(2026);
     expect(v.getMonth()).toBe(4); // May (0-indexed)
-    const expectedDay = 10 + 1; // last digit is 1
+    const expectedDay = 10 + 0; // last digit is 0
     // Could be adjusted for weekend
     const dow = new Date(2026, 4, expectedDay).getDay();
     if (dow === 0) {

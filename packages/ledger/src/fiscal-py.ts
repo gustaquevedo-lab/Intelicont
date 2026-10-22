@@ -59,16 +59,15 @@ export function validateRuc(ruc: string): ValidationResult {
 
   if (!isJuridico && !isNatural && !isCedula) {
     result.valid = false;
-    result.errors.push("Formato de RUC inválido. Ej: 80012345-1 (jurídico) o 1234567-8 (natural)");
+    result.errors.push("Formato de RUC inválido. Ej: 80012345-0 (jurídico) o 1234567-8 (natural)");
     return result;
   }
 
-  // Validate check digit for juridico
-  if (isJuridico) {
+  // Validate DV (mod 11) whenever the RUC carries one
+  if (isJuridico || isNatural) {
     const [body, checkDigitStr] = cleaned.split("-");
-    const checkDigit = parseInt(checkDigitStr, 10);
-    const calculated = calculateRucCheckDigit(body);
-    if (calculated !== checkDigit) {
+    const calculated = mod11Dv(body);
+    if (calculated !== parseInt(checkDigitStr, 10)) {
       result.valid = false;
       result.errors.push(`Dígito verificador inválido. Esperado: ${calculated}`);
     }
@@ -84,19 +83,14 @@ export function validateRuc(ruc: string): ValidationResult {
   return result;
 }
 
-function calculateRucCheckDigit(body: string): number {
-  const weights = [2, 3, 4, 5, 6, 7, 2, 3];
-  const reversed = body.split("").reverse();
+/** DNIT mod-11 check digit: weights 2..11 from the right (wrapping), DV = r > 1 ? 11 - r : 0. */
+export function mod11Dv(digits: string): number {
   let sum = 0;
-
-  for (let i = 0; i < reversed.length && i < weights.length; i++) {
-    sum += parseInt(reversed[i], 10) * weights[i];
+  for (let i = digits.length - 1, w = 2; i >= 0; i--, w = w === 11 ? 2 : w + 1) {
+    sum += parseInt(digits[i], 10) * w;
   }
-
-  const remainder = sum % 11;
-  if (remainder === 0) return 0;
-  if (remainder === 1) return 1;
-  return 11 - remainder;
+  const r = sum % 11;
+  return r > 1 ? 11 - r : 0;
 }
 
 export function validateTimbrado(timbrado: string): ValidationResult {
@@ -140,11 +134,9 @@ export function validateCDC(cdc: string): ValidationResult {
     return result;
   }
 
-  // Validate RUC portion (positions 0-7)
-  const rucPortion = cleaned.substring(0, 8);
-  const rucValidation = validateRuc(rucPortion);
-  if (!rucValidation.valid) {
-    result.warnings.push("El RUC dentro del CDC parece inválido");
+  if (mod11Dv(cleaned.substring(0, 43)) !== parseInt(cleaned[43], 10)) {
+    result.valid = false;
+    result.errors.push(`Dígito verificador inválido. Esperado: ${mod11Dv(cleaned.substring(0, 43))}`);
   }
 
   return result;

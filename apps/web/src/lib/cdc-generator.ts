@@ -1,3 +1,5 @@
+import { mod11Dv } from "@intelicont/ledger/fiscal-py";
+
 /**
  * CDC Generator — Código de Control 44 dígitos (SIFEN Paraguay)
  *
@@ -6,7 +8,7 @@
  *
  * CDC structure: dRUCEmis(8) + dDVEmi(1) + dTipoDoc(2) + dEstab(3) +
  *                dPuntoExp(3) + dNroDoc(7) + dCodCons(2) + dCodSeg(1) +
- *                dFecProc(10) + dDigVal(1) + dCodCon(6) = 44
+ *                dFecProc(10) + dCodCon(6) = 43, then dDigVal(1) = mod 11
  */
 
 export interface CDCInput {
@@ -47,29 +49,9 @@ export function generateCDC(input: CDCInput): string {
     "1" +  // dCodSeg — security indicator
     fecha10;
 
-  // Calculate verification digit (module 11)
-  const dv = calculateModule11(concatenado);
-
-  // Build final CDC: first 38 + dv + 6-digit random code
-  const cdc = concatenado + String(dv) + codCon;
-
-  return cdc;
-}
-
-function calculateModule11(value: string): number {
-  const weights = [2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 6];
-  let sum = 0;
-  let w = 0;
-
-  for (let i = value.length - 1; i >= 0; i--) {
-    sum += parseInt(value[i], 10) * weights[w % weights.length];
-    w++;
-  }
-
-  const remainder = sum % 11;
-  if (remainder === 0) return 0;
-  if (remainder === 1) return 1;
-  return 11 - remainder;
+  // 43 digits + DV (mod 11 of the first 43) as the 44th digit
+  const first43 = concatenado + codCon;
+  return first43 + String(mod11Dv(first43));
 }
 
 /**
@@ -86,12 +68,8 @@ export function validateCDCStructure(cdc: string): { valid: boolean; error?: str
   if (cdc.length !== 44) return { valid: false, error: "CDC debe tener 44 dígitos" };
   if (!/^\d{44}$/.test(cdc)) return { valid: false, error: "CDC debe contener solo dígitos" };
 
-  // Body = first 37 chars (8+1+2+3+3+7+2+1+10), DV = pos 37, Security = pos 38-43
-  const body = cdc.substring(0, 37);
-  const dv = cdc.substring(37, 38);
-  const calculatedDV = String(calculateModule11(body));
-
-  if (dv !== calculatedDV) {
+  const calculatedDV = String(mod11Dv(cdc.substring(0, 43)));
+  if (cdc[43] !== calculatedDV) {
     return { valid: false, error: `Dígito verificador inválido: esperado ${calculatedDV}` };
   }
 
