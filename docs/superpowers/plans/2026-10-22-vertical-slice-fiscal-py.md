@@ -78,7 +78,7 @@
 **Interfaces:**
 - Produces: `mod11Dv(digits: string): number` (exportada desde `fiscal-py`); `validateRuc` valida DV para cuerpos de 6 a 8 dígitos (personas físicas y jurídicas); `validateCDC` y `validateCDCStructure` verifican el DV del dígito 44 con `mod11Dv(primeros 43)`.
 
-- [ ] **Step 1: Tests primero.** RUC válidos: `80144114-5`, `80005427-0`, `80120610-3`, `80014066-4`, `4631314-1`. Inválidos: `80144114-4`, `4631314-2`. CDC válido `01800140664024004004999422026080911264669314`; con último dígito cambiado, inválido. `80150377-9` (confirmado por Gustavo) también válido; `80150477-9` inválido (DV esperado 5). Ejecutar: FAIL.
+- [ ] **Step 1: Tests primero.** RUC válidos: `80144114-5`, `80005427-0`, `80120610-3`, `80014066-4`, `1234567-9`. Inválidos: `80144114-4`, `1234567-8`. CDC válido `01800140664024004004999422026080911264669314`; con último dígito cambiado, inválido. `80150377-9` (confirmado por Gustavo) también válido; `80150477-9` inválido (DV esperado 5). Ejecutar: FAIL.
 - [ ] **Step 2:** Implementar `mod11Dv` (resto ≤ 1 → 0, si no 11 − resto) y usarla en los tres validadores; eliminar `calculateRucCheckDigit` y el cálculo propio de `cdc-generator.ts`.
 - [ ] **Step 3:** Verificar `pnpm test` verde (ajustar vectores previos que dependían del algoritmo erróneo; el seed `80012345-1` pasa a `80012345-0`, actualizar `seed.ts` y fixtures).
 - [ ] **Step 4:** Commit `fix(fiscal): DNIT mod-11 for RUC and CDC`.

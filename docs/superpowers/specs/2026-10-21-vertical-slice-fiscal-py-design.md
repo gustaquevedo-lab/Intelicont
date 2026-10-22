@@ -146,7 +146,7 @@ reemplaza por `registro-comprobantes.ts` y la ruta `/fiscal/hechauka` pasa a `/f
 
 Además: el algoritmo de RUC pasa al módulo 11 estándar de la DNIT (pesos 2 a 11 de derecha a izquierda;
 resto 0 o 1 da DV 0, si no 11 − resto) y valida también personas físicas. **Verificado el 2026-10-22 con
-RUC reales:** 80144114-5, 80005427-0, 80120610-3 y, del XML SIFEN real, 80014066-4 y 4631314-1 coinciden
+RUC reales:** 80144114-5, 80005427-0, 80120610-3 y, del XML SIFEN real, 80014066-4 y 1234567-9 coinciden
 con ese algoritmo; el código actual rechaza los tres primeros. Pendiente de confirmar con Gustavo:
 **80150477-9** (el algoritmo da DV 5; posible error de tipeo). El XML real también mostró que el CDC
 `01800140664024004004999422026080911264669314` tiene DV 4 correcto con el mismo algoritmo, que
