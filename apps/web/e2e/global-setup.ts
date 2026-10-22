@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { request } from "@playwright/test";
 import { createTestDb, type TestDb } from "../../../packages/ledger/db/test-db";
-import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, STORAGE_STATE_CREATOR, CREATOR_EMAIL, USER_EMAIL, ADMIN_EMAIL, USER_ENTITY_NAME } from "./helpers";
+import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, STORAGE_STATE_CREATOR, STORAGE_STATE_SIFEN, SIFEN_EMAIL, CREATOR_EMAIL, USER_EMAIL, ADMIN_EMAIL, USER_ENTITY_NAME } from "./helpers";
 
 const WEB_DIR = process.cwd(); // playwright runs from apps/web (pnpm test:e2e)
 
@@ -74,6 +74,8 @@ export default async function globalSetup() {
     createUser(env, ADMIN_EMAIL, adminPassword, "Admin E2E");
     const creatorPassword = randomBytes(12).toString("hex");
     createUser(env, CREATOR_EMAIL, creatorPassword, "Creador E2E");
+    const sifenPassword = randomBytes(12).toString("hex");
+    createUser(env, SIFEN_EMAIL, sifenPassword, "SIFEN E2E");
 
     // Memberships through the owner connection (runtime role cannot write memberships).
     // The user's tenant scope comes only from these rows: it must see its entity, not the admin's.
@@ -83,6 +85,9 @@ export default async function globalSetup() {
     const [{ id: userEntityId }] = await db.owner`insert into entities (ruc, legal_name) values ('80099997-3', ${USER_ENTITY_NAME}) returning id`;
     await db.owner`insert into memberships (user_id, entity_id, role)
       select id, ${userEntityId}, 'accountant' from users where email = ${USER_EMAIL}`;
+    const [{ id: sifenEntityId }] = await db.owner`insert into entities (ruc, legal_name) values ('1234567-9', 'Cliente de Prueba E2E') returning id`;
+    await db.owner`insert into memberships (user_id, entity_id, role)
+      select id, ${sifenEntityId}, 'accountant' from users where email = ${SIFEN_EMAIL}`;
 
     server = spawn("node_modules/.bin/next", ["dev", "--turbo", "-p", String(E2E_PORT)], {
       cwd: WEB_DIR,
@@ -106,6 +111,12 @@ export default async function globalSetup() {
     await ctx2.storageState({ path: STORAGE_STATE_CREATOR });
     await ctx2.dispose();
     await db.owner`update users set two_factor_enabled = true where email = ${CREATOR_EMAIL}`;
+
+    const ctx3 = await request.newContext({ baseURL: E2E_BASE_URL, extraHTTPHeaders: { Origin: E2E_BASE_URL } });
+    const res3 = await ctx3.post("/api/auth/sign-in/email", { data: { email: SIFEN_EMAIL, password: sifenPassword } });
+    if (!res3.ok()) throw new Error(`[e2e] sign-in for sifen storage state failed: ${res3.status()}`);
+    await ctx3.storageState({ path: STORAGE_STATE_SIFEN });
+    await ctx3.dispose();
 
     process.env.E2E_READY = "1";
     process.env.E2E_USER_PASSWORD = userPassword;

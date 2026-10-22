@@ -25,6 +25,10 @@ import {
 import { cn } from "@/lib/utils";
 import { parseSifenXML, suggestJournalEntry, SifenInvoice } from "@/lib/sifen-parser";
 import { createAsiento } from "@/lib/actions";
+import { useAuthStore } from "@/lib/auth-store";
+import { api } from "@/trpc/client";
+
+type IngestOutcome = { fileName: string; status: "saved" | "duplicate" | "error"; warnings: string[]; message?: string };
 
 type Step = "upload" | "review" | "success";
 
@@ -48,6 +52,34 @@ export default function SifenPage() {
     return key;
   };
 
+  // Server-side ingest (validate, dedupe, store): one Idempotency-Key per uploaded file.
+  const entity = useAuthStore((s) => s.selectedEntity);
+  const utils = api.useUtils();
+  const [outcomes, setOutcomes] = useState<IngestOutcome[]>([]);
+  const fileKeys = useRef(new WeakMap<File, string>());
+  const ingestFiles = useCallback(async (files: File[]) => {
+    for (const file of files) {
+      let outcome: IngestOutcome;
+      if (!entity) {
+        outcome = { fileName: file.name, status: "error", warnings: [], message: "Seleccioná una empresa antes de cargar" };
+      } else {
+        let key = fileKeys.current.get(file);
+        if (!key) fileKeys.current.set(file, (key = crypto.randomUUID()));
+        try {
+          const xml = await file.text();
+          const r = await utils.client["tax-documents"].ingestXml.mutate(
+            { entityId: entity.id, direction: "received", xml },
+            { context: { idempotencyKey: key } },
+          );
+          outcome = { fileName: file.name, status: r.duplicate ? "duplicate" : "saved", warnings: r.warnings };
+        } catch (e) {
+          outcome = { fileName: file.name, status: "error", warnings: [], message: e instanceof Error ? e.message : "Error al guardar" };
+        }
+      }
+      setOutcomes((prev) => [...prev, outcome]);
+    }
+  }, [entity, utils]);
+
   const handleFile = useCallback((file: File) => {
     if (!file.name.endsWith(".xml")) return;
     setFileName(file.name);
@@ -62,6 +94,7 @@ export default function SifenPage() {
   const handleBatchFiles = useCallback((files: FileList) => {
     const xmlFiles = Array.from(files).filter((f) => f.name.endsWith(".xml"));
     if (xmlFiles.length === 0) return;
+    void ingestFiles(xmlFiles);
 
     if (xmlFiles.length === 1) {
       const reader = new FileReader();
@@ -84,7 +117,7 @@ export default function SifenPage() {
         reader.readAsText(file);
       });
     }
-  }, []);
+  }, [ingestFiles]);
 
   const processXML = (content: string) => {
     setIsProcessing(true);
@@ -280,6 +313,8 @@ export default function SifenPage() {
             {isProcessing ? "Procesando..." : "Aprobar y Publicar"}
           </button>
         </div>
+
+        <IngestOutcomes outcomes={outcomes} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Invoice Data */}
@@ -486,6 +521,8 @@ export default function SifenPage() {
         )}
       </div>
 
+      <IngestOutcomes outcomes={outcomes} />
+
       {/* Demo Button */}
       <div className="flex items-center justify-center">
         <button
@@ -504,6 +541,40 @@ export default function SifenPage() {
         <InfoCard icon={CheckCircle2} title="Revisión humana" desc="Verificá y aprobá el asiento antes de publicar" />
       </div>
     </div>
+  );
+}
+
+function IngestOutcomes({ outcomes }: { outcomes: IngestOutcome[] }) {
+  if (outcomes.length === 0) return null;
+  const chip = {
+    saved: { label: "Guardado", cls: "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400", Icon: CheckCircle2 },
+    duplicate: { label: "Duplicado (ya existía)", cls: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400", Icon: Copy },
+    error: { label: "Error", cls: "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400", Icon: AlertTriangle },
+  } as const;
+  return (
+    <ul aria-label="Resultado de la carga" className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl divide-y divide-gray-100 dark:divide-gray-800">
+      {outcomes.map((o, i) => {
+        const { label, cls, Icon } = chip[o.status];
+        return (
+          <li key={i} className="p-3 text-xs sm:text-sm space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-gray-700 dark:text-gray-300">{o.fileName}</span>
+              <span className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full font-medium shrink-0", cls)}>
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </span>
+            </div>
+            {o.message && <p className="text-red-600 dark:text-red-400">{o.message}</p>}
+            {o.warnings.map((w) => (
+              <p key={w} className="flex items-start gap-1 text-yellow-700 dark:text-yellow-400">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                {w}
+              </p>
+            ))}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
