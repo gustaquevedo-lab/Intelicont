@@ -134,7 +134,7 @@ export type JournalEntryRow = JournalEntry & { reversedBy: string | null };
 // Explicit qualifier: Drizzle would render a column ref in a single-table select unqualified, which binds to `r` inside the subquery.
 const entryWithReversal = {
   ...getTableColumns(schema.journalEntries),
-  reversedBy: sql<string | null>`(select r.id from journal_entries r where r.reversal_of = journal_entries.id limit 1)`,
+  reversedBy: sql<string | null>`(select r.id from journal_entries r where r.reversal_of = journal_entries.id and r.status = 'posted' limit 1)`,
 };
 
 function withMockReversal(list: JournalEntry[]): JournalEntryRow[] {

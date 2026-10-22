@@ -20,6 +20,12 @@ export interface PostEntryInput {
     credit: number;
     currencyCode: string;
     description?: string | null;
+    /** Rate to base currency (amountBase is UNSIGNED, on the same side as the line). */
+    fxRate?: string | number;
+    amountBase?: number;
+    costCenterId?: string | null;
+    partnerId?: string | null;
+    taxDocumentId?: string | null;
   }[];
 }
 
@@ -50,6 +56,11 @@ export async function insertPostedEntry(tx: Db, input: PostEntryInput & { revers
       credit: l.credit,
       currencyCode: l.currencyCode,
       description: l.description ?? null,
+      ...(l.fxRate !== undefined && { fxRate: String(l.fxRate) }),
+      ...(l.amountBase !== undefined && { amountBase: l.amountBase }),
+      costCenterId: l.costCenterId ?? null,
+      partnerId: l.partnerId ?? null,
+      taxDocumentId: l.taxDocumentId ?? null,
     })),
   );
 
@@ -67,9 +78,10 @@ export async function postEntry(input: PostEntryInput): Promise<Result<JournalEn
     for (const l of input.lines) {
       totalDebit += assertMoney(l.debit);
       assertMoney(l.credit);
+      if (l.amountBase !== undefined) assertMoney(l.amountBase);
     }
   } catch {
-    return err("Importe inválido: debe ser un entero en guaraníes");
+    return err("Importe inválido: debe ser un entero en la unidad mínima de la moneda");
   }
   return tenantDb(async (db) => {
     try {

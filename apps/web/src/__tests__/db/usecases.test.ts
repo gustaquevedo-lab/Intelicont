@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createTestDb, type TestDb } from "../../../../../packages/ledger/db/test-db";
 
@@ -40,7 +41,8 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
     };
     [cash, sales] = await accts(e1);
     [cashE2] = await accts(e2);
-    p1 = (await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e1}, 2026, 10, 'open') returning id`)[0].id;
+    const nowYm = (await t.owner`select extract(year from (now() at time zone 'America/Asuncion'))::int as "year", extract(month from (now() at time zone 'America/Asuncion'))::int as "month"`)[0];
+    p1 = (await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e1}, ${nowYm.year}, ${nowYm.month}, 'open') returning id`)[0].id;
     p2 = (await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e2}, 2026, 10, 'open') returning id`)[0].id;
     process.env.DATABASE_URL = t.appUrl;
     vi.resetModules();
@@ -57,7 +59,13 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
   });
 
   it("postEntry unbalanced returns Err with the trigger message and leaves no draft", async () => {
-    const res = await post("BAD-1", 1000, { lines: [lines(1000)[0], { ...lines(1000)[1], credit: 900 }] });
+    // Same withTenant tx: a follow-up query only works if the failure was contained in a savepoint.
+    const { res, followUp } = await as(user, async () => {
+      const res = await uc.postEntry({ entityId: e1, periodId: p1, date: new Date("2026-10-01"), number: "BAD-1", lines: [lines(1000)[0], { ...lines(1000)[1], credit: 900 }] });
+      const followUp = await db.tenantDb((tx) => tx.execute(sql`select count(*)::int n from journal_entries where number = 'BAD-1'`));
+      return { res, followUp };
+    });
+    expect(followUp[0].n).toBe(0);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error).toMatch(/not balanced/);
     expect(await count(t.owner`select count(*) n from journal_entries where number = 'BAD-1'`)).toBe(0);
@@ -109,7 +117,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
     await t.owner`update fiscal_periods set status = 'closed' where id = ${p1}`;
     try {
       const res = await as(user, () => uc.reverseEntry(orig.value.id, "cierre"));
-      expect(res).toEqual({ ok: false, error: "No hay período abierto" });
+      expect(res).toEqual({ ok: false, error: "No hay período abierto para la fecha de hoy" });
     } finally {
       await t.owner`update fiscal_periods set status = 'open' where id = ${p1}`;
     }
@@ -161,6 +169,50 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
       expect((await runners[name]()).ok, name).toBe(true);
       expect(await count(t.owner`select count(*) n from audit_events`), name).toBeGreaterThan(n0);
     }
+  });
+
+  it("reverseEntry books into the open period that contains today when several are open", async () => {
+    const orig = await post("MULTI", 80);
+    if (!orig.ok) throw new Error(orig.error);
+    const older = (await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e1}, 2020, 1, 'open') returning id`)[0].id;
+    try {
+      const res = await as(user, () => uc.reverseEntry(orig.value.id, "multi"));
+      expect(res.ok).toBe(true);
+      if (res.ok) expect(res.value.periodId).toBe(p1);
+    } finally {
+      await t.owner`update fiscal_periods set status = 'closed' where id = ${older}`;
+    }
+  });
+
+  it("reverseEntry preserves fx, base amount, partner and tax-document links", async () => {
+    const partner = (await t.owner`insert into partners (entity_id, kind, ruc, legal_name) values (${e1}, 'customer', '80099999', 'Cliente') returning id`)[0].id;
+    const doc = (await t.owner`insert into tax_documents (entity_id, direction, doc_type, number, issue_date, total) values (${e1}, 'issued', 'invoice', '001-001-0000001', '2026-10-01', 1000) returning id`)[0].id;
+    const cc = (await t.owner`insert into cost_centers (entity_id, code, name) values (${e1}, 'CC1', 'Centro') returning id`)[0].id;
+    const res = await post("FX-1", 100, {
+      lines: [
+        { accountId: cash, debit: 100, credit: 0, currencyCode: "USD", fxRate: 7300, amountBase: 730000, partnerId: partner, taxDocumentId: doc, costCenterId: cc, description: "usd" },
+        { accountId: sales, debit: 0, credit: 100, currencyCode: "USD", fxRate: 7300, amountBase: 730000 },
+      ],
+    });
+    if (!res.ok) throw new Error(res.error);
+    const rev = await as(user, () => uc.reverseEntry(res.value.id, "fx"));
+    if (!rev.ok) throw new Error(rev.error);
+    const get = (id: string) => t.owner`select account_id, debit, credit, currency_code, fx_rate, amount_base, cost_center_id, partner_id, tax_document_id, description from journal_lines where entry_id = ${id} order by account_id`;
+    const [a, b] = [await get(res.value.id), await get(rev.value.id)];
+    expect(b).toHaveLength(a.length);
+    a.forEach((l, i) => {
+      expect(b[i]).toEqual({ ...l, debit: l.credit, credit: l.debit });
+    });
+    expect(a.find((l) => l.account_id === cash)).toMatchObject({ currency_code: "USD", amount_base: "730000", partner_id: partner, tax_document_id: doc, cost_center_id: cc });
+    expect(Number(a[0].fx_rate)).toBe(7300);
+  });
+
+  it("a reversal entry cannot be reversed", async () => {
+    const orig = await post("REV-OF-REV", 90);
+    if (!orig.ok) throw new Error(orig.error);
+    const rev = await as(user, () => uc.reverseEntry(orig.value.id, "primera"));
+    if (!rev.ok) throw new Error(rev.error);
+    expect(await as(user, () => uc.reverseEntry(rev.value.id, "otra"))).toEqual({ ok: false, error: "No se puede revertir un contra-asiento" });
   });
 
   it("an account of another entity is rejected without leaving residue", async () => {

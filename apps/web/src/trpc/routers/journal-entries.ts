@@ -100,7 +100,7 @@ export const journalEntriesRouter = router({
     }),
 
   reverse: protectedProcedure
-    .input(z.object({ entryId: z.string(), reason: z.string().trim().min(3, "El motivo es obligatorio") }))
+    .input(z.object({ entryId: z.string().uuid(), reason: z.string().trim().min(3, "El motivo es obligatorio") }))
     .mutation(async ({ input }) => {
       if (isMockMode()) return { success: true, id: "mock-rev-" + Math.random().toString(36).slice(2, 10) };
       const res = await reverseEntry(input.entryId, input.reason);
