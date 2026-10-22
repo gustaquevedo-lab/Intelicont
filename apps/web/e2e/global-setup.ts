@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { request } from "@playwright/test";
 import { createTestDb, type TestDb } from "../../../packages/ledger/db/test-db";
-import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, USER_EMAIL, ADMIN_EMAIL, USER_ENTITY_NAME } from "./helpers";
+import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, STORAGE_STATE_CREATOR, CREATOR_EMAIL, USER_EMAIL, ADMIN_EMAIL, USER_ENTITY_NAME } from "./helpers";
 
 const WEB_DIR = process.cwd(); // playwright runs from apps/web (pnpm test:e2e)
 
@@ -72,6 +72,8 @@ export default async function globalSetup() {
     const adminPassword = randomBytes(12).toString("hex");
     createUser(env, USER_EMAIL, userPassword, "Usuario E2E");
     createUser(env, ADMIN_EMAIL, adminPassword, "Admin E2E");
+    const creatorPassword = randomBytes(12).toString("hex");
+    createUser(env, CREATOR_EMAIL, creatorPassword, "Creador E2E");
 
     // Memberships through the owner connection (runtime role cannot write memberships).
     // The user's tenant scope comes only from these rows: it must see its entity, not the admin's.
@@ -96,6 +98,14 @@ export default async function globalSetup() {
     if (!res.ok()) throw new Error(`[e2e] sign-in for storage state failed: ${res.status()}`);
     await ctx.storageState({ path: STORAGE_STATE });
     await ctx.dispose();
+
+    // Same for the entity creator, then flag 2FA on (the session cookie stays valid; no TOTP step needed).
+    const ctx2 = await request.newContext({ baseURL: E2E_BASE_URL, extraHTTPHeaders: { Origin: E2E_BASE_URL } });
+    const res2 = await ctx2.post("/api/auth/sign-in/email", { data: { email: CREATOR_EMAIL, password: creatorPassword } });
+    if (!res2.ok()) throw new Error(`[e2e] sign-in for creator storage state failed: ${res2.status()}`);
+    await ctx2.storageState({ path: STORAGE_STATE_CREATOR });
+    await ctx2.dispose();
+    await db.owner`update users set two_factor_enabled = true where email = ${CREATOR_EMAIL}`;
 
     process.env.E2E_READY = "1";
     process.env.E2E_USER_PASSWORD = userPassword;

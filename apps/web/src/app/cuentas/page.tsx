@@ -4,7 +4,6 @@ import { useState, useMemo, useCallback } from "react";
 import {
   BookOpen,
   Search,
-  Plus,
   Hash,
   TrendingUp,
   Filter,
@@ -14,9 +13,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountTree, AccountDetail } from "@/components/account-tree";
-import { AccountModal } from "@/components/account-modal";
+import { useAuthStore } from "@/lib/auth-store";
+import { useAccounts } from "@/lib/trpc-hooks";
 import {
-  PY_CHART_OF_ACCOUNTS,
   buildAccountTree,
   flattenTree,
   findAccountByCode,
@@ -26,18 +25,32 @@ import {
 import type { ChartAccount } from "@/lib/chart-of-accounts";
 
 export default function CuentasPage() {
-  const accounts = useMemo(() => buildAccountTree(PY_CHART_OF_ACCOUNTS), []);
-  const flatAccounts = useMemo(() => flattenTree(accounts), [accounts]);
+  const entity = useAuthStore((s) => s.selectedEntity);
+  const { data: rows, isLoading } = useAccounts(entity?.id ?? "");
+  // Real accounts of the active entity; balances are not computed yet (no ledger postings in this view).
+  const treeAccounts = useMemo(() => {
+    const codeById = new Map((rows ?? []).map((r) => [r.id, r.code]));
+    return buildAccountTree(
+      (rows ?? []).map((r) => ({
+        id: r.id,
+        code: r.code,
+        name: r.name,
+        nature: r.nature as ChartAccount["nature"],
+        parentCode: r.parentId ? codeById.get(r.parentId) ?? null : null,
+        allowsPosting: !!r.allowsPosting,
+        balance: 0,
+        currency: entity?.baseCurrency ?? "PYG",
+        active: true,
+      })),
+    );
+  }, [rows, entity?.baseCurrency]);
+  const flatAccounts = useMemo(() => flattenTree(treeAccounts), [treeAccounts]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [natureFilter, setNatureFilter] = useState("all");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [showMobileDetail, setShowMobileDetail] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [allAccounts, setAllAccounts] = useState(PY_CHART_OF_ACCOUNTS);
-  const treeAccounts = useMemo(() => buildAccountTree(allAccounts), [allAccounts]);
 
   const selectedAccount = selectedCode
     ? findAccountByCode(treeAccounts, selectedCode)
@@ -67,29 +80,6 @@ export default function CuentasPage() {
     setShowMobileDetail(true);
   }, []);
 
-  const handleSave = (account: ChartAccount) => {
-    setAllAccounts((prev) => {
-      const existing = prev.find((a) => a.code === account.code);
-      if (existing) {
-        return prev.map((a) =>
-          a.code === account.code ? { ...account, children: a.children } : a
-        );
-      }
-      return [...prev, account];
-    });
-    setShowModal(false);
-  };
-
-  const handleEdit = (code: string) => {
-    setModalMode("edit");
-    setShowModal(true);
-  };
-
-  const handleCreateNew = () => {
-    setModalMode("create");
-    setShowModal(true);
-  };
-
   const natureOptions = [
     { value: "all", label: "Todas", count: flatAccounts.length },
     { value: "asset", label: "Activos", count: flatAccounts.filter((a) => a.nature === "asset").length },
@@ -114,15 +104,14 @@ export default function CuentasPage() {
             <ArrowUpDown className="h-4 w-4" />
             <span className="hidden sm:inline">Reordenar</span>
           </button>
-          <button
-            onClick={handleCreateNew}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors no-tap-highlight"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Nueva Cuenta</span>
-          </button>
         </div>
       </div>
+
+      {!entity ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">Creá o seleccioná una empresa para ver su plan de cuentas.</p>
+      ) : isLoading ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">Cargando plan de cuentas…</p>
+      ) : null}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -238,7 +227,6 @@ export default function CuentasPage() {
                 <AccountDetail
                   account={selectedAccount}
                   onClose={() => setShowMobileDetail(false)}
-                  onEdit={handleEdit}
                 />
               </div>
             </div>
@@ -248,22 +236,12 @@ export default function CuentasPage() {
               <AccountDetail
                 account={selectedAccount}
                 onClose={() => setSelectedCode(null)}
-                onEdit={handleEdit}
               />
             </div>
           </>
         )}
       </div>
 
-      {/* Modal */}
-      <AccountModal
-        open={showModal}
-        mode={modalMode}
-        accounts={allAccounts}
-        editingAccount={selectedAccount || null}
-        onClose={() => setShowModal(false)}
-        onSave={handleSave}
-      />
     </div>
   );
 }

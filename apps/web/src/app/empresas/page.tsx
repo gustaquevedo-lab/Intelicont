@@ -3,18 +3,34 @@
 import { useState } from "react";
 import { Building2, Plus, Search, Filter, MoreHorizontal, Edit, Trash, AlertTriangle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDataStore } from "@/lib/data-store";
+import { api } from "@/trpc/client";
+import { useEntities } from "@/lib/trpc-hooks";
+
+const REGIMES = ["IVA_GRAL", "IRE_GRAL", "IRE_SIMPLE", "IRE_RESIMPLE", "IRP", "INR", "IDU", "EXPORTADOR"] as const;
+const emptyForm = { ruc: "", legalName: "", tradeName: "", taxRegimes: ["IVA_GRAL"] as string[], baseCurrency: "PYG" };
 
 export default function EmpresasPage() {
-  const empresas = useDataStore((s) => s.empresas);
+  const { data: empresas = [], isLoading } = useEntities();
+  const utils = api.useUtils();
+  const create = api.entities.create.useMutation({
+    onSuccess: async () => {
+      await utils.entities.list.invalidate();
+      setShowForm(false);
+      setForm(emptyForm);
+    },
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+
+  const toggleRegime = (r: string) =>
+    setForm((f) => ({ ...f, taxRegimes: f.taxRegimes.includes(r) ? f.taxRegimes.filter((x) => x !== r) : [...f.taxRegimes, r] }));
 
   const filteredEmpresas = empresas.filter(
     (e) =>
-      e.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.legalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.ruc.includes(searchTerm) ||
-      (e.nombreComercial || "").toLowerCase().includes(searchTerm.toLowerCase())
+      (e.tradeName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -48,27 +64,47 @@ export default function EmpresasPage() {
               <X className="h-4 w-4 text-gray-400" />
             </button>
           </div>
-          <form className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="RUC" placeholder="80000000-0" required />
-            <Field label="Razón Social" placeholder="Empresa S.A." required />
-            <Field label="Nombre Comercial" placeholder="Nombre comercial" />
+          <form
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              create.mutate({ ...form, tradeName: form.tradeName || undefined, taxRegimes: form.taxRegimes as (typeof REGIMES)[number][] });
+            }}
+          >
+            <Field label="RUC" placeholder="80000000-0" required value={form.ruc} onChange={(v) => setForm({ ...form, ruc: v })} />
+            <Field label="Razón Social" placeholder="Empresa S.A." required value={form.legalName} onChange={(v) => setForm({ ...form, legalName: v })} />
+            <Field label="Nombre Comercial" placeholder="Nombre comercial" value={form.tradeName} onChange={(v) => setForm({ ...form, tradeName: v })} />
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Régimen Tributario *</label>
-              <select className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                <option value="">Seleccionar régimen</option>
-                <option>IVA General / IRE General</option>
-                <option>IVA General / IRE Simple</option>
-                <option>ReSimple</option>
-                <option>Exportador</option>
+              <label htmlFor="baseCurrency" className="block text-sm font-medium text-gray-300 mb-1">Moneda base *</label>
+              <select
+                id="baseCurrency"
+                value={form.baseCurrency}
+                onChange={(e) => setForm({ ...form, baseCurrency: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              >
+                <option value="PYG">PYG - Guaraní</option>
+                <option value="USD">USD - Dólar</option>
               </select>
             </div>
-            <Field label="Dirección" placeholder="Calle, Ciudad" />
-            <Field label="Email" placeholder="contacto@empresa.com.py" type="email" />
+            <fieldset className="md:col-span-2">
+              <legend className="block text-sm font-medium text-gray-300 mb-1">Regímenes tributarios *</legend>
+              <div className="flex flex-wrap gap-3">
+                {REGIMES.map((r) => (
+                  <label key={r} className="flex items-center gap-1.5 text-sm text-gray-300">
+                    <input type="checkbox" checked={form.taxRegimes.includes(r)} onChange={() => toggleRegime(r)} />
+                    {r}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {create.error && (
+              <p role="alert" className="md:col-span-2 text-sm text-red-400">{create.error.message}</p>
+            )}
             <div className="md:col-span-2 flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors border border-gray-700">
                 Cancelar
               </button>
-              <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
+              <button type="submit" disabled={create.isPending} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
                 Crear Empresa
               </button>
             </div>
@@ -105,12 +141,12 @@ export default function EmpresasPage() {
                   <Building2 className="h-5 w-5 text-gray-400" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{empresa.nombre}</p>
-                  <p className="text-gray-500 text-xs">{empresa.nombreComercial}</p>
+                  <p className="text-white text-sm font-medium truncate">{empresa.legalName}</p>
+                  <p className="text-gray-500 text-xs">{empresa.tradeName}</p>
                   <div className="flex flex-wrap gap-x-2 mt-0.5">
                     <span className="text-gray-500 text-xs">RUC: {empresa.ruc}</span>
                     <span className="text-gray-600 hidden sm:inline">•</span>
-                    <span className="text-gray-500 text-xs truncate hidden sm:inline">{empresa.taxRegimes?.join(" / ") || empresa.regimen}</span>
+                    <span className="text-gray-500 text-xs truncate hidden sm:inline">{empresa.taxRegimes?.join(" / ")}</span>
                   </div>
                 </div>
               </div>
@@ -118,10 +154,10 @@ export default function EmpresasPage() {
               <div className="flex items-center gap-2 shrink-0">
                 <span className={cn(
                   "inline-flex px-2 py-1 rounded-full text-xs font-medium",
-                  empresa.estado === "activo" ? "bg-green-900/30 text-green-400 border border-green-800" :
+                  empresa.status === "active" ? "bg-green-900/30 text-green-400 border border-green-800" :
                   "bg-gray-800 text-gray-500 border border-gray-700"
                 )}>
-                  {empresa.estado === "activo" ? "Activa" : empresa.estado}
+                  {empresa.status === "active" ? "Activa" : empresa.status}
                 </span>
                 <div className="flex items-center">
                   <button className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors">
@@ -136,7 +172,7 @@ export default function EmpresasPage() {
           ))}
         </div>
 
-        {filteredEmpresas.length === 0 && (
+        {!isLoading && filteredEmpresas.length === 0 && (
           <div className="p-12 text-center">
             <Building2 className="h-12 w-12 text-gray-600 mx-auto mb-3" />
             <p className="text-gray-500 text-sm">No se encontraron empresas</p>
@@ -147,17 +183,20 @@ export default function EmpresasPage() {
   );
 }
 
-function Field({ label, placeholder, type = "text", required = false }: { label: string; placeholder: string; type?: string; required?: boolean }) {
+function Field({ label, placeholder, type = "text", required = false, value, onChange }: { label: string; placeholder: string; type?: string; required?: boolean; value: string; onChange: (v: string) => void }) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-300 mb-1">
         {label} {required && <span className="text-red-400">*</span>}
+        <input
+          type={type}
+          placeholder={placeholder}
+          required={required}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="mt-1 w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+        />
       </label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-      />
     </div>
   );
 }

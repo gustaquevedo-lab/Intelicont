@@ -3,6 +3,9 @@ import { test, type Page } from "@playwright/test";
 export const E2E_PORT = 3210;
 export const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
 export const STORAGE_STATE = "e2e/.auth/user.json";
+export const STORAGE_STATE_CREATOR = "e2e/.auth/creator.json";
+/** Starts with no entities; flagged 2FA-enabled in the DB (creating an entity makes it admin, which the TOTP policy would block). */
+export const CREATOR_EMAIL = "creador@e2e.test";
 export const USER_EMAIL = "usuario@e2e.test";
 export const ADMIN_EMAIL = "admin@e2e.test";
 /** The only entity the non-admin user is a member of (the admin's "Empresa E2E" must stay invisible to it). */

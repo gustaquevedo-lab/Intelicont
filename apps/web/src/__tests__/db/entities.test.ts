@@ -21,7 +21,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("entities.create, chart of accounts
     ruc: r,
     legalName: "Empresa Nueva S.A.",
     tradeName: "Nueva",
-    taxRegimes: ["IVA_GRAL", "IRE_GRAL"],
+    taxRegimes: ["IVA_GRAL", "IRE_GRAL"] as ("IVA_GRAL" | "IRE_GRAL")[],
     baseCurrency: "PYG",
   });
   const seedCount = flattenTree(PY_CHART_OF_ACCOUNTS).length;

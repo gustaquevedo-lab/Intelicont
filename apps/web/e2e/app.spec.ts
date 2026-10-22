@@ -19,16 +19,12 @@ test.describe("InteliCont E2E", () => {
     await expect(page.getByText("Crédito Fiscal")).toBeVisible();
   });
 
-  test("entity selector switches companies", async ({ page }) => {
+  test("entity selector lists the user's real entity", async ({ page }) => {
     await page.goto("/");
-    const entityBtn = page.locator("button:has-text('RUC 800')").first();
-    if (await entityBtn.isVisible()) {
-      await entityBtn.click();
-      const selector = page.locator("text=Cambiar Empresa");
-      await expect(selector).toBeVisible({ timeout: 3000 });
-      await page.locator("text=TechAsu").first().click();
-      await expect(page.locator("h1")).toContainText("TechAsu", { timeout: 5000 });
-    }
+    await page.getByRole("button", { name: /RUC 80099997-3/ }).first().click();
+    await expect(page.getByText("Cambiar Empresa")).toBeVisible();
+    await expect(page.getByText(USER_ENTITY_NAME).first()).toBeVisible();
+    await expect(page.getByText("TechAsu")).toHaveCount(0);
   });
 
   test("navigates to SIFEN page", async ({ page }) => {

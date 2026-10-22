@@ -14,6 +14,7 @@ export interface Entity {
   ruc: string;
   legalName: string;
   tradeName: string | null;
+  baseCurrency?: string | null;
 }
 
 /** Current user from the real Better Auth session; logout ends it server-side. */
@@ -31,18 +32,35 @@ interface EntityState {
   selectedEntity: Entity | null;
   availableEntities: Entity[];
   selectEntity: (entity: Entity) => void;
+  /** Replaces the list with the server's entities and keeps (or restores from localStorage) the selection. */
+  setAvailableEntities: (entities: Entity[]) => void;
 }
 
-// shortcut: mock entities until Task 9 loads the user's real entities from memberships.
-const MOCK_ENTITIES: Entity[] = [
-  { id: "e1", ruc: "80012345-0", legalName: "Importadora del Este S.A.", tradeName: "ImportEste" },
-  { id: "e2", ruc: "80023456-2", legalName: "Tecnología Asunción SRL", tradeName: "TechAsu" },
-  { id: "e3", ruc: "80034567-3", legalName: "Distribuciones Ñandutí SA", tradeName: "Ñandutí" },
-  { id: "e4", ruc: "80045678-4", legalName: "Agropecuaria Guaraní SRL", tradeName: "AgroGuaraní" },
-];
+const STORAGE_KEY = "ic.selectedEntityId";
 
-export const useAuthStore = create<EntityState>((set) => ({
-  selectedEntity: MOCK_ENTITIES[0],
-  availableEntities: MOCK_ENTITIES,
-  selectEntity: (entity: Entity) => set({ selectedEntity: entity }),
+function readStoredId(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeId(id: string) {
+  try {
+    localStorage.setItem(STORAGE_KEY, id);
+  } catch {}
+}
+
+export const useAuthStore = create<EntityState>((set, get) => ({
+  selectedEntity: null,
+  availableEntities: [],
+  selectEntity: (entity) => {
+    storeId(entity.id);
+    set({ selectedEntity: entity });
+  },
+  setAvailableEntities: (entities) => {
+    const keep = get().selectedEntity?.id ?? readStoredId();
+    set({ availableEntities: entities, selectedEntity: entities.find((e) => e.id === keep) ?? entities[0] ?? null });
+  },
 }));

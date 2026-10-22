@@ -205,7 +205,8 @@ function AccountTreeNode({ account, depth, selectedCode, onSelect, expandedCodes
 interface AccountDetailProps {
   account: ChartAccount;
   onClose: () => void;
-  onEdit: (code: string) => void;
+  /** Omit for a read-only detail (no edit button). */
+  onEdit?: (code: string) => void;
 }
 
 export function AccountDetail({ account, onClose, onEdit }: AccountDetailProps) {
@@ -347,12 +348,12 @@ export function AccountDetail({ account, onClose, onEdit }: AccountDetailProps) 
 
         {/* Actions */}
         <div className="border-t border-gray-200 dark:border-gray-800 pt-3 flex gap-2">
-          <button
+          {onEdit && <button
             onClick={() => onEdit(account.code)}
             className="flex-1 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-700 no-tap-highlight"
           >
             {isGroup ? "Editar Grupo" : "Editar Cuenta"}
-          </button>
+          </button>}
           {!isGroup && (
             <button className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-200 dark:border-blue-500/20 no-tap-highlight">
               <FileText className="h-3.5 w-3.5" />
