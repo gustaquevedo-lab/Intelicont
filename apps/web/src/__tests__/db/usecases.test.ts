@@ -215,6 +215,49 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
     expect(await as(user, () => uc.reverseEntry(rev.value.id, "otra"))).toEqual({ ok: false, error: "No se puede revertir un contra-asiento" });
   });
 
+  describe("line references must belong to the entry entity", () => {
+    let e3: string;
+    const refs = async (entityId: string, tag: string) => ({
+      partner: (await t.owner`insert into partners (entity_id, kind, ruc, legal_name) values (${entityId}, 'customer', ${"9" + tag}, 'P') returning id`)[0].id as string,
+      doc: (await t.owner`insert into tax_documents (entity_id, direction, doc_type, number, issue_date, total) values (${entityId}, 'issued', 'invoice', ${"D" + tag}, '2026-10-01', 1) returning id`)[0].id as string,
+      cc: (await t.owner`insert into cost_centers (entity_id, code, name) values (${entityId}, ${"C" + tag}, 'CC') returning id`)[0].id as string,
+    });
+    const withRef = (number: string, extra: Record<string, string>) =>
+      post(number, 100, { lines: [{ ...lines(100)[0], ...extra }, lines(100)[1]] });
+    const noResidue = async (number: string) => {
+      expect(await count(t.owner`select count(*) n from journal_entries where number = ${number}`)).toBe(0);
+      expect(await count(t.owner`select count(*) n from journal_lines l join accounts a on a.id = l.account_id where a.id = ${cash} and l.description = ${number}`)).toBe(0);
+    };
+
+    beforeAll(async () => {
+      e3 = (await t.owner`insert into entities (ruc, legal_name) values ('80011113-6', 'E3') returning id`)[0].id;
+      await t.owner`insert into memberships (user_id, entity_id, role) values (${user}, ${e3}, 'admin')`;
+    });
+
+    it("postEntry rejects a partner of another entity on a line", async () => {
+      const mine3 = await refs(e3, "31"); // the SAME user also belongs to e3: equality check, not just RLS
+      const foreign = await refs(e2, "21"); // entity the user cannot see
+      const own = await refs(e1, "11");
+      for (const [n, id] of [["REF-P3", mine3.partner], ["REF-P2", foreign.partner], ["REF-PBAD", "not-a-uuid"]] as const) {
+        expect(await withRef(n, { partnerId: id }), n).toEqual({ ok: false, error: "Referencia inválida" });
+        await noResidue(n);
+      }
+      expect((await withRef("REF-POK", { partnerId: own.partner })).ok).toBe(true);
+    });
+
+    it("postEntry rejects a tax document or cost center of another entity", async () => {
+      const mine3 = await refs(e3, "32");
+      const foreign = await refs(e2, "22");
+      for (const [n, extra] of [
+        ["REF-D3", { taxDocumentId: mine3.doc }], ["REF-D2", { taxDocumentId: foreign.doc }],
+        ["REF-C3", { costCenterId: mine3.cc }], ["REF-C2", { costCenterId: foreign.cc }],
+      ] as const) {
+        expect(await withRef(n, extra), n).toEqual({ ok: false, error: "Referencia inválida" });
+        await noResidue(n);
+      }
+    });
+  });
+
   it("an account of another entity is rejected without leaving residue", async () => {
     const res = await post("XENT", 100, { lines: [{ accountId: cashE2, debit: 100, credit: 0, currencyCode: "PYG" }, lines(100)[1]] });
     expect(res.ok).toBe(false);

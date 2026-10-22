@@ -1,5 +1,5 @@
 import { assertMoney, err, ok, type Result } from "@intelicont/core";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { audited } from "../../db/audit";
 import { dbErrorMessage, tenantDb, type Db } from "../../db/index";
 import * as schema from "../../db/schema";
@@ -71,6 +71,30 @@ export async function insertPostedEntry(tx: Db, input: PostEntryInput & { revers
   return posted;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * True when every partner / tax document / cost center referenced by the lines exists, is visible
+ * (RLS) and belongs to `entityId`. FKs bypass RLS and the DB guard only checks accounts, and a user
+ * can see several entities, so the entity equality is checked here.
+ */
+async function referencesBelongToEntity(db: Db, input: PostEntryInput): Promise<boolean> {
+  const ids = (pick: (l: PostEntryInput["lines"][number]) => string | null | undefined) =>
+    [...new Set(input.lines.map(pick).filter((v): v is string => v != null))];
+  const checks = [
+    { table: schema.partners, ids: ids((l) => l.partnerId) },
+    { table: schema.taxDocuments, ids: ids((l) => l.taxDocumentId) },
+    { table: schema.costCenters, ids: ids((l) => l.costCenterId) },
+  ];
+  for (const { table, ids } of checks) {
+    if (ids.length === 0) continue;
+    if (!ids.every((id) => UUID.test(id))) return false;
+    const rows = await db.select({ id: table.id, entityId: table.entityId }).from(table).where(inArray(table.id, ids));
+    if (rows.length !== ids.length || rows.some((r) => r.entityId !== input.entityId)) return false;
+  }
+  return true;
+}
+
 /** Posts a balanced entry and audits it (`journal_entry.posted`). DB rule violations come back as `err`. */
 export async function postEntry(input: PostEntryInput): Promise<Result<JournalEntry, string>> {
   let totalDebit = 0;
@@ -84,6 +108,7 @@ export async function postEntry(input: PostEntryInput): Promise<Result<JournalEn
     return err("Importe inválido: debe ser un entero en la unidad mínima de la moneda");
   }
   return tenantDb(async (db) => {
+    if (!(await referencesBelongToEntity(db, input))) return err("Referencia inválida");
     try {
       // Entry + audit event share one savepoint: both persist or neither does (also if the audit fails).
       const entry = await db.transaction((tx) => audited(
