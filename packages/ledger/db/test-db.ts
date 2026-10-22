@@ -67,6 +67,8 @@ export async function createTestDb(): Promise<TestDb> {
     await owner.unsafe(`grant connect on database "${dbName}" to "${role}"`);
     await owner.unsafe(`grant usage on schema public to "${role}"`);
     await owner.unsafe(`grant select, insert, update on all tables in schema public to "${role}"`);
+    // Auth-layer tables the runtime role must also delete from (sign-out, expired tokens).
+    await owner.unsafe(`grant delete on sessions, verifications to "${role}"`);
     await owner.unsafe(`grant usage, select on all sequences in schema public to "${role}"`);
 
     app = postgres(withDb(adminUrl, dbName, role, password), { max: 1, onnotice: () => {} });
