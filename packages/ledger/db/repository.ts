@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq, desc, asc, and, sql } from "drizzle-orm";
+import { eq, desc, asc, and, sql, getTableColumns } from "drizzle-orm";
 import { tenantDb, isMockMode } from "./index";
 import * as schema from "./schema";
 import { mockStore } from "./mock";
@@ -128,12 +128,33 @@ export async function getAllAccounts(entityId: string): Promise<Account[]> {
 
 // ─── Journal Entries ──────────────────────────────────────────────────────
 
-export async function getJournalEntries(entityId: string): Promise<JournalEntry[]> {
-  if (isMockMode()) return mockStore.journalEntries.filter((je) => je.entityId === entityId);
+/** A journal entry plus the derived reversal state: id of the counter-entry whose `reversal_of` is this entry. */
+export type JournalEntryRow = JournalEntry & { reversedBy: string | null };
+
+// Explicit qualifier: Drizzle would render a column ref in a single-table select unqualified, which binds to `r` inside the subquery.
+const entryWithReversal = {
+  ...getTableColumns(schema.journalEntries),
+  reversedBy: sql<string | null>`(select r.id from journal_entries r where r.reversal_of = journal_entries.id limit 1)`,
+};
+
+function withMockReversal(list: JournalEntry[]): JournalEntryRow[] {
+  return list.map((e) => ({ ...e, reversedBy: mockStore.journalEntries.find((r) => r.reversalOf === e.id)?.id ?? null }));
+}
+
+export async function getJournalEntries(entityId: string): Promise<JournalEntryRow[]> {
+  if (isMockMode()) return withMockReversal(mockStore.journalEntries.filter((je) => je.entityId === entityId));
   return tenantDb(async (db) => {
-    return db.select().from(schema.journalEntries)
+    return db.select(entryWithReversal).from(schema.journalEntries)
       .where(eq(schema.journalEntries.entityId, entityId))
       .orderBy(desc(schema.journalEntries.date));
+  });
+}
+
+export async function getJournalEntry(id: string): Promise<JournalEntryRow | undefined> {
+  if (isMockMode()) return withMockReversal(mockStore.journalEntries.filter((je) => je.id === id))[0];
+  return tenantDb(async (db) => {
+    const rows = await db.select(entryWithReversal).from(schema.journalEntries).where(eq(schema.journalEntries.id, id));
+    return rows[0];
   });
 }
 
@@ -309,54 +330,6 @@ export async function getAiDecisions(entityId: string): Promise<AiDecision[]> {
 
 
 // ─── Writes ───────────────────────────────────────────────────────────────
-
-export interface PostEntryInput {
-  entityId: string;
-  periodId: string;
-  date: Date;
-  number: string;
-  source?: typeof schema.journalEntries.$inferInsert["source"];
-  description?: string | null;
-  lines: {
-    accountId: string;
-    debit: number;
-    credit: number;
-    currencyCode: string;
-    description?: string | null;
-  }[];
-}
-
-/** Draft -> lines -> post, atomically. The DB enforces balance, period and immutability. */
-export async function createPostedEntry(input: PostEntryInput): Promise<JournalEntry> {
-  return tenantDb(async (db) => {
-    const [draft] = await db.insert(schema.journalEntries).values({
-      entityId: input.entityId,
-      periodId: input.periodId,
-      date: input.date,
-      number: input.number,
-      source: input.source ?? "manual",
-      description: input.description ?? null,
-      status: "draft",
-    }).returning();
-
-    await db.insert(schema.journalLines).values(
-      input.lines.map((l) => ({
-        entryId: draft.id,
-        accountId: l.accountId,
-        debit: l.debit,
-        credit: l.credit,
-        currencyCode: l.currencyCode,
-        description: l.description ?? null,
-      }))
-    );
-
-    const [posted] = await db.update(schema.journalEntries)
-      .set({ status: "posted", postedAt: new Date() })
-      .where(eq(schema.journalEntries.id, draft.id))
-      .returning();
-    return posted;
-  });
-}
 
 export async function createTaxDocument(values: typeof schema.taxDocuments.$inferInsert) {
   return tenantDb(async (db) => {

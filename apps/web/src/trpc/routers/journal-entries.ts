@@ -1,6 +1,11 @@
 import { router, protectedProcedure, z } from "../trpc";
-import { getJournalEntries, getJournalLines, createPostedEntry } from "@ledger/db/repository";
+import { TRPCError } from "@trpc/server";
+import { getJournalEntries, getJournalEntry, getJournalLines, type JournalEntryRow } from "@ledger/db/repository";
+import { postEntry, reverseEntry } from "@ledger/src/usecases";
 import { isMockMode } from "@ledger/db/index";
+
+/** `reversed` is derived (D10): the DB row stays `posted`, a counter-entry points at it. */
+const uiStatus = (e: JournalEntryRow) => (e.reversedBy ? ("reversed" as const) : e.status);
 
 export const journalEntriesRouter = router({
   list: protectedProcedure
@@ -16,7 +21,8 @@ export const journalEntriesRouter = router({
         source: e.source,
         sourceRef: e.sourceRef,
         description: e.description,
-        status: e.status,
+        status: uiStatus(e),
+        reversedBy: e.reversedBy,
         postedAt: e.postedAt,
         reversalOf: e.reversalOf,
         versionOf: e.versionOf,
@@ -26,13 +32,12 @@ export const journalEntriesRouter = router({
     }),
 
   get: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
-      const entries = await getJournalEntries("");
-      const entry = entries.find((e) => e.id === input.id);
-      if (!entry) throw new Error("Journal entry not found");
+      const entry = await getJournalEntry(input.id);
+      if (!entry) throw new TRPCError({ code: "NOT_FOUND", message: "Asiento no encontrado" });
       const lines = await getJournalLines(input.id);
-      return { ...entry, lines };
+      return { ...entry, status: uiStatus(entry), lines };
     }),
 
   getLines: protectedProcedure
@@ -80,7 +85,7 @@ export const journalEntriesRouter = router({
         return { success: true, id: "mock-je-" + Math.random().toString(36).slice(2, 10) };
       }
 
-      const entry = await createPostedEntry({
+      const res = await postEntry({
         entityId: input.entityId,
         periodId: input.periodId,
         date: new Date(input.date),
@@ -89,13 +94,20 @@ export const journalEntriesRouter = router({
         description: input.description,
         lines: input.lineas,
       });
+      if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
 
-      return { success: true, id: entry.id };
+      return { success: true, id: res.value.id };
     }),
 
   reverse: protectedProcedure
-    .input(z.object({ entryId: z.string(), reason: z.string().optional() }))
+    .input(z.object({ entryId: z.string(), reason: z.string().trim().min(3, "El motivo es obligatorio") }))
     .mutation(async ({ input }) => {
-      return { success: true, id: "rev-" + Math.random().toString(36).slice(2, 10) };
+      if (isMockMode()) return { success: true, id: "mock-rev-" + Math.random().toString(36).slice(2, 10) };
+      const res = await reverseEntry(input.entryId, input.reason);
+      if (!res.ok) {
+        const code = res.error === "Asiento no encontrado" ? "NOT_FOUND" : res.error === "El asiento ya fue revertido" ? "CONFLICT" : "BAD_REQUEST";
+        throw new TRPCError({ code, message: res.error });
+      }
+      return { success: true, id: res.value.id };
     }),
 });

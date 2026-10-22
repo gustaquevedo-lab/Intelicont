@@ -3,6 +3,7 @@
 import { assertMoney } from "@intelicont/core";
 import { isMockMode, dbErrorMessage, withTenant } from "@ledger/db/index";
 import * as repo from "@ledger/db/repository";
+import { postEntry } from "@ledger/src/usecases";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "./session";
 import { loadGuardUser, needs2FA } from "./auth-guard";
@@ -116,7 +117,7 @@ export async function createAsiento(input: CreateAsientoInput) {
   }
 
   try {
-    const entry = await scoped(() => repo.createPostedEntry({
+    const res = await scoped(() => postEntry({
       entityId: input.entityId,
       periodId: input.periodId,
       date: new Date(input.date),
@@ -124,8 +125,9 @@ export async function createAsiento(input: CreateAsientoInput) {
       description: input.descripcion,
       lines: input.lineas,
     }));
+    if (!res.ok) return { success: false, message: res.error };
     revalidatePath("/asientos");
-    return { success: true, message: "Asiento creado exitosamente", id: entry.id };
+    return { success: true, message: "Asiento creado exitosamente", id: res.value.id };
   } catch (err) {
     return { success: false, message: dbErrorMessage(err) };
   }
