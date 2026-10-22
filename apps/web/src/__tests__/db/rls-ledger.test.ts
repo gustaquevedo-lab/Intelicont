@@ -248,4 +248,22 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("RLS + ledger immutability (real Po
       await expect(t.owner`delete from audit_events`).rejects.toThrow(/append-only/);
     });
   });
+
+  describe("integer money (0002)", () => {
+    it("money columns are bigint; fx_rate stays numeric", async () => {
+      const cols = await t.owner`select table_name, column_name, data_type from information_schema.columns
+        where table_schema='public' and (table_name, column_name) in (
+          ('journal_lines','debit'),('journal_lines','credit'),('journal_lines','amount_base'),('journal_lines','fx_rate'),
+          ('tax_documents','total'),('tax_documents','iva_10'),('retentions','amount'),('bank_movements','amount'))`;
+      const type = (tbl: string, col: string) => cols.find((c) => c.table_name === tbl && c.column_name === col)?.data_type;
+      for (const [tbl, col] of [["journal_lines", "debit"], ["journal_lines", "credit"], ["journal_lines", "amount_base"],
+        ["tax_documents", "total"], ["tax_documents", "iva_10"], ["retentions", "amount"], ["bank_movements", "amount"]])
+        expect(type(tbl, col), `${tbl}.${col}`).toBe("bigint");
+      expect(type("journal_lines", "fx_rate")).toBe("numeric");
+    });
+    it("nonneg / one-side CHECKs survive the type change", async () => {
+      await expect(t.scoped([eA], async (tx) => line(tx, await draft(tx), a1, -5, 0))).rejects.toThrow(/journal_lines_nonneg/);
+      await expect(t.scoped([eA], async (tx) => line(tx, await draft(tx), a1, 5, 5))).rejects.toThrow(/journal_lines_one_side/);
+    });
+  });
 });
