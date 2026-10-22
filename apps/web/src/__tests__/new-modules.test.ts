@@ -8,7 +8,7 @@ describe("CDC Generator", () => {
   it("generates a 44-digit CDC", () => {
     const cdc = generateCDC({
       rucEmisor: "80012345",
-      dvEmisor: "1",
+      dvEmisor: "0",
       tipoDocumento: 1,
       establecimiento: "001",
       puntoEmision: "001",
@@ -23,7 +23,7 @@ describe("CDC Generator", () => {
   it("validates a correct CDC structure", () => {
     const cdc = generateCDC({
       rucEmisor: "80012345",
-      dvEmisor: "1",
+      dvEmisor: "0",
       tipoDocumento: 1,
       establecimiento: "001",
       puntoEmision: "001",
@@ -54,7 +54,7 @@ describe("CDC Generator", () => {
   it("generates complete invoice data with CDC and numero", () => {
     const data = generateInvoiceData({
       rucEmisor: "80012345",
-      dvEmisor: "1",
+      dvEmisor: "0",
       tipoDocumento: 1,
       establecimiento: "001",
       puntoEmision: "001",

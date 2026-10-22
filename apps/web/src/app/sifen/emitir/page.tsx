@@ -70,7 +70,7 @@ export default function EmitirFacturaPage() {
   const handleEmitir = () => {
     const data = generateInvoiceData({
       rucEmisor: "80012345",
-      dvEmisor: "1",
+      dvEmisor: "0",
       tipoDocumento: 1,
       establecimiento: "001",
       puntoEmision: "001",
