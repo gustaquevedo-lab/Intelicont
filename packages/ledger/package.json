@@ -10,6 +10,7 @@
     "db:seed": "tsx db/seed.ts"
   },
   "dependencies": {
+    "@intelicont/core": "workspace:*",
     "@neondatabase/serverless": "^1.1.0",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.9"

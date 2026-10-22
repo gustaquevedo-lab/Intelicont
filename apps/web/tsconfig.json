@@ -20,6 +20,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      "@intelicont/core": ["../../packages/core/src/index.ts"],
       "@ledger/*": ["../../packages/ledger/*"]
     }
   },

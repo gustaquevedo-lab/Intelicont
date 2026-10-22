@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: "@", replacement: path.resolve(__dirname, "./src") },
+      { find: "@intelicont/core", replacement: path.resolve(__dirname, "../../packages/core/src/index.ts") },
       { find: "@ledger/fiscal-py", replacement: path.resolve(__dirname, "../../packages/ledger/src/fiscal-py.ts") },
       { find: "@ledger/db/schema", replacement: path.resolve(__dirname, "../../packages/ledger/db/schema.ts") },
       { find: "@ledger/db/index", replacement: path.resolve(__dirname, "../../packages/ledger/db/index.ts") },
