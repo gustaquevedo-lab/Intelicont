@@ -4,13 +4,15 @@ import { getSessionCookie } from "better-auth/cookies";
 /**
  * Edge middleware: only checks that a Better Auth session cookie is present (no DB here).
  * The session is really validated by `getSession` (tRPC context) and the root-layout guard.
- * API routes are not redirected: tRPC answers UNAUTHORIZED itself.
+ * Only these API prefixes skip the cookie check: auth itself, health, and tRPC (which answers
+ * UNAUTHORIZED itself). Any other /api route needs a session cookie (and is redirected otherwise).
  */
 const PUBLIC_PAGES = ["/login"];
+const PUBLIC_API = ["/api/auth/", "/api/health", "/api/trpc/"]; // trailing "/" = prefix, else exact
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (pathname.startsWith("/api/")) return NextResponse.next();
+  if (PUBLIC_API.some((p) => (p.endsWith("/") ? pathname.startsWith(p) : pathname === p))) return NextResponse.next();
 
   const isPublic = PUBLIC_PAGES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   if (!isPublic && !getSessionCookie(request)) {

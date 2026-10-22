@@ -31,5 +31,13 @@ test.describe("auth", () => {
     await expect(page.getByRole("heading", { name: "Configurar verificación en dos pasos" })).toBeVisible();
     await page.goto("/asientos");
     await expect(page).toHaveURL(/\/seguridad\/2fa$/);
+    // The API enforces the same policy.
+    expect((await page.request.get("/api/trpc/entities.list")).status()).toBe(403);
+  });
+
+  test("unauthenticated tRPC call is 401 and other /api routes are not exempt", async ({ page }) => {
+    expect((await page.request.get("/api/trpc/entities.list")).status()).toBe(401);
+    const other = await page.request.get("/api/no-existe", { maxRedirects: 0 });
+    expect(other.status()).toBe(307);
   });
 });

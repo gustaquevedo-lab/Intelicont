@@ -25,8 +25,12 @@ export const auth = betterAuth({
   plugins: [twoFactor({ issuer: "InteliCont", twoFactorTable: "two_factors" })],
 });
 
-/** The only source of identity for server code. */
+/** The only source of identity for server code. Any internal error yields null (fail closed). */
 export async function getSession(headers: Headers): Promise<{ userId: string } | null> {
-  const s = await auth.api.getSession({ headers });
-  return s ? { userId: s.user.id } : null;
+  try {
+    const s = await auth.api.getSession({ headers });
+    return s?.user?.id ? { userId: s.user.id } : null;
+  } catch {
+    return null;
+  }
 }
