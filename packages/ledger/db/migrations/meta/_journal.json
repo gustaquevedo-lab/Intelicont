@@ -29,6 +29,13 @@
       "when": 1792695718394,
       "tag": "0003_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792701187352,
+      "tag": "0004_audit_idempotency",
+      "breakpoints": true
     }
   ]
 }

@@ -249,6 +249,30 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("RLS + ledger immutability (real Po
     });
   });
 
+  describe("cross-entity line references (0004)", () => {
+    // Written by the OWNER connection (bypasses RLS): only the trigger can stop it, FKs do not check entity.
+    const ownerLine = async (col: "partner_id" | "tax_document_id" | "cost_center_id", ref: string) => {
+      const id = await draft(t.owner);
+      await t.owner`insert into journal_lines ${t.owner({ entry_id: id, account_id: a1, debit: 1, credit: 0, currency_code: "PYG", [col]: ref })}`;
+    };
+    const partnerOf = async (entity: string) =>
+      (await t.owner`insert into partners (entity_id, kind, ruc, legal_name) values (${entity}, 'supplier', ${String(Math.floor(Math.random() * 1e7))}, 'P') returning id`)[0].id as string;
+    it("line with a partner of another entity is rejected by the DB", async () => {
+      await expect(ownerLine("partner_id", await partnerOf(eB))).rejects.toThrow(/Partner .* does not belong/);
+      await expect(ownerLine("partner_id", await partnerOf(eA))).resolves.toBeUndefined();
+    });
+    it("line with a tax document of another entity is rejected by the DB", async () => {
+      const doc = (entity: string) => t.owner`insert into tax_documents (entity_id, direction, doc_type, number, issue_date, total) values (${entity}, 'received', 'invoice', '001-001-0000001', '2026-04-01', 0) returning id`;
+      await expect(ownerLine("tax_document_id", (await doc(eB))[0].id)).rejects.toThrow(/Tax document .* does not belong/);
+      await expect(ownerLine("tax_document_id", (await doc(eA))[0].id)).resolves.toBeUndefined();
+    });
+    it("line with a cost center of another entity is rejected by the DB", async () => {
+      const cc = (entity: string) => t.owner`insert into cost_centers (entity_id, code, name) values (${entity}, 'CC', 'Centro') returning id`;
+      await expect(ownerLine("cost_center_id", (await cc(eB))[0].id)).rejects.toThrow(/Cost center .* does not belong/);
+      await expect(ownerLine("cost_center_id", (await cc(eA))[0].id)).resolves.toBeUndefined();
+    });
+  });
+
   describe("integer money (0002)", () => {
     it("money columns are bigint; fx_rate stays numeric", async () => {
       const cols = await t.owner`select table_name, column_name, data_type from information_schema.columns

@@ -355,6 +355,18 @@ export const closingChecklists = pgTable("closing_checklists", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+// ─── Idempotency (D4) ─────────────────────────────────────────────────────
+// One row per (user, endpoint, Idempotency-Key). User-scoped RLS in migration 0004.
+
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  endpoint: text("endpoint").notNull(),
+  key: text("key").notNull(),
+  requestHash: text("request_hash").notNull(),
+  response: jsonb("response"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (t) => [primaryKey({ columns: [t.userId, t.endpoint, t.key] })]);
+
 // ─── Audit & AI ───────────────────────────────────────────────────────────
 
 export const auditEvents = pgTable("audit_events", {
