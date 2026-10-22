@@ -7,26 +7,29 @@ import { isUniqueViolation } from "./entities";
 const kind = z.enum(["customer", "supplier", "both"]);
 const optText = z.string().trim().max(200).optional().transform((v) => v || undefined);
 const contacts = z.object({ email: optText, phone: optText, address: optText });
+/** Update variant: "" / null mean "remove this key"; absent means "keep". */
+const clearable = z.string().trim().max(200).nullish();
+const contactsPatch = z.object({ email: clearable, phone: clearable, address: clearable });
 const terms = z.number().int().min(0).max(365);
 
 const createInput = z.object({
-  entityId: z.string(),
+  entityId: z.string().uuid(),
   kind,
   ruc: z.string().trim().min(1, "El RUC es obligatorio").max(20),
   legalName: z.string().trim().min(1, "La razón social es obligatoria").max(200),
   tradeName: optText,
-  country: z.string().trim().toUpperCase().length(3).default("PRY"),
+  country: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, "País inválido (ISO-3)").default("PRY"),
   defaultPaymentTerms: terms.optional(),
   contacts: contacts.optional(),
 });
 
 const updateInput = z.object({
-  id: z.string(),
+  id: z.string().uuid(),
   legalName: z.string().trim().min(1, "La razón social es obligatoria").max(200).optional(),
-  tradeName: optText,
+  tradeName: clearable, // "" / null clears it
   kind: kind.optional(),
   defaultPaymentTerms: terms.optional(),
-  contacts: contacts.optional(),
+  contacts: contactsPatch.optional(),
   retentionProfile: z.record(z.string(), z.unknown()).optional(),
 }).strict(); // the RUC is immutable: unknown keys (ruc, dvRuc, entityId...) are rejected
 
@@ -49,7 +52,7 @@ function parseIdentifier(raw: string, country: string): { ruc: string; dvRuc: st
 
 export const partnersRouter = router({
   list: protectedProcedure
-    .input(z.object({ entityId: z.string() }))
+    .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ input }) => {
       const partners = await getPartners(input.entityId);
       return partners.map((p) => ({
@@ -64,7 +67,7 @@ export const partnersRouter = router({
     }),
 
   get: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
       const partner = await getPartner(input.id);
       if (!partner) throw new TRPCError({ code: "NOT_FOUND", message: "Tercero no encontrado" });
@@ -85,8 +88,8 @@ export const partnersRouter = router({
   }),
 
   update: protectedProcedure.input(updateInput).mutation(async ({ input }) => {
-    const { id, ...patch } = input;
-    const found = await updatePartner(id, patch);
+    const { id, tradeName, ...rest } = input;
+    const found = await updatePartner(id, { ...rest, ...(tradeName !== undefined && { tradeName: tradeName || null }) });
     if (!found) throw new TRPCError({ code: "NOT_FOUND", message: "Tercero no encontrado" });
     return { id };
   }),

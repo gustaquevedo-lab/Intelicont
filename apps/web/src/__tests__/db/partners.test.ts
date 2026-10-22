@@ -100,6 +100,29 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("partners (real Postgres)", () => {
     await expect(caller(outsider).partners.update({ id, legalName: "Hack" })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
+  it("update can clear the trade name", async () => {
+    const { id } = await caller(admin).partners.create({ ...base(e1, ruc("80014075")), tradeName: "Marca" });
+    await caller(admin).partners.update({ id, tradeName: "" });
+    const [row] = await t.owner`select trade_name, legal_name from partners where id = ${id}`;
+    expect(row).toMatchObject({ trade_name: null, legal_name: "Proveedor S.A." });
+    await expect(caller(admin).partners.update({ id, legalName: "" })).rejects.toBeDefined();
+  });
+
+  it("contacts update merges instead of replacing", async () => {
+    const { id } = await caller(admin).partners.create({ ...base(e1, ruc("80014076")), contacts: { email: "a@b.py", phone: "0981", address: "Asu" } });
+    await caller(admin).partners.update({ id, contacts: { email: "c@d.py" } });
+    const get = async () => (await t.owner`select contacts from partners where id = ${id}`)[0].contacts;
+    expect(await get()).toEqual({ email: "c@d.py", phone: "0981", address: "Asu" });
+    await caller(admin).partners.update({ id, contacts: { phone: "" } });
+    expect(await get()).toEqual({ email: "c@d.py", address: "Asu" });
+  });
+
+  it("malformed ids are BAD_REQUEST", async () => {
+    await expect(caller(admin).partners.update({ id: "nope", legalName: "X" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller(admin).partners.create(base("nope", ruc("80014077")))).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller(admin).partners.create({ ...base(e1, ruc("80014077")), country: "py" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   it("non-RUC unique violation is not reported as duplicate", async () => {
     const { isPartnerRucUniqueViolation } = await import("@/trpc/routers/partners");
     const pk = await db
@@ -109,7 +132,9 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("partners (real Postgres)", () => {
         await tx.execute(q`insert into partners (id, entity_id, kind, ruc, legal_name) values ('00000000-0000-0000-0000-0000000000a1', ${e1}, 'customer', '7000002', 'B')`);
       })
       .catch((e) => e);
-    expect(pk).toBeDefined();
+    const raw = (pk as { cause?: { code?: string; constraint_name?: string }; code?: string; constraint_name?: string });
+    expect(raw.cause?.code ?? raw.code).toBe("23505");
+    expect(raw.cause?.constraint_name ?? raw.constraint_name).toBe("partners_pkey");
     expect(isPartnerRucUniqueViolation(pk)).toBe(false);
     const dup = await caller(admin).partners.create(base(e1, ruc("80014073"))).then(() => caller(admin).partners.create(base(e1, ruc("80014073")))).catch((e) => e);
     expect(dup).toMatchObject({ code: "CONFLICT" });

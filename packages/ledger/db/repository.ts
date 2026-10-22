@@ -168,7 +168,11 @@ export type NewPartner = {
   entityId: string; kind: Partner["kind"]; ruc: string; dvRuc: string | null; legalName: string;
   tradeName?: string; country: string; defaultPaymentTerms?: number; contacts?: { email?: string; phone?: string; address?: string };
 };
-export type PartnerPatch = Partial<Pick<Partner, "legalName" | "tradeName" | "kind" | "defaultPaymentTerms" | "contacts" | "retentionProfile">>;
+export type PartnerPatch = Partial<Pick<Partner, "legalName" | "kind" | "defaultPaymentTerms" | "retentionProfile">> & {
+  tradeName?: string | null;
+  /** Merged into the stored contacts: a key set to ""/null is removed, absent keys are kept. */
+  contacts?: Record<string, string | null | undefined>;
+};
 
 export async function createPartner(input: NewPartner): Promise<string> {
   return tenantDb(async (db) => {
@@ -180,8 +184,20 @@ export async function createPartner(input: NewPartner): Promise<string> {
 /** Updates the non-RUC fields; returns false when the partner does not exist or is not visible to the caller. */
 export async function updatePartner(id: string, patch: PartnerPatch): Promise<boolean> {
   return tenantDb(async (db) => {
-    const rows = await db.update(schema.partners).set({ ...patch, updatedAt: new Date() })
-      .where(eq(schema.partners.id, id)).returning({ id: schema.partners.id });
+    const { contacts, ...rest } = patch;
+    const set: Partial<typeof schema.partners.$inferInsert> = { ...rest, updatedAt: new Date() };
+    if (contacts) {
+      const [cur] = await db.select({ contacts: schema.partners.contacts }).from(schema.partners).where(eq(schema.partners.id, id));
+      if (!cur) return false;
+      const merged: Record<string, string> = { ...((cur.contacts as Record<string, string> | null) ?? {}) };
+      for (const [k, v] of Object.entries(contacts)) {
+        if (v === undefined) continue;
+        if (v === null || v === "") delete merged[k];
+        else merged[k] = v;
+      }
+      set.contacts = merged;
+    }
+    const rows = await db.update(schema.partners).set(set).where(eq(schema.partners.id, id)).returning({ id: schema.partners.id });
     return rows.length > 0;
   });
 }
