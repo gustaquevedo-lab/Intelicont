@@ -166,7 +166,7 @@ export async function getPartner(id: string): Promise<Partner | undefined> {
 
 export type NewPartner = {
   entityId: string; kind: Partner["kind"]; ruc: string; dvRuc: string | null; legalName: string;
-  tradeName?: string; country: string; defaultPaymentTerms?: number; contacts?: Record<string, string>;
+  tradeName?: string; country: string; defaultPaymentTerms?: number; contacts?: { email?: string; phone?: string; address?: string };
 };
 export type PartnerPatch = Partial<Pick<Partner, "legalName" | "tradeName" | "kind" | "defaultPaymentTerms" | "contacts" | "retentionProfile">>;
 
