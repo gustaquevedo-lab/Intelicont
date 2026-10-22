@@ -117,6 +117,18 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("partners (real Postgres)", () => {
     expect(await get()).toEqual({ email: "c@d.py", address: "Asu" });
   });
 
+  it("concurrent contacts updates do not lose keys", async () => {
+    for (let i = 0; i < 8; i++) {
+      const { id } = await caller(admin).partners.create(base(e1, ruc(`8002${String(i).padStart(4, "0")}`)));
+      await Promise.all([
+        caller(admin).partners.update({ id, contacts: { email: `e${i}@b.py` } }),
+        caller(admin).partners.update({ id, contacts: { phone: `098${i}` } }),
+      ]);
+      const [row] = await t.owner`select contacts from partners where id = ${id}`;
+      expect(row.contacts).toEqual({ email: `e${i}@b.py`, phone: `098${i}` });
+    }
+  });
+
   it("malformed ids are BAD_REQUEST", async () => {
     await expect(caller(admin).partners.update({ id: "nope", legalName: "X" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(caller(admin).partners.create(base("nope", ruc("80014077")))).rejects.toMatchObject({ code: "BAD_REQUEST" });

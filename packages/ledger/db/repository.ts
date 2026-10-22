@@ -187,9 +187,10 @@ export async function updatePartner(id: string, patch: PartnerPatch): Promise<bo
     const { contacts, ...rest } = patch;
     const set: Partial<typeof schema.partners.$inferInsert> = { ...rest, updatedAt: new Date() };
     if (contacts) {
-      const [cur] = await db.select({ contacts: schema.partners.contacts }).from(schema.partners).where(eq(schema.partners.id, id));
+      const [cur] = await db.select({ contacts: schema.partners.contacts }).from(schema.partners).where(eq(schema.partners.id, id)).for("update");
       if (!cur) return false;
-      const merged: Record<string, string> = { ...((cur.contacts as Record<string, string> | null) ?? {}) };
+      const stored = cur.contacts;
+      const merged: Record<string, string> = typeof stored === "object" && stored !== null && !Array.isArray(stored) ? { ...(stored as Record<string, string>) } : {};
       for (const [k, v] of Object.entries(contacts)) {
         if (v === undefined) continue;
         if (v === null || v === "") delete merged[k];
