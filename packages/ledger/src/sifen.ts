@@ -10,7 +10,7 @@ export type SifenDocument = {
   currency: string;
   condition: "cash" | "credit";
   issuer: { ruc: string; dv: number; name: string };
-  receiver: { ruc: string; dv: number; name: string };
+  receiver: { ruc: string; dv: number | null; name: string };
   gravado10: number; // IVA-included gross (dSub10)
   gravado5: number;
   exento: number;
@@ -47,7 +47,19 @@ const parser = new XMLParser({
 
 type Node = Record<string, any>;
 
+class Missing extends Error {}
+const required = (v: unknown, tag: string): string => {
+  const s = str(v);
+  if (!s) throw new Missing(`Missing required field: ${tag}`);
+  return s;
+};
+
 const money = (v: unknown): number => assertMoney(Math.round(Number(v ?? 0)));
+const quantity = (v: unknown): number => {
+  const n = Number(v);
+  if (v == null || !Number.isFinite(n)) throw new Missing(`Invalid quantity: ${str(v)}`);
+  return n;
+};
 const str = (v: unknown): string => (v == null ? "" : String(v).trim());
 
 export function parseSifenDE(xml: string): Result<SifenDocument, string> {
@@ -76,13 +88,13 @@ export function parseSifenDE(xml: string): Result<SifenDocument, string> {
       currency: str(gen.gOpeCom?.cMoneOpe),
       condition: str(de.gDtipDE?.gCamCond?.iCondOpe) === "2" ? "credit" : "cash",
       issuer: {
-        ruc: str(gen.gEmis?.dRucEm),
-        dv: Number(gen.gEmis?.dDVEmi),
+        ruc: required(gen.gEmis?.dRucEm, "dRucEm"),
+        dv: Number(required(gen.gEmis?.dDVEmi, "dDVEmi")),
         name: str(gen.gEmis?.dNomEmi),
       },
       receiver: {
         ruc: str(gen.gDatRec?.dRucRec),
-        dv: Number(gen.gDatRec?.dDVRec),
+        dv: str(gen.gDatRec?.dDVRec) ? Number(gen.gDatRec.dDVRec) : null,
         name: str(gen.gDatRec?.dNomRec),
       },
       gravado10: money(tot.dSub10),
@@ -90,11 +102,11 @@ export function parseSifenDE(xml: string): Result<SifenDocument, string> {
       exento: money(tot.dSubExe),
       iva10: money(tot.dIVA10),
       iva5: money(tot.dIVA5),
-      total: money(tot.dTotGralOpe),
+      total: money(required(tot.dTotGralOpe, "dTotGralOpe")),
       lines: items.map((it) => ({
         code: str(it.dCodInt),
         description: str(it.dDesProSer),
-        quantity: Number(it.dCantProSer ?? 1),
+        quantity: quantity(it.dCantProSer),
         unitPrice: money(it.gValorItem?.dPUniProSer),
         amount: money(it.gValorItem?.gValorRestaItem?.dTotOpeItem),
         ivaRate: ([10, 5].includes(Number(it.gCamIVA?.dTasaIVA)) ? Number(it.gCamIVA.dTasaIVA) : 0) as 10 | 5 | 0,
@@ -102,6 +114,7 @@ export function parseSifenDE(xml: string): Result<SifenDocument, string> {
       isElectronic: true,
     });
   } catch (e) {
+    if (e instanceof Missing) return err(e.message);
     return err(e instanceof Error ? e.message : "Invalid XML");
   }
 }

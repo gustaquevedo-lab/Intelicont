@@ -53,14 +53,37 @@ describe("parseSifenDE (real v150 invoice)", () => {
   });
 
   it("returns err for malformed XML", () => {
-    expect(parseSifenDE("<rLoteDE><rDE>").ok).toBe(false);
-    expect(parseSifenDE("not xml").ok).toBe(false);
-    expect(parseSifenDE("").ok).toBe(false);
+    for (const bad of ["<rLoteDE><rDE>", "not xml", ""]) {
+      const r = parseSifenDE(bad);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toMatch(/^(Malformed XML|Not a SIFEN DE document)/);
+    }
   });
 
   it("returns err for an unsupported document type", () => {
     const r = parseSifenDE(xml.replace("<iTiDE>1</iTiDE>", "<iTiDE>8</iTiDE>"));
-    expect(r.ok).toBe(false);
+    expect(r).toEqual({ ok: false, error: "Unsupported document type: 8" });
+  });
+
+  it("returns err when dTotGralOpe is missing", () => {
+    const r = parseSifenDE(xml.replace(/<dTotGralOpe>.*?<\/dTotGralOpe>/, ""));
+    expect(r).toEqual({ ok: false, error: "Missing required field: dTotGralOpe" });
+  });
+
+  it("returns err when issuer RUC or DV is missing", () => {
+    expect(parseSifenDE(xml.replace(/<dDVEmi>.*?<\/dDVEmi>/, ""))).toEqual({ ok: false, error: "Missing required field: dDVEmi" });
+    expect(parseSifenDE(xml.replace(/<dRucEm>.*?<\/dRucEm>/, ""))).toEqual({ ok: false, error: "Missing required field: dRucEm" });
+  });
+
+  it("gives receiver.dv null when dDVRec is absent", () => {
+    const noDv = xml.replace(/<dDVRec>.*?<\/dDVRec>/, "");
+    expect(unwrap(parseSifenDE(noDv)).receiver.dv).toBeNull();
+    expect(parseSifenXML(noDv)!.receptor.ruc).toBe("1234567");
+  });
+
+  it("returns err on non-numeric quantity", () => {
+    const r = parseSifenDE(xml.replace("<dCantProSer>1.0000</dCantProSer>", "<dCantProSer>abc</dCantProSer>"));
+    expect(r).toEqual({ ok: false, error: "Invalid quantity: abc" });
   });
 
   it("maps credit condition and credit note type", () => {

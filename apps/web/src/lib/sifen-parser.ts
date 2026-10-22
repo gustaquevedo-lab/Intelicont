@@ -66,7 +66,7 @@ export function parseSifenXML(xmlString: string): SifenInvoice | null {
     condicion: d.condition === "credit" ? "credito" : "contado",
     timbrado: d.timbrado,
     emisor: { ruc: `${d.issuer.ruc}-${d.issuer.dv}`, nombre: d.issuer.name },
-    receptor: { ruc: `${d.receiver.ruc}-${d.receiver.dv}`, nombre: d.receiver.name },
+    receptor: { ruc: d.receiver.dv === null ? d.receiver.ruc : `${d.receiver.ruc}-${d.receiver.dv}`, nombre: d.receiver.name },
     montos: {
       gravado10: d.gravado10,
       gravado5: d.gravado5,

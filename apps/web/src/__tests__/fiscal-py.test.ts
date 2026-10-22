@@ -41,19 +41,19 @@ describe("validateRuc", () => {
   });
 
   it("validates real DNIT RUCs (juridicas y fisicas)", () => {
-    for (const r of ["80144114-5", "80005427-0", "80120610-3", "80150377-9", "80014066-4", "4631314-1"]) {
+    for (const r of ["80144114-5", "80005427-0", "80120610-3", "80150377-9", "80014066-4", "1234567-9"]) {
       expect(validateRuc(r).valid, r).toBe(true);
     }
   });
 
   it("rejects wrong DV with expected value", () => {
-    for (const r of ["80144114-4", "4631314-2", "80150477-9"]) expect(validateRuc(r).valid, r).toBe(false);
+    for (const r of ["80144114-4", "1234567-8", "80150477-9"]) expect(validateRuc(r).valid, r).toBe(false);
     expect(validateRuc("80150477-9").errors).toContain("Dígito verificador inválido. Esperado: 5");
   });
 
   it("mod11Dv matches reference", () => {
     expect(mod11Dv("80144114")).toBe(5);
-    expect(mod11Dv("4631314")).toBe(1);
+    expect(mod11Dv("1234567")).toBe(9);
     expect(mod11Dv("80005427")).toBe(0);
   });
 
