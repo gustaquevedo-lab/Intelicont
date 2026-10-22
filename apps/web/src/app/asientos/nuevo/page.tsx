@@ -166,12 +166,12 @@ export default function NuevoAsientoPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <a href="/asientos" className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-            <ArrowLeft className="h-5 w-5 text-zinc-400" />
+          <a href="/asientos" className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+            <ArrowLeft className="h-5 w-5 text-gray-400" />
           </a>
           <div>
             <h1 className="text-xl lg:text-2xl font-semibold text-white">Nuevo Asiento</h1>
-            <p className="text-zinc-400 text-sm mt-0.5">Crear asiento contable con doble partida</p>
+            <p className="text-gray-400 text-sm mt-0.5">Crear asiento contable con doble partida</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export default function NuevoAsientoPage() {
               "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
               isComplete && !isPending
                 ? "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20"
-                : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                : "bg-gray-800 text-gray-500 cursor-not-allowed"
             )}
           >
             {isPending ? (
@@ -220,7 +220,7 @@ export default function NuevoAsientoPage() {
         "flex items-center gap-3 p-4 rounded-xl border transition-colors",
         totals.balanced && totals.totalDebito > 0
           ? "bg-green-900/10 border-green-800/50"
-          : "bg-zinc-900/50 border-zinc-800"
+          : "bg-gray-900/50 border-gray-800"
       )}>
         {totals.balanced && totals.totalDebito > 0 ? (
           <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
@@ -230,11 +230,11 @@ export default function NuevoAsientoPage() {
         <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-6">
             <div>
-              <span className="text-zinc-400 text-xs uppercase tracking-wide">Total Débitos</span>
+              <span className="text-gray-400 text-xs uppercase tracking-wide">Total Débitos</span>
               <p className="text-white font-semibold tabular-nums">₲ {formatGs(totals.totalDebito.toString())}</p>
             </div>
             <div>
-              <span className="text-zinc-400 text-xs uppercase tracking-wide">Total Créditos</span>
+              <span className="text-gray-400 text-xs uppercase tracking-wide">Total Créditos</span>
               <p className="text-white font-semibold tabular-nums">₲ {formatGs(totals.totalCredito.toString())}</p>
             </div>
           </div>
@@ -257,29 +257,29 @@ export default function NuevoAsientoPage() {
       </div>
 
       {/* Header Fields */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+      <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 mb-1.5">
-              <Calendar className="h-3.5 w-3.5 text-zinc-500" />
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-300 mb-1.5">
+              <Calendar className="h-3.5 w-3.5 text-gray-500" />
               Fecha *
             </label>
             <input
               type="date"
               value={fecha}
               onChange={(e) => setFecha(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
           <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 mb-1.5">
-              <Building2 className="h-3.5 w-3.5 text-zinc-500" />
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-300 mb-1.5">
+              <Building2 className="h-3.5 w-3.5 text-gray-500" />
               Empresa *
             </label>
             <select
               value={empresa}
               onChange={(e) => setEmpresa(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
               <option value="">Seleccionar empresa</option>
               <option value="mock-1">Importadora del Este S.A.</option>
@@ -290,8 +290,8 @@ export default function NuevoAsientoPage() {
             </select>
           </div>
           <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 mb-1.5">
-              <FileText className="h-3.5 w-3.5 text-zinc-500" />
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-300 mb-1.5">
+              <FileText className="h-3.5 w-3.5 text-gray-500" />
               Descripción *
             </label>
             <input
@@ -299,30 +299,30 @@ export default function NuevoAsientoPage() {
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="Ej: Compra mercadería Factura 001-233"
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             />
           </div>
         </div>
       </div>
 
       {/* Lines Table */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+      <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="text-left py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider w-10">#</th>
-                <th className="text-left py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider min-w-[220px]">Cuenta</th>
-                <th className="text-left py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider min-w-[180px]">Descripción</th>
-                <th className="text-right py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider w-40">Débito</th>
-                <th className="text-right py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider w-40">Crédito</th>
+              <tr className="border-b border-gray-800">
+                <th className="text-left py-3 px-4 text-gray-500 text-xs font-medium uppercase tracking-wider w-10">#</th>
+                <th className="text-left py-3 px-4 text-gray-500 text-xs font-medium uppercase tracking-wider min-w-[220px]">Cuenta</th>
+                <th className="text-left py-3 px-4 text-gray-500 text-xs font-medium uppercase tracking-wider min-w-[180px]">Descripción</th>
+                <th className="text-right py-3 px-4 text-gray-500 text-xs font-medium uppercase tracking-wider w-40">Débito</th>
+                <th className="text-right py-3 px-4 text-gray-500 text-xs font-medium uppercase tracking-wider w-40">Crédito</th>
                 <th className="w-12"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-gray-800/50">
               {lineas.map((linea, idx) => (
-                <tr key={linea.id} className="hover:bg-zinc-800/20 transition-colors group">
-                  <td className="py-2 px-4 text-zinc-600 font-mono text-xs">{idx + 1}</td>
+                <tr key={linea.id} className="hover:bg-gray-800/20 transition-colors group">
+                  <td className="py-2 px-4 text-gray-600 font-mono text-xs">{idx + 1}</td>
                   <td className="py-2 px-4">
                     <div className="relative">
                       <button
@@ -330,14 +330,14 @@ export default function NuevoAsientoPage() {
                         className={cn(
                           "w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors",
                           linea.cuenta
-                            ? "text-white bg-zinc-800/50 border border-zinc-700"
-                            : "text-zinc-500 bg-zinc-800/30 border border-zinc-700/50 hover:border-zinc-600"
+                            ? "text-white bg-gray-800/50 border border-gray-700"
+                            : "text-gray-500 bg-gray-800/30 border border-gray-700/50 hover:border-gray-600"
                         )}
                       >
                         {linea.cuenta ? (
                           <span>
                             <span className="text-blue-400 font-mono">{linea.cuenta}</span>{" "}
-                            <span className="text-zinc-400">{linea.cuentaNombre}</span>
+                            <span className="text-gray-400">{linea.cuentaNombre}</span>
                           </span>
                         ) : (
                           "Seleccionar cuenta"
@@ -346,18 +346,18 @@ export default function NuevoAsientoPage() {
                       {showSuggestions === linea.id && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setShowSuggestions(null)} />
-                          <div className="absolute z-20 top-full left-0 mt-1 w-80 max-h-64 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl shadow-black/50">
-                            <div className="p-2 border-b border-zinc-800">
-                              <p className="text-zinc-400 text-xs">Plan de cuentas</p>
+                          <div className="absolute z-20 top-full left-0 mt-1 w-80 max-h-64 overflow-y-auto bg-gray-900 border border-gray-700 rounded-xl shadow-2xl shadow-black/50">
+                            <div className="p-2 border-b border-gray-800">
+                              <p className="text-gray-400 text-xs">Plan de cuentas</p>
                             </div>
                             {CUENTAS_MOCK.map((c) => (
                               <button
                                 key={c.code}
                                 onClick={() => selectCuenta(linea.id, c.code, c.name)}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-800 transition-colors"
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 transition-colors"
                               >
                                 <span className="text-blue-400 font-mono text-xs">{c.code}</span>{" "}
-                                <span className="text-zinc-300">{c.name}</span>
+                                <span className="text-gray-300">{c.name}</span>
                               </button>
                             ))}
                           </div>
@@ -371,7 +371,7 @@ export default function NuevoAsientoPage() {
                       value={linea.descripcion}
                       onChange={(e) => updateLinea(linea.id, "descripcion", e.target.value)}
                       placeholder="Detalle de la línea"
-                      className="w-full px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                      className="w-full px-3 py-1.5 bg-gray-800/30 border border-gray-700/50 rounded-lg text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                     />
                   </td>
                   <td className="py-2 px-4">
@@ -383,7 +383,7 @@ export default function NuevoAsientoPage() {
                         updateLinea(linea.id, "debito", val);
                       }}
                       placeholder="0"
-                      className="w-full text-right px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-green-500/50"
+                      className="w-full text-right px-3 py-1.5 bg-gray-800/30 border border-gray-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-green-500/50"
                     />
                   </td>
                   <td className="py-2 px-4">
@@ -395,14 +395,14 @@ export default function NuevoAsientoPage() {
                         updateLinea(linea.id, "credito", val);
                       }}
                       placeholder="0"
-                      className="w-full text-right px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                      className="w-full text-right px-3 py-1.5 bg-gray-800/30 border border-gray-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                     />
                   </td>
                   <td className="py-2 px-2">
                     <button
                       onClick={() => removeLinea(linea.id)}
                       disabled={lineas.length <= 2}
-                      className="p-1.5 hover:bg-red-900/20 hover:text-red-400 rounded-lg transition-colors disabled:opacity-20 disabled:cursor-not-allowed text-zinc-600"
+                      className="p-1.5 hover:bg-red-900/20 hover:text-red-400 rounded-lg transition-colors disabled:opacity-20 disabled:cursor-not-allowed text-gray-600"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -411,8 +411,8 @@ export default function NuevoAsientoPage() {
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-zinc-700 bg-zinc-800/50">
-                <td colSpan={3} className="py-3 px-4 text-right text-zinc-400 font-medium">
+              <tr className="border-t-2 border-gray-700 bg-gray-800/50">
+                <td colSpan={3} className="py-3 px-4 text-right text-gray-400 font-medium">
                   TOTALES
                 </td>
                 <td className="py-3 px-4 text-right">
@@ -431,10 +431,10 @@ export default function NuevoAsientoPage() {
           </table>
         </div>
 
-        <div className="p-3 border-t border-zinc-800">
+        <div className="p-3 border-t border-gray-800">
           <button
             onClick={addLinea}
-            className="flex items-center gap-2 px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg text-sm transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg text-sm transition-colors"
           >
             <Plus className="h-4 w-4" />
             Agregar línea

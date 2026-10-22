@@ -1,10 +1,10 @@
 "use server";
 
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { isMockMode, dbErrorMessage } from "@ledger/db/index";
+import * as repo from "@ledger/db/repository";
 import { revalidatePath } from "next/cache";
 
-import * as schema from "../../../packages/ledger/db/schema";
+// ─── Types ────────────────────────────────────────────────────────────────
 
 interface CreateAsientoInput {
   entityId: string;
@@ -20,99 +20,181 @@ interface CreateAsientoInput {
   }[];
 }
 
+interface CreateTaxDocumentInput {
+  entityId: string;
+  direction: "issued" | "received";
+  docType: string;
+  number: string;
+  timbrado?: string;
+  cdc?: string;
+  issueDate: string;
+  partnerId?: string;
+  currencyCode?: string;
+  gravado10?: string;
+  gravado5?: string;
+  exento?: string;
+  iva10?: string;
+  iva5?: string;
+  total: string;
+  metadata?: Record<string, unknown>;
+}
+
+// ─── Entities ─────────────────────────────────────────────────────────────
+
+export async function getEmpresas() {
+  return repo.getEntities();
+}
+
+export async function getEmpresa(id: string) {
+  return repo.getEntity(id);
+}
+
+// ─── Fiscal Periods ───────────────────────────────────────────────────────
+
+export async function getFiscalPeriods(entityId: string) {
+  return repo.getFiscalPeriods(entityId);
+}
+
+export async function getOpenPeriod(entityId: string) {
+  return repo.getOpenPeriod(entityId);
+}
+
+// ─── Chart of Accounts ────────────────────────────────────────────────────
+
+export async function getCuentas(entityId: string) {
+  return repo.getAllAccounts(entityId);
+}
+
+// ─── Journal Entries ──────────────────────────────────────────────────────
+
+export async function getAsientos(entityId?: string) {
+  if (!entityId) return [];
+  return repo.getJournalEntries(entityId);
+}
+
+export async function getAsientoLines(entryId: string) {
+  return repo.getJournalLines(entryId);
+}
+
 export async function createAsiento(input: CreateAsientoInput) {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    // Si no hay DATABASE_URL, creamos en memoria y retornamos éxito simulado
-    console.log("[createAsiento] DATABASE_URL no configurada, usando modo simulación");
-    return {
-      success: true,
-      message: "Asiento creado (modo simulación - configura DATABASE_URL para persistencia real)",
-      id: "mock-" + Math.random().toString(36).slice(2, 10),
-    };
-  }
-
-  const sql = neon(dbUrl);
-  const db = drizzle(sql, { schema });
-
-  // Validar balance
-  const totalDebito = input.lineas.reduce((sum, l) => sum + parseFloat(l.debit), 0);
-  const totalCredito = input.lineas.reduce((sum, l) => sum + parseFloat(l.credit), 0);
+  // Validate balance
+  const totalDebito = input.lineas.reduce((sum, l) => sum + parseFloat(l.debit || "0"), 0);
+  const totalCredito = input.lineas.reduce((sum, l) => sum + parseFloat(l.credit || "0"), 0);
   if (Math.abs(totalDebito - totalCredito) > 0.01) {
     return { success: false, message: "El asiento no está balanceado" };
   }
 
-  // Crear asiento
-  const [entry] = await db
-    .insert(schema.journalEntries)
-    .values({
+  if (isMockMode()) {
+    return {
+      success: true,
+      message: "Asiento creado (modo simulación)",
+      id: "mock-" + Math.random().toString(36).slice(2, 10),
+    };
+  }
+
+  try {
+    const entry = await repo.createPostedEntry({
       entityId: input.entityId,
       periodId: input.periodId,
       date: new Date(input.date),
       number: `JE-${Date.now().toString().slice(-6)}`,
-      source: "manual",
       description: input.descripcion,
-      status: "posted",
-      postedAt: new Date(),
-    })
-    .returning();
-
-  // Crear líneas
-  await db.insert(schema.journalLines).values(
-    input.lineas.map((l) => ({
-      entryId: entry.id,
-      accountId: l.accountId,
-      debit: l.debit,
-      credit: l.credit,
-      currencyCode: l.currencyCode || "PYG",
-      description: l.description,
-    }))
-  );
-
-  revalidatePath("/asientos");
-
-  return {
-    success: true,
-    message: "Asiento creado exitosamente",
-    id: entry.id,
-  };
+      lines: input.lineas,
+    });
+    revalidatePath("/asientos");
+    return { success: true, message: "Asiento creado exitosamente", id: entry.id };
+  } catch (err) {
+    return { success: false, message: dbErrorMessage(err) };
+  }
 }
 
-export async function getEmpresas() {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    return [];
-  }
-  const sql = neon(dbUrl);
-  const db = drizzle(sql, { schema });
-  return db.select().from(schema.entities).orderBy(schema.entities.createdAt);
+// ─── Partners ─────────────────────────────────────────────────────────────
+
+export async function getPartners(entityId: string) {
+  return repo.getPartners(entityId);
 }
 
-export async function getAsientos() {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    return [];
-  }
-  const sql = neon(dbUrl);
-  const db = drizzle(sql, { schema });
-  return db.select().from(schema.journalEntries).orderBy(schema.journalEntries.date);
+export async function getPartner(id: string) {
+  return repo.getPartner(id);
 }
 
-export async function getCuentas(entityId: string) {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    return [];
+// ─── Tax Documents ────────────────────────────────────────────────────────
+
+export async function getTaxDocuments(entityId: string) {
+  return repo.getTaxDocuments(entityId);
+}
+
+export async function getTaxDocument(id: string) {
+  return repo.getTaxDocument(id);
+}
+
+export async function getPendingTaxDocuments(entityId: string) {
+  return repo.getPendingTaxDocuments(entityId);
+}
+
+export async function getTaxDocumentLines(documentId: string) {
+  return repo.getTaxDocumentLines(documentId);
+}
+
+export async function getRetentions(documentId: string) {
+  return repo.getRetentions(documentId);
+}
+
+export async function createTaxDocument(input: CreateTaxDocumentInput) {
+  if (isMockMode()) {
+    return {
+      success: true,
+      message: "Documento tributario creado (modo simulación)",
+      id: "mock-td-" + Math.random().toString(36).slice(2, 10),
+    };
   }
-  const sql = neon(dbUrl);
-  const db = drizzle(sql, { schema });
-  const coas = await db
-    .select()
-    .from(schema.chartOfAccounts)
-    .where(schema.chartOfAccounts.entityId.eq(entityId));
-  if (coas.length === 0) return [];
-  return db
-    .select()
-    .from(schema.accounts)
-    .where(schema.accounts.coaId.eq(coas[0].id))
-    .orderBy(schema.accounts.code);
+
+  try {
+    const doc = await repo.createTaxDocument({
+      entityId: input.entityId,
+      direction: input.direction,
+      docType: input.docType as any,
+      number: input.number,
+      timbrado: input.timbrado,
+      cdc: input.cdc,
+      issueDate: input.issueDate,
+      partnerId: input.partnerId,
+      currencyCode: input.currencyCode || "PYG",
+      gravado10: input.gravado10 || "0",
+      gravado5: input.gravado5 || "0",
+      exento: input.exento || "0",
+      iva10: input.iva10 || "0",
+      iva5: input.iva5 || "0",
+      total: input.total,
+      status: "pending",
+      sifenStatus: "pending_upload",
+      metadata: input.metadata || null,
+    });
+    revalidatePath("/sifen");
+    return { success: true, message: "Documento creado", id: doc.id };
+  } catch (err) {
+    return { success: false, message: dbErrorMessage(err) };
+  }
+}
+
+// ─── Banking ──────────────────────────────────────────────────────────────
+
+export async function getBankMovements(bankAccountId: string) {
+  return repo.getBankMovements(bankAccountId);
+}
+
+export async function getReconciliations(bankAccountId: string) {
+  return repo.getReconciliations(bankAccountId);
+}
+
+// ─── Audit ────────────────────────────────────────────────────────────────
+
+export async function getAuditEvents(entityId: string, limit = 50) {
+  return repo.getAuditEvents(entityId, limit);
+}
+
+// ─── AI Decisions ─────────────────────────────────────────────────────────
+
+export async function getAiDecisions(entityId: string) {
+  return repo.getAiDecisions(entityId);
 }

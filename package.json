@@ -8,10 +8,16 @@
     "backlog/*"
   ],
   "scripts": {
-    "build": "echo 'Build placeholder'",
-    "lint": "echo 'Lint placeholder'",
-    "test": "echo 'Test placeholder'",
-    "dev": "echo 'Dev placeholder'"
+    "dev": "pnpm --filter @intelicont/web dev",
+    "build": "pnpm --filter @intelicont/web build",
+    "start": "pnpm --filter @intelicont/web start",
+    "lint": "pnpm --filter @intelicont/web lint",
+    "test": "pnpm --filter @intelicont/web test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:seed": "pnpm --filter @intelicont/ledger db:seed",
+    "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.10"
