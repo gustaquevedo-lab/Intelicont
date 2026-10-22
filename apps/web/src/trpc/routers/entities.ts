@@ -20,12 +20,14 @@ function currentPeriod(now = new Date()) {
   return { year, month };
 }
 
-/** True only for the entities.ruc unique constraint (postgres-js error, possibly wrapped by Drizzle in `cause`). */
-export function isRucUniqueViolation(err: unknown) {
+/** True only for a unique violation of the named constraint (postgres-js error, possibly wrapped by Drizzle in `cause`). */
+export function isUniqueViolation(err: unknown, constraint: string) {
   const e = err as { code?: string; constraint_name?: string; cause?: { code?: string; constraint_name?: string } };
   const pg = e?.code === "23505" ? e : e?.cause;
-  return pg?.code === "23505" && pg.constraint_name === "entities_ruc_unique";
+  return pg?.code === "23505" && pg.constraint_name === constraint;
 }
+
+export const isRucUniqueViolation = (err: unknown) => isUniqueViolation(err, "entities_ruc_unique");
 
 export const entitiesRouter = router({
   list: protectedProcedure.query(async () => {

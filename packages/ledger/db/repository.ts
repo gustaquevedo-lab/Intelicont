@@ -164,6 +164,28 @@ export async function getPartner(id: string): Promise<Partner | undefined> {
   });
 }
 
+export type NewPartner = {
+  entityId: string; kind: Partner["kind"]; ruc: string; dvRuc: string | null; legalName: string;
+  tradeName?: string; country: string; defaultPaymentTerms?: number; contacts?: Record<string, string>;
+};
+export type PartnerPatch = Partial<Pick<Partner, "legalName" | "tradeName" | "kind" | "defaultPaymentTerms" | "contacts" | "retentionProfile">>;
+
+export async function createPartner(input: NewPartner): Promise<string> {
+  return tenantDb(async (db) => {
+    const [row] = await db.insert(schema.partners).values(input).returning({ id: schema.partners.id });
+    return row.id;
+  });
+}
+
+/** Updates the non-RUC fields; returns false when the partner does not exist or is not visible to the caller. */
+export async function updatePartner(id: string, patch: PartnerPatch): Promise<boolean> {
+  return tenantDb(async (db) => {
+    const rows = await db.update(schema.partners).set({ ...patch, updatedAt: new Date() })
+      .where(eq(schema.partners.id, id)).returning({ id: schema.partners.id });
+    return rows.length > 0;
+  });
+}
+
 // ─── Tax Documents ────────────────────────────────────────────────────────
 
 export async function getTaxDocuments(entityId: string): Promise<TaxDocument[]> {
