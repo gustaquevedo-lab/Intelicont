@@ -337,25 +337,25 @@ const JOURNAL_ENTRIES: JournalEntry[] = [
 
 const JOURNAL_LINES: JournalLine[] = [
   // JE1: Compra mercadería (10% IVA) ₲ 10,000,000 + IVA 1,000,000 = 11,000,000
-  { id: stableId("jl-1a"), entryId: JE1, accountId: stableId("acct-1.2.01"), debit: "10000000.0000", credit: "0.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "10000000.0000", costCenterId: null, partnerId: stableId("partner-importadora-este"), taxDocumentId: stableId("td-1"), description: "Compra de mercadería gravada 10%" },
-  { id: stableId("jl-1b"), entryId: JE1, accountId: stableId("acct-1.1.06"), debit: "1000000.0000", credit: "0.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "1000000.0000", costCenterId: null, partnerId: stableId("partner-importadora-este"), taxDocumentId: stableId("td-1"), description: "IVA Crédito 10%" },
-  { id: stableId("jl-1c"), entryId: JE1, accountId: stableId("acct-2.1.01"), debit: "0.0000", credit: "11000000.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "11000000.0000", costCenterId: null, partnerId: stableId("partner-importadora-este"), taxDocumentId: stableId("td-1"), description: "Proveedores a pagar" },
+  { id: stableId("jl-1a"), entryId: JE1, accountId: stableId("acct-1.2.01"), debit: 10000000, credit: 0, currencyCode: "PYG", fxRate: "1.000000", amountBase: 10000000, costCenterId: null, partnerId: stableId("partner-importadora-este"), taxDocumentId: stableId("td-1"), description: "Compra de mercadería gravada 10%" },
+  { id: stableId("jl-1b"), entryId: JE1, accountId: stableId("acct-1.1.06"), debit: 1000000, credit: 0, currencyCode: "PYG", fxRate: "1.000000", amountBase: 1000000, costCenterId: null, partnerId: stableId("partner-importadora-este"), taxDocumentId: stableId("td-1"), description: "IVA Crédito 10%" },
+  { id: stableId("jl-1c"), entryId: JE1, accountId: stableId("acct-2.1.01"), debit: 0, credit: 11000000, currencyCode: "PYG", fxRate: "1.000000", amountBase: 11000000, costCenterId: null, partnerId: stableId("partner-importadora-este"), taxDocumentId: stableId("td-1"), description: "Proveedores a pagar" },
 
   // JE2: Honorarios contables (IVA 10%, retención IRE 0.5%) ₲ 2,500,000 + IVA 250,000 = 2,750,000
-  { id: stableId("jl-2a"), entryId: JE2, accountId: stableId("acct-5.1.04"), debit: "2500000.0000", credit: "0.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "2500000.0000", costCenterId: null, partnerId: stableId("partner-servicios-contables"), taxDocumentId: stableId("td-2"), description: "Honorarios profesionales" },
-  { id: stableId("jl-2b"), entryId: JE2, accountId: stableId("acct-1.1.06"), debit: "250000.0000", credit: "0.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "250000.0000", costCenterId: null, partnerId: stableId("partner-servicios-contables"), taxDocumentId: stableId("td-2"), description: "IVA Crédito 10%" },
-  { id: stableId("jl-2c"), entryId: JE2, accountId: stableId("acct-2.1.01"), debit: "0.0000", credit: "2737500.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "2737500.0000", costCenterId: null, partnerId: stableId("partner-servicios-contables"), taxDocumentId: stableId("td-2"), description: "Proveedores a pagar" },
-  { id: stableId("jl-2d"), entryId: JE2, accountId: stableId("acct-2.1.05"), debit: "0.0000", credit: "12500.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "12500.0000", costCenterId: null, partnerId: stableId("partner-servicios-contables"), taxDocumentId: stableId("td-2"), description: "Retención IRE 0.5%" },
+  { id: stableId("jl-2a"), entryId: JE2, accountId: stableId("acct-5.1.04"), debit: 2500000, credit: 0, currencyCode: "PYG", fxRate: "1.000000", amountBase: 2500000, costCenterId: null, partnerId: stableId("partner-servicios-contables"), taxDocumentId: stableId("td-2"), description: "Honorarios profesionales" },
+  { id: stableId("jl-2b"), entryId: JE2, accountId: stableId("acct-1.1.06"), debit: 250000, credit: 0, currencyCode: "PYG", fxRate: "1.000000", amountBase: 250000, costCenterId: null, partnerId: stableId("partner-servicios-contables"), taxDocumentId: stableId("td-2"), description: "IVA Crédito 10%" },
+  { id: stableId("jl-2c"), entryId: JE2, accountId: stableId("acct-2.1.01"), debit: 0, credit: 2737500, currencyCode: "PYG", fxRate: "1.000000", amountBase: 2737500, costCenterId: null, partnerId: stableId("partner-servicios-contables"), taxDocumentId: stableId("td-2"), description: "Proveedores a pagar" },
+  { id: stableId("jl-2d"), entryId: JE2, accountId: stableId("acct-2.1.05"), debit: 0, credit: 12500, currencyCode: "PYG", fxRate: "1.000000", amountBase: 12500, costCenterId: null, partnerId: stableId("partner-servicios-contables"), taxDocumentId: stableId("td-2"), description: "Retención IRE 0.5%" },
 
   // JE3: Nota de crédito (devolución de compra) ₲ -550,000
-  { id: stableId("jl-3a"), entryId: JE3, accountId: stableId("acct-2.1.01"), debit: "550000.0000", credit: "0.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "550000.0000", costCenterId: null, partnerId: stableId("partner-distribuciones-nanduti"), taxDocumentId: stableId("td-4"), description: "NC - débito a proveedores" },
-  { id: stableId("jl-3b"), entryId: JE3, accountId: stableId("acct-1.2.01"), debit: "0.0000", credit: "500000.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "500000.0000", costCenterId: null, partnerId: stableId("partner-distribuciones-nanduti"), taxDocumentId: stableId("td-4"), description: "NC - devolución mercadería" },
-  { id: stableId("jl-3c"), entryId: JE3, accountId: stableId("acct-1.1.06"), debit: "0.0000", credit: "50000.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "50000.0000", costCenterId: null, partnerId: stableId("partner-distribuciones-nanduti"), taxDocumentId: stableId("td-4"), description: "NC - devolución IVA crédito" },
+  { id: stableId("jl-3a"), entryId: JE3, accountId: stableId("acct-2.1.01"), debit: 550000, credit: 0, currencyCode: "PYG", fxRate: "1.000000", amountBase: 550000, costCenterId: null, partnerId: stableId("partner-distribuciones-nanduti"), taxDocumentId: stableId("td-4"), description: "NC - débito a proveedores" },
+  { id: stableId("jl-3b"), entryId: JE3, accountId: stableId("acct-1.2.01"), debit: 0, credit: 500000, currencyCode: "PYG", fxRate: "1.000000", amountBase: 500000, costCenterId: null, partnerId: stableId("partner-distribuciones-nanduti"), taxDocumentId: stableId("td-4"), description: "NC - devolución mercadería" },
+  { id: stableId("jl-3c"), entryId: JE3, accountId: stableId("acct-1.1.06"), debit: 0, credit: 50000, currencyCode: "PYG", fxRate: "1.000000", amountBase: 50000, costCenterId: null, partnerId: stableId("partner-distribuciones-nanduti"), taxDocumentId: stableId("td-4"), description: "NC - devolución IVA crédito" },
 
   // JE4: Venta de mercadería ₲ 5,500,000 + IVA 500,000 = 6,050,000
-  { id: stableId("jl-4a"), entryId: JE4, accountId: stableId("acct-1.1.05"), debit: "6050000.0000", credit: "0.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "6050000.0000", costCenterId: null, partnerId: stableId("partner-cliente-1"), taxDocumentId: stableId("td-5"), description: "Clientes a cobrar" },
-  { id: stableId("jl-4b"), entryId: JE4, accountId: stableId("acct-4.1.01"), debit: "0.0000", credit: "5500000.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "5500000.0000", costCenterId: null, partnerId: stableId("partner-cliente-1"), taxDocumentId: stableId("td-5"), description: "Ventas de mercaderías" },
-  { id: stableId("jl-4c"), entryId: JE4, accountId: stableId("acct-2.1.02"), debit: "0.0000", credit: "550000.0000", currencyCode: "PYG", fxRate: "1.000000", amountBase: "550000.0000", costCenterId: null, partnerId: stableId("partner-cliente-1"), taxDocumentId: stableId("td-5"), description: "IVA Débito 10%" },
+  { id: stableId("jl-4a"), entryId: JE4, accountId: stableId("acct-1.1.05"), debit: 6050000, credit: 0, currencyCode: "PYG", fxRate: "1.000000", amountBase: 6050000, costCenterId: null, partnerId: stableId("partner-cliente-1"), taxDocumentId: stableId("td-5"), description: "Clientes a cobrar" },
+  { id: stableId("jl-4b"), entryId: JE4, accountId: stableId("acct-4.1.01"), debit: 0, credit: 5500000, currencyCode: "PYG", fxRate: "1.000000", amountBase: 5500000, costCenterId: null, partnerId: stableId("partner-cliente-1"), taxDocumentId: stableId("td-5"), description: "Ventas de mercaderías" },
+  { id: stableId("jl-4c"), entryId: JE4, accountId: stableId("acct-2.1.02"), debit: 0, credit: 550000, currencyCode: "PYG", fxRate: "1.000000", amountBase: 550000, costCenterId: null, partnerId: stableId("partner-cliente-1"), taxDocumentId: stableId("td-5"), description: "IVA Débito 10%" },
 ];
 
 // ─── Tax Documents ────────────────────────────────────────────────────────
@@ -368,8 +368,8 @@ const TAX_DOCS: TaxDocument[] = [
     issueDate: dateVal("2026-05-01"), partnerId: stableId("partner-importadora-este"),
     currencyCode: "PYG", fxRate: "1.000000", condition: "credit",
     status: "posted", sifenStatus: "validated",
-    gravado10: "10000000.0000", gravado5: "0.0000", exento: "0.0000",
-    iva10: "1000000.0000", iva5: "0.0000", total: "11000000.0000",
+    gravado10: 10000000, gravado5: 0, exento: 0,
+    iva10: 1000000, iva5: 0, total: 11000000,
     ivaBookPeriod: P_MAY, journalEntryId: JE1,
     metadata: { sifen_xml_hash: "abc123", processed_by: "rule-engine" },
     uploadedAt: tsVal("2026-05-01T10:00:00"),
@@ -382,8 +382,8 @@ const TAX_DOCS: TaxDocument[] = [
     issueDate: dateVal("2026-05-03"), partnerId: stableId("partner-servicios-contables"),
     currencyCode: "PYG", fxRate: "1.000000", condition: "credit",
     status: "posted", sifenStatus: "validated",
-    gravado10: "2500000.0000", gravado5: "0.0000", exento: "0.0000",
-    iva10: "250000.0000", iva5: "0.0000", total: "2750000.0000",
+    gravado10: 2500000, gravado5: 0, exento: 0,
+    iva10: 250000, iva5: 0, total: 2750000,
     ivaBookPeriod: P_MAY, journalEntryId: JE2,
     metadata: { sifen_xml_hash: "def456", processed_by: "rule-engine", retention_ire: "0.5" },
     uploadedAt: tsVal("2026-05-03T14:00:00"),
@@ -396,8 +396,8 @@ const TAX_DOCS: TaxDocument[] = [
     issueDate: dateVal("2026-05-02"), partnerId: stableId("partner-tecnologia-asuncion"),
     currencyCode: "PYG", fxRate: "1.000000", condition: "credit",
     status: "pending", sifenStatus: "validated",
-    gravado10: "15000000.0000", gravado5: "0.0000", exento: "0.0000",
-    iva10: "1500000.0000", iva5: "0.0000", total: "16500000.0000",
+    gravado10: 15000000, gravado5: 0, exento: 0,
+    iva10: 1500000, iva5: 0, total: 16500000,
     ivaBookPeriod: P_MAY, journalEntryId: null,
     metadata: { sifen_xml_hash: "ghi789", ai_suggestion: true, ai_confidence: 88 },
     uploadedAt: tsVal("2026-05-02T08:00:00"),
@@ -410,8 +410,8 @@ const TAX_DOCS: TaxDocument[] = [
     issueDate: dateVal("2026-05-05"), partnerId: stableId("partner-distribuciones-nanduti"),
     currencyCode: "PYG", fxRate: "1.000000", condition: "credit",
     status: "pending", sifenStatus: "validated",
-    gravado10: "-500000.0000", gravado5: "0.0000", exento: "0.0000",
-    iva10: "-50000.0000", iva5: "0.0000", total: "-550000.0000",
+    gravado10: -500000, gravado5: 0, exento: 0,
+    iva10: -50000, iva5: 0, total: -550000,
     ivaBookPeriod: P_MAY, journalEntryId: JE3,
     metadata: { sifen_xml_hash: "jkl012", ai_suggestion: true, ai_confidence: 90 },
     uploadedAt: tsVal("2026-05-05T09:00:00"),
@@ -424,8 +424,8 @@ const TAX_DOCS: TaxDocument[] = [
     issueDate: dateVal("2026-05-10"), partnerId: stableId("partner-cliente-1"),
     currencyCode: "PYG", fxRate: "1.000000", condition: "credit",
     status: "posted", sifenStatus: "validated",
-    gravado10: "5500000.0000", gravado5: "0.0000", exento: "0.0000",
-    iva10: "550000.0000", iva5: "0.0000", total: "6050000.0000",
+    gravado10: 5500000, gravado5: 0, exento: 0,
+    iva10: 550000, iva5: 0, total: 6050000,
     ivaBookPeriod: P_MAY, journalEntryId: JE4,
     metadata: { sifen_xml_hash: "mno345" },
     uploadedAt: tsVal("2026-05-10T15:00:00"),
@@ -438,8 +438,8 @@ const TAX_DOCS: TaxDocument[] = [
     issueDate: dateVal("2026-05-08"), partnerId: stableId("partner-agropecuaria-guarani"),
     currencyCode: "PYG", fxRate: "1.000000", condition: "credit",
     status: "error", sifenStatus: "rejected",
-    gravado10: "3750000.0000", gravado5: "0.0000", exento: "0.0000",
-    iva10: "375000.0000", iva5: "0.0000", total: "4125000.0000",
+    gravado10: 3750000, gravado5: 0, exento: 0,
+    iva10: 375000, iva5: 0, total: 4125000,
     ivaBookPeriod: P_MAY, journalEntryId: null,
     metadata: { error: "RUC emisor no coincide con timbrado", sifen_xml_hash: "pqr678" },
     uploadedAt: tsVal("2026-05-08T11:00:00"),
@@ -452,8 +452,8 @@ const TAX_DOCS: TaxDocument[] = [
     issueDate: dateVal("2026-05-12"), partnerId: stableId("partner-importadora-este"),
     currencyCode: "PYG", fxRate: "1.000000", condition: "credit",
     status: "pending", sifenStatus: "validated",
-    gravado10: "8500000.0000", gravado5: "0.0000", exento: "0.0000",
-    iva10: "850000.0000", iva5: "0.0000", total: "9350000.0000",
+    gravado10: 8500000, gravado5: 0, exento: 0,
+    iva10: 850000, iva5: 0, total: 9350000,
     ivaBookPeriod: P_MAY, journalEntryId: null,
     metadata: { sifen_xml_hash: "stu901", ai_suggestion: true, ai_confidence: 94 },
     uploadedAt: tsVal("2026-05-12T10:00:00"),
@@ -462,13 +462,13 @@ const TAX_DOCS: TaxDocument[] = [
 ];
 
 const TAX_DOC_LINES: TaxDocumentLine[] = [
-  { id: stableId("tdl-1a"), documentId: stableId("td-1"), itemCode: "MER-001", description: "Mercadería variada lote A", quantity: "100.0000", unitPrice: "100000.0000", ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: "10000000.0000" },
-  { id: stableId("tdl-2a"), documentId: stableId("td-2"), itemCode: "SERV-CONT", description: "Servicios contables mayo 2026", quantity: "1.0000", unitPrice: "2500000.0000", ivaRate: 10, rubroIre: 500, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-5.1.04"), amount: "2500000.0000" },
-  { id: stableId("tdl-3a"), documentId: stableId("td-3"), itemCode: "TECH-001", description: "Equipos de computación y software", quantity: "5.0000", unitPrice: "3000000.0000", ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.04"), amount: "15000000.0000" },
-  { id: stableId("tdl-4a"), documentId: stableId("td-4"), itemCode: "DEV-001", description: "Devolución mercadería defectuosa", quantity: "5.0000", unitPrice: "100000.0000", ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: "-500000.0000" },
-  { id: stableId("tdl-5a"), documentId: stableId("td-5"), itemCode: "VENTA-001", description: "Venta de mercaderías", quantity: "50.0000", unitPrice: "110000.0000", ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-4.1.01"), amount: "5500000.0000" },
-  { id: stableId("tdl-6a"), documentId: stableId("td-6"), itemCode: "AGR-001", description: "Productos agrícolas", quantity: "100.0000", unitPrice: "37500.0000", ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: "3750000.0000" },
-  { id: stableId("tdl-7a"), documentId: stableId("td-7"), itemCode: "MER-002", description: "Mercadería variada lote B", quantity: "85.0000", unitPrice: "100000.0000", ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: "8500000.0000" },
+  { id: stableId("tdl-1a"), documentId: stableId("td-1"), itemCode: "MER-001", description: "Mercadería variada lote A", quantity: "100.0000", unitPrice: 100000, ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: 10000000 },
+  { id: stableId("tdl-2a"), documentId: stableId("td-2"), itemCode: "SERV-CONT", description: "Servicios contables mayo 2026", quantity: "1.0000", unitPrice: 2500000, ivaRate: 10, rubroIre: 500, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-5.1.04"), amount: 2500000 },
+  { id: stableId("tdl-3a"), documentId: stableId("td-3"), itemCode: "TECH-001", description: "Equipos de computación y software", quantity: "5.0000", unitPrice: 3000000, ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.04"), amount: 15000000 },
+  { id: stableId("tdl-4a"), documentId: stableId("td-4"), itemCode: "DEV-001", description: "Devolución mercadería defectuosa", quantity: "5.0000", unitPrice: 100000, ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: -500000 },
+  { id: stableId("tdl-5a"), documentId: stableId("td-5"), itemCode: "VENTA-001", description: "Venta de mercaderías", quantity: "50.0000", unitPrice: 110000, ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-4.1.01"), amount: 5500000 },
+  { id: stableId("tdl-6a"), documentId: stableId("td-6"), itemCode: "AGR-001", description: "Productos agrícolas", quantity: "100.0000", unitPrice: 37500, ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: 3750000 },
+  { id: stableId("tdl-7a"), documentId: stableId("td-7"), itemCode: "MER-002", description: "Mercadería variada lote B", quantity: "85.0000", unitPrice: 100000, ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: 8500000 },
 ];
 
 // ─── Retentions ───────────────────────────────────────────────────────────
@@ -478,9 +478,9 @@ const RETENTIONS: Retention[] = [
     id: stableId("ret-je2-ire"),
     documentId: stableId("td-2"),
     retentionType: "ire",
-    base: "2500000.0000",
+    base: 2500000,
     rate: "0.50",
-    amount: "12500.0000",
+    amount: 12500,
     certificateNumber: "RET-2026-0001",
     withheldAt: dateVal("2026-05-03"),
   },
@@ -496,10 +496,10 @@ const BANK_ACCOUNTS: BankAccount[] = [
 // ─── Bank Movements ───────────────────────────────────────────────────────
 
 const BANK_MOVEMENTS: BankMovement[] = [
-  { id: stableId("bm-1"), bankAccountId: stableId("bank-gnp-cte"), date: dateVal("2026-05-02"), amount: "11000000.0000", direction: "debit", ref: "PAGO-001", description: "Pago a Importadora del Este", source: "statement" },
-  { id: stableId("bm-2"), bankAccountId: stableId("bank-gnp-cte"), date: dateVal("2026-05-04"), amount: "2737500.0000", direction: "debit", ref: "PAGO-002", description: "Pago a SerConPy", source: "statement" },
-  { id: stableId("bm-3"), bankAccountId: stableId("bank-conti-cte"), date: dateVal("2026-05-11"), amount: "6050000.0000", direction: "credit", ref: "COBRO-001", description: "Cobro de Comercial Paraguaya", source: "statement" },
-  { id: stableId("bm-4"), bankAccountId: stableId("bank-gnp-cte"), date: dateVal("2026-05-01"), amount: "2500000.0000", direction: "debit", ref: "ALU-2026-05", description: "Pago alquiler local", source: "manual" },
+  { id: stableId("bm-1"), bankAccountId: stableId("bank-gnp-cte"), date: dateVal("2026-05-02"), amount: 11000000, direction: "debit", ref: "PAGO-001", description: "Pago a Importadora del Este", source: "statement" },
+  { id: stableId("bm-2"), bankAccountId: stableId("bank-gnp-cte"), date: dateVal("2026-05-04"), amount: 2737500, direction: "debit", ref: "PAGO-002", description: "Pago a SerConPy", source: "statement" },
+  { id: stableId("bm-3"), bankAccountId: stableId("bank-conti-cte"), date: dateVal("2026-05-11"), amount: 6050000, direction: "credit", ref: "COBRO-001", description: "Cobro de Comercial Paraguaya", source: "statement" },
+  { id: stableId("bm-4"), bankAccountId: stableId("bank-gnp-cte"), date: dateVal("2026-05-01"), amount: 2500000, direction: "debit", ref: "ALU-2026-05", description: "Pago alquiler local", source: "manual" },
 ];
 
 // ─── Reconciliations ──────────────────────────────────────────────────────

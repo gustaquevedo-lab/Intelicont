@@ -5,6 +5,10 @@
  * All validation logic specific to Paraguay tax authority requirements.
  */
 
+import { ivaFromGross } from "@intelicont/core";
+
+export { ivaFromGross };
+
 export const IVA_RATES = {
   general: 0.10,
   reducido: 0.05,
@@ -230,9 +234,8 @@ export function calculateTaxFromTotal(total: number, ivaRate: 10 | 5 | 0): TaxCa
     };
   }
 
-  const rate = ivaRate === 10 ? IVA_RATES.general : IVA_RATES.reducido;
-  const gravado = Math.round(total / (1 + rate));
-  const iva = total - gravado;
+  const iva = ivaFromGross(total, ivaRate);
+  const gravado = total - iva;
 
   return {
     gravado10: ivaRate === 10 ? gravado : 0,

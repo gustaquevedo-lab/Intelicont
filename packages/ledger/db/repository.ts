@@ -238,8 +238,8 @@ export interface PostEntryInput {
   description?: string | null;
   lines: {
     accountId: string;
-    debit: string;
-    credit: string;
+    debit: number;
+    credit: number;
     currencyCode: string;
     description?: string | null;
   }[];

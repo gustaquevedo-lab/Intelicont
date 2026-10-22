@@ -1,5 +1,6 @@
 "use server";
 
+import { assertMoney } from "@intelicont/core";
 import { isMockMode, dbErrorMessage } from "@ledger/db/index";
 import * as repo from "@ledger/db/repository";
 import { revalidatePath } from "next/cache";
@@ -13,8 +14,8 @@ interface CreateAsientoInput {
   descripcion: string;
   lineas: {
     accountId: string;
-    debit: string;
-    credit: string;
+    debit: number;
+    credit: number;
     currencyCode: string;
     description: string;
   }[];
@@ -30,12 +31,12 @@ interface CreateTaxDocumentInput {
   issueDate: string;
   partnerId?: string;
   currencyCode?: string;
-  gravado10?: string;
-  gravado5?: string;
-  exento?: string;
-  iva10?: string;
-  iva5?: string;
-  total: string;
+  gravado10?: number;
+  gravado5?: number;
+  exento?: number;
+  iva10?: number;
+  iva5?: number;
+  total: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -78,9 +79,17 @@ export async function getAsientoLines(entryId: string) {
 
 export async function createAsiento(input: CreateAsientoInput) {
   // Validate balance
-  const totalDebito = input.lineas.reduce((sum, l) => sum + parseFloat(l.debit || "0"), 0);
-  const totalCredito = input.lineas.reduce((sum, l) => sum + parseFloat(l.credit || "0"), 0);
-  if (Math.abs(totalDebito - totalCredito) > 0.01) {
+  let totalDebito = 0;
+  let totalCredito = 0;
+  try {
+    for (const l of input.lineas) {
+      totalDebito += assertMoney(l.debit);
+      totalCredito += assertMoney(l.credit);
+    }
+  } catch {
+    return { success: false, message: "Importe inválido: debe ser un entero en guaraníes" };
+  }
+  if (totalDebito !== totalCredito) {
     return { success: false, message: "El asiento no está balanceado" };
   }
 
@@ -160,12 +169,12 @@ export async function createTaxDocument(input: CreateTaxDocumentInput) {
       issueDate: input.issueDate,
       partnerId: input.partnerId,
       currencyCode: input.currencyCode || "PYG",
-      gravado10: input.gravado10 || "0",
-      gravado5: input.gravado5 || "0",
-      exento: input.exento || "0",
-      iva10: input.iva10 || "0",
-      iva5: input.iva5 || "0",
-      total: input.total,
+      gravado10: input.gravado10 ?? 0,
+      gravado5: input.gravado5 ?? 0,
+      exento: input.exento ?? 0,
+      iva10: input.iva10 ?? 0,
+      iva5: input.iva5 ?? 0,
+      total: assertMoney(input.total),
       status: "pending",
       sifenStatus: "pending_upload",
       metadata: input.metadata || null,

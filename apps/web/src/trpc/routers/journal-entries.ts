@@ -63,16 +63,16 @@ export const journalEntriesRouter = router({
       description: z.string().optional(),
       lineas: z.array(z.object({
         accountId: z.string(),
-        debit: z.string(),
-        credit: z.string(),
+        debit: z.number().int().nonnegative().refine(Number.isSafeInteger),
+        credit: z.number().int().nonnegative().refine(Number.isSafeInteger),
         currencyCode: z.string().default("PYG"),
         description: z.string().optional(),
       })),
     }))
     .mutation(async ({ input }) => {
-      const totalDebit = input.lineas.reduce((s, l) => s + parseFloat(l.debit), 0);
-      const totalCredit = input.lineas.reduce((s, l) => s + parseFloat(l.credit), 0);
-      if (Math.abs(totalDebit - totalCredit) > 0.01) {
+      const totalDebit = input.lineas.reduce((s, l) => s + l.debit, 0);
+      const totalCredit = input.lineas.reduce((s, l) => s + l.credit, 0);
+      if (totalDebit !== totalCredit) {
         throw new Error("El asiento no esta balanceado");
       }
 

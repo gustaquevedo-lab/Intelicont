@@ -143,8 +143,8 @@ export default function NuevoAsientoPage() {
           .filter((l) => l.cuenta)
           .map((l) => ({
             accountId: l.cuenta,
-            debit: l.debito || "0",
-            credit: l.credito || "0",
+            debit: Number(l.debito) || 0,
+            credit: Number(l.credito) || 0,
             currencyCode: "PYG",
             description: l.descripcion,
           })),

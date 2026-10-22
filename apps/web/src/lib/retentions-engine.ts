@@ -5,6 +5,8 @@
  * when registering purchases based on partner profile and amounts.
  */
 
+import { assertMoney } from "@intelicont/core";
+
 export type RetentionType = "iva" | "ire" | "irp" | "inr";
 
 export interface RetentionRule {
@@ -168,7 +170,7 @@ export function calculateRetentions(params: {
         break;
       case "ire":
         base = partner?.retentionConfig?.rateIre
-          ? baseGravada * (1 - partner.retentionConfig.rateIre)
+          ? Math.round(baseGravada * (1 - partner.retentionConfig.rateIre))
           : baseGravada;
         break;
       case "irp":
@@ -178,7 +180,7 @@ export function calculateRetentions(params: {
         break;
     }
 
-    const amount = Math.round(base * rule.rate);
+    const amount = assertMoney(Math.round(base * rule.rate));
 
     if (amount > 0) {
       retentions.push({
@@ -210,15 +212,15 @@ export function getRetentionJournalLines(
   retentions: RetentionCalculation[],
   supplierAccountCode: string,
   bankAccountCode: string
-): Array<{ accountCode: string; accountName: string; debit: string; credit: string; description: string }> {
-  const lines: Array<{ accountCode: string; accountName: string; debit: string; credit: string; description: string }> = [];
+): Array<{ accountCode: string; accountName: string; debit: number; credit: number; description: string }> {
+  const lines: Array<{ accountCode: string; accountName: string; debit: number; credit: number; description: string }> = [];
 
   for (const ret of retentions) {
     lines.push({
       accountCode: "2.1.05",
       accountName: "Retenciones a Pagar",
-      debit: "",
-      credit: ret.amount.toFixed(0),
+      debit: 0,
+      credit: ret.amount,
       description: `Retención ${ret.type.toUpperCase()} — ${ret.concept}`,
     });
   }

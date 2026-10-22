@@ -14,3 +14,18 @@ describe("integer money", () => {
     expect(() => assertMoney(NaN)).toThrow();
   });
 });
+
+import { calculateTaxFromTotal } from "@ledger/src/fiscal-py";
+import { calculateRetentions } from "@/lib/retentions-engine";
+
+describe("integer flow", () => {
+  it("calculateTaxFromTotal splits gross into integers that add up", () => {
+    const r = calculateTaxFromTotal(58000, 10);
+    expect(r.iva10).toBe(5273);
+    expect(r.gravado10 + r.iva10).toBe(58000);
+  });
+  it("retention amounts are safe integers", () => {
+    const rs = calculateRetentions({ gravado10: 2500000, gravado5: 0, exento: 0, iva10: 250000, iva5: 0, total: 2750001, concept: "x", partner: { retentionConfig: { rateIre: 0.333 } } as never });
+    for (const r of rs) expect(Number.isSafeInteger(r.amount) && Number.isSafeInteger(r.base)).toBe(true);
+  });
+});

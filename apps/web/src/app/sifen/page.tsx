@@ -119,8 +119,8 @@ export default function SifenPage() {
       descripcion: `${invoice.tipoDoc === "factura" ? "Factura" : invoice.tipoDoc === "nota_credito" ? "Nota de Crédito" : "Documento"} ${invoice.numero} — ${invoice.emisor.nombre}`,
       lineas: suggestion.lines.map((l) => ({
         accountId: l.accountCode,
-        debit: l.debit,
-        credit: l.credit,
+        debit: Number(l.debit) || 0,
+        credit: Number(l.credit) || 0,
         currencyCode: "PYG",
         description: l.description,
       })),
@@ -141,8 +141,8 @@ export default function SifenPage() {
           descripcion: `${doc.tipoDoc === "factura" ? "Factura" : "Documento"} ${doc.numero}`,
           lineas: sug.lines.map((l) => ({
             accountId: l.accountCode,
-            debit: l.debit,
-            credit: l.credit,
+            debit: Number(l.debit) || 0,
+            credit: Number(l.credit) || 0,
             currencyCode: "PYG",
             description: l.description,
           })),
