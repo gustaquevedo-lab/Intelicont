@@ -15,8 +15,14 @@ import {
   unique,
   primaryKey,
   check,
+  uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+import { TABLA_4 } from "../src/registro-codes";
+
+// SQL list for the Tabla 4 CHECKs (migration 0005 hardcodes the same set; a unit test keeps them in sync).
+const TABLA_4_SQL = Object.keys(TABLA_4).join(",");
 
 // ─── Enums ────────────────────────────────────────────────────────────────
 
@@ -187,14 +193,17 @@ export const journalEntries = pgTable("journal_entries", {
   source: journalSourceEnum("source").default("manual"),
   sourceRef: varchar("source_ref", { length: 100 }),
   description: text("description"),
-  status: journalEntryStatusEnum("status").default("draft"),
+  status: journalEntryStatusEnum("status").default("draft").notNull(),
   postedAt: timestamp("posted_at", { withTimezone: true }),
   postedBy: uuid("posted_by"),
-  reversalOf: uuid("reversal_of"),
-  versionOf: uuid("version_of"),
+  reversalOf: uuid("reversal_of").references((): AnyPgColumn => journalEntries.id),
+  versionOf: uuid("version_of").references((): AnyPgColumn => journalEntries.id),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  check("journal_entries_reversal_xor_version", sql`${t.reversalOf} IS NULL OR ${t.versionOf} IS NULL`),
+  uniqueIndex("journal_entries_reversal_of_uq").on(t.reversalOf).where(sql`${t.reversalOf} IS NOT NULL`),
+]);
 
 // ─── Core: Journal Lines ──────────────────────────────────────────────────
 
@@ -262,7 +271,41 @@ export const taxDocuments = pgTable("tax_documents", {
   metadata: jsonb("metadata"),
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
-});
+  // Registro de Comprobantes (Tabla 4 doc code, Tabla 3 counterparty id type)
+  docCode: integer("doc_code"),
+  counterpartyIdType: integer("counterparty_id_type"),
+  imputaIva: boolean("imputa_iva").notNull().default(false),
+  imputaIre: boolean("imputa_ire").notNull().default(false),
+  imputaIrp: boolean("imputa_irp").notNull().default(false),
+  noImputa: boolean("no_imputa").notNull().default(false),
+  foreignCurrency: boolean("foreign_currency").notNull().default(false),
+  relatedNumber: varchar("related_number", { length: 20 }),
+  relatedTimbrado: varchar("related_timbrado", { length: 8 }),
+  isElectronic: boolean("is_electronic").notNull().default(false),
+}, (t) => [
+  check("tax_documents_doc_code_check", sql.raw(`doc_code IS NULL OR doc_code IN (${TABLA_4_SQL})`)),
+  check("tax_documents_counterparty_id_type_check", sql`${t.counterpartyIdType} IS NULL OR ${t.counterpartyIdType} BETWEEN 11 AND 17`),
+  uniqueIndex("tax_documents_entity_cdc_uq").on(t.entityId, t.cdc).where(sql`${t.cdc} IS NOT NULL`),
+]);
+
+// ─── Fiscal: Timbrados ────────────────────────────────────────────────────
+
+export const timbrados = pgTable("timbrados", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  partnerId: uuid("partner_id").references(() => partners.id, { onDelete: "set null" }),
+  number: varchar("number", { length: 8 }).notNull(),
+  validFrom: date("valid_from").notNull(),
+  validTo: date("valid_to").notNull(),
+  establishment: varchar("establishment", { length: 3 }).notNull(),
+  point: varchar("point", { length: 3 }).notNull(),
+  docCode: integer("doc_code").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (t) => [
+  check("timbrados_doc_code_check", sql.raw(`doc_code IN (${TABLA_4_SQL})`)),
+  check("timbrados_valid_range_check", sql`${t.validTo} >= ${t.validFrom}`),
+  unique("timbrados_entity_number_est_point_code_uq").on(t.entityId, t.number, t.establishment, t.point, t.docCode),
+]);
 
 // ─── Fiscal: Tax Document Lines ───────────────────────────────────────────
 

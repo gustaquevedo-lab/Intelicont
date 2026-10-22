@@ -360,7 +360,9 @@ const JOURNAL_LINES: JournalLine[] = [
 
 // ─── Tax Documents ────────────────────────────────────────────────────────
 
-const TAX_DOCS: TaxDocument[] = [
+type RegistroCols = "docCode" | "counterpartyIdType" | "imputaIva" | "imputaIre" | "imputaIrp" | "noImputa" | "foreignCurrency" | "relatedNumber" | "relatedTimbrado" | "isElectronic";
+
+const TAX_DOCS_BASE: Omit<TaxDocument, RegistroCols>[] = [
   {
     id: stableId("td-1"), entityId: E1, direction: "received", docType: "invoice",
     number: "001-001-00234", timbrado: "12345678",
@@ -460,6 +462,12 @@ const TAX_DOCS: TaxDocument[] = [
     processedAt: null,
   },
 ];
+
+// Registro de Comprobantes columns default to "not classified" in the mock data.
+const TAX_DOCS: TaxDocument[] = TAX_DOCS_BASE.map((d) => ({
+  ...d, docCode: null, counterpartyIdType: null, imputaIva: false, imputaIre: false, imputaIrp: false,
+  noImputa: false, foreignCurrency: false, relatedNumber: null, relatedTimbrado: null, isElectronic: false,
+}));
 
 const TAX_DOC_LINES: TaxDocumentLine[] = [
   { id: stableId("tdl-1a"), documentId: stableId("td-1"), itemCode: "MER-001", description: "Mercadería variada lote A", quantity: "100.0000", unitPrice: 100000, ivaRate: 10, rubroIre: null, rubroIrp: null, incisoIva: 1, accountId: stableId("acct-1.2.01"), amount: 10000000 },
