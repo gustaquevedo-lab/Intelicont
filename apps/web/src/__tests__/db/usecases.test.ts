@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createTestDb, type TestDb } from "../../../../../packages/ledger/db/test-db";
@@ -155,8 +157,10 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
   });
 
   it("every mutating use case emits an audit event", async () => {
-    expect(Object.keys(uc.MUTATING_USECASES).sort()).toEqual(["postEntry", "reverseEntry"]);
+    expect(Object.keys(uc.MUTATING_USECASES).sort()).toEqual(["ingestDocument", "postEntry", "reverseEntry"]);
     const runners: Record<string, () => Promise<{ ok: boolean }>> = {
+      ingestDocument: () => as(user, () => uc.ingestDocument(e1, "received",
+        readFileSync(path.resolve(__dirname, "../../__fixtures__/sifen/fac_024-004-0049994.xml"), "utf-8"))),
       postEntry: () => post("COVER-P", 50),
       reverseEntry: async () => {
         const o = await post("COVER-R", 60);
