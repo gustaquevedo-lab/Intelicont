@@ -1338,7 +1338,12 @@
       },
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "memberships_role_check": {
+          "name": "memberships_role_check",
+          "value": "\"memberships\".\"role\" IN ('admin','accountant','assistant','auditor','client')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.partners": {

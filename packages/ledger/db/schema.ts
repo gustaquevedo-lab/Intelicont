@@ -14,8 +14,9 @@ import {
   index,
   unique,
   primaryKey,
+  check,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // ─── Enums ────────────────────────────────────────────────────────────────
 
@@ -124,7 +125,10 @@ export const memberships = pgTable("memberships", {
   role: text("role").notNull(),
   permissions: jsonb("permissions").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [primaryKey({ columns: [t.userId, t.entityId] })]);
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.entityId] }),
+  check("memberships_role_check", sql`${t.role} IN ('admin','accountant','assistant','auditor','client')`),
+]);
 
 // ─── Core: Fiscal Periods ─────────────────────────────────────────────────
 

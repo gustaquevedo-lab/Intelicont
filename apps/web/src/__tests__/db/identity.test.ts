@@ -67,4 +67,22 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("identity: memberships + create_ent
       t.scoped([], (tx) => tx`insert into entities (ruc, legal_name) values ('80000004-9', 'Directa')`, asUser(uA)),
     ).rejects.toThrow(/row-level security/);
   });
+
+  it("user A cannot add themselves to a foreign entity", async () => {
+    await expect(
+      t.scoped([], (tx) => tx`insert into memberships (user_id, entity_id, role) values (${uA}, ${eB}, 'admin')`, asUser(uA)),
+    ).rejects.toThrow(/row-level security/);
+    expect(await t.owner`select 1 from memberships where user_id = ${uA} and entity_id = ${eB}`).toHaveLength(0);
+  });
+
+  it("user cannot change their own role", async () => {
+    const eC = (await t.owner`insert into entities (ruc, legal_name) values ('80000005-7','Empresa C') returning id`)[0].id;
+    await t.owner`insert into memberships (user_id, entity_id, role) values (${uB}, ${eC}, 'client')`;
+    const res = await t
+      .scoped([], (tx) => tx`update memberships set role = 'admin' where user_id = ${uB} and entity_id = ${eC}`, asUser(uB))
+      .then((r) => r.count, (e: Error) => e.message);
+    expect(res === 0 || /row-level security/.test(String(res))).toBe(true);
+    const [m] = await t.owner`select role from memberships where user_id = ${uB} and entity_id = ${eC}`;
+    expect(m.role).toBe("client");
+  });
 });

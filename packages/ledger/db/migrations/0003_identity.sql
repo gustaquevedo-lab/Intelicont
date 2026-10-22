@@ -4,6 +4,7 @@
 -- APPLY NOTE: migrations never name roles. After migrating the real DB, run once:
 --   GRANT DELETE ON sessions, verifications TO <runtime role>;
 -- (the runtime role already gets SELECT/INSERT/UPDATE via the usual blanket grant).
+-- Nothing else is needed: writes to memberships are intentionally blocked for the runtime role by RLS.
 -- Auth tables (users, sessions, auth_accounts, verifications, two_factors) have NO tenant RLS:
 -- they are auth-layer tables read/written by the auth library before any tenant scope exists.
 
@@ -98,9 +99,12 @@ ALTER TABLE "memberships" ADD CONSTRAINT "memberships_role_check"
 --> statement-breakpoint
 ALTER TABLE "memberships" ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
-CREATE POLICY user_isolation ON "memberships" FOR ALL
-  USING (user_id = app_user_id())
-  WITH CHECK (user_id = app_user_id());
+-- SELECT only. No INSERT/UPDATE/DELETE policy on purpose: with RLS enabled the runtime role is denied
+-- all writes (otherwise a user could add themselves to any entity or raise their own role).
+-- create_entity() (SECURITY DEFINER, owner bypasses RLS) is the only write path; a future
+-- add_member() definer function will handle invitations.
+CREATE POLICY memberships_select ON "memberships" FOR SELECT
+  USING (user_id = app_user_id());
 --> statement-breakpoint
 
 -- Creates an entity and the caller's admin membership atomically. SECURITY DEFINER because the
