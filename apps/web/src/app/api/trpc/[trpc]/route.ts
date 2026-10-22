@@ -9,7 +9,11 @@ const handler = (req: Request) =>
     router: appRouter,
     createContext: async () => {
       const session = await getSession(req.headers);
-      return { userId: session?.userId, requestId: crypto.randomUUID() };
+      return {
+        userId: session?.userId,
+        requestId: crypto.randomUUID(),
+        idempotencyKey: req.headers.get("idempotency-key") ?? undefined,
+      };
     },
   });
 

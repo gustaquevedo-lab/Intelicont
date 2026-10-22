@@ -1,7 +1,8 @@
 "use server";
 
 import { assertMoney } from "@intelicont/core";
-import { isMockMode, dbErrorMessage, withTenant } from "@ledger/db/index";
+import { isMockMode, dbErrorMessage, withTenant, type Db } from "@ledger/db/index";
+import { isIdempotencyKey, requestHash, runIdempotent } from "@ledger/db/idempotency";
 import * as repo from "@ledger/db/repository";
 import { postEntry } from "@ledger/src/usecases";
 import { revalidatePath } from "next/cache";
@@ -12,12 +13,23 @@ import { loadGuardUser, needs2FA } from "./auth-guard";
  * Runs repository work in the session user's tenant scope. Throws without a session, and for an
  * admin without TOTP (same policy as the tRPC middleware).
  */
-async function scoped<T>(fn: () => Promise<T>): Promise<T> {
+async function scoped<T>(fn: (db: Db, userId: string) => Promise<T>): Promise<T> {
   const { userId } = await requireUser();
   return withTenant(userId, async (db) => {
     if (needs2FA(await loadGuardUser(db, userId))) throw new Error("2FA requerido");
-    return fn();
+    return fn(db, userId);
   });
+}
+
+const KEY_ERROR = { success: false, message: "Falta la Idempotency-Key (UUID)" } as const;
+
+/**
+ * Mutating actions: same contract as tRPC `idempotentProcedure` (shared `runIdempotent`). `fn` must
+ * THROW on failure so the key row rolls back with the work and a retry runs again.
+ */
+function idempotent<T>(endpoint: string, key: string, input: unknown, fn: () => Promise<T>): Promise<T> {
+  return scoped((db, userId) =>
+    runIdempotent(db, { userId, endpoint, key, requestHash: requestHash(endpoint, input), run: fn }));
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -92,7 +104,8 @@ export async function getAsientoLines(entryId: string) {
   return scoped(() => repo.getJournalLines(entryId));
 }
 
-export async function createAsiento(input: CreateAsientoInput) {
+export async function createAsiento(input: CreateAsientoInput, idempotencyKey: string) {
+  if (!isIdempotencyKey(idempotencyKey)) return KEY_ERROR;
   // Validate balance
   let totalDebito = 0;
   let totalCredito = 0;
@@ -117,17 +130,20 @@ export async function createAsiento(input: CreateAsientoInput) {
   }
 
   try {
-    const res = await scoped(() => postEntry({
-      entityId: input.entityId,
-      periodId: input.periodId,
-      date: new Date(input.date),
-      number: `JE-${Date.now().toString().slice(-6)}`,
-      description: input.descripcion,
-      lines: input.lineas,
-    }));
-    if (!res.ok) return { success: false, message: res.error };
+    const result = await idempotent("actions.createAsiento", idempotencyKey, input, async () => {
+      const res = await postEntry({
+        entityId: input.entityId,
+        periodId: input.periodId,
+        date: new Date(input.date),
+        number: `JE-${Date.now().toString().slice(-6)}`,
+        description: input.descripcion,
+        lines: input.lineas,
+      });
+      if (!res.ok) throw new Error(res.error);
+      return { success: true, message: "Asiento creado exitosamente", id: res.value.id };
+    });
     revalidatePath("/asientos");
-    return { success: true, message: "Asiento creado exitosamente", id: res.value.id };
+    return result;
   } catch (err) {
     return { success: false, message: dbErrorMessage(err) };
   }
@@ -165,7 +181,8 @@ export async function getRetentions(documentId: string) {
   return scoped(() => repo.getRetentions(documentId));
 }
 
-export async function createTaxDocument(input: CreateTaxDocumentInput) {
+export async function createTaxDocument(input: CreateTaxDocumentInput, idempotencyKey: string) {
+  if (!isIdempotencyKey(idempotencyKey)) return KEY_ERROR;
   if (isMockMode()) {
     return {
       success: true,
@@ -175,28 +192,31 @@ export async function createTaxDocument(input: CreateTaxDocumentInput) {
   }
 
   try {
-    const doc = await scoped(() => repo.createTaxDocument({
-      entityId: input.entityId,
-      direction: input.direction,
-      docType: input.docType as any,
-      number: input.number,
-      timbrado: input.timbrado,
-      cdc: input.cdc,
-      issueDate: input.issueDate,
-      partnerId: input.partnerId,
-      currencyCode: input.currencyCode || "PYG",
-      gravado10: input.gravado10 ?? 0,
-      gravado5: input.gravado5 ?? 0,
-      exento: input.exento ?? 0,
-      iva10: input.iva10 ?? 0,
-      iva5: input.iva5 ?? 0,
-      total: assertMoney(input.total),
-      status: "pending",
-      sifenStatus: "pending_upload",
-      metadata: input.metadata || null,
-    }));
+    const result = await idempotent("actions.createTaxDocument", idempotencyKey, input, async () => {
+      const doc = await repo.createTaxDocument({
+        entityId: input.entityId,
+        direction: input.direction,
+        docType: input.docType as any,
+        number: input.number,
+        timbrado: input.timbrado,
+        cdc: input.cdc,
+        issueDate: input.issueDate,
+        partnerId: input.partnerId,
+        currencyCode: input.currencyCode || "PYG",
+        gravado10: input.gravado10 ?? 0,
+        gravado5: input.gravado5 ?? 0,
+        exento: input.exento ?? 0,
+        iva10: input.iva10 ?? 0,
+        iva5: input.iva5 ?? 0,
+        total: assertMoney(input.total),
+        status: "pending",
+        sifenStatus: "pending_upload",
+        metadata: input.metadata || null,
+      });
+      return { success: true, message: "Documento creado", id: doc.id };
+    });
     revalidatePath("/sifen");
-    return { success: true, message: "Documento creado", id: doc.id };
+    return result;
   } catch (err) {
     return { success: false, message: dbErrorMessage(err) };
   }

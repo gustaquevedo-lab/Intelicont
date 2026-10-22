@@ -1,4 +1,5 @@
 import { router, protectedProcedure, z } from "../trpc";
+import { idempotentProcedure } from "../idempotent";
 import { TRPCError } from "@trpc/server";
 import { getJournalEntries, getJournalEntry, getJournalLines, type JournalEntryRow } from "@ledger/db/repository";
 import { postEntry, reverseEntry } from "@ledger/src/usecases";
@@ -58,7 +59,7 @@ export const journalEntriesRouter = router({
       }));
     }),
 
-  create: protectedProcedure
+  create: idempotentProcedure
     .input(z.object({
       entityId: z.string(),
       periodId: z.string(),
@@ -99,7 +100,7 @@ export const journalEntriesRouter = router({
       return { success: true, id: res.value.id };
     }),
 
-  reverse: protectedProcedure
+  reverse: idempotentProcedure
     .input(z.object({ entryId: z.string().uuid(), reason: z.string().trim().min(3, "El motivo es obligatorio") }))
     .mutation(async ({ input }) => {
       if (isMockMode()) return { success: true, id: "mock-rev-" + Math.random().toString(36).slice(2, 10) };

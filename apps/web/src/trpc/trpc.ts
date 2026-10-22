@@ -7,6 +7,8 @@ import { loadGuardUser, needs2FA } from "@/lib/auth-guard";
 export type Context = {
   userId?: string;
   requestId: string;
+  /** `Idempotency-Key` request header; required by `idempotentProcedure` (see ./idempotent.ts). */
+  idempotencyKey?: string;
 };
 
 const t = initTRPC.context<Context>().create();

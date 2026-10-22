@@ -18,7 +18,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("entities.create, chart of accounts
   let appRouter: AppRouter;
   let creator: string, other: string;
   const prevUrl = process.env.DATABASE_URL;
-  const caller = (userId: string) => appRouter.createCaller({ userId, requestId: "t" });
+  const caller = (userId: string) => appRouter.createCaller({ userId, requestId: "t", idempotencyKey: crypto.randomUUID() });
   const input = (r: string) => ({
     ruc: r,
     legalName: "Empresa Nueva S.A.",

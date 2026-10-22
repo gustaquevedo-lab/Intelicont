@@ -14,7 +14,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("partners (real Postgres)", () => {
   let appRouter: AppRouter;
   let admin: string, outsider: string, e1: string, e2: string;
   const prevUrl = process.env.DATABASE_URL;
-  const caller = (userId: string) => appRouter.createCaller({ userId, requestId: "t" });
+  const caller = (userId: string) => appRouter.createCaller({ userId, requestId: "t", idempotencyKey: crypto.randomUUID() });
   const base = (entityId: string, r: string) => ({ entityId, kind: "supplier" as const, ruc: r, legalName: "Proveedor S.A." });
 
   beforeAll(async () => {

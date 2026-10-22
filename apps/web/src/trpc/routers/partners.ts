@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { validateRuc } from "@intelicont/ledger/fiscal-py";
 import { router, protectedProcedure, z } from "../trpc";
+import { idempotentProcedure } from "../idempotent";
 import { getPartners, getPartner, createPartner, updatePartner } from "@ledger/db/repository";
 import { isUniqueViolation } from "@ledger/db/index";
 
@@ -74,7 +75,7 @@ export const partnersRouter = router({
       return partner;
     }),
 
-  create: protectedProcedure.input(createInput).mutation(async ({ input }) => {
+  create: idempotentProcedure.input(createInput).mutation(async ({ input }) => {
     const { ruc, dvRuc } = parseIdentifier(input.ruc, input.country);
     try {
       const id = await createPartner({ ...input, ruc, dvRuc });
@@ -87,7 +88,7 @@ export const partnersRouter = router({
     }
   }),
 
-  update: protectedProcedure.input(updateInput).mutation(async ({ input }) => {
+  update: idempotentProcedure.input(updateInput).mutation(async ({ input }) => {
     const { id, tradeName, ...rest } = input;
     const found = await updatePartner(id, { ...rest, ...(tradeName !== undefined && { tradeName: tradeName || null }) });
     if (!found) throw new TRPCError({ code: "NOT_FOUND", message: "Tercero no encontrado" });

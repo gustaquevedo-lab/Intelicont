@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { validateRuc } from "@intelicont/ledger/fiscal-py";
 import { router, protectedProcedure, z } from "../trpc";
+import { idempotentProcedure } from "../idempotent";
 import { getEntities, getEntity, createEntityWithChart } from "@ledger/db/repository";
 import { PY_CHART_OF_ACCOUNTS, flattenTree } from "@/lib/chart-of-accounts";
 import { isUniqueViolation } from "@ledger/db/index";
@@ -47,7 +48,7 @@ export const entitiesRouter = router({
       return entity;
     }),
 
-  create: protectedProcedure.input(createInput).mutation(async ({ input }) => {
+  create: idempotentProcedure.input(createInput).mutation(async ({ input }) => {
     const check = validateRuc(input.ruc);
     if (!check.valid || !/^\d{6,8}-\d$/.test(input.ruc)) {
       throw new TRPCError({ code: "BAD_REQUEST", message: check.errors[0] ?? "RUC inválido" });
