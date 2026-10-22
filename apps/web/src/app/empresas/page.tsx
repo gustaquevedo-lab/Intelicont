@@ -68,7 +68,7 @@ export default function EmpresasPage() {
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              create.mutate({ ...form, tradeName: form.tradeName || undefined, taxRegimes: form.taxRegimes as (typeof REGIMES)[number][] });
+              create.mutate({ ...form, tradeName: form.tradeName || undefined, taxRegimes: form.taxRegimes as (typeof REGIMES)[number][], baseCurrency: form.baseCurrency as "PYG" | "USD" });
             }}
           >
             <Field label="RUC" placeholder="80000000-0" required value={form.ruc} onChange={(v) => setForm({ ...form, ruc: v })} />

@@ -6,6 +6,7 @@ import { mod11Dv } from "@intelicont/ledger/fiscal-py";
 import { PY_CHART_OF_ACCOUNTS, flattenTree } from "@/lib/chart-of-accounts";
 
 type DbModule = typeof import("@ledger/db/index");
+type RepoModule = typeof import("@ledger/db/repository");
 type AppRouter = typeof import("@/trpc").appRouter;
 
 const ruc = (body: string) => `${body}-${mod11Dv(body)}`;
@@ -13,6 +14,7 @@ const ruc = (body: string) => `${body}-${mod11Dv(body)}`;
 describe.skipIf(!process.env.TEST_ADMIN_URL)("entities.create, chart of accounts, periods (real Postgres)", () => {
   let t: TestDb;
   let db: DbModule;
+  let repo: RepoModule;
   let appRouter: AppRouter;
   let creator: string, other: string;
   const prevUrl = process.env.DATABASE_URL;
@@ -22,7 +24,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("entities.create, chart of accounts
     legalName: "Empresa Nueva S.A.",
     tradeName: "Nueva",
     taxRegimes: ["IVA_GRAL", "IRE_GRAL"] as ("IVA_GRAL" | "IRE_GRAL")[],
-    baseCurrency: "PYG",
+    baseCurrency: "PYG" as "PYG" | "USD",
   });
   const seedCount = flattenTree(PY_CHART_OF_ACCOUNTS).length;
 
@@ -36,6 +38,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("entities.create, chart of accounts
     process.env.DATABASE_URL = t.appUrl;
     vi.resetModules();
     db = await import("@ledger/db/index");
+    repo = await import("@ledger/db/repository");
     appRouter = (await import("@/trpc")).appRouter;
   }, 120_000);
 
@@ -108,6 +111,44 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("entities.create, chart of accounts
     const tree = await caller(creator).accounts.tree({ entityId: id });
     expect(tree.map((n: { code: string }) => n.code)).toEqual(PY_CHART_OF_ACCOUNTS.map((n) => n.code));
     expect(tree[0].children.map((c: { code: string }) => c.code)).toContain("1.1");
+  });
+
+  // A seed with a repeated code yields two accounts rows with the same id -> unique violation (accounts_pkey)
+  // AFTER create_entity, the chart and the first accounts insert already ran in the transaction.
+  const badSeed = () => {
+    const a = flattenTree(PY_CHART_OF_ACCOUNTS)[0];
+    return [a, a];
+  };
+  const failingCreate = (r: string) =>
+    db.withTenant(creator, () =>
+      repo.createEntityWithChart({ ruc: r, legalName: "X", taxRegimes: ["IVA_GRAL"], baseCurrency: "PYG" }, badSeed(), { year: 2026, month: 1 }),
+    );
+
+  it("a failure after create_entity rolls back entity, membership and chart", async () => {
+    const r = ruc("80014072");
+    await expect(failingCreate(r)).rejects.toBeDefined();
+    const [e, m, c] = await Promise.all([
+      t.owner`select count(*)::int as n from entities where ruc = ${r}`,
+      t.owner`select count(*)::int as n from memberships m join entities e on e.id = m.entity_id where e.ruc = ${r}`,
+      t.owner`select count(*)::int as n from chart_of_accounts c join entities e on e.id = c.entity_id where e.ruc = ${r}`,
+    ]);
+    expect([e[0].n, m[0].n, c[0].n]).toEqual([0, 0, 0]);
+    // Without one surrounding transaction create_entity would have been committed on its own: n would be 1.
+  });
+
+  it("non-RUC unique violation is not reported as duplicate RUC", async () => {
+    // Same failure through the router seam: the generic mapping must not say "RUC".
+    const err = await failingCreate(ruc("80014073")).catch((e) => e);
+    expect(err).toBeDefined();
+    const { isRucUniqueViolation } = await import("@/trpc/routers/entities");
+    expect(isRucUniqueViolation(err)).toBe(false);
+    const dup = await caller(creator).entities.create(input(ruc("80014074"))).then(() => caller(creator).entities.create(input(ruc("80014074")))).catch((e) => e);
+    expect(dup).toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("input limits: unsupported currency and overlong names are rejected", async () => {
+    await expect(caller(creator).entities.create({ ...input(ruc("80014075")), baseCurrency: "EUR" as "PYG" })).rejects.toBeDefined();
+    await expect(caller(creator).entities.create({ ...input(ruc("80014075")), legalName: "x".repeat(201) })).rejects.toBeDefined();
   });
 
   it("nested withTenant for a different user throws", async () => {

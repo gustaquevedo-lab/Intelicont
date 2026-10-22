@@ -8,10 +8,10 @@ export const TAX_REGIMES = ["IVA_GRAL", "IRE_GRAL", "IRE_SIMPLE", "IRE_RESIMPLE"
 
 const createInput = z.object({
   ruc: z.string().trim(),
-  legalName: z.string().trim().min(1, "La razón social es obligatoria"),
-  tradeName: z.string().trim().optional(),
+  legalName: z.string().trim().min(1, "La razón social es obligatoria").max(200),
+  tradeName: z.string().trim().max(200).optional().transform((v) => v || undefined),
   taxRegimes: z.array(z.enum(TAX_REGIMES)).min(1, "Seleccioná al menos un régimen"),
-  baseCurrency: z.string().length(3),
+  baseCurrency: z.enum(["PYG", "USD"]),
 });
 
 /** Current year/month in Paraguay. shortcut: zone hardcoded; per-entity timezone is not modelled. */
@@ -20,9 +20,11 @@ function currentPeriod(now = new Date()) {
   return { year, month };
 }
 
-function isUniqueViolation(err: unknown) {
-  const e = err as { code?: string; cause?: { code?: string } };
-  return e?.code === "23505" || e?.cause?.code === "23505";
+/** True only for the entities.ruc unique constraint (postgres-js error, possibly wrapped by Drizzle in `cause`). */
+export function isRucUniqueViolation(err: unknown) {
+  const e = err as { code?: string; constraint_name?: string; cause?: { code?: string; constraint_name?: string } };
+  const pg = e?.code === "23505" ? e : e?.cause;
+  return pg?.code === "23505" && pg.constraint_name === "entities_ruc_unique";
 }
 
 export const entitiesRouter = router({
@@ -58,8 +60,9 @@ export const entitiesRouter = router({
       const id = await createEntityWithChart(input, flattenTree(PY_CHART_OF_ACCOUNTS), currentPeriod());
       return { id };
     } catch (err) {
-      if (isUniqueViolation(err)) throw new TRPCError({ code: "CONFLICT", message: "Ya existe una empresa con ese RUC" });
-      throw err;
+      if (isRucUniqueViolation(err)) throw new TRPCError({ code: "CONFLICT", message: "Ya existe una empresa con ese RUC" });
+      // Do not leak SQL details to the client.
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo crear la empresa", cause: err });
     }
   }),
 });
