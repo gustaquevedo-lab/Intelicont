@@ -3,6 +3,7 @@ import { validateRuc } from "@intelicont/ledger/fiscal-py";
 import { router, protectedProcedure, z } from "../trpc";
 import { getEntities, getEntity, createEntityWithChart } from "@ledger/db/repository";
 import { PY_CHART_OF_ACCOUNTS, flattenTree } from "@/lib/chart-of-accounts";
+import { isUniqueViolation } from "@ledger/db/index";
 
 export const TAX_REGIMES = ["IVA_GRAL", "IRE_GRAL", "IRE_SIMPLE", "IRE_RESIMPLE", "IRP", "INR", "IDU", "EXPORTADOR"] as const;
 
@@ -18,13 +19,6 @@ const createInput = z.object({
 function currentPeriod(now = new Date()) {
   const [year, month] = now.toLocaleDateString("en-CA", { timeZone: "America/Asuncion" }).split("-").map(Number);
   return { year, month };
-}
-
-/** True only for a unique violation of the named constraint (postgres-js error, possibly wrapped by Drizzle in `cause`). */
-export function isUniqueViolation(err: unknown, constraint: string) {
-  const e = err as { code?: string; constraint_name?: string; cause?: { code?: string; constraint_name?: string } };
-  const pg = e?.code === "23505" ? e : e?.cause;
-  return pg?.code === "23505" && pg.constraint_name === constraint;
 }
 
 export const isRucUniqueViolation = (err: unknown) => isUniqueViolation(err, "entities_ruc_unique");

@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { validateRuc } from "@intelicont/ledger/fiscal-py";
 import { router, protectedProcedure, z } from "../trpc";
 import { getPartners, getPartner, createPartner, updatePartner } from "@ledger/db/repository";
-import { isUniqueViolation } from "./entities";
+import { isUniqueViolation } from "@ledger/db/index";
 
 const kind = z.enum(["customer", "supplier", "both"]);
 const optText = z.string().trim().max(200).optional().transform((v) => v || undefined);
