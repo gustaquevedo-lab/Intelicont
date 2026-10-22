@@ -1,46 +1,30 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
 
 /**
- * Auth middleware for InteliCont.
- *
- * Currently in MOCK MODE — all requests pass through.
- * When Supabase Auth is configured, this will:
- * 1. Refresh the session cookie
- * 2. Redirect unauthenticated users to /login
- * 3. Enforce role-based access to admin routes
+ * Edge middleware: only checks that a Better Auth session cookie is present (no DB here).
+ * The session is really validated by `getSession` (tRPC context) and the root-layout guard.
+ * API routes are not redirected: tRPC answers UNAUTHORIZED itself.
  */
+const PUBLIC_PAGES = ["/login"];
 
-const PUBLIC_ROUTES = ["/login", "/api/health"];
-const ADMIN_ROUTES: string[] = [];
-
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/api/")) return NextResponse.next();
 
-  // Allow public routes
-  if (PUBLIC_ROUTES.some((r) => pathname.startsWith(r))) {
-    return NextResponse.next();
+  const isPublic = PUBLIC_PAGES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (!isPublic && !getSessionCookie(request)) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Allow static files and API routes
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/favicon") ||
-    pathname.includes(".")
-  ) {
-    return NextResponse.next();
-  }
-
-  // TODO: Check Supabase session when configured
-  // const supabase = createServerClient(...)
-  // const { data: { user } } = await supabase.auth.getUser()
-  // if (!user) return NextResponse.redirect(new URL("/login", request.url))
-
-  return NextResponse.next();
+  // Expose the path to server components (root-layout guard).
+  const headers = new Headers(request.headers);
+  headers.set("x-pathname", pathname);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|webmanifest)$).*)",
   ],
 };

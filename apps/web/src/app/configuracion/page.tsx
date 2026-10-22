@@ -6,13 +6,14 @@ import {
   Mail, Building2, BadgeCheck, ChevronRight, Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, useCurrentUser } from "@/lib/auth-store";
 import { useTheme, type Theme } from "@/lib/theme-context";
 
 type SettingsTab = "profile" | "notifications" | "security" | "appearance";
 
 export default function ProfilePage() {
-  const { user, logout, selectedEntity } = useAuthStore();
+  const { selectedEntity } = useAuthStore();
+  const { user, logout } = useCurrentUser();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [saved, setSaved] = useState(false);
@@ -98,7 +99,6 @@ function ProfileTab({ user, entity }: { user: any; entity: any }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Nombre" value={user?.name || ""} />
           <FormField label="Email" value={user?.email || ""} type="email" />
-          <FormField label="Rol" value={user?.role || ""} disabled />
           <FormField label="Teléfono" value="+595 21 123 456" />
         </div>
       </div>

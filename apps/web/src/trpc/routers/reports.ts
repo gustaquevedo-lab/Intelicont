@@ -1,7 +1,7 @@
-import { router, publicProcedure, z } from "../trpc";
+import { router, protectedProcedure, z } from "../trpc";
 
 export const reportsRouter = router({
-  ivaSummary: publicProcedure
+  ivaSummary: protectedProcedure
     .input(z.object({ entityId: z.string(), year: z.number(), month: z.number() }))
     .query(async () => {
       return {
@@ -17,7 +17,7 @@ export const reportsRouter = router({
       };
     }),
 
-  fiscalResume: publicProcedure
+  fiscalResume: protectedProcedure
     .input(z.object({ entityId: z.string() }))
     .query(async () => {
       return [
@@ -29,7 +29,7 @@ export const reportsRouter = router({
       ];
     }),
 
-  trialBalance: publicProcedure
+  trialBalance: protectedProcedure
     .input(z.object({ entityId: z.string() }))
     .query(async () => {
       return [

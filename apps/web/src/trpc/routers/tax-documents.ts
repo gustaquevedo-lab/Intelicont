@@ -1,8 +1,8 @@
-import { router, publicProcedure, z } from "../trpc";
+import { router, protectedProcedure, z } from "../trpc";
 import { getTaxDocuments, getTaxDocument, getPendingTaxDocuments, getTaxDocumentLines } from "@ledger/db/repository";
 
 export const taxDocumentsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ entityId: z.string() }))
     .query(async ({ input }) => {
       const docs = await getTaxDocuments(input.entityId);
@@ -19,14 +19,14 @@ export const taxDocumentsRouter = router({
       }));
     }),
 
-  pending: publicProcedure
+  pending: protectedProcedure
     .input(z.object({ entityId: z.string() }))
     .query(async ({ input }) => {
       const docs = await getPendingTaxDocuments(input.entityId);
       return docs;
     }),
 
-  get: publicProcedure
+  get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       const doc = await getTaxDocument(input.id);
@@ -34,7 +34,7 @@ export const taxDocumentsRouter = router({
       return doc;
     }),
 
-  getLines: publicProcedure
+  getLines: protectedProcedure
     .input(z.object({ documentId: z.string() }))
     .query(async ({ input }) => {
       return getTaxDocumentLines(input.documentId);

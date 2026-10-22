@@ -1,8 +1,8 @@
-import { router, publicProcedure, z } from "../trpc";
+import { router, protectedProcedure, z } from "../trpc";
 import { getEntities, getEntity } from "@ledger/db/repository";
 
 export const entitiesRouter = router({
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     const entities = await getEntities();
     return entities.map((e) => ({
       id: e.id,
@@ -17,7 +17,7 @@ export const entitiesRouter = router({
     }));
   }),
 
-  get: publicProcedure
+  get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       const entity = await getEntity(input.id);

@@ -1,8 +1,8 @@
-import { router, publicProcedure, z } from "../trpc";
+import { router, protectedProcedure, z } from "../trpc";
 import { getAllAccounts } from "@ledger/db/repository";
 
 export const accountsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ entityId: z.string() }))
     .query(async ({ input }) => {
       const accounts = await getAllAccounts(input.entityId);
@@ -18,7 +18,7 @@ export const accountsRouter = router({
       }));
     }),
 
-  tree: publicProcedure
+  tree: protectedProcedure
     .input(z.object({ entityId: z.string() }))
     .query(async ({ input }) => {
       const accounts = await getAllAccounts(input.entityId);

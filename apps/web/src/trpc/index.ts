@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, privateProcedure } from "./trpc";
+import { router, publicProcedure } from "./trpc";
 import { entitiesRouter } from "./routers/entities";
 import { accountsRouter } from "./routers/accounts";
 import { journalEntriesRouter } from "./routers/journal-entries";

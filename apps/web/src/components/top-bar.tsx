@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme, Theme } from "@/lib/theme-context";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, useCurrentUser } from "@/lib/auth-store";
 import { useNotificationStore } from "@/lib/notification-store";
 import { Logo } from "./logo";
 
@@ -33,7 +33,8 @@ const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
 
 export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () => void; onCommandPalette: () => void }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { selectedEntity, availableEntities, selectEntity, user, logout } = useAuthStore();
+  const { selectedEntity, availableEntities, selectEntity } = useAuthStore();
+  const { user, logout } = useCurrentUser();
   const notifications = useNotificationStore((s) => s.notifications);
   const unreadCount = useNotificationStore((s) => s.getUnreadCount());
   const markRead = useNotificationStore((s) => s.markRead);

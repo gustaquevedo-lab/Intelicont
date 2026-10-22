@@ -1,9 +1,9 @@
-import { router, publicProcedure, z } from "../trpc";
+import { router, protectedProcedure, z } from "../trpc";
 import { getJournalEntries, getJournalLines, createPostedEntry } from "@ledger/db/repository";
 import { isMockMode } from "@ledger/db/index";
 
 export const journalEntriesRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ entityId: z.string(), limit: z.number().optional().default(50) }))
     .query(async ({ input }) => {
       const entries = await getJournalEntries(input.entityId);
@@ -25,7 +25,7 @@ export const journalEntriesRouter = router({
       }));
     }),
 
-  get: publicProcedure
+  get: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       const entries = await getJournalEntries("");
@@ -35,7 +35,7 @@ export const journalEntriesRouter = router({
       return { ...entry, lines };
     }),
 
-  getLines: publicProcedure
+  getLines: protectedProcedure
     .input(z.object({ entryId: z.string() }))
     .query(async ({ input }) => {
       const lines = await getJournalLines(input.entryId);
@@ -53,7 +53,7 @@ export const journalEntriesRouter = router({
       }));
     }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(z.object({
       entityId: z.string(),
       periodId: z.string(),
@@ -93,7 +93,7 @@ export const journalEntriesRouter = router({
       return { success: true, id: entry.id };
     }),
 
-  reverse: publicProcedure
+  reverse: protectedProcedure
     .input(z.object({ entryId: z.string(), reason: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, id: "rev-" + Math.random().toString(36).slice(2, 10) };
