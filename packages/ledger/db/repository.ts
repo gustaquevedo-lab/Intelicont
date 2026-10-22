@@ -1,5 +1,5 @@
 import { eq, desc, asc, and, sql } from "drizzle-orm";
-import { withTenant, isMockMode } from "./index";
+import { tenantDb, isMockMode } from "./index";
 import * as schema from "./schema";
 import { mockStore } from "./mock";
 
@@ -21,14 +21,14 @@ type AiDecision = typeof schema.aiDecisions.$inferSelect;
 
 export async function getEntities(): Promise<Entities[]> {
   if (isMockMode()) return mockStore.entities;
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.entities).orderBy(asc(schema.entities.createdAt));
   });
 }
 
 export async function getEntity(id: string): Promise<Entities | undefined> {
   if (isMockMode()) return mockStore.entities.find((e) => e.id === id);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     const rows = await db.select().from(schema.entities).where(eq(schema.entities.id, id));
     return rows[0];
   });
@@ -38,7 +38,7 @@ export async function getEntity(id: string): Promise<Entities | undefined> {
 
 export async function getFiscalPeriods(entityId: string): Promise<FiscalPeriod[]> {
   if (isMockMode()) return mockStore.fiscalPeriods.filter((p) => p.entityId === entityId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.fiscalPeriods)
       .where(eq(schema.fiscalPeriods.entityId, entityId))
       .orderBy(desc(schema.fiscalPeriods.year), desc(schema.fiscalPeriods.month));
@@ -47,7 +47,7 @@ export async function getFiscalPeriods(entityId: string): Promise<FiscalPeriod[]
 
 export async function getOpenPeriod(entityId: string): Promise<FiscalPeriod | undefined> {
   if (isMockMode()) return mockStore.fiscalPeriods.find((p) => p.entityId === entityId && p.status === "open");
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     const rows = await db.select().from(schema.fiscalPeriods)
       .where(and(
         eq(schema.fiscalPeriods.entityId, entityId),
@@ -61,7 +61,7 @@ export async function getOpenPeriod(entityId: string): Promise<FiscalPeriod | un
 
 export async function getAccountsByCoa(coaId: string): Promise<Account[]> {
   if (isMockMode()) return mockStore.accounts.filter((a) => a.coaId === coaId).sort((a, b) => a.code.localeCompare(b.code));
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.accounts)
       .where(eq(schema.accounts.coaId, coaId))
       .orderBy(asc(schema.accounts.code));
@@ -74,7 +74,7 @@ export async function getAllAccounts(entityId: string): Promise<Account[]> {
     if (!coa) return [];
     return getAccountsByCoa(coa.id);
   }
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     const coas = await db.select().from(schema.chartOfAccounts)
       .where(eq(schema.chartOfAccounts.entityId, entityId));
     if (coas.length === 0) return [];
@@ -88,7 +88,7 @@ export async function getAllAccounts(entityId: string): Promise<Account[]> {
 
 export async function getJournalEntries(entityId: string): Promise<JournalEntry[]> {
   if (isMockMode()) return mockStore.journalEntries.filter((je) => je.entityId === entityId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.journalEntries)
       .where(eq(schema.journalEntries.entityId, entityId))
       .orderBy(desc(schema.journalEntries.date));
@@ -97,7 +97,7 @@ export async function getJournalEntries(entityId: string): Promise<JournalEntry[
 
 export async function getJournalLines(entryId: string): Promise<JournalLine[]> {
   if (isMockMode()) return mockStore.journalLines.filter((jl) => jl.entryId === entryId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.journalLines)
       .where(eq(schema.journalLines.entryId, entryId));
   });
@@ -107,7 +107,7 @@ export async function getJournalLines(entryId: string): Promise<JournalLine[]> {
 
 export async function getPartners(entityId: string): Promise<Partner[]> {
   if (isMockMode()) return mockStore.partners.filter((p) => p.entityId === entityId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.partners)
       .where(eq(schema.partners.entityId, entityId))
       .orderBy(asc(schema.partners.legalName));
@@ -116,7 +116,7 @@ export async function getPartners(entityId: string): Promise<Partner[]> {
 
 export async function getPartner(id: string): Promise<Partner | undefined> {
   if (isMockMode()) return mockStore.partners.find((p) => p.id === id);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     const rows = await db.select().from(schema.partners).where(eq(schema.partners.id, id));
     return rows[0];
   });
@@ -126,7 +126,7 @@ export async function getPartner(id: string): Promise<Partner | undefined> {
 
 export async function getTaxDocuments(entityId: string): Promise<TaxDocument[]> {
   if (isMockMode()) return mockStore.taxDocuments.filter((td) => td.entityId === entityId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.taxDocuments)
       .where(eq(schema.taxDocuments.entityId, entityId))
       .orderBy(desc(schema.taxDocuments.issueDate));
@@ -135,7 +135,7 @@ export async function getTaxDocuments(entityId: string): Promise<TaxDocument[]> 
 
 export async function getTaxDocument(id: string): Promise<TaxDocument | undefined> {
   if (isMockMode()) return mockStore.taxDocuments.find((td) => td.id === id);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     const rows = await db.select().from(schema.taxDocuments).where(eq(schema.taxDocuments.id, id));
     return rows[0];
   });
@@ -143,7 +143,7 @@ export async function getTaxDocument(id: string): Promise<TaxDocument | undefine
 
 export async function getPendingTaxDocuments(entityId: string): Promise<TaxDocument[]> {
   if (isMockMode()) return mockStore.taxDocuments.filter((td) => td.entityId === entityId && td.status === "pending");
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.taxDocuments)
       .where(and(
         eq(schema.taxDocuments.entityId, entityId),
@@ -155,7 +155,7 @@ export async function getPendingTaxDocuments(entityId: string): Promise<TaxDocum
 
 export async function getTaxDocumentLines(documentId: string): Promise<TaxDocumentLine[]> {
   if (isMockMode()) return mockStore.taxDocumentLines.filter((tdl) => tdl.documentId === documentId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.taxDocumentLines)
       .where(eq(schema.taxDocumentLines.documentId, documentId));
   });
@@ -163,7 +163,7 @@ export async function getTaxDocumentLines(documentId: string): Promise<TaxDocume
 
 export async function getTaxDocumentsByPartner(partnerId: string): Promise<TaxDocument[]> {
   if (isMockMode()) return mockStore.taxDocuments.filter((td) => td.partnerId === partnerId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.taxDocuments)
       .where(eq(schema.taxDocuments.partnerId, partnerId))
       .orderBy(desc(schema.taxDocuments.issueDate));
@@ -174,7 +174,7 @@ export async function getTaxDocumentsByPartner(partnerId: string): Promise<TaxDo
 
 export async function getRetentions(documentId: string): Promise<Retention[]> {
   if (isMockMode()) return mockStore.retentions.filter((r) => r.documentId === documentId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.retentions)
       .where(eq(schema.retentions.documentId, documentId));
   });
@@ -184,7 +184,7 @@ export async function getRetentions(documentId: string): Promise<Retention[]> {
 
 export async function getBankMovements(bankAccountId: string): Promise<BankMovement[]> {
   if (isMockMode()) return mockStore.bankMovements.filter((bm) => bm.bankAccountId === bankAccountId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.bankMovements)
       .where(eq(schema.bankMovements.bankAccountId, bankAccountId))
       .orderBy(desc(schema.bankMovements.date));
@@ -193,7 +193,7 @@ export async function getBankMovements(bankAccountId: string): Promise<BankMovem
 
 export async function getReconciliations(bankAccountId: string): Promise<Reconciliation[]> {
   if (isMockMode()) return mockStore.reconciliations.filter((r) => r.bankAccountId === bankAccountId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.reconciliations)
       .where(eq(schema.reconciliations.bankAccountId, bankAccountId));
   });
@@ -207,7 +207,7 @@ export async function getAuditEvents(entityId: string, limit = 50): Promise<Audi
       .filter((ae) => ae.entityId === entityId)
       .slice(0, limit);
   }
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.auditEvents)
       .where(eq(schema.auditEvents.entityId, entityId))
       .orderBy(desc(schema.auditEvents.createdAt))
@@ -219,7 +219,7 @@ export async function getAuditEvents(entityId: string, limit = 50): Promise<Audi
 
 export async function getAiDecisions(entityId: string): Promise<AiDecision[]> {
   if (isMockMode()) return mockStore.aiDecisions.filter((ai) => ai.entityId === entityId);
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     return db.select().from(schema.aiDecisions)
       .where(eq(schema.aiDecisions.entityId, entityId))
       .orderBy(desc(schema.aiDecisions.createdAt));
@@ -247,7 +247,7 @@ export interface PostEntryInput {
 
 /** Draft -> lines -> post, atomically. The DB enforces balance, period and immutability. */
 export async function createPostedEntry(input: PostEntryInput): Promise<JournalEntry> {
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     const [draft] = await db.insert(schema.journalEntries).values({
       entityId: input.entityId,
       periodId: input.periodId,
@@ -278,7 +278,7 @@ export async function createPostedEntry(input: PostEntryInput): Promise<JournalE
 }
 
 export async function createTaxDocument(values: typeof schema.taxDocuments.$inferInsert) {
-  return withTenant(async (db) => {
+  return tenantDb(async (db) => {
     const [doc] = await db.insert(schema.taxDocuments).values(values).returning();
     return doc;
   });

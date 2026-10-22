@@ -1,9 +1,23 @@
 "use server";
 
 import { assertMoney } from "@intelicont/core";
-import { isMockMode, dbErrorMessage } from "@ledger/db/index";
+import { isMockMode, dbErrorMessage, withTenant } from "@ledger/db/index";
 import * as repo from "@ledger/db/repository";
 import { revalidatePath } from "next/cache";
+import { requireUser } from "./session";
+import { loadGuardUser, needs2FA } from "./auth-guard";
+
+/**
+ * Runs repository work in the session user's tenant scope. Throws without a session, and for an
+ * admin without TOTP (same policy as the tRPC middleware).
+ */
+async function scoped<T>(fn: () => Promise<T>): Promise<T> {
+  const { userId } = await requireUser();
+  return withTenant(userId, async (db) => {
+    if (needs2FA(await loadGuardUser(db, userId))) throw new Error("2FA requerido");
+    return fn();
+  });
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -43,38 +57,38 @@ interface CreateTaxDocumentInput {
 // ─── Entities ─────────────────────────────────────────────────────────────
 
 export async function getEmpresas() {
-  return repo.getEntities();
+  return scoped(() => repo.getEntities());
 }
 
 export async function getEmpresa(id: string) {
-  return repo.getEntity(id);
+  return scoped(() => repo.getEntity(id));
 }
 
 // ─── Fiscal Periods ───────────────────────────────────────────────────────
 
 export async function getFiscalPeriods(entityId: string) {
-  return repo.getFiscalPeriods(entityId);
+  return scoped(() => repo.getFiscalPeriods(entityId));
 }
 
 export async function getOpenPeriod(entityId: string) {
-  return repo.getOpenPeriod(entityId);
+  return scoped(() => repo.getOpenPeriod(entityId));
 }
 
 // ─── Chart of Accounts ────────────────────────────────────────────────────
 
 export async function getCuentas(entityId: string) {
-  return repo.getAllAccounts(entityId);
+  return scoped(() => repo.getAllAccounts(entityId));
 }
 
 // ─── Journal Entries ──────────────────────────────────────────────────────
 
 export async function getAsientos(entityId?: string) {
   if (!entityId) return [];
-  return repo.getJournalEntries(entityId);
+  return scoped(() => repo.getJournalEntries(entityId));
 }
 
 export async function getAsientoLines(entryId: string) {
-  return repo.getJournalLines(entryId);
+  return scoped(() => repo.getJournalLines(entryId));
 }
 
 export async function createAsiento(input: CreateAsientoInput) {
@@ -102,14 +116,14 @@ export async function createAsiento(input: CreateAsientoInput) {
   }
 
   try {
-    const entry = await repo.createPostedEntry({
+    const entry = await scoped(() => repo.createPostedEntry({
       entityId: input.entityId,
       periodId: input.periodId,
       date: new Date(input.date),
       number: `JE-${Date.now().toString().slice(-6)}`,
       description: input.descripcion,
       lines: input.lineas,
-    });
+    }));
     revalidatePath("/asientos");
     return { success: true, message: "Asiento creado exitosamente", id: entry.id };
   } catch (err) {
@@ -120,33 +134,33 @@ export async function createAsiento(input: CreateAsientoInput) {
 // ─── Partners ─────────────────────────────────────────────────────────────
 
 export async function getPartners(entityId: string) {
-  return repo.getPartners(entityId);
+  return scoped(() => repo.getPartners(entityId));
 }
 
 export async function getPartner(id: string) {
-  return repo.getPartner(id);
+  return scoped(() => repo.getPartner(id));
 }
 
 // ─── Tax Documents ────────────────────────────────────────────────────────
 
 export async function getTaxDocuments(entityId: string) {
-  return repo.getTaxDocuments(entityId);
+  return scoped(() => repo.getTaxDocuments(entityId));
 }
 
 export async function getTaxDocument(id: string) {
-  return repo.getTaxDocument(id);
+  return scoped(() => repo.getTaxDocument(id));
 }
 
 export async function getPendingTaxDocuments(entityId: string) {
-  return repo.getPendingTaxDocuments(entityId);
+  return scoped(() => repo.getPendingTaxDocuments(entityId));
 }
 
 export async function getTaxDocumentLines(documentId: string) {
-  return repo.getTaxDocumentLines(documentId);
+  return scoped(() => repo.getTaxDocumentLines(documentId));
 }
 
 export async function getRetentions(documentId: string) {
-  return repo.getRetentions(documentId);
+  return scoped(() => repo.getRetentions(documentId));
 }
 
 export async function createTaxDocument(input: CreateTaxDocumentInput) {
@@ -159,7 +173,7 @@ export async function createTaxDocument(input: CreateTaxDocumentInput) {
   }
 
   try {
-    const doc = await repo.createTaxDocument({
+    const doc = await scoped(() => repo.createTaxDocument({
       entityId: input.entityId,
       direction: input.direction,
       docType: input.docType as any,
@@ -178,7 +192,7 @@ export async function createTaxDocument(input: CreateTaxDocumentInput) {
       status: "pending",
       sifenStatus: "pending_upload",
       metadata: input.metadata || null,
-    });
+    }));
     revalidatePath("/sifen");
     return { success: true, message: "Documento creado", id: doc.id };
   } catch (err) {
@@ -189,21 +203,21 @@ export async function createTaxDocument(input: CreateTaxDocumentInput) {
 // ─── Banking ──────────────────────────────────────────────────────────────
 
 export async function getBankMovements(bankAccountId: string) {
-  return repo.getBankMovements(bankAccountId);
+  return scoped(() => repo.getBankMovements(bankAccountId));
 }
 
 export async function getReconciliations(bankAccountId: string) {
-  return repo.getReconciliations(bankAccountId);
+  return scoped(() => repo.getReconciliations(bankAccountId));
 }
 
 // ─── Audit ────────────────────────────────────────────────────────────────
 
 export async function getAuditEvents(entityId: string, limit = 50) {
-  return repo.getAuditEvents(entityId, limit);
+  return scoped(() => repo.getAuditEvents(entityId, limit));
 }
 
 // ─── AI Decisions ─────────────────────────────────────────────────────────
 
 export async function getAiDecisions(entityId: string) {
-  return repo.getAiDecisions(entityId);
+  return scoped(() => repo.getAiDecisions(entityId));
 }

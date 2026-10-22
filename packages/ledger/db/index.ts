@@ -57,37 +57,49 @@ function getMockDbInstance(): PostgresJsDatabase<typeof schema> {
 
 export type Db = PostgresJsDatabase<typeof schema>;
 
-type TenantResolver = () => string[] | Promise<string[]>;
-
-// Dev-only default until auth provides real membership: DEV_ENTITY_IDS=uuid,uuid
-let resolveEntityIds: TenantResolver = () =>
-  process.env.NODE_ENV === "production"
-    ? []
-    : (process.env.DEV_ENTITY_IDS ?? "").split(",").map((id) => id.trim()).filter(Boolean);
-
-export function setTenantResolver(resolver: TenantResolver): void {
-  resolveEntityIds = resolver;
-}
-
-const tenantTx = new AsyncLocalStorage<Db>();
+type TenantScope = { db: Db; userId: string };
+const tenantTx = new AsyncLocalStorage<TenantScope>();
 
 /**
- * Runs `fn` in a transaction whose RLS scope is the caller's entities
- * (`app.entity_ids`). Nested calls reuse the outer transaction. With no
- * entities in scope every tenant table reads as empty (fail closed).
+ * Entry point for request-scoped DB work (tRPC middleware, server actions). Opens ONE
+ * transaction, sets `app.user_id`, reads the user's memberships under that setting (RLS)
+ * and sets `app.entity_ids` to those entities, then runs `fn`. A user with no memberships
+ * reads every tenant table as empty (fail closed). A nested call for the same user reuses
+ * the outer transaction; a nested call for another user throws.
+ * In mock mode (no DATABASE_URL) `fn` runs without a tenant context: only the repository's
+ * mock branches work there, `tenantDb` throws.
  */
-export async function withTenant<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+export async function withTenant<T>(userId: string, fn: (db: Db) => Promise<T>): Promise<T> {
+  if (!userId) throw new Error("No tenant context");
   const existing = tenantTx.getStore();
-  if (existing) return fn(existing);
+  if (existing) {
+    if (existing.userId !== userId) throw new Error("Nested tenant context for another user");
+    return fn(existing.db);
+  }
 
   const base = getDb();
   if (_usingMock) return fn(base);
 
-  const entityIds = await resolveEntityIds();
   return base.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.entity_ids', ${entityIds.join(",")}, true)`);
-    return tenantTx.run(tx as unknown as Db, () => fn(tx as unknown as Db));
+    const db = tx as unknown as Db;
+    await db.execute(sql`select set_config('app.user_id', ${userId}, true)`);
+    const rows = await db.execute<{ entity_id: string }>(
+      sql`select entity_id from memberships where user_id = ${userId}`,
+    );
+    const entityIds = rows.map((r) => r.entity_id).join(",");
+    await db.execute(sql`select set_config('app.entity_ids', ${entityIds}, true)`);
+    return tenantTx.run({ db, userId }, () => fn(db));
   });
+}
+
+/**
+ * Internal accessor for repository/use-case code: the transaction of the enclosing
+ * `withTenant`. Throws when there is none — never falls back to an unscoped connection.
+ */
+export async function tenantDb<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+  const scope = tenantTx.getStore();
+  if (!scope) throw new Error("No tenant context");
+  return fn(scope.db);
 }
 
 /** Postgres error text from a Drizzle/postgres-js failure (trigger messages included). */

@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import { getDb } from "@ledger/db/index";
-import { auth } from "./auth";
+import { withTenant, type Db } from "@ledger/db/index";
+import { getSession } from "./auth";
 
 export const LOGIN_PATH = "/login";
 export const TOTP_SETUP_PATH = "/seguridad/2fa";
@@ -11,19 +11,27 @@ type GuardUser = { isAdmin: boolean; twoFactorEnabled: boolean } | null;
 export function guardRedirect(path: string, user: GuardUser): string | null {
   if (path === LOGIN_PATH) return null;
   if (!user) return LOGIN_PATH;
-  if (user.isAdmin && !user.twoFactorEnabled && path !== TOTP_SETUP_PATH) return TOTP_SETUP_PATH;
+  if (needs2FA(user) && path !== TOTP_SETUP_PATH) return TOTP_SETUP_PATH;
   return null;
 }
 
-/** True if the user holds `admin` in any membership (memberships RLS needs app.user_id). */
-async function isAdminAnywhere(userId: string): Promise<boolean> {
-  return getDb().transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`);
-    const rows = await tx.execute(
-      sql`select 1 from memberships where user_id = ${userId} and role = 'admin' limit 1`,
-    );
-    return rows.length > 0;
-  });
+/**
+ * Admin/2FA facts for the mandatory-TOTP policy, read inside a tenant transaction
+ * (`withTenant` has set app.user_id, which memberships RLS requires). Shared by the page guard
+ * and the tRPC middleware. Unknown user -> null.
+ */
+export async function loadGuardUser(db: Db, userId: string): Promise<GuardUser> {
+  const rows = await db.execute<{ is_admin: boolean; two_factor_enabled: boolean | null }>(sql`
+    select coalesce(u.two_factor_enabled, false) as two_factor_enabled,
+           exists (select 1 from memberships m where m.user_id = u.id and m.role = 'admin') as is_admin
+    from users u where u.id = ${userId}`);
+  const r = rows[0];
+  return r ? { isAdmin: r.is_admin, twoFactorEnabled: !!r.two_factor_enabled } : null;
+}
+
+/** True when the policy blocks the user: admin somewhere without TOTP enabled. */
+export function needs2FA(user: GuardUser): boolean {
+  return !!user && user.isAdmin && !user.twoFactorEnabled;
 }
 
 /**
@@ -34,9 +42,7 @@ async function isAdminAnywhere(userId: string): Promise<boolean> {
  */
 export async function pageGuardRedirect(headers: Headers, path: string): Promise<string | null> {
   if (path === LOGIN_PATH) return null;
-  const s = await auth.api.getSession({ headers });
-  const user = s
-    ? { isAdmin: await isAdminAnywhere(s.user.id), twoFactorEnabled: !!s.user.twoFactorEnabled }
-    : null;
+  const s = await getSession(headers);
+  const user = s ? await withTenant(s.userId, (db) => loadGuardUser(db, s.userId)) : null;
   return guardRedirect(path, user);
 }
