@@ -18,6 +18,7 @@
 - IVA sobre importes con IVA incluido: `iva10 = round(gravado10 / 11)`, `iva5 = round(gravado5 / 21)`.
 - Doble partida exacta por moneda; libro inmutable (triggers de `0001`); toda mutación escribe `audit_events` en la misma transacción; mutaciones exigen `Idempotency-Key`.
 - RLS por `entity_id` vía `app.entity_ids`; el rol `intelicont_app` no es dueño de las tablas y no puede borrar.
+- **Transacciones cortas:** todo trabajo de base va dentro de `withTenant(userId, fn)` (entrada) y `tenantDb(fn)` (interno); **nunca** hacer E/S externa (IA, red, SIFEN) ni llamar a Better Auth / `getDb()` dentro de `withTenant`. Patrón de dos fases: leer en una transacción corta, llamar afuera, escribir en otra corta con idempotencia. Pool de 10 conexiones por proceso.
 - Auth: email + contraseña + TOTP (obligatorio para admins). **Sin magic links ni SMTP.**
 - IA: **solo modelos locales** (Ollama en `dev-server`, puerto 11434). Reglas primero; sin proveedor remoto. Nunca se postea sin aprobación humana.
 - RUC: módulo 11 de la DNIT (pesos 2 a 11 de derecha a izquierda; resto 0 o 1 → DV 0, si no 11 − resto).
