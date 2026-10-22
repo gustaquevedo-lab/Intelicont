@@ -5,6 +5,6 @@ export default defineConfig({
   out: "./packages/ledger/db/migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL || "",
+    url: process.env.DATABASE_URL!,
   },
 });

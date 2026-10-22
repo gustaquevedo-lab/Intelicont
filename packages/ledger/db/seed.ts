@@ -1,5 +1,6 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { eq } from "drizzle-orm";
 
 import * as schema from "./schema";
 
@@ -12,7 +13,7 @@ async function main() {
 
   console.log("🌱 Iniciando seed de base de datos...");
 
-  const sql = neon(dbUrl);
+  const sql = postgres(dbUrl, { max: 1 });
   const db = drizzle(sql, { schema });
 
   // 1. Crear entidad de ejemplo
@@ -124,8 +125,7 @@ async function main() {
       number: "001-2026",
       source: "manual",
       description: "Compra mercadería Factura 001-233",
-      status: "posted",
-      postedAt: new Date(),
+      status: "draft",
     })
     .returning();
 
@@ -156,6 +156,12 @@ async function main() {
     },
   ]);
 
+  // The ledger trigger validates balance/period and only then allows posting.
+  await db
+    .update(schema.journalEntries)
+    .set({ status: "posted", postedAt: new Date() })
+    .where(eq(schema.journalEntries.id, entry.id));
+
   console.log(`   ✓ Asiento creado: ${entry.number}`);
 
   console.log("\n✅ Seed completado exitosamente!");
@@ -163,6 +169,7 @@ async function main() {
   console.log(`   Cuentas: ${insertedAccounts.length}`);
   console.log(`   Período: ${period.year}/${period.month}`);
   console.log(`   Asientos: 1`);
+  await sql.end();
 }
 
 main().catch((err) => {
