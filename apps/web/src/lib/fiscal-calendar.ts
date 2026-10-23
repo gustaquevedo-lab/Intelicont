@@ -1,4 +1,4 @@
-export type ObligationType = "iva" | "ire" | "irp" | "inr" | "idu" | "dnit" | "municipal" | "sifen" | "hechauka" | "rg90";
+export type ObligationType = "iva" | "ire" | "irp" | "inr" | "idu" | "dnit" | "municipal" | "sifen" | "registro" | "rg90";
 export type ObligationStatus = "pending" | "upcoming" | "completed" | "overdue";
 export type Urgency = "normal" | "soon" | "urgent" | "overdue";
 
@@ -27,7 +27,7 @@ const OBLIGATION_LABELS: Record<ObligationType, string> = {
   dnit: "DNIT",
   municipal: "Municipal",
   sifen: "SIFEN",
-  hechauka: "Hechauka",
+  registro: "Registro de Comprobantes (955)",
   rg90: "RG90",
 };
 
@@ -40,7 +40,7 @@ const OBLIGATION_COLORS: Record<ObligationType, string> = {
   dnit: "text-red-500 dark:text-red-400",
   municipal: "text-cyan-500 dark:text-cyan-400",
   sifen: "text-indigo-500 dark:text-indigo-400",
-  hechauka: "text-pink-500 dark:text-pink-400",
+  registro: "text-pink-500 dark:text-pink-400",
   rg90: "text-amber-500 dark:text-amber-400",
 };
 
@@ -169,9 +169,9 @@ export function getFiscalObligations(): FiscalObligation[] {
     },
     {
       id: "ob-7",
-      title: "Hechauka — Abril 2026",
-      description: "Libro electrónico de compras y ventas. Exportar CSV para DNIT.",
-      type: "hechauka",
+      title: "Registro de Comprobantes (955) — Abril 2026",
+      description: "Comprobantes no electrónicos de compras y ventas. Generar el .zip para Marangatu.",
+      type: "registro",
       dueDate: "2026-05-20",
       entity: "Importadora del Este",
       status: "upcoming",

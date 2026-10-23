@@ -66,7 +66,7 @@ export default function DashboardPage() {
   // Upcoming deadlines
   const upcomingDeadlines = [
     { id: 1, label: "IVA — Form. 104", entity: "Importadora del Este", date: "12 May", days: 7, urgent: true },
-    { id: 2, label: "Hechauka", entity: "Importadora del Este", date: "25 May", days: 20, urgent: false },
+    { id: 2, label: "Registro de Comprobantes (955)", entity: "Importadora del Este", date: "25 May", days: 20, urgent: false },
     { id: 3, label: "IRE — Form. 1301", entity: "Tech Asunción", date: "15 May", days: 10, urgent: false },
     { id: 4, label: "Retenciones IRP", entity: "Dist. Ñandutí", date: "20 May", days: 15, urgent: false },
   ];

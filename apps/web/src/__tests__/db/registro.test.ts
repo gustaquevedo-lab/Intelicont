@@ -81,6 +81,12 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("registro de comprobantes 955 (real
     expect(r.files).toEqual([{ name: "1234567_REG_082026_V0001", rows: 2, part: 1 }]);
     const sep = await caller().fiscal.registroPreview({ entityId: e1, year: 2026, month: 9 });
     expect(sep).toMatchObject({ counts: { ventas: 1, compras: 0 }, excluded: { electronic: 0 } });
+    // A document without Registro data (a receipt: no Tabla 4 code, no partner) is reported, not exported.
+    const [{ id }] = await t.owner`insert into tax_documents (entity_id, direction, doc_type, number, issue_date, total, condition)
+      values (${e1}, 'received', 'receipt', 'R-1', '2026-10-05', 1000, 'cash') returning id`;
+    const oct = await caller().fiscal.registroPreview({ entityId: e1, year: 2026, month: 10 });
+    expect(oct.files).toEqual([]);
+    expect(oct.errors).toEqual([{ documentId: id, side: "compras", number: "R-1", issueDate: "2026-10-05", entryId: null, message: expect.stringMatching(/no admitido/) }]);
   });
 
   it("registroPreview rejects an entity the user cannot see", async () => {

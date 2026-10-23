@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/fiscal/formulario-104", label: "Formulario 104", icon: Calculator },
-  { href: "/fiscal/hechauka", label: "Hechauka", icon: FileText },
+  { href: "/fiscal/registro-comprobantes", label: "Registro de Comprobantes", icon: FileText },
 ];
 
 export default function FiscalLayout({ children }: { children: React.ReactNode }) {

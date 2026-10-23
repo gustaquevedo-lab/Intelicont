@@ -52,9 +52,14 @@ export const fiscalRouter = router({
       await assertVisible(input.entityId);
       const { docs, entityRuc } = await getRegistroDocs(input.entityId, input.year, input.month);
       const r = buildRegistro({ ruc: entityRuc, year: input.year, month: input.month, docs });
+      const byId = new Map(docs.map((d) => [d.documentId, d]));
       return {
         files: r.files.map((f, i) => ({ name: f.name, rows: f.rows, part: i + 1 })),
-        errors: r.errors, excluded: r.excluded, counts: r.counts,
+        errors: r.errors.map((e) => {
+          const d = byId.get(e.documentId);
+          return { ...e, side: d?.side ?? null, number: d?.number ?? "", issueDate: d?.issueDate ?? "", entryId: d?.entryId ?? null };
+        }),
+        excluded: r.excluded, counts: r.counts,
       };
     }),
 });

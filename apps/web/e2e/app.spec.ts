@@ -67,10 +67,10 @@ test.describe("InteliCont E2E", () => {
     await expect(page.getByRole("heading", { name: "Crédito fiscal (compras)" })).toBeVisible();
   });
 
-  test("hechauka page loads electronic book", async ({ page }) => {
-    await page.goto("/fiscal/hechauka");
-    await expect(page.locator("h1")).toContainText("Hechauka");
-    await expect(page.getByRole("heading", { name: "Compras", exact: true })).toBeVisible();
+  test("registro de comprobantes page loads", async ({ page }) => {
+    await page.goto("/fiscal/registro-comprobantes");
+    await expect(page.locator("h1")).toContainText("Registro de Comprobantes (955)");
+    await expect(page.getByText("Los comprobantes electrónicos SIFEN no se incluyen")).toBeVisible();
   });
 
   test("calendario page shows fiscal calendar", async ({ page }) => {

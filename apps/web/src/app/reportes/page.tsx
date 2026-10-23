@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useDataStore } from "@/lib/data-store";
 
-type ReportType = "resumen_fiscal" | "iva" | "ire" | "balance" | "ganancias_perdidas" | "hechauka";
+type ReportType = "resumen_fiscal" | "iva" | "ire" | "balance" | "ganancias_perdidas";
 
 export default function ReportesPage() {
   const storeReportes = useDataStore((s) => s.reportes);
@@ -30,7 +30,6 @@ export default function ReportesPage() {
     { id: "ire" as ReportType, label: "IRE", icon: Building2 },
     { id: "balance" as ReportType, label: "Balance", icon: TrendingUp },
     { id: "ganancias_perdidas" as ReportType, label: "Ganancias y Pérdidas", icon: TrendingDown },
-    { id: "hechauka" as ReportType, label: "Hechauka", icon: FileText },
   ];
 
   const totales = storeReportes.reduce(
