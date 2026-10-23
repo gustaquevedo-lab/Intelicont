@@ -3,6 +3,8 @@ import { eq, desc, asc, and, sql, getTableColumns } from "drizzle-orm";
 import { tenantDb, isMockMode } from "./index";
 import * as schema from "./schema";
 import { mockStore } from "./mock";
+import { ensureCalendar } from "./calendar";
+import { previousPeriod } from "../src/tax-calendar";
 
 type Entities = typeof schema.entities.$inferSelect;
 type FiscalPeriod = typeof schema.fiscalPeriods.$inferSelect;
@@ -72,6 +74,9 @@ export async function createEntityWithChart(
       })),
     );
     await db.insert(schema.fiscalPeriods).values({ entityId, year: period.year, month: period.month, status: "open" });
+    // Calendar from the previous period (due this month) for 12 months, in the same transaction.
+    const prev = previousPeriod(period.year, period.month);
+    await ensureCalendar(entityId, prev.year, prev.month, 12);
     return entityId;
   });
 }

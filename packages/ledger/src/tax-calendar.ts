@@ -73,8 +73,7 @@ export function todayInAsuncionISO(now = new Date()): string {
   return now.toLocaleDateString("en-CA", { timeZone: "America/Asuncion" });
 }
 
-/** The month before `today`'s: the period whose obligations fall due this month. */
-export function previousPeriod(today: string): { year: number; month: number } {
-  const [y, m] = today.split("-").map(Number);
-  return m === 1 ? { year: y - 1, month: 12 } : { year: y, month: m - 1 };
+/** The period before `year`/`month` (1..12): the one whose obligations fall due in that month. */
+export function previousPeriod(year: number, month: number): { year: number; month: number } {
+  return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
 }

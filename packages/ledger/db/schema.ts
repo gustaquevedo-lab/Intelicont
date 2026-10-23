@@ -307,6 +307,22 @@ export const timbrados = pgTable("timbrados", {
   unique("timbrados_entity_number_est_point_code_uq").on(t.entityId, t.number, t.establishment, t.point, t.docCode),
 ]);
 
+// ─── Fiscal: Calendar ─────────────────────────────────────────────────────
+
+/** Due dates per entity/obligation/period: '104' IVA form, '955' Registro de Comprobantes (monthly, period 'YYYY-MM'); '956' is annual (period 'YYYY'), not generated yet. */
+export const taxCalendar = pgTable("tax_calendar", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  obligation: text("obligation").notNull(),
+  period: text("period").notNull(),
+  dueDate: date("due_date").notNull(),
+  source: text("source").notNull().default("rule"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (t) => [
+  check("tax_calendar_obligation_check", sql`${t.obligation} IN ('104','955','956')`),
+  unique("tax_calendar_entity_obligation_period_uq").on(t.entityId, t.obligation, t.period),
+]);
+
 // ─── Fiscal: Tax Document Lines ───────────────────────────────────────────
 
 export const taxDocumentLines = pgTable("tax_document_lines", {

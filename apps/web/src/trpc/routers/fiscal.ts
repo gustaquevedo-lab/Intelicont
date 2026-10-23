@@ -6,6 +6,9 @@ import { assertVisible } from "./reports";
 import { getRegistroDocs } from "@ledger/db/registro";
 import { buildRegistro } from "@intelicont/ledger/registro";
 import { getVencimientoIVA } from "@intelicont/ledger/fiscal-py";
+import { isMockMode } from "@ledger/db/index";
+import { ensureCalendar, getCalendarMonth, getUpcoming } from "@ledger/db/calendar";
+import { daysLeft, levelFor, previousPeriod, todayInAsuncionISO } from "@intelicont/ledger/tax-calendar";
 
 const period = {
   entityId: z.string().uuid(),
@@ -61,5 +64,33 @@ export const fiscalRouter = router({
         }),
         excluded: r.excluded, counts: r.counts,
       };
+    }),
+
+  /** Obligations due within `days` (or overdue) with their 7/3/1 notice level. `today` is the Asunción date, computed here. */
+  upcoming: protectedProcedure
+    .input(z.object({ entityId: z.string().uuid(), days: z.number().int().min(1).max(60).default(7) }))
+    .query(async ({ input }) => {
+      const today = todayInAsuncionISO();
+      if (isMockMode()) return { today, items: [] };
+      await assertVisible(input.entityId);
+      const prev = previousPeriod(Number(today.slice(0, 4)), Number(today.slice(5, 7)));
+      await ensureCalendar(input.entityId, prev.year, prev.month, 3);
+      return { today, items: await getUpcoming(input.entityId, input.days, today) };
+    }),
+
+  /** Obligations whose due date falls in the month, with days left from today (Asunción). */
+  calendarMonth: protectedProcedure
+    .input(z.object(period))
+    .query(async ({ input }) => {
+      const today = todayInAsuncionISO();
+      if (isMockMode()) return { today, items: [] };
+      await assertVisible(input.entityId);
+      // Next 3 months from today, plus the period whose filing falls due in the month being viewed.
+      const prev = previousPeriod(Number(today.slice(0, 4)), Number(today.slice(5, 7)));
+      await ensureCalendar(input.entityId, prev.year, prev.month, 3);
+      const viewed = previousPeriod(input.year, input.month);
+      await ensureCalendar(input.entityId, viewed.year, viewed.month, 1);
+      const rows = await getCalendarMonth(input.entityId, input.year, input.month);
+      return { today, items: rows.map((r) => ({ ...r, daysLeft: daysLeft(r.dueDate, today), level: levelFor(daysLeft(r.dueDate, today)) })) };
     }),
 });
