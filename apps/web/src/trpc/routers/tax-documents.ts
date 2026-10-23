@@ -1,8 +1,49 @@
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure, z } from "../trpc";
+import { and, desc, eq, sql } from "drizzle-orm";
+import type { SifenDocument } from "@intelicont/ledger/sifen";
+import { router, protectedProcedure, authedProcedure, z } from "../trpc";
 import { idempotentProcedure } from "../idempotent";
-import { ingestDocument } from "@ledger/src/usecases";
+import { ingestDocument, postEntry } from "@ledger/src/usecases";
 import { getTaxDocuments, getTaxDocument, getPendingTaxDocuments, getTaxDocumentLines } from "@ledger/db/repository";
+import { tenantDb, withTenant, type Db } from "@ledger/db/index";
+import { audited } from "@ledger/db/audit";
+import * as schema from "@ledger/db/schema";
+import { suggestForDocument, type AccountRef, type Suggestion } from "@/lib/ai-provider";
+
+const KIND = "journal_suggestion";
+const DOC_LABEL: Record<string, string> = {
+  invoice: "Factura", credit_note: "Nota de crédito", debit_note: "Nota de débito", self_invoice: "Autofactura", remito: "Remito",
+};
+
+/** Under RLS: a document of an entity the user cannot see is simply not found. */
+async function loadDocument(db: Db, id: string) {
+  const [doc] = await db.select().from(schema.taxDocuments).where(eq(schema.taxDocuments.id, id));
+  if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Comprobante no encontrado" });
+  return doc;
+}
+
+/**
+ * A rejection is recorded only as an `ai_decision.rejected` audit event (the decision row stays
+ * `accepted=false`, append-only). Column refs are written qualified on purpose: Drizzle renders
+ * them unqualified, which would bind to audit_events inside the subquery.
+ */
+const notRejected = sql`not exists (select 1 from audit_events e
+  where e.action = 'ai_decision.rejected' and e.target_id = "ai_decisions"."id")`;
+
+async function isRejected(db: Db, decisionId: string) {
+  const rows = await db.select({ id: schema.auditEvents.id }).from(schema.auditEvents)
+    .where(and(eq(schema.auditEvents.action, "ai_decision.rejected"), eq(schema.auditEvents.targetId, decisionId)));
+  return rows.length > 0;
+}
+
+async function loadDecision(db: Db, decisionId: string) {
+  const [decision] = await db.select().from(schema.aiDecisions)
+    .where(and(eq(schema.aiDecisions.id, decisionId), eq(schema.aiDecisions.kind, KIND)));
+  if (!decision) throw new TRPCError({ code: "NOT_FOUND", message: "Sugerencia no encontrada" });
+  return decision;
+}
+
+const money = z.number().int().nonnegative().refine(Number.isSafeInteger);
 
 export const taxDocumentsRouter = router({
   list: protectedProcedure
@@ -56,4 +97,170 @@ export const taxDocumentsRouter = router({
       if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
       return res.value;
     }),
+
+  /**
+   * Proposes a journal entry for a pending document (never posts). Two phases around the provider
+   * call so no transaction is open while the local model thinks: short read tx, provider call
+   * with no tx, short write tx. Returns the pending suggestion if one exists (unless `refresh`).
+   */
+  suggestEntry: authedProcedure
+    .input(z.object({ documentId: z.string().uuid(), refresh: z.boolean().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.userId;
+      // Phase 1: read.
+      const loaded = await withTenant(userId, async (db) => {
+        const doc = await loadDocument(db, input.documentId);
+        if (doc.journalEntryId) throw new TRPCError({ code: "CONFLICT", message: "El comprobante ya fue contabilizado" });
+        const sifen = (doc.metadata as { sifen?: SifenDocument } | null)?.sifen;
+        if (!sifen) throw new TRPCError({ code: "BAD_REQUEST", message: "El comprobante no tiene datos para sugerir" });
+        if (!input.refresh) {
+          const [pending] = await db.select().from(schema.aiDecisions)
+            .where(and(
+              eq(schema.aiDecisions.entityId, doc.entityId),
+              eq(schema.aiDecisions.kind, KIND),
+              eq(schema.aiDecisions.accepted, false),
+              sql`${schema.aiDecisions.input}->>'documentId' = ${doc.id}`,
+              notRejected,
+            ))
+            .orderBy(desc(schema.aiDecisions.createdAt))
+            .limit(1);
+          if (pending) return { pending: { decisionId: pending.id, suggestion: pending.output as Suggestion } };
+        }
+        const rows = await db.select({
+          id: schema.accounts.id, code: schema.accounts.code, name: schema.accounts.name,
+          nature: schema.accounts.nature, allowsPosting: schema.accounts.allowsPosting,
+        })
+          .from(schema.accounts)
+          .innerJoin(schema.chartOfAccounts, eq(schema.accounts.coaId, schema.chartOfAccounts.id))
+          .where(and(eq(schema.chartOfAccounts.entityId, doc.entityId), eq(schema.accounts.allowsPosting, true)))
+          .orderBy(schema.accounts.code);
+        const accounts: AccountRef[] = rows.map((a) => ({ ...a, nature: String(a.nature), allowsPosting: a.allowsPosting ?? false }));
+        return { doc, sifen, accounts };
+      });
+      if ("pending" in loaded) return loaded.pending!;
+
+      // Phase 2: provider call, outside any transaction (may take seconds; never throws for Ollama).
+      const { doc, sifen, accounts } = loaded;
+      const suggestion = await suggestForDocument(sifen, accounts, doc.direction);
+
+      // Phase 3: write.
+      const decisionId = await withTenant(userId, async (db) => {
+        const fresh = await loadDocument(db, doc.id);
+        if (fresh.journalEntryId) throw new TRPCError({ code: "CONFLICT", message: "El comprobante ya fue contabilizado" });
+        return audited(
+          db,
+          {
+            entityId: doc.entityId, action: "ai_decision.created", targetType: "ai_decision",
+            targetId: (id: string) => id,
+            after: { documentId: doc.id, provider: suggestion.provider, confidence: suggestion.confidence, fallbackReason: suggestion.fallbackReason },
+          },
+          async () => {
+            const [row] = await db.insert(schema.aiDecisions).values({
+              entityId: doc.entityId,
+              kind: KIND,
+              input: { documentId: doc.id, cdc: sifen.cdc, provider: suggestion.provider },
+              output: suggestion,
+              confidence: Math.round(suggestion.confidence * 100),
+              accepted: false,
+            }).returning({ id: schema.aiDecisions.id });
+            return row.id;
+          },
+        );
+      });
+      return { decisionId, suggestion };
+    }),
+
+  /**
+   * Human approval: posts the suggested (or human-edited) lines and links the document, all in the
+   * request transaction (no I/O here), so a failed posting leaves the document and decision pending.
+   */
+  approveEntry: idempotentProcedure
+    .input(z.object({
+      documentId: z.string().uuid(),
+      decisionId: z.string().uuid(),
+      lines: z.array(z.object({
+        accountId: z.string().uuid(),
+        debit: money,
+        credit: money,
+        description: z.string().max(500).default(""),
+      })).min(2).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => tenantDb(async (db) => {
+      const doc = await loadDocument(db, input.documentId);
+      if (doc.journalEntryId) throw new TRPCError({ code: "CONFLICT", message: "El comprobante ya fue contabilizado" });
+      const decision = await loadDecision(db, input.decisionId);
+      if (decision.entityId !== doc.entityId || (decision.input as { documentId?: string } | null)?.documentId !== doc.id) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Sugerencia no encontrada" });
+      }
+      if (await isRejected(db, decision.id)) throw new TRPCError({ code: "BAD_REQUEST", message: "La sugerencia fue rechazada" });
+      const suggestion = decision.output as Suggestion;
+      const lines = input.lines ?? suggestion.lines.map(({ accountId, debit, credit, description }) => ({ accountId, debit, credit, description }));
+      if (lines.length < 2 || lines.some((l) => !l.accountId)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Elegí una cuenta para cada línea" });
+      }
+      if (lines.reduce((s, l) => s + l.debit - l.credit, 0) !== 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "El asiento no está balanceado" });
+      }
+
+      const [year, month] = doc.issueDate.split("-").map(Number);
+      const [period] = await db.select({ id: schema.fiscalPeriods.id }).from(schema.fiscalPeriods).where(and(
+        eq(schema.fiscalPeriods.entityId, doc.entityId),
+        eq(schema.fiscalPeriods.year, year),
+        eq(schema.fiscalPeriods.month, month),
+        eq(schema.fiscalPeriods.status, "open"),
+      ));
+      if (!period) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `No hay período abierto para ${String(month).padStart(2, "0")}/${year}` });
+      }
+
+      const issuer = (doc.metadata as { sifen?: SifenDocument } | null)?.sifen?.issuer.name;
+      const res = await postEntry({
+        entityId: doc.entityId,
+        periodId: period.id,
+        date: new Date(doc.issueDate),
+        number: `AS-${doc.number}`,
+        source: "sifen",
+        sourceRef: doc.cdc ?? doc.number,
+        description: `${DOC_LABEL[doc.docType] ?? "Comprobante"} ${doc.number}${issuer ? ` — ${issuer}` : ""}`,
+        lines: lines.map((l) => ({ ...l, currencyCode: doc.currencyCode ?? "PYG", taxDocumentId: doc.id })),
+      });
+      if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
+      const entry = res.value;
+
+      await audited(
+        db,
+        {
+          entityId: doc.entityId, action: "ai_decision.accepted", targetType: "ai_decision", targetId: decision.id,
+          before: { lines: suggestion.lines },
+          after: { journalEntryId: entry.id, edited: !!input.lines, ...(input.lines && { lines: input.lines }) },
+        },
+        async () => {
+          await db.update(schema.taxDocuments)
+            .set({ journalEntryId: entry.id, status: "posted", processedAt: new Date() })
+            .where(eq(schema.taxDocuments.id, doc.id));
+          await db.update(schema.aiDecisions)
+            .set({ accepted: true, acceptedBy: ctx.userId })
+            .where(eq(schema.aiDecisions.id, decision.id));
+        },
+      );
+      return { journalEntryId: entry.id, number: entry.number };
+    })),
+
+  /** The document stays pending; the decision stays `accepted=false`; the reason is audited. */
+  rejectSuggestion: idempotentProcedure
+    .input(z.object({ decisionId: z.string().uuid(), reason: z.string().trim().min(3, "El motivo es obligatorio").max(500) }))
+    .mutation(async ({ input }) => tenantDb(async (db) => {
+      const decision = await loadDecision(db, input.decisionId);
+      if (decision.accepted) throw new TRPCError({ code: "BAD_REQUEST", message: "La sugerencia ya fue aprobada" });
+      if (await isRejected(db, decision.id)) throw new TRPCError({ code: "CONFLICT", message: "La sugerencia ya fue rechazada" });
+      await audited(
+        db,
+        {
+          entityId: decision.entityId, action: "ai_decision.rejected", targetType: "ai_decision", targetId: decision.id,
+          before: { documentId: (decision.input as { documentId?: string } | null)?.documentId }, reason: input.reason,
+        },
+        async () => undefined,
+      );
+      return { ok: true as const };
+    })),
 });

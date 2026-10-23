@@ -34,4 +34,19 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   });
 });
 
+/**
+ * Same identity + 2FA rule as `protectedProcedure`, but the guard runs in a SHORT `withTenant`
+ * that ends before the handler, and there is NO ambient transaction. For procedures that call
+ * slow external services (e.g. the local LLM): the handler opens its own short
+ * `withTenant(ctx.userId, …)` blocks and must NEVER do I/O (HTTP, files, sleeps) inside one, so no
+ * DB connection is held in a transaction while waiting.
+ */
+export const authedProcedure = t.procedure.use(async ({ ctx, next }) => {
+  const userId = ctx.userId;
+  if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+  const guard = await withTenant(userId, (db) => loadGuardUser(db, userId));
+  if (needs2FA(guard)) throw new TRPCError({ code: "FORBIDDEN", message: "2FA requerido" });
+  return next({ ctx: { ...ctx, userId } });
+});
+
 export { z };

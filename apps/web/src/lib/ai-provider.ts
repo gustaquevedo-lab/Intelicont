@@ -1,103 +1,42 @@
 /**
- * AI Provider abstraction for InteliCont.
- *
- * Supports multiple backends: rule-based (free), Anthropic Claude (paid),
- * and opencode (local). The provider is selected via AI_PROVIDER env var.
+ * Server-side AI provider selection for journal suggestions (spec D5). The core lives in
+ * `@intelicont/ledger/ai`; this module only reads the environment:
+ * - `AI_PROVIDER=rules` disables the local model entirely;
+ * - otherwise rules first and Ollama (`OLLAMA_URL`, `OLLAMA_MODEL`) only when the rules are unsure.
+ * Callers must not hold a DB transaction while awaiting `suggestForDocument`.
  */
+import type { SifenDocument } from "@intelicont/ledger/sifen";
+import {
+  OllamaProvider,
+  RuleBasedProvider,
+  suggestWithFallback,
+  type AccountRef,
+  type AIProvider,
+  type Direction,
+  type Suggestion,
+} from "@intelicont/ledger/ai";
 
-import type { SifenInvoice } from "./sifen-parser";
+export * from "@intelicont/ledger/ai";
 
-export type AIProviderType = "rule-based" | "anthropic" | "opencode" | "custom";
+export const DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434";
+export const DEFAULT_OLLAMA_MODEL = "qwen2.5:7b";
 
-export interface JournalSuggestion {
-  lines: Array<{
-    accountCode: string;
-    accountName: string;
-    debit: string;
-    credit: string;
-    description: string;
-  }>;
-  totalDebit: number;
-  totalCredit: number;
-  balanced: boolean;
-  confidence: number;
-  rationale: string;
-  provider: AIProviderType;
+let testProvider: AIProvider | null = null;
+
+/** Test-only override (not reachable from HTTP). Throws outside NODE_ENV=test. */
+export function setAiProviderForTests(provider: AIProvider | null): void {
+  if (process.env.NODE_ENV !== "test") throw new Error("setAiProviderForTests is only available in tests");
+  testProvider = provider;
 }
 
-export interface AIProvider {
-  name: AIProviderType;
-  suggestJournalEntry: (invoice: SifenInvoice) => Promise<JournalSuggestion>;
-  isAvailable: () => boolean;
+export function suggestForDocument(doc: SifenDocument, accounts: AccountRef[], direction: Direction): Promise<Suggestion> {
+  if (testProvider) return testProvider.suggestEntry(doc, accounts, direction);
+  const rules = new RuleBasedProvider();
+  const ollama = process.env.AI_PROVIDER === "rules"
+    ? undefined
+    : new OllamaProvider({
+        url: process.env.OLLAMA_URL || DEFAULT_OLLAMA_URL,
+        model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+      });
+  return suggestWithFallback(doc, accounts, { rules, ollama, direction });
 }
-
-// ─── Rule-based provider (free, always available) ──────────────────────────
-
-import { suggestJournalEntry as ruleBasedSuggest } from "./sifen-parser";
-
-const ruleBasedProvider: AIProvider = {
-  name: "rule-based",
-  isAvailable: () => true,
-  suggestJournalEntry: async (invoice) => {
-    const result = ruleBasedSuggest(invoice);
-    return {
-      ...result,
-      rationale: result.rationale || "Generado por reglas contables PY.",
-      provider: "rule-based",
-    };
-  },
-};
-
-// ─── Provider registry ─────────────────────────────────────────────────────
-
-const providers: Map<AIProviderType, AIProvider> = new Map();
-providers.set("rule-based", ruleBasedProvider);
-
-export function registerProvider(provider: AIProvider): void {
-  providers.set(provider.name, provider);
-}
-
-export function getProvider(type?: AIProviderType): AIProvider {
-  const selected = type || (process.env.NEXT_PUBLIC_AI_PROVIDER as AIProviderType) || "rule-based";
-  const provider = providers.get(selected);
-  if (provider && provider.isAvailable()) {
-    return provider;
-  }
-  // Fallback to rule-based
-  console.warn(`[AI] Provider "${selected}" not available, falling back to rule-based`);
-  return ruleBasedProvider;
-}
-
-export async function getJournalSuggestion(invoice: SifenInvoice): Promise<JournalSuggestion> {
-  const provider = getProvider();
-  return provider.suggestJournalEntry(invoice);
-}
-
-export function listProviders(): { name: AIProviderType; available: boolean }[] {
-  return Array.from(providers.entries()).map(([name, p]) => ({
-    name,
-    available: p.isAvailable(),
-  }));
-}
-
-// ─── Anthropic provider stub (uncomment when API key is available) ──────────
-//
-// import Anthropic from "@anthropic-ai/sdk";
-//
-// const anthropicProvider: AIProvider = {
-//   name: "anthropic",
-//   isAvailable: () => !!process.env.ANTHROPIC_API_KEY,
-//   suggestJournalEntry: async (invoice) => {
-//     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-//     const msg = await anthropic.messages.create({
-//       model: "claude-sonnet-4-20250514",
-//       max_tokens: 1024,
-//       messages: [{
-//         role: "user",
-//         content: `Genera asiento contable paraguayo para: ${JSON.stringify(invoice)}`
-//       }],
-//     });
-//     return parseAnthropicResponse(msg);
-//   },
-// };
-// registerProvider(anthropicProvider);
