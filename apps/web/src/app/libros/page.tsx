@@ -1,68 +1,33 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   BookOpen,
   FileText,
   Receipt,
-  Download,
-  Filter,
   Calendar,
   Building2,
   Search,
   ArrowLeft,
   ArrowRight,
-  TrendingUp,
-  ChevronDown,
   Hash,
   FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/trpc/client";
+import { useAuthStore } from "@/lib/auth-store";
+import type { AppRouter } from "@/trpc";
+import type { inferRouterOutputs } from "@trpc/server";
+
+type Out = inferRouterOutputs<AppRouter>["reports"];
+type IvaRow = Out["libroIva"]["rows"][number];
+type IvaTotals = Out["libroIva"]["totals"];
+type DiarioRow = Out["diario"]["rows"][number];
+type SumasRow = Out["sumasSaldos"]["rows"][number];
 
 type LibroTab = "iva_compras" | "iva_ventas" | "diario" | "mayor" | "sumas_saldos";
-
-interface IVAEntry {
-  id: string;
-  fecha: string;
-  numero: string;
-  tipo: "factura" | "nc" | "nd" | "recibo";
-  ruc: string;
-  nombre: string;
-  gravado10: number;
-  gravado5: number;
-  exento: number;
-  iva10: number;
-  iva5: number;
-  total: number;
-  cdc?: string;
-}
-
-interface DiarioEntry {
-  id: string;
-  fecha: string;
-  numero: string;
-  cuenta: string;
-  nombreCuenta: string;
-  debito: number;
-  credito: number;
-  descripcion: string;
-  origen: string;
-}
-
-interface MayorAccount {
-  code: string;
-  name: string;
-  nature: "asset" | "liability" | "equity" | "income" | "expense";
-  openingBalance: number;
-  entries: {
-    date: string;
-    description: string;
-    debit: number;
-    credit: number;
-    balance: number;
-  }[];
-  closingBalance: number;
-}
 
 const NATURE_LABELS: Record<string, string> = {
   asset: "Activo",
@@ -80,102 +45,31 @@ const NATURE_COLORS: Record<string, string> = {
   expense: "text-orange-600 dark:text-orange-400",
 };
 
-// Mock IVA Compras
-const MOCK_COMPRAS: IVAEntry[] = [
-  { id: "c1", fecha: "2026-05-01", numero: "001-001-00234", tipo: "factura", ruc: "80012345-0", nombre: "Importadora del Este S.A.", gravado10: 10000000, gravado5: 0, exento: 0, iva10: 1000000, iva5: 0, total: 11000000, cdc: "8001234510010010023402605010000000112345678" },
-  { id: "c2", fecha: "2026-05-03", numero: "002-001-00089", tipo: "factura", ruc: "4567890-1", nombre: "Servicios Contables Del Paraguay", gravado10: 2000000, gravado5: 0, exento: 500000, iva10: 200000, iva5: 0, total: 2700000 },
-  { id: "c3", fecha: "2026-05-05", numero: "001-001-00056", tipo: "nc", ruc: "1234567-8", nombre: "Distribuciones Ñandutí S.A.", gravado10: -500000, gravado5: 0, exento: 0, iva10: -50000, iva5: 0, total: -550000, cdc: "123456780010010005602605000000000112345678901" },
-  { id: "c4", fecha: "2026-05-08", numero: "001-001-01123", tipo: "factura", ruc: "9876543-2", nombre: "Agropecuaria Guaraní", gravado10: 3000000, gravado5: 1500000, exento: 0, iva10: 300000, iva5: 75000, total: 4875000 },
-  { id: "c5", fecha: "2026-05-12", numero: "001-001-01145", tipo: "factura", ruc: "80012345-0", nombre: "Importadora del Este S.A.", gravado10: 8500000, gravado5: 0, exento: 0, iva10: 850000, iva5: 0, total: 9350000, cdc: "8001234510010010114502605120000000112345678" },
-];
+const SOURCE_LABELS: Record<string, string> = {
+  manual: "Manual", sales: "Ventas", purchase: "Compras", payment: "Pago", collection: "Cobro", bank: "Banco",
+  depreciation: "Depreciación", fx_adjustment: "Dif. de cambio", payroll: "Sueldos", import: "Importación", sifen: "XML SIFEN",
+};
 
-// Mock IVA Ventas
-const MOCK_VENTAS: IVAEntry[] = [
-  { id: "v1", fecha: "2026-05-02", numero: "001-001-00345", tipo: "factura", ruc: "80023456-2", nombre: "Tecnología Asunción SRL", gravado10: 15000000, gravado5: 0, exento: 0, iva10: 1500000, iva5: 0, total: 16500000, cdc: "8002345610010010034502605020000000112345678" },
-  { id: "v2", fecha: "2026-05-06", numero: "001-001-00346", tipo: "factura", ruc: "9876543-2", nombre: "Agropecuaria Guaraní", gravado10: 5000000, gravado5: 0, exento: 2000000, iva10: 500000, iva5: 0, total: 7000000 },
-  { id: "v3", fecha: "2026-05-10", numero: "001-001-00347", tipo: "factura", ruc: "80023456-2", nombre: "Tecnología Asunción SRL", gravado10: 12000000, gravado5: 3000000, exento: 0, iva10: 1200000, iva5: 150000, total: 16350000, cdc: "8002345610010010034702605100000000112345678" },
-  { id: "v4", fecha: "2026-05-15", numero: "001-001-00012", tipo: "nc", ruc: "9876543-2", nombre: "Agropecuaria Guaraní", gravado10: -1000000, gravado5: 0, exento: 0, iva10: -100000, iva5: 0, total: -1100000 },
-];
+const gs = (v: number) => `₲ ${v.toLocaleString("es-PY")}`;
+const PAGE = 500;
 
-// Mock Diario
-const MOCK_DIARIO: DiarioEntry[] = [
-  { id: "d1", fecha: "2026-05-01", numero: "JE-001", cuenta: "1.1.03.001", nombreCuenta: "Mercaderías en Depósito", debito: 10000000, credito: 0, descripcion: "Compra mercadería gravada", origen: "XML SIFEN" },
-  { id: "d2", fecha: "2026-05-01", numero: "JE-001", cuenta: "1.1.06", nombreCuenta: "IVA Crédito Fiscal", debito: 1000000, credito: 0, descripcion: "IVA 10% compra", origen: "XML SIFEN" },
-  { id: "d3", fecha: "2026-05-01", numero: "JE-001", cuenta: "2.1.01", nombreCuenta: "Cuentas a Pagar Proveedores", debito: 0, credito: 11000000, descripcion: "Proveedor: ImportEste", origen: "XML SIFEN" },
-  { id: "d4", fecha: "2026-05-02", numero: "JE-002", cuenta: "2.1.01", nombreCuenta: "Cuentas a Cobrar Clientes", debito: 16500000, credito: 0, descripcion: "Venta Factura 001-001-00345", origen: "XML SIFEN" },
-  { id: "d5", fecha: "2026-05-02", numero: "JE-002", cuenta: "4.1.01", nombreCuenta: "Ventas de Mercaderías", debito: 0, credito: 15000000, descripcion: "Venta gravada 10%", origen: "XML SIFEN" },
-  { id: "d6", fecha: "2026-05-02", numero: "JE-002", cuenta: "2.1.02", nombreCuenta: "IVA Débito Fiscal", debito: 0, credito: 1500000, descripcion: "IVA 10% venta", origen: "XML SIFEN" },
-  { id: "d7", fecha: "2026-05-03", numero: "JE-003", cuenta: "5.1.04", nombreCuenta: "Honorarios Profesionales", debito: 2000000, credito: 0, descripcion: "Honorarios contador", origen: "Manual" },
-  { id: "d8", fecha: "2026-05-03", numero: "JE-003", cuenta: "5.1.05", nombreCuenta: "Otros Gastos", debito: 500000, credito: 0, descripcion: "Gastos varios", origen: "Manual" },
-  { id: "d9", fecha: "2026-05-03", numero: "JE-003", cuenta: "1.1.01.002", nombreCuenta: "Banco Continental", debito: 0, credito: 2500000, descripcion: "Pago transferencia", origen: "Manual" },
-  { id: "d10", fecha: "2026-05-05", numero: "JE-004", cuenta: "2.1.01", nombreCuenta: "Cuentas a Pagar Proveedores", debito: 550000, credito: 0, descripcion: "NC 001-001-00056", origen: "XML SIFEN" },
-  { id: "d11", fecha: "2026-05-05", numero: "JE-004", cuenta: "1.1.03.001", nombreCuenta: "Mercaderías en Depósito", debito: 0, credito: 500000, descripcion: "Devolución mercadería", origen: "XML SIFEN" },
-  { id: "d12", fecha: "2026-05-05", numero: "JE-004", cuenta: "1.1.06", nombreCuenta: "IVA Crédito Fiscal", debito: 0, credito: 50000, descripcion: "Ajuste IVA crédito", origen: "XML SIFEN" },
-];
+/** Current month in Asunción, `YYYY-MM`. */
+const currentMonth = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Asuncion" }).slice(0, 7);
 
-// Mock Mayor
-const MOCK_MAYOR: MayorAccount[] = [
-  {
-    code: "1.1.01.002",
-    name: "Banco Continental Cta. Cte.",
-    nature: "asset",
-    openingBalance: 65000000,
-    entries: [
-      { date: "2026-05-01", description: "Saldo anterior", debit: 0, credit: 0, balance: 65000000 },
-      { date: "2026-05-02", description: "Cobro Factura 001-001-00300", debit: 8500000, credit: 0, balance: 73500000 },
-      { date: "2026-05-03", description: "Pago honorarios JE-003", debit: 0, credit: 2500000, balance: 71000000 },
-      { date: "2026-05-05", description: "Pago proveedores", debit: 0, credit: 5600000, balance: 65400000 },
-      { date: "2026-05-10", description: "Cobro Factura 001-001-00320", debit: 12000000, credit: 0, balance: 77400000 },
-    ],
-    closingBalance: 77400000,
-  },
-  {
-    code: "2.1.01",
-    name: "Cuentas a Pagar Proveedores",
-    nature: "liability",
-    openingBalance: 45000000,
-    entries: [
-      { date: "2026-05-01", description: "Compra ImportEste JE-001", debit: 0, credit: 11000000, balance: 56000000 },
-      { date: "2026-05-05", description: "NC Ñandutí JE-004", debit: 550000, credit: 0, balance: 55450000 },
-      { date: "2026-05-10", description: "Pago a proveedores", debit: 8000000, credit: 0, balance: 47450000 },
-    ],
-    closingBalance: 47450000,
-  },
-  {
-    code: "4.1.01",
-    name: "Ventas de Mercaderías Gravadas 10%",
-    nature: "income",
-    openingBalance: 0,
-    entries: [
-      { date: "2026-05-02", description: "Venta TechAsu JE-002", debit: 0, credit: 15000000, balance: -15000000 },
-      { date: "2026-05-06", description: "Venta AgroGuarani JE-005", debit: 0, credit: 5000000, balance: -20000000 },
-      { date: "2026-05-10", description: "Venta TechAsu JE-006", debit: 0, credit: 12000000, balance: -32000000 },
-      { date: "2026-05-15", description: "NC AgroGuarani JE-007", debit: 1000000, credit: 0, balance: -31000000 },
-    ],
-    closingBalance: -31000000,
-  },
-  {
-    code: "5.1.01",
-    name: "Costo de Mercaderías Vendidas",
-    nature: "expense",
-    openingBalance: 0,
-    entries: [
-      { date: "2026-05-02", description: "Costo venta TechAsu", debit: 8500000, credit: 0, balance: 8500000 },
-      { date: "2026-05-06", description: "Costo venta AgroGuarani", debit: 3200000, credit: 0, balance: 11700000 },
-      { date: "2026-05-10", description: "Costo venta TechAsu", debit: 6800000, credit: 0, balance: 18500000 },
-    ],
-    closingBalance: 18500000,
-  },
-];
+/** First and last day of a `YYYY-MM` month. */
+function monthRange(periodo: string) {
+  const [y, m] = periodo.split("-").map(Number);
+  return { year: y, month: m, from: `${periodo}-01`, to: new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10) };
+}
 
 export default function LibrosPage() {
+  const entity = useAuthStore((s) => s.selectedEntity);
   const [activeLibro, setActiveLibro] = useState<LibroTab>("iva_compras");
-  const [periodo, setPeriodo] = useState("2026-05");
+  const [periodo, setPeriodo] = useState(currentMonth);
   const [search, setSearch] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedMayorAccount, setSelectedMayorAccount] = useState<MayorAccount | null>(null);
+  const [mayorAccountId, setMayorAccountId] = useState<string | null>(null);
 
-  const tabs: { id: LibroTab; label: string; shortLabel: string; icon: any }[] = [
+  const tabs: { id: LibroTab; label: string; shortLabel: string; icon: typeof Receipt }[] = [
     { id: "iva_compras", label: "IVA Compras", shortLabel: "Compras", icon: Receipt },
     { id: "iva_ventas", label: "IVA Ventas", shortLabel: "Ventas", icon: FileText },
     { id: "diario", label: "Libro Diario", shortLabel: "Diario", icon: BookOpen },
@@ -183,58 +77,7 @@ export default function LibrosPage() {
     { id: "sumas_saldos", label: "Sumas y Saldos", shortLabel: "S&S", icon: FileSpreadsheet },
   ];
 
-  const comprasTotales = useMemo(() =>
-    MOCK_COMPRAS.reduce((acc, e) => ({
-      gravado10: acc.gravado10 + e.gravado10,
-      gravado5: acc.gravado5 + e.gravado5,
-      exento: acc.exento + e.exento,
-      iva10: acc.iva10 + e.iva10,
-      iva5: acc.iva5 + e.iva5,
-      total: acc.total + e.total,
-    }), { gravado10: 0, gravado5: 0, exento: 0, iva10: 0, iva5: 0, total: 0 }),
-  []);
-
-  const ventasTotales = useMemo(() =>
-    MOCK_VENTAS.reduce((acc, e) => ({
-      gravado10: acc.gravado10 + e.gravado10,
-      gravado5: acc.gravado5 + e.gravado5,
-      exento: acc.exento + e.exento,
-      iva10: acc.iva10 + e.iva10,
-      iva5: acc.iva5 + e.iva5,
-      total: acc.total + e.total,
-    }), { gravado10: 0, gravado5: 0, exento: 0, iva10: 0, iva5: 0, total: 0 }),
-  []);
-
-  const diarioTotals = useMemo(() => ({
-    debito: MOCK_DIARIO.reduce((s, e) => s + e.debito, 0),
-    credito: MOCK_DIARIO.reduce((s, e) => s + e.credito, 0),
-    entries: MOCK_DIARIO.length,
-  }), []);
-
-  const filteredCompras = useMemo(() =>
-    MOCK_COMPRAS.filter((e) =>
-      e.nombre.toLowerCase().includes(search.toLowerCase()) ||
-      e.numero.includes(search) ||
-      e.ruc.includes(search)
-    ), [search]);
-
-  const filteredVentas = useMemo(() =>
-    MOCK_VENTAS.filter((e) =>
-      e.nombre.toLowerCase().includes(search.toLowerCase()) ||
-      e.numero.includes(search) ||
-      e.ruc.includes(search)
-    ), [search]);
-
-  const diarioByDate = useMemo(() => {
-    const groups: Record<string, DiarioEntry[]> = {};
-    const sorted = [...MOCK_DIARIO].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.numero.localeCompare(b.numero));
-    sorted.forEach((e) => {
-      const key = `${e.fecha}|${e.numero}`;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(e);
-    });
-    return groups;
-  }, []);
+  const range = monthRange(periodo || currentMonth());
 
   return (
     <div className="p-3 sm:p-4 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
@@ -244,30 +87,29 @@ export default function LibrosPage() {
           <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Libros Contables</h1>
           <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
             Libro IVA, Diario, Mayor y Sumas y Saldos — {periodo}
+            {entity && <> · {entity.tradeName || entity.legalName}</>}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="month"
-            value={periodo}
-            onChange={(e) => setPeriodo(e.target.value)}
-            className="px-2.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
-          />
-          <button className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs sm:text-sm transition-colors border border-gray-200 dark:border-gray-700 no-tap-highlight">
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Exportar</span>
-          </button>
-        </div>
+        <input
+          type="month"
+          aria-label="Período"
+          value={periodo}
+          onChange={(e) => { setPeriodo(e.target.value); setMayorAccountId(null); }}
+          className="px-2.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
+        />
       </div>
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-1.5 flex flex-wrap gap-1">
+      <div role="tablist" className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-1.5 flex flex-wrap gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveLibro(tab.id); setSelectedMayorAccount(null); setSearch(""); }}
+              role="tab"
+              aria-selected={activeLibro === tab.id}
+              aria-label={tab.label}
+              onClick={() => { setActiveLibro(tab.id); setMayorAccountId(null); setSearch(""); }}
               className={cn(
                 "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-all flex-1 justify-center min-w-[60px] sm:min-w-[120px] no-tap-highlight",
                 activeLibro === tab.id
@@ -283,71 +125,93 @@ export default function LibrosPage() {
         })}
       </div>
 
-      {/* IVA Compras */}
-      {activeLibro === "iva_compras" && (
-        <LibroIVA
-          entries={filteredCompras}
-          totals={comprasTotales}
-          direction="compras"
-          search={search}
-          onSearch={setSearch}
-        />
+      {!entity ? (
+        <EmptyState icon={Building2} text="Seleccioná una empresa para ver sus libros" />
+      ) : (
+        <>
+          {(activeLibro === "iva_compras" || activeLibro === "iva_ventas") && (
+            <LibroIVA
+              key={activeLibro}
+              entityId={entity.id}
+              year={range.year}
+              month={range.month}
+              side={activeLibro === "iva_compras" ? "compras" : "ventas"}
+              search={search}
+              onSearch={setSearch}
+            />
+          )}
+          {activeLibro === "diario" && <LibroDiario key={periodo} entityId={entity.id} from={range.from} to={range.to} />}
+          {activeLibro === "mayor" && !mayorAccountId && (
+            <LibroMayorList entityId={entity.id} from={range.from} to={range.to} onSelect={setMayorAccountId} />
+          )}
+          {activeLibro === "mayor" && mayorAccountId && (
+            <LibroMayorDetail entityId={entity.id} accountId={mayorAccountId} from={range.from} to={range.to} onBack={() => setMayorAccountId(null)} />
+          )}
+          {activeLibro === "sumas_saldos" && <SumasYSaldos entityId={entity.id} from={range.from} to={range.to} />}
+        </>
       )}
-
-      {/* IVA Ventas */}
-      {activeLibro === "iva_ventas" && (
-        <LibroIVA
-          entries={filteredVentas}
-          totals={ventasTotales}
-          direction="ventas"
-          search={search}
-          onSearch={setSearch}
-        />
-      )}
-
-      {/* Libro Diario */}
-      {activeLibro === "diario" && (
-        <LibroDiario
-          entriesByDate={diarioByDate}
-          totals={diarioTotals}
-        />
-      )}
-
-      {/* Libro Mayor */}
-      {activeLibro === "mayor" && !selectedMayorAccount && (
-        <LibroMayorList
-          accounts={MOCK_MAYOR}
-          onSelect={(acc) => setSelectedMayorAccount(acc)}
-        />
-      )}
-      {activeLibro === "mayor" && selectedMayorAccount && (
-        <LibroMayorDetail
-          account={selectedMayorAccount}
-          onBack={() => setSelectedMayorAccount(null)}
-        />
-      )}
-
-      {/* Sumas y Saldos */}
-      {activeLibro === "sumas_saldos" && <SumasYSaldos />}
     </div>
   );
 }
 
+function EmptyState({ icon: Icon, text }: { icon: typeof Receipt; text: string }) {
+  return (
+    <div className="p-8 sm:p-12 text-center">
+      <Icon className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+      <p className="text-gray-500 dark:text-gray-400 text-sm">{text}</p>
+    </div>
+  );
+}
+
+function Loading() {
+  return (
+    <div className="p-8 flex justify-center text-gray-400">
+      <Loader2 className="h-5 w-5 animate-spin" aria-label="Cargando" />
+    </div>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return <p role="alert" className="p-4 text-sm text-red-600 dark:text-red-400">{message}</p>;
+}
+
+function EntryLink({ entryId, children }: { entryId: string | null; children: React.ReactNode }) {
+  if (!entryId) return <>{children}</>;
+  return (
+    <Link href={`/asientos/${entryId}`} className="hover:underline text-blue-600 dark:text-blue-400" title="Ver asiento">
+      {children}
+    </Link>
+  );
+}
+
 // IVA Book Component
-function LibroIVA({ entries, totals, direction, search, onSearch }: { entries: IVAEntry[]; totals: any; direction: string; search: string; onSearch: (s: string) => void }) {
+function LibroIVA({ entityId, year, month, side, search, onSearch }: {
+  entityId: string; year: number; month: number; side: "compras" | "ventas"; search: string; onSearch: (s: string) => void;
+}) {
+  const q = api.reports.libroIva.useQuery({ entityId, year, month, side });
+  const rows = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    const all = q.data?.rows ?? [];
+    if (!s) return all;
+    return all.filter((e) =>
+      (e.counterparty ?? "").toLowerCase().includes(s) || e.number.includes(s) || (e.counterpartyRuc ?? "").includes(s) || (e.cdc ?? "").includes(s));
+  }, [q.data, search]);
+  const totals: IvaTotals = q.data?.totals ?? { gravado10: 0, gravado5: 0, exento: 0, iva10: 0, iva5: 0, total: 0 };
+  const label = side === "compras" ? "Compras" : "Ventas";
+  const ivaKind = side === "compras" ? "Crédito" : "Débito";
+  const signed = (e: IvaRow, v: number) => gs(v * e.sign);
+
   return (
     <>
       {/* Totals */}
-      <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-3 sm:p-4">
-        <h3 className="text-gray-900 dark:text-white text-sm font-medium mb-3">
-          Resumen IVA {direction === "compras" ? "Compras" : "Ventas"}
-        </h3>
+      <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-3 sm:p-4" aria-label={`Resumen IVA ${label}`}>
+        <h3 className="text-gray-900 dark:text-white text-sm font-medium mb-3">Resumen IVA {label}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <TotalItem label="Gravado 10%" value={totals.gravado10} />
           <TotalItem label="Gravado 5%" value={totals.gravado5} />
           <TotalItem label="Exento" value={totals.exento} />
-          <TotalItem label={`IVA 10% ${direction === "compras" ? "Crédito" : "Débito"}`} value={totals.iva10} highlight={direction === "ventas"} />
-          <TotalItem label={`IVA 5% ${direction === "compras" ? "Crédito" : "Débito"}`} value={totals.iva5} />
+          <TotalItem label={`IVA 10% ${ivaKind}`} value={totals.iva10} highlight={side === "ventas"} />
+          <TotalItem label={`IVA 5% ${ivaKind}`} value={totals.iva5} />
           <TotalItem label="Total" value={totals.total} bold />
         </div>
       </div>
@@ -361,90 +225,92 @@ function LibroIVA({ entries, totals, direction, search, onSearch }: { entries: I
               type="text"
               value={search}
               onChange={(e) => onSearch(e.target.value)}
-              placeholder="Buscar por nombre, RUC o número..."
+              placeholder="Buscar por nombre, RUC, número o CDC..."
               className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
             />
           </div>
         </div>
 
-        {/* Desktop Table */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80">
-                <th className="text-left py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Fecha</th>
-                <th className="text-left py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Comprobante</th>
-                <th className="text-left py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">RUC</th>
-                <th className="text-left py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Nombre</th>
-                <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Grav. 10%</th>
-                <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Grav. 5%</th>
-                <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Exento</th>
-                <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">IVA 10%</th>
-                <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
-              {entries.map((e) => (
-                <tr key={e.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors">
-                  <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400">{e.fecha}</td>
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-gray-700 dark:text-gray-300">{e.numero}</span>
-                      {e.tipo === "nc" && <span className="text-[9px] px-1 py-0.5 rounded bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">NC</span>}
-                      {e.tipo === "nd" && <span className="text-[9px] px-1 py-0.5 rounded bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">ND</span>}
-                    </div>
-                  </td>
-                  <td className="py-2.5 px-3 font-mono text-gray-500 dark:text-gray-400">{e.ruc}</td>
-                  <td className="py-2.5 px-3 text-gray-900 dark:text-gray-200">{e.nombre}</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {e.gravado10.toLocaleString("es-PY")}</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {e.gravado5.toLocaleString("es-PY")}</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {e.exento.toLocaleString("es-PY")}</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {e.iva10.toLocaleString("es-PY")}</td>
-                  <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums font-medium">₲ {e.total.toLocaleString("es-PY")}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                <td className="py-2.5 px-3" colSpan={4}>
-                  <span className="text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide text-[10px]">TOTALES ({entries.length} registros)</span>
-                </td>
-                <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {totals.gravado10.toLocaleString("es-PY")}</td>
-                <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {totals.gravado5.toLocaleString("es-PY")}</td>
-                <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {totals.exento.toLocaleString("es-PY")}</td>
-                <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {totals.iva10.toLocaleString("es-PY")}</td>
-                <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums font-bold">₲ {totals.total.toLocaleString("es-PY")}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        {/* Mobile */}
-        <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
-          {entries.map((e) => (
-            <div key={e.id} className="p-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{e.numero}</span>
-                  {e.tipo === "nc" && <span className="text-[9px] px-1 py-0.5 rounded bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">NC</span>}
-                </div>
-                <span className="font-mono text-xs font-medium text-gray-900 dark:text-white tabular-nums">₲ {e.total.toLocaleString("es-PY")}</span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 text-xs">{e.nombre}</p>
-              <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
-                <span>{e.fecha}</span>
-                <span>·</span>
-                <span className="font-mono">{e.ruc}</span>
-              </div>
+        {q.isLoading ? <Loading /> : q.error ? <ErrorState message={q.error.message} /> : (
+          <>
+            {/* Desktop Table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-xs" aria-label={`Libro IVA ${label}`}>
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80">
+                    {["Fecha", "Comprobante", "RUC", "Nombre"].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">{h}</th>
+                    ))}
+                    {["Grav. 10%", "Grav. 5%", "Exento", "IVA 10%", "IVA 5%", "Total"].map((h) => (
+                      <th key={h} className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                  {rows.map((e) => (
+                    <tr key={e.documentId} className="hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors">
+                      <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400">{e.date}</td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-gray-700 dark:text-gray-300">
+                            <EntryLink entryId={e.entryId}>{e.number}</EntryLink>
+                          </span>
+                          {e.sign < 0 && <span className="text-[9px] px-1 py-0.5 rounded bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">NC</span>}
+                          {e.docType === "debit_note" && <span className="text-[9px] px-1 py-0.5 rounded bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">ND</span>}
+                          {e.totalOnly && <span className="text-[9px] px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">solo total</span>}
+                          {!e.entryId && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">sin asiento</span>}
+                        </div>
+                        {e.cdc && <p className="font-mono text-[9px] text-gray-400 mt-0.5">CDC {e.cdc}</p>}
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-gray-500 dark:text-gray-400">{e.counterpartyRuc ?? "—"}</td>
+                      <td className="py-2.5 px-3 text-gray-900 dark:text-gray-200">{e.counterparty ?? "—"}</td>
+                      {[e.gravado10, e.gravado5, e.exento, e.iva10, e.iva5].map((v, i) => (
+                        <td key={i} className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">{signed(e, v)}</td>
+                      ))}
+                      <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums font-medium">{signed(e, e.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                    <td className="py-2.5 px-3" colSpan={4}>
+                      <span className="text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide text-[10px]">TOTALES ({q.data?.rows.length ?? 0} registros)</span>
+                    </td>
+                    {[totals.gravado10, totals.gravado5, totals.exento, totals.iva10, totals.iva5].map((v, i) => (
+                      <td key={i} className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">{gs(v)}</td>
+                    ))}
+                    <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums font-bold">{gs(totals.total)}</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-          ))}
-        </div>
 
-        {entries.length === 0 && (
-          <div className="p-8 sm:p-12 text-center">
-            <Receipt className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">No se encontraron registros</p>
-          </div>
+            {/* Mobile */}
+            <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+              {rows.map((e) => (
+                <div key={e.documentId} className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-gray-700 dark:text-gray-300"><EntryLink entryId={e.entryId}>{e.number}</EntryLink></span>
+                      {e.sign < 0 && <span className="text-[9px] px-1 py-0.5 rounded bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">NC</span>}
+                      {e.totalOnly && <span className="text-[9px] px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">solo total</span>}
+                    </div>
+                    <span className="font-mono text-xs font-medium text-gray-900 dark:text-white tabular-nums">{signed(e, e.total)}</span>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 text-xs">{e.counterparty ?? "—"}</p>
+                  <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
+                    <span>{e.date}</span>
+                    <span>·</span>
+                    <span className="font-mono">{e.counterpartyRuc ?? "—"}</span>
+                    <span>·</span>
+                    <span className="font-mono">IVA {gs((e.iva10 + e.iva5) * e.sign)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {rows.length === 0 && <EmptyState icon={Receipt} text="No hay comprobantes que imputen IVA en este período" />}
+          </>
         )}
       </div>
     </>
@@ -452,66 +318,76 @@ function LibroIVA({ entries, totals, direction, search, onSearch }: { entries: I
 }
 
 // Libro Diario Component
-function LibroDiario({ entriesByDate, totals }: { entriesByDate: Record<string, DiarioEntry[]>; totals: { debito: number; credito: number; entries: number } }) {
-  const dates = Object.keys(entriesByDate).sort();
+function LibroDiario({ entityId, from, to }: { entityId: string; from: string; to: string }) {
+  const [offset, setOffset] = useState(0);
+  const q = api.reports.diario.useQuery({ entityId, from, to, limit: PAGE, offset });
+  const groups = useMemo(() => {
+    const out: { entryId: string; lines: DiarioRow[] }[] = [];
+    for (const r of q.data?.rows ?? []) {
+      const last = out[out.length - 1];
+      if (last?.entryId === r.entryId) last.lines.push(r);
+      else out.push({ entryId: r.entryId, lines: [r] });
+    }
+    return out;
+  }, [q.data]);
+  const totals = q.data?.totals ?? { debit: 0, credit: 0, entries: 0, lines: 0 };
+  const balanced = totals.debit === totals.credit;
 
   return (
     <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
       <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
         <div>
           <h3 className="text-gray-900 dark:text-white text-sm font-medium">Libro Diario</h3>
-          <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">{totals.entries} líneas en {dates.length} asientos</p>
+          <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">{totals.lines} líneas en {totals.entries} asientos</p>
         </div>
-        <div className={cn(
-          "flex items-center gap-3 text-xs font-mono",
-          Math.abs(totals.debito - totals.credito) < 0.01 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-        )}>
-          <span>D ₲ {totals.debito.toLocaleString("es-PY")}</span>
+        <div className={cn("flex items-center gap-3 text-xs font-mono", balanced ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+          <span>D {gs(totals.debit)}</span>
           <span className="text-gray-400">=</span>
-          <span>C ₲ {totals.credito.toLocaleString("es-PY")}</span>
-          {Math.abs(totals.debito - totals.credito) < 0.01 && (
-            <span className="hidden sm:inline text-green-500">✓</span>
-          )}
+          <span>C {gs(totals.credit)}</span>
+          {balanced && <span className="hidden sm:inline text-green-500">✓</span>}
         </div>
       </div>
 
-      {dates.map((key) => {
-        const [fecha, numero] = key.split("|");
-        const entries = entriesByDate[key];
-        const entryTotal = entries.reduce((s, e) => s + e.debito, 0);
-
+      {q.isLoading ? <Loading /> : q.error ? <ErrorState message={q.error.message} /> : groups.map(({ entryId, lines }) => {
+        const head = lines[0];
+        const entryTotal = lines.reduce((s, e) => s + e.debit, 0);
         return (
-          <div key={key} className="border-b border-gray-100 dark:border-gray-800/50 last:border-b-0">
+          <div key={entryId} className="border-b border-gray-100 dark:border-gray-800/50 last:border-b-0">
             {/* Entry Header */}
             <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-gray-50 dark:bg-gray-900/80">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">{fecha}</span>
-                <span className="text-gray-400 dark:text-gray-500 text-xs font-mono">{numero}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <Calendar className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <span className="text-gray-700 dark:text-gray-300 text-xs font-medium">{head.date}</span>
+                <span className="text-xs font-mono"><EntryLink entryId={entryId}>{head.entryNumber ?? "s/n"}</EntryLink></span>
                 <span className={cn(
                   "text-[10px] px-1.5 py-0.5 rounded",
-                  entries[0]?.origen === "XML SIFEN" ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" :
-                  "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
-                )}>{entries[0]?.origen}</span>
+                  head.source === "sifen" ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                )}>{SOURCE_LABELS[head.source] ?? head.source}</span>
+                {head.reversalOf && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">
+                    <Link href={`/asientos/${head.reversalOf}`} className="hover:underline">Reversión</Link>
+                  </span>
+                )}
+                {head.entryDescription && <span className="hidden sm:inline text-[10px] text-gray-400 truncate">{head.entryDescription}</span>}
               </div>
-              <span className="font-mono text-xs text-gray-500 dark:text-gray-400 tabular-nums">₲ {entryTotal.toLocaleString("es-PY")}</span>
+              <span className="font-mono text-xs text-gray-500 dark:text-gray-400 tabular-nums">{gs(entryTotal)}</span>
             </div>
 
             {/* Entry Lines */}
             <div className="divide-y divide-gray-50 dark:divide-gray-800/30">
-              {entries.map((e) => (
-                <div key={e.id} className="px-4 sm:px-6 py-2">
+              {lines.map((e) => (
+                <div key={e.lineId} className="px-4 sm:px-6 py-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="font-mono text-[10px] sm:text-xs text-purple-500 dark:text-purple-400 w-20 sm:w-24 shrink-0">{e.cuenta}</span>
+                      <span className="font-mono text-[10px] sm:text-xs text-purple-500 dark:text-purple-400 w-20 sm:w-24 shrink-0">{e.accountCode}</span>
                       <div className="min-w-0">
-                        <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{e.nombreCuenta}</p>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{e.descripcion}</p>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{e.accountName}</p>
+                        {e.lineDescription && <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{e.lineDescription}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0 ml-2">
-                      {e.debito > 0 && <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400 tabular-nums">D {e.debito.toLocaleString("es-PY")}</span>}
-                      {e.credito > 0 && <span className="font-mono text-xs text-red-600 dark:text-red-400 tabular-nums">C {e.credito.toLocaleString("es-PY")}</span>}
+                      {e.debit > 0 && <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400 tabular-nums">D {e.debit.toLocaleString("es-PY")}</span>}
+                      {e.credit > 0 && <span className="font-mono text-xs text-red-600 dark:text-red-400 tabular-nums">C {e.credit.toLocaleString("es-PY")}</span>}
                     </div>
                   </div>
                 </div>
@@ -521,65 +397,78 @@ function LibroDiario({ entriesByDate, totals }: { entriesByDate: Record<string, 
         );
       })}
 
-      {dates.length === 0 && (
-        <div className="p-8 sm:p-12 text-center">
-          <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-500 dark:text-gray-400 text-sm">No hay asientos en este período</p>
+      {!q.isLoading && !q.error && groups.length === 0 && <EmptyState icon={BookOpen} text="No hay asientos publicados en este período" />}
+
+      {totals.lines > PAGE && (
+        <div className="flex items-center justify-between p-3 text-xs text-gray-500 border-t border-gray-200 dark:border-gray-800">
+          <span>Líneas {offset + 1}–{Math.min(offset + PAGE, totals.lines)} de {totals.lines}</span>
+          <div className="flex gap-2">
+            <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))} className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-40">Anterior</button>
+            <button disabled={offset + PAGE >= totals.lines} onClick={() => setOffset(offset + PAGE)} className="px-2 py-1 rounded border border-gray-200 dark:border-gray-700 disabled:opacity-40">Siguiente</button>
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-// Libro Mayor List
-function LibroMayorList({ accounts, onSelect }: { accounts: MayorAccount[]; onSelect: (acc: MayorAccount) => void }) {
+// Libro Mayor List: accounts with an opening balance or movements up to the end of the period.
+function LibroMayorList({ entityId, from, to, onSelect }: { entityId: string; from: string; to: string; onSelect: (accountId: string) => void }) {
+  const q = api.reports.sumasSaldos.useQuery({ entityId, from, to });
+  const accounts = q.data?.rows ?? [];
   return (
     <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
       <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800">
         <h3 className="text-gray-900 dark:text-white text-sm font-medium">Libro Mayor</h3>
         <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">Seleccioná una cuenta para ver movimientos</p>
       </div>
-      <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
-        {accounts.map((acc) => (
-          <button
-            key={acc.code}
-            onClick={() => onSelect(acc)}
-            className="w-full flex items-center gap-3 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors text-left no-tap-highlight"
-          >
-            <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
-              <Hash className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-blue-600 dark:text-blue-400">{acc.code}</span>
-                <span className={cn("text-[10px]", NATURE_COLORS[acc.nature])}>{NATURE_LABELS[acc.nature]}</span>
+      {q.isLoading ? <Loading /> : q.error ? <ErrorState message={q.error.message} /> : (
+        <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+          {accounts.map((acc) => (
+            <button
+              key={acc.accountId}
+              onClick={() => onSelect(acc.accountId)}
+              className="w-full flex items-center gap-3 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors text-left no-tap-highlight"
+            >
+              <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                <Hash className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               </div>
-              <p className="text-gray-700 dark:text-gray-300 text-sm truncate">{acc.name}</p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className={cn(
-                "font-mono text-sm tabular-nums font-medium",
-                acc.closingBalance > 0 ? "text-emerald-600 dark:text-emerald-400" :
-                acc.closingBalance < 0 ? "text-red-600 dark:text-red-400" :
-                "text-gray-500"
-              )}>
-                ₲ {Math.abs(acc.closingBalance).toLocaleString("es-PY")}
-              </p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500">{acc.entries.length} mov.</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 shrink-0" />
-          </button>
-        ))}
-      </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-blue-600 dark:text-blue-400">{acc.code}</span>
+                  <span className={cn("text-[10px]", NATURE_COLORS[acc.nature])}>{NATURE_LABELS[acc.nature]}</span>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 text-sm truncate">{acc.name}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className={cn(
+                  "font-mono text-sm tabular-nums font-medium",
+                  acc.closing > 0 ? "text-emerald-600 dark:text-emerald-400" : acc.closing < 0 ? "text-red-600 dark:text-red-400" : "text-gray-500"
+                )}>
+                  {gs(Math.abs(acc.closing))}
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">{acc.closing >= 0 ? "Deudor" : "Acreedor"}</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-gray-400 shrink-0" />
+            </button>
+          ))}
+          {accounts.length === 0 && <EmptyState icon={Hash} text="No hay cuentas con movimientos hasta este período" />}
+        </div>
+      )}
     </div>
   );
 }
 
 // Libro Mayor Detail
-function LibroMayorDetail({ account, onBack }: { account: MayorAccount; onBack: () => void }) {
+function LibroMayorDetail({ entityId, accountId, from, to, onBack }: { entityId: string; accountId: string; from: string; to: string; onBack: () => void }) {
+  const q = api.reports.mayor.useQuery({ entityId, accountId, from, to });
+  const d = q.data;
+  const balanceClass = (v: number, bg = false) =>
+    v > 0 ? (bg ? "bg-emerald-50 dark:bg-emerald-500/10" : "text-emerald-600 dark:text-emerald-400")
+      : v < 0 ? (bg ? "bg-red-50 dark:bg-red-500/10" : "text-red-600 dark:text-red-400")
+        : (bg ? "bg-gray-50 dark:bg-gray-800/30" : "text-gray-700 dark:text-gray-300");
   return (
     <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-      {/* Header */}
       <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800">
         <button
           onClick={onBack}
@@ -587,172 +476,156 @@ function LibroMayorDetail({ account, onBack }: { account: MayorAccount; onBack: 
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Volver
         </button>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-sm text-blue-600 dark:text-blue-400 font-medium">{account.code}</span>
-          <span className={cn("text-[10px] px-1.5 py-0.5 rounded", NATURE_COLORS[account.nature])}>{NATURE_LABELS[account.nature]}</span>
-        </div>
-        <h3 className="text-gray-900 dark:text-white text-sm font-semibold mt-0.5">{account.name}</h3>
+        {d?.account && (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-sm text-blue-600 dark:text-blue-400 font-medium">{d.account.code}</span>
+              <span className={cn("text-[10px] px-1.5 py-0.5 rounded", NATURE_COLORS[d.account.nature])}>{NATURE_LABELS[d.account.nature]}</span>
+            </div>
+            <h3 className="text-gray-900 dark:text-white text-sm font-semibold mt-0.5">{d.account.name}</h3>
+          </>
+        )}
       </div>
 
-      {/* Opening/Closing */}
-      <div className="grid grid-cols-2 gap-3 p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800/50">
-        <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-2.5">
-          <span className="text-[10px] text-gray-400 dark:text-gray-500">Saldo Anterior</span>
-          <p className="font-mono text-sm text-gray-700 dark:text-gray-300 tabular-nums">₲ {account.openingBalance.toLocaleString("es-PY")}</p>
-        </div>
-        <div className={cn(
-          "rounded-lg p-2.5",
-          account.closingBalance > 0 ? "bg-emerald-50 dark:bg-emerald-500/10" :
-          account.closingBalance < 0 ? "bg-red-50 dark:bg-red-500/10" :
-          "bg-gray-50 dark:bg-gray-800/30"
-        )}>
-          <span className="text-[10px] text-gray-400 dark:text-gray-500">Saldo Actual</span>
-          <p className={cn(
-            "font-mono text-sm tabular-nums",
-            account.closingBalance > 0 ? "text-emerald-600 dark:text-emerald-400" :
-            account.closingBalance < 0 ? "text-red-600 dark:text-red-400" :
-            "text-gray-700 dark:text-gray-300"
-          )}>
-            ₲ {Math.abs(account.closingBalance).toLocaleString("es-PY")}
-          </p>
-        </div>
-      </div>
-
-      {/* Entries */}
-      <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
-        {account.entries.map((e, i) => (
-          <div key={i} className="px-3 sm:px-4 py-2.5">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500 dark:text-gray-400 text-xs">{e.date}</span>
-                  {i === 0 && <span className="text-[9px] px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">Apertura</span>}
-                </div>
-                <p className="text-gray-700 dark:text-gray-300 text-xs truncate">{e.description}</p>
-              </div>
-              <div className="text-right shrink-0 ml-2">
-                <div className="flex items-center gap-2 text-xs font-mono">
-                  {e.debit > 0 && <span className="text-emerald-600 dark:text-emerald-400">D {e.debit.toLocaleString("es-PY")}</span>}
-                  {e.credit > 0 && <span className="text-red-600 dark:text-red-400">C {e.credit.toLocaleString("es-PY")}</span>}
-                </div>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">
-                  Saldo: ₲ {e.balance.toLocaleString("es-PY")}
-                </p>
-              </div>
+      {q.isLoading ? <Loading /> : q.error ? <ErrorState message={q.error.message} /> : d && (
+        <>
+          <div className="grid grid-cols-2 gap-3 p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800/50">
+            <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-2.5">
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">Saldo Anterior</span>
+              <p className="font-mono text-sm text-gray-700 dark:text-gray-300 tabular-nums">{gs(d.opening)}</p>
+            </div>
+            <div className={cn("rounded-lg p-2.5", balanceClass(d.closing, true))}>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">Saldo al {to}</span>
+              <p className={cn("font-mono text-sm tabular-nums", balanceClass(d.closing))}>{gs(d.closing)}</p>
             </div>
           </div>
-        ))}
-      </div>
+
+          <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+            {d.rows.map((e) => (
+              <div key={e.lineId} className="px-3 sm:px-4 py-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 dark:text-gray-400 text-xs">{e.date}</span>
+                      <span className="text-xs font-mono"><EntryLink entryId={e.entryId}>{e.entryNumber ?? "s/n"}</EntryLink></span>
+                      {e.reversalOf && <span className="text-[9px] px-1 py-0.5 rounded bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400">Reversión</span>}
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 text-xs truncate">{e.lineDescription ?? e.entryDescription ?? ""}</p>
+                  </div>
+                  <div className="text-right shrink-0 ml-2">
+                    <div className="flex items-center gap-2 text-xs font-mono">
+                      {e.debit > 0 && <span className="text-emerald-600 dark:text-emerald-400">D {e.debit.toLocaleString("es-PY")}</span>}
+                      {e.credit > 0 && <span className="text-red-600 dark:text-red-400">C {e.credit.toLocaleString("es-PY")}</span>}
+                    </div>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums mt-0.5">Saldo: {gs(e.balance)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {d.rows.length === 0 && <EmptyState icon={Hash} text="Sin movimientos en este período" />}
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 // Sumas y Saldos
-function SumasYSaldos() {
-  const rows = [
-    { code: "1.1.01.001", name: "Caja Principal PYG", nature: "asset" as const, opening: 3245600, debit: 5000000, credit: 2100000, closing: 6145600 },
-    { code: "1.1.01.002", name: "Banco Continental Cta. Cte.", nature: "asset" as const, opening: 65000000, debit: 20500000, credit: 8100000, closing: 77400000 },
-    { code: "1.1.03.001", name: "Mercaderías en Depósito", nature: "asset" as const, opening: 50000000, debit: 10000000, credit: 500000, closing: 59500000 },
-    { code: "1.1.06", name: "IVA Crédito Fiscal", nature: "asset" as const, opening: 2500000, debit: 1000000, credit: 50000, closing: 3450000 },
-    { code: "2.1.01", name: "Cuentas a Pagar Proveedores", nature: "liability" as const, opening: 45000000, debit: 8550000, credit: 11000000, closing: 47450000 },
-    { code: "2.1.02", name: "IVA Débito Fiscal", nature: "liability" as const, opening: 1500000, debit: 0, credit: 1500000, closing: 3000000 },
-    { code: "4.1.01", name: "Ventas de Mercaderías Gravadas 10%", nature: "income" as const, opening: 0, debit: 1000000, credit: 32000000, closing: 31000000 },
-    { code: "5.1.01", name: "Costo de Mercaderías Vendidas", nature: "expense" as const, opening: 0, debit: 18500000, credit: 0, closing: 18500000 },
-    { code: "5.1.04", name: "Honorarios Profesionales", nature: "expense" as const, opening: 0, debit: 2000000, credit: 0, closing: 2000000 },
-  ];
-
-  const totals = rows.reduce((acc, r) => ({
-    opening: acc.opening + r.opening,
-    debit: acc.debit + r.debit,
-    credit: acc.credit + r.credit,
-    closing: acc.closing + r.closing,
-  }), { opening: 0, debit: 0, credit: 0, closing: 0 });
+function SumasYSaldos({ entityId, from, to }: { entityId: string; from: string; to: string }) {
+  const q = api.reports.sumasSaldos.useQuery({ entityId, from, to });
+  const rows: SumasRow[] = q.data?.rows ?? [];
+  const totals = q.data?.totals ?? { opening: 0, debit: 0, credit: 0, saldoDeudor: 0, saldoAcreedor: 0 };
+  const balanced = totals.debit === totals.credit && totals.saldoDeudor === totals.saldoAcreedor;
+  const cols = ["Saldo Anterior", "Suma Débito", "Suma Crédito", "Saldo Deudor", "Saldo Acreedor"];
 
   return (
     <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-      <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800">
-        <h3 className="text-gray-900 dark:text-white text-sm font-medium">Sumas y Saldos</h3>
-        <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">Resumen de movimientos por cuenta</p>
-      </div>
-
-      {/* Desktop */}
-      <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80">
-              <th className="text-left py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Cuenta</th>
-              <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Saldo Anterior</th>
-              <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Suma Débito</th>
-              <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Suma Crédito</th>
-              <th className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Saldo Actual</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
-            {rows.map((r) => (
-              <tr key={r.code} className="hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors">
-                <td className="py-2.5 px-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-blue-600 dark:text-blue-400">{r.code}</span>
-                    <span className="text-gray-700 dark:text-gray-300 truncate">{r.name}</span>
-                  </div>
-                </td>
-                <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {r.opening.toLocaleString("es-PY")}</td>
-                <td className="py-2.5 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">₲ {r.debit.toLocaleString("es-PY")}</td>
-                <td className="py-2.5 px-3 text-right font-mono text-red-600 dark:text-red-400 tabular-nums">₲ {r.credit.toLocaleString("es-PY")}</td>
-                <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums font-medium">₲ {r.closing.toLocaleString("es-PY")}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-              <td className="py-2.5 px-3 text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide text-[10px]">TOTALES</td>
-              <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {totals.opening.toLocaleString("es-PY")}</td>
-              <td className="py-2.5 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">₲ {totals.debit.toLocaleString("es-PY")}</td>
-              <td className="py-2.5 px-3 text-right font-mono text-red-600 dark:text-red-400 tabular-nums">₲ {totals.credit.toLocaleString("es-PY")}</td>
-              <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums font-bold">₲ {totals.closing.toLocaleString("es-PY")}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      {/* Mobile */}
-      <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
-        {rows.map((r) => (
-          <div key={r.code} className="p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="font-mono text-xs text-blue-600 dark:text-blue-400">{r.code}</span>
-              <span className="text-gray-700 dark:text-gray-300 text-xs truncate">{r.name}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div>
-                <span className="text-gray-400">Saldo Ant.</span>
-                <p className="font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {r.opening.toLocaleString("es-PY")}</p>
-              </div>
-              <div>
-                <span className="text-gray-400">Débito</span>
-                <p className="font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">₲ {r.debit.toLocaleString("es-PY")}</p>
-              </div>
-              <div>
-                <span className="text-gray-400">Crédito</span>
-                <p className="font-mono text-red-600 dark:text-red-400 tabular-nums">₲ {r.credit.toLocaleString("es-PY")}</p>
-              </div>
-              <div>
-                <span className="text-gray-400">Saldo Act.</span>
-                <p className="font-mono text-gray-900 dark:text-white tabular-nums font-medium">₲ {r.closing.toLocaleString("es-PY")}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-        <div className="p-3 bg-gray-50 dark:bg-gray-900/80">
-          <span className="text-gray-500 dark:text-gray-400 text-[10px] font-medium uppercase tracking-wide">Totales</span>
-          <div className="grid grid-cols-2 gap-2 text-xs mt-1">
-            <span className="font-mono text-gray-600 dark:text-gray-400 tabular-nums">₲ {totals.opening.toLocaleString("es-PY")}</span>
-            <span className="font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">₲ {totals.debit.toLocaleString("es-PY")}</span>
-            <span className="font-mono text-red-600 dark:text-red-400 tabular-nums">₲ {totals.credit.toLocaleString("es-PY")}</span>
-            <span className="font-mono text-gray-900 dark:text-white tabular-nums font-bold">₲ {totals.closing.toLocaleString("es-PY")}</span>
-          </div>
+      <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+        <div>
+          <h3 className="text-gray-900 dark:text-white text-sm font-medium">Sumas y Saldos</h3>
+          <p className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">Del {from} al {to}</p>
         </div>
+        {rows.length > 0 && (
+          <span className={cn("text-xs", balanced ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
+            {balanced ? "Balanceado ✓" : "Desbalanceado"}
+          </span>
+        )}
       </div>
+
+      {q.isLoading ? <Loading /> : q.error ? <ErrorState message={q.error.message} /> : rows.length === 0 ? (
+        <EmptyState icon={FileSpreadsheet} text="No hay movimientos hasta este período" />
+      ) : (
+        <>
+          {/* Desktop */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-xs" aria-label="Sumas y Saldos">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80">
+                  <th className="text-left py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">Cuenta</th>
+                  {cols.map((c) => <th key={c} className="text-right py-2.5 px-3 text-gray-500 font-medium uppercase tracking-wide">{c}</th>)}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                {rows.map((r) => (
+                  <tr key={r.accountId} className="hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors">
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-blue-600 dark:text-blue-400">{r.code}</span>
+                        <span className="text-gray-700 dark:text-gray-300 truncate">{r.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">{gs(r.opening)}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">{gs(r.debit)}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-red-600 dark:text-red-400 tabular-nums">{gs(r.credit)}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums">{r.saldoDeudor ? gs(r.saldoDeudor) : ""}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums">{r.saldoAcreedor ? gs(r.saldoAcreedor) : ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                  <td className="py-2.5 px-3 text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide text-[10px]">TOTALES</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-gray-600 dark:text-gray-400 tabular-nums">{gs(totals.opening)}</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">{gs(totals.debit)}</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-red-600 dark:text-red-400 tabular-nums">{gs(totals.credit)}</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums font-bold">{gs(totals.saldoDeudor)}</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-gray-900 dark:text-white tabular-nums font-bold">{gs(totals.saldoAcreedor)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Mobile */}
+          <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/50">
+            {rows.map((r) => (
+              <div key={r.accountId} className="p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-mono text-xs text-blue-600 dark:text-blue-400">{r.code}</span>
+                  <span className="text-gray-700 dark:text-gray-300 text-xs truncate">{r.name}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div><span className="text-gray-400">Saldo Ant.</span><p className="font-mono text-gray-600 dark:text-gray-400 tabular-nums">{gs(r.opening)}</p></div>
+                  <div><span className="text-gray-400">Débito</span><p className="font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">{gs(r.debit)}</p></div>
+                  <div><span className="text-gray-400">Crédito</span><p className="font-mono text-red-600 dark:text-red-400 tabular-nums">{gs(r.credit)}</p></div>
+                  <div>
+                    <span className="text-gray-400">{r.saldoAcreedor ? "Saldo Acreedor" : "Saldo Deudor"}</span>
+                    <p className="font-mono text-gray-900 dark:text-white tabular-nums font-medium">{gs(r.saldoAcreedor || r.saldoDeudor)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div className="p-3 bg-gray-50 dark:bg-gray-900/80">
+              <span className="text-gray-500 dark:text-gray-400 text-[10px] font-medium uppercase tracking-wide">Totales</span>
+              <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 tabular-nums">D {gs(totals.debit)}</span>
+                <span className="font-mono text-red-600 dark:text-red-400 tabular-nums">C {gs(totals.credit)}</span>
+                <span className="font-mono text-gray-900 dark:text-white tabular-nums font-bold">Deudor {gs(totals.saldoDeudor)}</span>
+                <span className="font-mono text-gray-900 dark:text-white tabular-nums font-bold">Acreedor {gs(totals.saldoAcreedor)}</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -767,7 +640,7 @@ function TotalItem({ label, value, bold = false, highlight = false }: { label: s
         highlight ? "text-blue-600 dark:text-blue-400 text-xs sm:text-sm" :
         "text-gray-600 dark:text-gray-400 text-xs sm:text-sm"
       )}>
-        ₲ {value.toLocaleString("es-PY")}
+        {gs(value)}
       </p>
     </div>
   );
