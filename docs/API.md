@@ -24,7 +24,7 @@ apps/web/
       api/trpc/    # tRPC HTTP handler
       asientos/    # Journal entries
       sifen/       # SIFEN upload + bandeja
-      fiscal/      # Form 104, Hechauka
+      fiscal/      # Form 104, Registro de Comprobantes
       cuentas/     # Chart of accounts
       terceros/    # Partners CRUD
       libros/      # Accounting books
