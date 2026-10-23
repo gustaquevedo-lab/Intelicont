@@ -7,6 +7,7 @@
     "./fiscal-py": "./src/fiscal-py.ts",
     "./sifen": "./src/sifen.ts",
     "./registro-codes": "./src/registro-codes.ts",
+    "./registro": "./src/registro-comprobantes.ts",
     "./ai": "./src/ai/index.ts",
     "./retentions": "./src/retentions.ts",
     "./form104": "./src/form104.ts"
@@ -19,6 +20,7 @@
     "@neondatabase/serverless": "^1.1.0",
     "drizzle-orm": "^0.45.2",
     "fast-xml-parser": "^5.11.2",
+    "fflate": "0.8.2",
     "postgres": "^3.4.9",
     "zod": "^4.4.2"
   },
