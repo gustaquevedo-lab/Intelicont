@@ -43,15 +43,15 @@ export class RuleBasedProvider implements AIProvider {
     let byName = false;
     const line = (role: Role, side: "debit" | "credit", amount: number, description: string): SuggestionLine => {
       const { account, byName: viaName } = resolve(role, accounts);
-      if (!account) missing.add(ROLES[role].label);
+      if (!account) missing.add(`${ROLES[role].code} ${ROLES[role].label}`);
       else {
         byName ||= viaName;
         const note = `Cuenta ${account.code} ${account.name}${viaName ? " (por nombre)" : ""}`;
         if (!found.includes(note)) found.push(note);
       }
       return {
-        accountId: account?.id ?? "",
-        accountCode: account?.code ?? "",
+        accountId: account?.id ?? null,
+        accountCode: account?.code ?? ROLES[role].code,
         debit: side === "debit" ? amount : 0,
         credit: side === "credit" ? amount : 0,
         description,
@@ -107,7 +107,7 @@ export class RuleBasedProvider implements AIProvider {
     }
     if (missing.size > 0) {
       confidence = Math.min(confidence, 0.5);
-      notes.push(`Falta en el plan de cuentas: ${[...missing].join(", ")}. Elegí la cuenta antes de aprobar.`);
+      for (const m of missing) notes.push(`Falta la cuenta ${m} en el plan de cuentas: elegila.`);
     }
     if (sum !== doc.total) {
       confidence = Math.min(confidence, 0.6);

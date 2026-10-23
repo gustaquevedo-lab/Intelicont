@@ -3,12 +3,12 @@ import type { SifenDocument } from "../sifen";
 /** A chart account of the entity, as offered to a provider. */
 export type AccountRef = { id: string; code: string; name: string; nature: string; allowsPosting: boolean };
 
-export type SuggestionLine = { accountId: string; accountCode: string; debit: number; credit: number; description: string };
+export type SuggestionLine = { accountId: string | null; accountCode: string; debit: number; credit: number; description: string };
 
 /**
  * A proposed journal entry. Never posted by itself: a human approves it (CLAUDE.md rule 7).
- * Amounts are integers in the currency's minimal unit. A line whose account could not be found
- * has `accountId: ""` and must be completed by the user before approval.
+ * Amounts are integers in the currency's minimal unit. A line whose account is not in the entity's
+ * chart has `accountId: null` (the reference `accountCode` is kept) and the user must pick one.
  */
 export type Suggestion = {
   lines: SuggestionLine[];
@@ -49,3 +49,7 @@ export function docEvidence(doc: SifenDocument): string[] {
   out.push(`Total: ${fmt(doc.total)}`);
   return out;
 }
+
+/** True when the document has no accounting effect: a remito, or every amount is zero. */
+export const hasNoAccountingEffect = (doc: SifenDocument) =>
+  doc.docType === "remito" || [doc.gravado10, doc.gravado5, doc.exento, doc.iva10, doc.iva5, doc.total].every((n) => !n);
