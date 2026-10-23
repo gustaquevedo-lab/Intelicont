@@ -8,7 +8,8 @@
     "./sifen": "./src/sifen.ts",
     "./registro-codes": "./src/registro-codes.ts",
     "./ai": "./src/ai/index.ts",
-    "./retentions": "./src/retentions.ts"
+    "./retentions": "./src/retentions.ts",
+    "./form104": "./src/form104.ts"
   },
   "scripts": {
     "db:seed": "tsx db/seed.ts"

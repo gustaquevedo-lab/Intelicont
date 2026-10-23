@@ -9,7 +9,7 @@ const day = z.string().refine(isCalendarDate, CALENDAR_DATE_ERROR);
 const range = { entityId: z.string().uuid(), from: day, to: day };
 
 /** RLS already hides other tenants; this turns "invisible entity" into an explicit FORBIDDEN (no empty-looking book). */
-async function assertVisible(entityId: string) {
+export async function assertVisible(entityId: string) {
   if (isMockMode()) return;
   if (!(await getEntity(entityId))) throw new TRPCError({ code: "FORBIDDEN", message: "Empresa no accesible" });
 }
