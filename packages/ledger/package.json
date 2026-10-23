@@ -6,7 +6,8 @@
     ".": "./src/domain.ts",
     "./fiscal-py": "./src/fiscal-py.ts",
     "./sifen": "./src/sifen.ts",
-    "./registro-codes": "./src/registro-codes.ts"
+    "./registro-codes": "./src/registro-codes.ts",
+    "./ai": "./src/ai/index.ts"
   },
   "scripts": {
     "db:seed": "tsx db/seed.ts"
@@ -16,7 +17,8 @@
     "@neondatabase/serverless": "^1.1.0",
     "drizzle-orm": "^0.45.2",
     "fast-xml-parser": "^5.11.2",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "zod": "^4.4.2"
   },
   "devDependencies": {
     "tsx": "^4.19.0"

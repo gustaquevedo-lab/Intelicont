@@ -66,6 +66,7 @@ export const PY_CHART_OF_ACCOUNTS: ChartAccount[] = [
               { id: "1.1.03.002", code: "1.1.03.002", name: "Mercaderías en Tránsito", nature: "asset", parentCode: "1.1.03", allowsPosting: true, balance: 7309000, currency: "PYG", active: true },
             ]
           },
+          { id: "1.1.04", code: "1.1.04", name: "IVA Crédito Fiscal", nature: "asset", parentCode: "1.1", allowsPosting: true, balance: 0, currency: "PYG", active: true, taxMappings: ["iva_credito"] },
         ]
       },
       {
