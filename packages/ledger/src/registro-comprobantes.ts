@@ -42,7 +42,7 @@ export type RegistroResult = {
 };
 
 // shortcut: the PDF text says comma but its examples use ';' — confirm with a real import in Marangatu
-const DELIMITER = ";";
+export const DELIMITER = ";";
 // shortcut: the PDF does not name a line terminator; '\n' is unverified — confirm with a real import in Marangatu
 const EOL = "\n";
 export const MAX_ROWS_PER_FILE = 5000;
@@ -54,13 +54,19 @@ const NAME_OPTIONAL: Record<RegistroSide, Set<number>> = { ventas: new Set([11, 
 /** Codes whose NÚMERO DEL COMPROBANTE is not required. */
 const NUMBER_OPTIONAL: Record<RegistroSide, Set<number>> = { ventas: new Set([106, 112]), compras: new Set([106, 107, 112]) };
 const IMPORT_DISPATCH = 107; // compras: timbrado must be 0
+/** Compras: the supplier is always a RUC (11), except autofactura (101) and despacho de importación (107). */
+const SUPPLIER_ANY_ID = new Set([101, 107]);
 const NUMBER_RE = /^\d{3}-\d{3}-\d{7}$/;
 const TIMBRADO_RE = /^\d{8}$/;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-/** Removes the delimiter, quotes and control whitespace, collapses spaces, cuts to `max`. */
-export function sanitizeField(s: string, max = 250): string {
-  return s.replace(/[;"\r\n\t]/g, " ").replace(/\s+/g, " ").trim().slice(0, max).trim();
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** Delimiter, quotes, CR/LF and TAB: never valid inside a field. */
+const unsafeRe = (delimiter: string) => new RegExp(`${escapeRe(delimiter)}|["\\r\\n\\t]`, "g");
+
+/** Replaces the delimiter, quotes and control whitespace by a space, collapses spaces, cuts to `max`. */
+export function sanitizeField(s: string, max = 250, delimiter = DELIMITER): string {
+  return s.replace(unsafeRe(delimiter), " ").replace(/\s+/g, " ").trim().slice(0, max).trim();
 }
 
 const yn = (b: boolean) => (b ? "S" : "N");
@@ -72,18 +78,22 @@ function isRealDate(y: number, m: number, d: number) {
 }
 
 /** Validates one document and returns its row fields, or the error message. */
-function toRow(d: RegistroDoc): { fields: string[] } | { error: string } {
+function toRow(d: RegistroDoc, delimiter: string): { fields: string[] } | { error: string } {
   const fail = (error: string) => ({ error });
   const side = d.side;
   if (!isSupportedInRegistro(d.docCode, side)) return fail(`Tipo de comprobante ${d.docCode} no admitido en el registro de ${side}`);
   if (!(d.counterpartyIdType in TABLA_3)) return fail(`Tipo de identificación ${d.counterpartyIdType} desconocido`);
+  if (side === "compras" && !SUPPLIER_ANY_ID.has(d.docCode) && d.counterpartyIdType !== 11) {
+    return fail("En compras el proveedor debe identificarse con RUC (tipo 11)");
+  }
 
-  const id = sanitizeField(d.counterpartyId ?? "", 20);
-  if (!id || (d.counterpartyId ?? "").trim().length > 20) return fail("Identificación de la contraparte vacía o mayor a 20 caracteres");
+  const id = d.counterpartyId ?? "";
+  if (!id || id.length > 20) return fail("Identificación de la contraparte vacía o mayor a 20 caracteres");
+  if (/\s/.test(id) || new RegExp(unsafeRe(delimiter).source).test(id)) return fail("Identificación inválida");
   if ((d.counterpartyIdType === 11 || d.counterpartyIdType === 12) && !/^\d+$/.test(id)) {
     return fail("RUC o cédula de la contraparte inválido (solo dígitos, RUC sin DV)");
   }
-  const name = sanitizeField(d.counterpartyName ?? "");
+  const name = sanitizeField(d.counterpartyName ?? "", 250, delimiter);
   if (!name && !NAME_OPTIONAL[side].has(d.counterpartyIdType)) return fail("Falta el nombre o razón social de la contraparte");
 
   const m = DATE_RE.exec(d.issueDate);
@@ -93,7 +103,8 @@ function toRow(d: RegistroDoc): { fields: string[] } | { error: string } {
   const isImport = side === "compras" && d.docCode === IMPORT_DISPATCH;
   const timbrado = isImport ? "0" : d.timbrado;
   if (!isImport && !TIMBRADO_RE.test(timbrado ?? "")) return fail("Timbrado inválido (8 dígitos)");
-  const numberOptional = NUMBER_OPTIONAL[side].has(d.docCode) && !d.number;
+  // 107 (compras) does not require a number: a customs dispatch number in another format is exported empty.
+  const numberOptional = NUMBER_OPTIONAL[side].has(d.docCode) && (!d.number || (isImport && !NUMBER_RE.test(d.number)));
   if (!numberOptional && !NUMBER_RE.test(d.number ?? "")) return fail("Número de comprobante inválido (###-###-#######)");
 
   if (![d.gravado10, d.gravado5, d.exento].every(isMoney)) return fail("Montos inválidos (enteros no negativos)");
@@ -147,7 +158,8 @@ const order = (a: RegistroDoc, b: RegistroDoc) =>
   || a.documentId.localeCompare(b.documentId);
 
 /** Builds the 955 files for one month: ventas then compras, by date and number, 5.000 rows per file. */
-export function buildRegistro(input: { ruc: string; year: number; month: number; docs: RegistroDoc[] }): RegistroResult {
+export function buildRegistro(input: { ruc: string; year: number; month: number; docs: RegistroDoc[]; delimiter?: string }): RegistroResult {
+  const delimiter = input.delimiter ?? DELIMITER;
   const mm = String(input.month).padStart(2, "0");
   const prefix = `${input.year}-${mm}-`;
   const inMonth = input.docs.filter((d) => d.issueDate.startsWith(prefix));
@@ -156,10 +168,10 @@ export function buildRegistro(input: { ruc: string; year: number; month: number;
   const counts = { ventas: 0, compras: 0 };
 
   for (const d of inMonth.filter((x) => !x.isElectronic).sort(order)) {
-    const r = toRow(d);
+    const r = toRow(d, delimiter);
     if ("error" in r) errors.push({ documentId: d.documentId, message: r.error });
     else {
-      rows.push(r.fields.join(DELIMITER));
+      rows.push(r.fields.join(delimiter));
       counts[d.side]++;
     }
   }

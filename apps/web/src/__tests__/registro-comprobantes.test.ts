@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { inflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { buildRegistro, zipRegistro, type RegistroDoc } from "@intelicont/ledger/registro";
+import { DELIMITER, buildRegistro, zipRegistro, type RegistroDoc } from "@intelicont/ledger/registro";
 
 // Rows from the ANEXOS of "Especificación Técnica para registro de comprobantes en Marangatu" (June 2021).
 // Ventas: the CSV example verbatim. Compras: the TXT example's values joined with the CSV example's ';'.
@@ -19,7 +19,7 @@ const doc = (o: Partial<RegistroDoc> = {}): RegistroDoc => ({
 const compra = (o: Partial<RegistroDoc> = {}) => doc({
   side: "compras", timbrado: "11223369", gravado10: 100_000, total: 100_000, imputaIre: true, ...o,
 });
-const build = (docs: RegistroDoc[], month = 5, year = 2021) => buildRegistro({ ruc: "80000000", year, month, docs });
+const build = (docs: RegistroDoc[], month = 5, year = 2021, delimiter?: string) => buildRegistro({ ruc: "80000000", year, month, docs, delimiter });
 const lines = (r: ReturnType<typeof build>) => r.files.flatMap((f) => f.csv.split("\n").filter(Boolean));
 
 /** The single entry of a ZIP written without data descriptors (fflate zipSync): entry count from the EOCD, name and data from the local header. */
@@ -97,12 +97,15 @@ describe("registro de comprobantes (obligación 955)", () => {
   });
 
   it("counterparty name with delimiter or quotes is sanitized", () => {
-    const r = build([doc({ counterpartyIdType: 13, counterpartyId: "AB;123", counterpartyName: ' EMPRESA; "LA\tUNIÓN"\r\nS.A. ' })]);
+    const r = build([doc({ counterpartyIdType: 13, counterpartyId: "AB123", counterpartyName: ' EMPRESA; "LA\tUNIÓN"\r\nS.A. ' })]);
     expect(r.errors).toEqual([]);
     const fields = lines(r)[0].split(";");
     expect(fields).toHaveLength(19);
-    expect(fields[2]).toBe("AB 123");
+    expect(fields[2]).toBe("AB123");
     expect(fields[3]).toBe("EMPRESA LA UNIÓN S.A.");
+    // The identification is never rewritten: delimiter, quotes or whitespace make it an error.
+    const ids = ["AB;123", 'AB"1', "AB 1", "AB\n1"].map((counterpartyId, i) => doc({ documentId: `id${i}`, counterpartyIdType: 13, counterpartyId }));
+    expect(build(ids).errors.map((e) => e.message)).toEqual(Array(4).fill("Identificación inválida"));
     const long = build([doc({ counterpartyIdType: 13, counterpartyName: "x".repeat(300) })]);
     expect(lines(long)[0].split(";")[3]).toHaveLength(250);
   });
@@ -152,7 +155,7 @@ describe("registro de comprobantes (obligación 955)", () => {
     expect(r.counts).toEqual({ ventas: 1, compras: 1 });
   });
 
-  it("name is empty for RUC and cédula buyers", () => {
+  it("name may be empty only for RUC and cédula (and sin nombre on ventas)", () => {
     // The spec does not require the name for RUC (11), cédula (12) and, on ventas, "sin nombre" (15):
     // an empty name is valid there; any other id type needs one.
     const r = build([
@@ -164,6 +167,33 @@ describe("registro de comprobantes (obligación 955)", () => {
     ]);
     expect(r.errors.map((e) => e.documentId)).toEqual(["pass", "snc"]);
     expect(lines(r).map((l) => l.split(";").slice(1, 4).join(";")).sort()).toEqual(["11;80024627;", "12;1234567;", "15;X;"]);
+  });
+
+  it("compras requires RUC identification except for autofactura and despacho", () => {
+    const r = build([
+      compra({ documentId: "inv", counterpartyIdType: 12, counterpartyId: "1234567", counterpartyName: "" }),
+      compra({ documentId: "auto", docCode: 101, counterpartyIdType: 12, counterpartyId: "1234567", counterpartyName: "", gravado10: 0 }),
+      compra({ documentId: "imp", docCode: 107, counterpartyIdType: 17, counterpartyId: "US-EIN-1", counterpartyName: "ACME INC", timbrado: "" }),
+    ]);
+    expect(r.errors).toEqual([{ documentId: "inv", message: "En compras el proveedor debe identificarse con RUC (tipo 11)" }]);
+    expect(lines(r).map((l) => l.split(";").slice(1, 3).join(";")).sort()).toEqual(["12;1234567", "17;US-EIN-1"]);
+  });
+
+  it("despacho de importación with a non-standard number exports an empty number", () => {
+    const r = build([compra({ docCode: 107, counterpartyIdType: 17, counterpartyId: "X1", counterpartyName: "ACME INC", timbrado: "", number: "21002IC04000123A" })]);
+    expect(r.errors).toEqual([]);
+    expect(lines(r)[0].split(";").slice(6, 8)).toEqual(["0", ""]);
+    const std = build([compra({ docCode: 107, counterpartyIdType: 17, counterpartyId: "X1", counterpartyName: "ACME INC" })]);
+    expect(lines(std)[0].split(";").slice(6, 8)).toEqual(["0", "001-002-0000250"]);
+  });
+
+  it("the sanitizer follows the delimiter", () => {
+    expect(DELIMITER).toBe(";");
+    const named = (delimiter?: string) => build([doc({ counterpartyIdType: 13, counterpartyId: "P1", counterpartyName: "EMPRESA, S.A.; SUC" })], 5, 2021, delimiter);
+    expect(lines(named())[0].split(";")[3]).toBe("EMPRESA, S.A. SUC");
+    const comma = lines(named(","))[0];
+    expect(comma.split(",")).toHaveLength(19);
+    expect(comma.split(",")[3]).toBe("EMPRESA S.A.; SUC");
   });
 
   it("zip contains a single entry named like the zip with the csv content", () => {
