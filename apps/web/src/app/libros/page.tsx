@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   BookOpen,
@@ -76,6 +76,14 @@ export default function LibrosPage() {
     { id: "mayor", label: "Libro Mayor", shortLabel: "Mayor", icon: Hash },
     { id: "sumas_saldos", label: "Sumas y Saldos", shortLabel: "S&S", icon: FileSpreadsheet },
   ];
+
+  // Deep links from the Form 104: /libros?tab=iva_compras|iva_ventas&periodo=YYYY-MM (applied after hydration).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const tab = q.get("tab"), p = q.get("periodo");
+    if (tab === "iva_compras" || tab === "iva_ventas") setActiveLibro(tab);
+    if (p && /^\d{4}-(0[1-9]|1[0-2])$/.test(p)) setPeriodo(p);
+  }, []);
 
   const range = monthRange(periodo || currentMonth());
 

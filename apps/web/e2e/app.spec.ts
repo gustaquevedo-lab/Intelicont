@@ -62,9 +62,9 @@ test.describe("InteliCont E2E", () => {
   test("formulario 104 loads IVA declaration", async ({ page }) => {
     await page.goto("/fiscal/formulario-104");
     await expect(page.locator("h1")).toContainText("Formulario 104");
-    await expect(page.getByRole("heading", { name: "Resultado del Período" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Ventas — IVA Débito" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Compras — IVA Crédito" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Liquidación" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Débito fiscal (ventas)" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Crédito fiscal (compras)" })).toBeVisible();
   });
 
   test("hechauka page loads electronic book", async ({ page }) => {
