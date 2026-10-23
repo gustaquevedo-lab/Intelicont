@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { mod11Dv } from "@intelicont/ledger/fiscal-py";
-import type { AIProvider } from "@intelicont/ledger/ai";
+import type { AIProvider, Suggestion } from "@intelicont/ledger/ai";
 import { createTestDb, type TestDb } from "../../../../../packages/ledger/db/test-db";
 
 type DbModule = typeof import("@ledger/db/index");
@@ -17,8 +17,7 @@ const variant = (seed: number, xml = FIXTURE) => {
   return xml.replace(FIXTURE_CDC, body + mod11Dv(body));
 };
 
-// Several round trips per test; the dev tunnel adds latency.
-describe.skipIf(!process.env.TEST_ADMIN_URL)("AI journal suggestions and approval (real Postgres)", { timeout: 30_000 }, () => {
+describe.skipIf(!process.env.TEST_ADMIN_URL)("AI journal suggestions and approval (real Postgres)", () => {
   let t: TestDb;
   let db: DbModule;
   let appRouter: AppRouter;
@@ -27,7 +26,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("AI journal suggestions and approva
   let seed = 100;
   const prevUrl = process.env.DATABASE_URL;
   const prevProvider = process.env.AI_PROVIDER;
-  const caller = (userId?: string) => appRouter.createCaller({ userId, requestId: "t", idempotencyKey: crypto.randomUUID() });
+  const caller = (userId?: string, idempotencyKey = crypto.randomUUID()) => appRouter.createCaller({ userId, requestId: "t", idempotencyKey });
   const docs = (u: string) => caller(u)["tax-documents"];
 
   /** Ingests a fresh copy of the fixture (own CDC) into e1 and returns its id. */
@@ -92,6 +91,9 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("AI journal suggestions and approva
     expect(b.decisionId).toBe(a.decisionId);
     const count = async () => Number((await t.owner`select count(*)::int as n from ai_decisions where input->>'documentId' = ${documentId}`)[0].n);
     expect(await count()).toBe(1);
+    // A refresh right after the last suggestion is throttled (30 s).
+    await expect(docs(user).suggestEntry({ documentId, refresh: true })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    await t.owner`update ai_decisions set created_at = now() - interval '1 minute' where input->>'documentId' = ${documentId}`;
     const c = await docs(user).suggestEntry({ documentId, refresh: true });
     expect(c.decisionId).not.toBe(a.decisionId);
     expect(await count()).toBe(2);
@@ -152,7 +154,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("AI journal suggestions and approva
   it("approveEntry with edited unbalanced lines fails and leaves the document unposted and the decision pending", async () => {
     const documentId = await ingest();
     const { decisionId, suggestion } = await docs(user).suggestEntry({ documentId });
-    const lines = suggestion.lines.map((l, i) => ({ accountId: l.accountId, debit: i === 0 ? l.debit + 1 : l.debit, credit: l.credit, description: l.description }));
+    const lines = suggestion.lines.map((l, i) => ({ accountId: l.accountId!, debit: i === 0 ? l.debit + 1 : l.debit, credit: l.credit, description: l.description }));
     await expect(docs(user).approveEntry({ documentId, decisionId, lines })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     const [doc] = await t.owner`select journal_entry_id, status from tax_documents where id = ${documentId}`;
     expect(doc).toEqual({ journal_entry_id: null, status: "pending" });
@@ -162,7 +164,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("AI journal suggestions and approva
     // An edited, balanced choice of accounts is accepted and audited as edited.
     const caja = suggestion.lines[2].accountId;
     const edited = suggestion.lines.map((l) => ({ ...l, accountId: l.credit > 0 ? caja : l.accountId }));
-    const r = await caller(user)["tax-documents"].approveEntry({ documentId, decisionId, lines: edited.map(({ accountCode: _c, ...l }) => l) });
+    const r = await caller(user)["tax-documents"].approveEntry({ documentId, decisionId, lines: edited.map(({ accountCode: _c, ...l }) => ({ ...l, accountId: l.accountId! })) });
     expect(r.journalEntryId).toBeTruthy();
   });
 
@@ -206,5 +208,85 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("AI journal suggestions and approva
     await expect(docs(outsider).rejectSuggestion({ decisionId, reason: "intento ajeno" })).rejects.toMatchObject({ code: "NOT_FOUND" });
     const [doc] = await t.owner`select journal_entry_id from tax_documents where id = ${documentId}`;
     expect(doc.journal_entry_id).toBeNull();
+  });
+
+  /** Wraps the rules provider and edits its output (for cases the real chart cannot produce). */
+  const editedRules = async (edit: (s: Suggestion) => Suggestion): Promise<AIProvider> => {
+    const rules = new (await import("@intelicont/ledger/ai")).RuleBasedProvider();
+    return { suggestEntry: async (doc, accounts, direction) => edit(await rules.suggestEntry(doc, accounts, direction)) };
+  };
+  const docState = async (documentId: string) =>
+    (await t.owner`select journal_entry_id, status from tax_documents where id = ${documentId}`)[0];
+
+  it("approveEntry rejects a remito", async () => {
+    const documentId = await ingest();
+    const { decisionId } = await docs(user).suggestEntry({ documentId });
+    await t.owner`update tax_documents set doc_type = 'remito' where id = ${documentId}`;
+    await expect(docs(user).approveEntry({ documentId, decisionId })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Un remito no genera asiento" });
+    expect(await docState(documentId)).toEqual({ journal_entry_id: null, status: "pending" });
+  });
+
+  it("approveEntry rejects lines without an account", async () => {
+    const documentId = await ingest();
+    ai.setAiProviderForTests(await editedRules((s) => ({ ...s, lines: s.lines.map((l, i) => (i === 1 ? { ...l, accountId: null } : l)) })));
+    const { decisionId, suggestion } = await docs(user).suggestEntry({ documentId });
+    expect(suggestion.lines[1].accountId).toBeNull();
+    await expect(docs(user).approveEntry({ documentId, decisionId })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Elegí una cuenta para cada línea" });
+    expect(await docState(documentId)).toEqual({ journal_entry_id: null, status: "pending" });
+  });
+
+  it("approveEntry rejects edited amounts", async () => {
+    const documentId = await ingest();
+    const { decisionId, suggestion } = await docs(user).suggestEntry({ documentId });
+    const ids = suggestion.lines.map((l) => l.accountId!);
+    // Balanced, but 1 moved from the merchandise line to the IVA line.
+    const lines = suggestion.lines.map((l, i) => ({ accountId: ids[i], debit: l.debit + (i === 0 ? -1 : i === 1 ? 1 : 0), credit: l.credit, description: l.description }));
+    await expect(docs(user).approveEntry({ documentId, decisionId, lines })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Solo se pueden cambiar las cuentas" });
+    await expect(docs(user).approveEntry({ documentId, decisionId, lines: lines.slice(0, 2) })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await docState(documentId)).toEqual({ journal_entry_id: null, status: "pending" });
+  });
+
+  it("two concurrent approvals with different keys post exactly one entry", async () => {
+    const documentId = await ingest();
+    const { decisionId } = await docs(user).suggestEntry({ documentId });
+    const results = await Promise.allSettled([
+      docs(user).approveEntry({ documentId, decisionId }),
+      docs(user).approveEntry({ documentId, decisionId }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const failed = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+    expect(failed.reason).toMatchObject({ code: "CONFLICT", message: "El comprobante ya fue contabilizado" });
+    const [{ cdc }] = await t.owner`select cdc from tax_documents where id = ${documentId}`;
+    expect(await t.owner`select id from journal_entries where source_ref = ${cdc}`).toHaveLength(1);
+  });
+
+  it("an edited line with an account of another entity is rejected by the DB trigger", async () => {
+    const documentId = await ingest();
+    const { decisionId, suggestion } = await docs(user).suggestEntry({ documentId });
+    const [foreign] = await t.owner`select a.id from accounts a join chart_of_accounts c on c.id = a.coa_id
+      where c.entity_id <> ${e1} and a.allows_posting limit 1`;
+    const lines = suggestion.lines.map((l, i) => ({ accountId: i === 2 ? foreign.id : l.accountId!, debit: l.debit, credit: l.credit, description: l.description }));
+    await expect(docs(user).approveEntry({ documentId, decisionId, lines })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await docState(documentId)).toEqual({ journal_entry_id: null, status: "pending" });
+    const [dec] = await t.owner`select accepted from ai_decisions where id = ${decisionId}`;
+    expect(dec.accepted).toBe(false);
+  });
+
+  it("approveEntry replay with the same Idempotency-Key returns the first result without a second posting", async () => {
+    const documentId = await ingest();
+    const { decisionId } = await docs(user).suggestEntry({ documentId });
+    const key = crypto.randomUUID();
+    const first = await caller(user, key)["tax-documents"].approveEntry({ documentId, decisionId });
+    const again = await caller(user, key)["tax-documents"].approveEntry({ documentId, decisionId });
+    expect(again).toEqual(first);
+    const [{ cdc }] = await t.owner`select cdc from tax_documents where id = ${documentId}`;
+    expect(await t.owner`select id from journal_entries where source_ref = ${cdc}`).toHaveLength(1);
+  });
+
+  it("concurrent suggestEntry calls for one document share one decision", async () => {
+    const documentId = await ingest();
+    const [a, b] = await Promise.all([docs(user).suggestEntry({ documentId }), docs(user).suggestEntry({ documentId })]);
+    expect(b.decisionId).toBe(a.decisionId);
+    expect(await t.owner`select id from ai_decisions where input->>'documentId' = ${documentId}`).toHaveLength(1);
   });
 });

@@ -11,13 +11,15 @@ import * as schema from "@ledger/db/schema";
 import { suggestForDocument, type AccountRef, type Suggestion } from "@/lib/ai-provider";
 
 const KIND = "journal_suggestion";
+type SuggestResult = { decisionId: string; suggestion: Suggestion };
 const DOC_LABEL: Record<string, string> = {
   invoice: "Factura", credit_note: "Nota de crédito", debit_note: "Nota de débito", self_invoice: "Autofactura", remito: "Remito",
 };
 
 /** Under RLS: a document of an entity the user cannot see is simply not found. */
-async function loadDocument(db: Db, id: string) {
-  const [doc] = await db.select().from(schema.taxDocuments).where(eq(schema.taxDocuments.id, id));
+async function loadDocument(db: Db, id: string, lock = false) {
+  const q = db.select().from(schema.taxDocuments).where(eq(schema.taxDocuments.id, id));
+  const [doc] = await (lock ? q.for("update") : q);
   if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Comprobante no encontrado" });
   return doc;
 }
@@ -29,6 +31,21 @@ async function loadDocument(db: Db, id: string) {
  */
 const notRejected = sql`not exists (select 1 from audit_events e
   where e.action = 'ai_decision.rejected' and e.target_id = "ai_decisions"."id")`;
+
+/** The latest pending (not accepted, not rejected) suggestion for a document. */
+async function findPending(db: Db, entityId: string, documentId: string): Promise<SuggestResult | undefined> {
+  const [pending] = await db.select().from(schema.aiDecisions)
+    .where(and(
+      eq(schema.aiDecisions.entityId, entityId),
+      eq(schema.aiDecisions.kind, KIND),
+      eq(schema.aiDecisions.accepted, false),
+      sql`${schema.aiDecisions.input}->>'documentId' = ${documentId}`,
+      notRejected,
+    ))
+    .orderBy(desc(schema.aiDecisions.createdAt))
+    .limit(1);
+  return pending && { decisionId: pending.id, suggestion: pending.output as Suggestion };
+}
 
 async function isRejected(db: Db, decisionId: string) {
   const rows = await db.select({ id: schema.auditEvents.id }).from(schema.auditEvents)
@@ -44,6 +61,14 @@ async function loadDecision(db: Db, decisionId: string) {
 }
 
 const money = z.number().int().nonnegative().refine(Number.isSafeInteger);
+
+/**
+ * One in-flight provider call per document in this process: concurrent callers (double click, two
+ * tabs) share the same promise and therefore the same decision. Each caller still runs phase 1
+ * (visibility under RLS) before joining.
+ */
+const inFlight = new Map<string, Promise<SuggestResult>>();
+const REFRESH_COOLDOWN_MS = 30_000;
 
 export const taxDocumentsRouter = router({
   list: protectedProcedure
@@ -113,18 +138,17 @@ export const taxDocumentsRouter = router({
         if (doc.journalEntryId) throw new TRPCError({ code: "CONFLICT", message: "El comprobante ya fue contabilizado" });
         const sifen = (doc.metadata as { sifen?: SifenDocument } | null)?.sifen;
         if (!sifen) throw new TRPCError({ code: "BAD_REQUEST", message: "El comprobante no tiene datos para sugerir" });
-        if (!input.refresh) {
-          const [pending] = await db.select().from(schema.aiDecisions)
-            .where(and(
-              eq(schema.aiDecisions.entityId, doc.entityId),
-              eq(schema.aiDecisions.kind, KIND),
-              eq(schema.aiDecisions.accepted, false),
-              sql`${schema.aiDecisions.input}->>'documentId' = ${doc.id}`,
-              notRejected,
-            ))
+        if (input.refresh) {
+          const [latest] = await db.select({ createdAt: schema.aiDecisions.createdAt }).from(schema.aiDecisions)
+            .where(and(eq(schema.aiDecisions.entityId, doc.entityId), eq(schema.aiDecisions.kind, KIND), sql`${schema.aiDecisions.input}->>'documentId' = ${doc.id}`))
             .orderBy(desc(schema.aiDecisions.createdAt))
             .limit(1);
-          if (pending) return { pending: { decisionId: pending.id, suggestion: pending.output as Suggestion } };
+          if (latest?.createdAt && Date.now() - latest.createdAt.getTime() < REFRESH_COOLDOWN_MS) {
+            throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Esperá unos segundos antes de volver a sugerir" });
+          }
+        } else {
+          const pending = await findPending(db, doc.entityId, doc.id);
+          if (pending) return { pending };
         }
         const rows = await db.select({
           id: schema.accounts.id, code: schema.accounts.code, name: schema.accounts.name,
@@ -138,36 +162,50 @@ export const taxDocumentsRouter = router({
         return { doc, sifen, accounts };
       });
       if ("pending" in loaded) return loaded.pending!;
-
-      // Phase 2: provider call, outside any transaction (may take seconds; never throws for Ollama).
       const { doc, sifen, accounts } = loaded;
-      const suggestion = await suggestForDocument(sifen, accounts, doc.direction);
+      const running = inFlight.get(doc.id);
+      if (running) return running;
+      const run = (async (): Promise<SuggestResult> => {
+        // Phase 2: provider call, outside any transaction (may take seconds; never throws for Ollama).
+        const suggestion = await suggestForDocument(sifen, accounts, doc.direction);
 
-      // Phase 3: write.
-      const decisionId = await withTenant(userId, async (db) => {
-        const fresh = await loadDocument(db, doc.id);
-        if (fresh.journalEntryId) throw new TRPCError({ code: "CONFLICT", message: "El comprobante ya fue contabilizado" });
-        return audited(
-          db,
-          {
-            entityId: doc.entityId, action: "ai_decision.created", targetType: "ai_decision",
-            targetId: (id: string) => id,
-            after: { documentId: doc.id, provider: suggestion.provider, confidence: suggestion.confidence, fallbackReason: suggestion.fallbackReason },
-          },
-          async () => {
-            const [row] = await db.insert(schema.aiDecisions).values({
-              entityId: doc.entityId,
-              kind: KIND,
-              input: { documentId: doc.id, cdc: sifen.cdc, provider: suggestion.provider },
-              output: suggestion,
-              confidence: Math.round(suggestion.confidence * 100),
-              accepted: false,
-            }).returning({ id: schema.aiDecisions.id });
-            return row.id;
-          },
-        );
-      });
-      return { decisionId, suggestion };
+        // Phase 3: write. The row lock serializes writers (also across processes): a suggestion
+        // stored meanwhile by someone else is returned instead of inserting a second one.
+        return withTenant(userId, async (db) => {
+          const fresh = await loadDocument(db, doc.id, true);
+          if (fresh.journalEntryId) throw new TRPCError({ code: "CONFLICT", message: "El comprobante ya fue contabilizado" });
+          if (!input.refresh) {
+            const pending = await findPending(db, doc.entityId, doc.id);
+            if (pending) return pending;
+          }
+          const decisionId = await audited(
+            db,
+            {
+              entityId: doc.entityId, action: "ai_decision.created", targetType: "ai_decision",
+              targetId: (id: string) => id,
+              after: { documentId: doc.id, provider: suggestion.provider, confidence: suggestion.confidence, fallbackReason: suggestion.fallbackReason },
+            },
+            async () => {
+              const [row] = await db.insert(schema.aiDecisions).values({
+                entityId: doc.entityId,
+                kind: KIND,
+                input: { documentId: doc.id, cdc: sifen.cdc, provider: suggestion.provider },
+                output: suggestion,
+                confidence: Math.round(suggestion.confidence * 100),
+                accepted: false,
+              }).returning({ id: schema.aiDecisions.id });
+              return row.id;
+            },
+          );
+          return { decisionId, suggestion };
+        });
+      })();
+      inFlight.set(doc.id, run);
+      try {
+        return await run;
+      } finally {
+        inFlight.delete(doc.id);
+      }
     }),
 
   /**
@@ -186,18 +224,29 @@ export const taxDocumentsRouter = router({
       })).min(2).optional(),
     }))
     .mutation(async ({ ctx, input }) => tenantDb(async (db) => {
-      const doc = await loadDocument(db, input.documentId);
+      // Row lock: a concurrent approval (another tab, another key) waits here and then sees the link.
+      const doc = await loadDocument(db, input.documentId, true);
       if (doc.journalEntryId) throw new TRPCError({ code: "CONFLICT", message: "El comprobante ya fue contabilizado" });
+      const sifenType = (doc.metadata as { sifen?: SifenDocument } | null)?.sifen?.docType;
+      if (doc.docType === "remito" || sifenType === "remito") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Un remito no genera asiento" });
+      }
       const decision = await loadDecision(db, input.decisionId);
       if (decision.entityId !== doc.entityId || (decision.input as { documentId?: string } | null)?.documentId !== doc.id) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Sugerencia no encontrada" });
       }
       if (await isRejected(db, decision.id)) throw new TRPCError({ code: "BAD_REQUEST", message: "La sugerencia fue rechazada" });
       const suggestion = decision.output as Suggestion;
-      const lines = input.lines ?? suggestion.lines.map(({ accountId, debit, credit, description }) => ({ accountId, debit, credit, description }));
-      if (lines.length < 2 || lines.some((l) => !l.accountId)) {
+      // A human may change accounts (and descriptions), never amounts.
+      if (input.lines && (input.lines.length !== suggestion.lines.length
+        || input.lines.some((l, i) => l.debit !== suggestion.lines[i].debit || l.credit !== suggestion.lines[i].credit))) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Solo se pueden cambiar las cuentas" });
+      }
+      const chosen = input.lines ?? suggestion.lines;
+      if (chosen.length < 2 || chosen.some((l) => !l.accountId)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Elegí una cuenta para cada línea" });
       }
+      const lines = chosen.map(({ accountId, debit, credit, description }) => ({ accountId: accountId!, debit, credit, description }));
       if (lines.reduce((s, l) => s + l.debit - l.credit, 0) !== 0) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "El asiento no está balanceado" });
       }

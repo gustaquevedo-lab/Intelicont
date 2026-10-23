@@ -192,7 +192,7 @@ function PendingDocument({ doc, accounts, onPosted }: { doc: DocView; accounts: 
     try {
       const r = await utils.client["tax-documents"].suggestEntry.mutate({ documentId: doc.id, refresh });
       setProposal(r);
-      setAccountIds(r.suggestion.lines.map((l) => l.accountId));
+      setAccountIds(r.suggestion.lines.map((l) => l.accountId ?? ""));
       setRejecting(false);
     } catch (e) {
       setError(errMsg(e, "No se pudo sugerir el asiento"));
@@ -205,7 +205,7 @@ function PendingDocument({ doc, accounts, onPosted }: { doc: DocView; accounts: 
     if (!proposal) return;
     setBusy("approve");
     setError(null);
-    const edited = proposal.suggestion.lines.some((l, i) => l.accountId !== accountIds[i]);
+    const edited = proposal.suggestion.lines.some((l, i) => (l.accountId ?? "") !== accountIds[i]);
     try {
       const r = await utils.client["tax-documents"].approveEntry.mutate(
         {
@@ -246,7 +246,8 @@ function PendingDocument({ doc, accounts, onPosted }: { doc: DocView; accounts: 
 
   const s = proposal?.suggestion;
   const pct = s ? Math.round(s.confidence * 100) : 0;
-  const tone = pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-yellow-500" : "bg-red-500";
+  // A local-model proposal is never shown as "green", whatever its score.
+  const tone = s?.provider === "ollama" ? "bg-amber-500" : pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-yellow-500" : "bg-red-500";
   const missingAccount = accountIds.some((id) => !id);
 
   return (
@@ -288,6 +289,11 @@ function PendingDocument({ doc, accounts, onPosted }: { doc: DocView; accounts: 
               <div className={cn("h-full", tone)} style={{ width: `${pct}%` }} />
             </div>
           </div>
+          {s.provider === "ollama" && (
+            <p role="note" className="flex items-start gap-1 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg px-2 py-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" /> Sugerido por IA local — revisá con atención
+            </p>
+          )}
           {s.fallbackReason && (
             <p className="flex items-start gap-1 text-xs text-yellow-700 dark:text-yellow-400">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" /> {s.fallbackReason}
