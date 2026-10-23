@@ -3,7 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { audited } from "../../db/audit";
 import { dbErrorMessage, tenantDb, type Db } from "../../db/index";
 import * as schema from "../../db/schema";
-import { RuleBasedProvider } from "../ai/rules";
+import { referenceLabel, RuleBasedProvider } from "../ai/rules";
 import type { AccountRef, DocFacts } from "../ai/provider";
 import { ivaFromGross, validateRuc } from "../fiscal-py";
 import { isSupportedInRegistro, TABLA_4 } from "../registro-codes";
@@ -23,10 +23,10 @@ export type ManualInput = {
   number: string;
   issueDate: string;
   condition: "cash" | "credit";
-  /** IVA-included gross amounts, integers. */
-  gravado10: number;
-  gravado5: number;
-  exento: number;
+  /** IVA-included gross amounts, integers. Optional (0) for the total-only codes 101/104/105. */
+  gravado10?: number;
+  gravado5?: number;
+  exento?: number;
   total: number;
   imputaIva: boolean;
   imputaIre: boolean;
@@ -56,15 +56,29 @@ export type ManualPreview = {
   /** total - retentions: what is paid to / collected from the counterparty. */
   netPayable: number;
   lines: ManualLine[];
-  /** Missing accounts etc. (Spanish). */
+  /** Missing accounts (Spanish); createManual refuses to post while there is one. */
   notes: string[];
+  /** Non-blocking remarks (Spanish), e.g. a total-only document booked without IVA. */
+  warnings: string[];
 };
+
+type Amounts = { gravado10: number; gravado5: number; exento: number };
+type Normalized = Omit<ManualInput, keyof Amounts> & Amounts;
+const normalize = (i: ManualInput): Normalized => ({ ...i, gravado10: i.gravado10 ?? 0, gravado5: i.gravado5 ?? 0, exento: i.exento ?? 0 });
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NUMBER = /^\d{3}-\d{3}-\d{7}$/;
 const TIMBRADO = /^\d{8}$/;
-/** Registro exceptions: these codes only carry the total. */
+/**
+ * Registro reporting rule: these codes are REPORTED with the total only (Task 19 exporter). The
+ * accounting side still uses an IVA split when the user gives one; with no split the total is
+ * booked without IVA (and a warning says so). 112 is total-only too but blocked below.
+ */
 const TOTAL_ONLY = new Set([101, 104, 105, 112]);
+/** Registro exceptions we cannot represent yet (no number / timbrado 0): 106, 107, 112. */
+const BLOCKED = new Set([106, 107, 112]);
+const NO_SPLIT_WARNING = "Sin discriminación de IVA: se contabiliza sin IVA";
+const noSplit = (i: Normalized) => TOTAL_ONLY.has(i.docCode) && !i.gravado10 && !i.gravado5 && !i.exento;
 const DOC_TYPE: Record<number, "self_invoice" | "import" | "credit_note" | "debit_note"> = {
   101: "self_invoice", 107: "import", 110: "credit_note", 111: "debit_note",
 };
@@ -73,12 +87,13 @@ const docTypeOf = (code: number) => DOC_TYPE[code] ?? "invoice";
 type Checked = { iva10: number; iva5: number; ruc?: { body: string; dv: string | null } };
 
 /** Registro + fiscal rules that need no DB. */
-function validate(input: ManualInput): Result<Checked, string> {
+function validate(input: Normalized): Result<Checked, string> {
   if (!UUID.test(input.entityId)) return err("Empresa no encontrada");
   const side = input.direction === "received" ? "compras" : "ventas";
   if (!Number.isInteger(input.docCode) || !isSupportedInRegistro(input.docCode, side)) {
     return err(`Tipo de comprobante ${input.docCode} no admitido en ${side}`);
   }
+  if (BLOCKED.has(input.docCode)) return err("Este tipo de comprobante todavía no se puede cargar manualmente");
   if (!!input.partnerId === !!input.partner) return err("Indicá un tercero existente o un RUC y razón social");
   if (input.partnerId && !UUID.test(input.partnerId)) return err("Tercero no encontrado");
   let ruc: Checked["ruc"];
@@ -105,9 +120,7 @@ function validate(input: ManualInput): Result<Checked, string> {
   } catch {
     return err("Importe inválido: debe ser un entero no negativo");
   }
-  if (TOTAL_ONLY.has(input.docCode)) {
-    if (gravado10 || gravado5 || exento) return err(`El tipo ${input.docCode} (${TABLA_4[input.docCode].name}) solo informa el total`);
-  } else if (total !== gravado10 + gravado5 + exento) {
+  if (!noSplit(input) && total !== gravado10 + gravado5 + exento) {
     return err("El total debe ser igual a gravado 10 % + gravado 5 % + exento");
   }
   if (total <= 0) return err("El total debe ser mayor a cero");
@@ -131,29 +144,29 @@ function validate(input: ManualInput): Result<Checked, string> {
 type Prepared = ManualPreview & {
   periodId: string;
   /** Existing partner, or the inline one still to be created. */
-  partner: { id: string | null; ruc: string; dv: string | null; legalName: string };
+  partner: { id: string | null; ruc: string; dv: string | null; legalName: string; foreign: boolean };
 };
 
 /** Read-only part shared by preview and create: entity, partner profile, accounts, period, lines. */
-async function prepare(db: Db, input: ManualInput, v: Checked): Promise<Result<Prepared, string>> {
+async function prepare(db: Db, input: Normalized, v: Checked): Promise<Result<Prepared, string>> {
   const [entity] = await db.select({ ruc: schema.entities.ruc, legalName: schema.entities.legalName })
     .from(schema.entities).where(eq(schema.entities.id, input.entityId));
   if (!entity) return err("Empresa no encontrada");
 
-  const cols = { id: schema.partners.id, entityId: schema.partners.entityId, ruc: schema.partners.ruc, dv: schema.partners.dvRuc, legalName: schema.partners.legalName, profile: schema.partners.retentionProfile };
+  const cols = { id: schema.partners.id, entityId: schema.partners.entityId, ruc: schema.partners.ruc, dv: schema.partners.dvRuc, legalName: schema.partners.legalName, profile: schema.partners.retentionProfile, country: schema.partners.country };
   let partner: Prepared["partner"];
   let rawProfile: unknown = null;
   if (input.partnerId) {
     const [p] = await db.select(cols).from(schema.partners).where(eq(schema.partners.id, input.partnerId));
     if (!p || p.entityId !== input.entityId) return err("Tercero no encontrado");
-    partner = { id: p.id, ruc: p.ruc, dv: p.dv, legalName: p.legalName };
+    partner = { id: p.id, ruc: p.ruc, dv: p.dv, legalName: p.legalName, foreign: (p.country ?? "PRY") !== "PRY" };
     rawProfile = p.profile;
   } else {
     const [p] = await db.select(cols).from(schema.partners)
       .where(and(eq(schema.partners.entityId, input.entityId), eq(schema.partners.ruc, v.ruc!.body)));
     partner = p
-      ? { id: p.id, ruc: p.ruc, dv: p.dv, legalName: p.legalName }
-      : { id: null, ruc: v.ruc!.body, dv: v.ruc!.dv, legalName: input.partner!.legalName.trim() };
+      ? { id: p.id, ruc: p.ruc, dv: p.dv, legalName: p.legalName, foreign: (p.country ?? "PRY") !== "PRY" }
+      : { id: null, ruc: v.ruc!.body, dv: v.ruc!.dv, legalName: input.partner!.legalName.trim(), foreign: false };
     rawProfile = p?.profile ?? null;
   }
   const profile = parseRetentionProfile(rawProfile);
@@ -177,11 +190,14 @@ async function prepare(db: Db, input: ManualInput, v: Checked): Promise<Result<P
     .where(and(eq(schema.chartOfAccounts.entityId, input.entityId), eq(schema.accounts.allowsPosting, true)));
   const accounts: AccountRef[] = rows.map((a) => ({ ...a, nature: String(a.nature), allowsPosting: true }));
   const expenseAccount = input.expenseAccountId ? accounts.find((a) => a.id === input.expenseAccountId) : undefined;
-  if (input.expenseAccountId && !expenseAccount) return err("Cuenta de gasto inválida");
+  if (input.expenseAccountId && (!expenseAccount || !["expense", "asset"].includes(expenseAccount.nature))) {
+    return err("Cuenta de gasto inválida: debe ser una cuenta de gasto o de activo de la empresa");
+  }
 
-  const totalOnly = TOTAL_ONLY.has(input.docCode);
+  const withoutSplit = noSplit(input);
+  // Accounting facts: a total-only document with no split is booked as a base without IVA.
   const amounts = {
-    gravado10: input.gravado10, gravado5: input.gravado5, exento: totalOnly ? input.total : input.exento,
+    gravado10: input.gravado10, gravado5: input.gravado5, exento: withoutSplit ? input.total : input.exento,
     iva10: v.iva10, iva5: v.iva5, total: input.total,
   };
   // Withholdings: purchases only, never on a credit note (it reverses the purchase).
@@ -209,16 +225,18 @@ async function prepare(db: Db, input: ManualInput, v: Checked): Promise<Result<P
   const suggestion = await new RuleBasedProvider().suggestEntry(facts, accounts, input.direction, { expenseAccount, retentions });
   const byId = new Map(accounts.map((a) => [a.id, a]));
   const lines = suggestion.lines.map((l) => ({ ...l, accountName: (l.accountId && byId.get(l.accountId)?.name) || null }));
-  const notes = lines.filter((l) => !l.accountId).map((l) => `Falta la cuenta ${l.accountCode} (${l.description}) en el plan de cuentas`);
+  const notes = [...new Set(lines.filter((l) => !l.accountId)
+    .map((l) => `Falta la cuenta de ${referenceLabel(l.accountCode) ?? l.accountCode} en el plan de cuentas`))];
   const totalRetentions = retentions.reduce((s, r) => s + r.amount, 0);
   return ok({
     iva10: v.iva10, iva5: v.iva5, retentions, totalRetentions, netPayable: calculateNetPayable(input.total, retentions),
-    lines, notes, periodId: period.id, partner,
+    lines, notes, warnings: withoutSplit ? [NO_SPLIT_WARNING] : [], periodId: period.id, partner,
   });
 }
 
 /** Computes IVA, withholdings and the proposed entry without writing anything. */
-export async function previewManual(input: ManualInput): Promise<Result<ManualPreview, string>> {
+export async function previewManual(raw: ManualInput): Promise<Result<ManualPreview, string>> {
+  const input = normalize(raw);
   const v = validate(input);
   if (!v.ok) return v;
   return tenantDb(async (db) => {
@@ -241,9 +259,10 @@ class Rejected extends Error {}
  * the first transaction ends, then sees the committed row. The lock is held to the end of the
  * request transaction (not just the savepoint), which is exactly the window that matters.
  */
-export type ManualCreated = { documentId: string; entryId: string };
+export type ManualCreated = { documentId: string; entryId: string; warnings: string[] };
 
-export async function createManual(input: ManualInput): Promise<Result<ManualCreated, string>> {
+export async function createManual(raw: ManualInput): Promise<Result<ManualCreated, string>> {
+  const input = normalize(raw);
   const v = validate(input);
   if (!v.ok) return v;
   return tenantDb(async (db) => {
@@ -301,7 +320,7 @@ export async function createManual(input: ManualInput): Promise<Result<ManualCre
             currencyCode: "PYG",
             condition: input.condition,
             status: "posted",
-            sifenStatus: "validated",
+            sifenStatus: null, // not an electronic document: no SIFEN state
             gravado10: input.gravado10,
             gravado5: input.gravado5,
             exento: input.exento,
@@ -311,7 +330,8 @@ export async function createManual(input: ManualInput): Promise<Result<ManualCre
             metadata: { manual: true, concept: input.concept?.trim() || null },
             processedAt: new Date(),
             docCode: input.docCode,
-            counterpartyIdType: p.partner.dv === null ? 12 : 11,
+            // Tabla 3: 17 identificación tributaria (foreign), 11 RUC (with DV), 12 cédula.
+            counterpartyIdType: p.partner.foreign ? 17 : p.partner.dv === null ? 12 : 11,
             imputaIva: input.imputaIva,
             imputaIre: input.imputaIre,
             imputaIrp: input.imputaIrp,
@@ -353,7 +373,7 @@ export async function createManual(input: ManualInput): Promise<Result<ManualCre
           });
           if (!entry.ok) throw new Rejected(entry.error);
           await tx.update(schema.taxDocuments).set({ journalEntryId: entry.value.id }).where(eq(schema.taxDocuments.id, doc.id));
-          return { documentId: doc.id, entryId: entry.value.id };
+          return { documentId: doc.id, entryId: entry.value.id, warnings: p.warnings };
         },
       ));
       return ok(result);

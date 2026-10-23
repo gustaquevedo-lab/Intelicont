@@ -176,9 +176,15 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const rucError = !editing && form.ruc && form.country === "PRY" ? validateRuc(form.ruc).errors[0] : undefined;
   const contacts = { email: form.email, phone: form.phone, address: form.address };
-  const [ret, setRet] = useState<RetForm>(() => retFormOf(editing?.retentionProfile));
+  const [ret, setRetState] = useState<RetForm>(() => retFormOf(editing?.retentionProfile));
+  // Only an edited profile is sent: an untouched stored profile is never overwritten.
+  const [retDirty, setRetDirty] = useState(false);
+  const setRet = (r: RetForm) => {
+    setRetState(r);
+    setRetDirty(true);
+  };
   const profile = profileOf(ret);
-  const profileError = typeof profile === "string" ? profile : undefined;
+  const profileError = retDirty && typeof profile === "string" ? profile : undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -195,8 +201,11 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
             e.preventDefault();
             const terms = Number(form.terms);
             if (editing) {
-              if (typeof profile === "string") return;
-              update.mutate({ id: editing.id, kind: form.kind, legalName: form.legalName, tradeName: form.tradeName, defaultPaymentTerms: terms, contacts, retentionProfile: profile });
+              if (retDirty && typeof profile === "string") return;
+              update.mutate({
+                id: editing.id, kind: form.kind, legalName: form.legalName, tradeName: form.tradeName, defaultPaymentTerms: terms, contacts,
+                ...(retDirty && typeof profile !== "string" && { retentionProfile: profile }),
+              });
             } else {
               create.mutate({ entityId, kind: form.kind, ruc: form.ruc, legalName: form.legalName, tradeName: form.tradeName, country: form.country, defaultPaymentTerms: terms, contacts });
             }

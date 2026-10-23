@@ -73,9 +73,10 @@ const manualInput = z.object({
   number: z.string().trim().max(15),
   issueDate: z.string().max(10),
   condition: z.enum(["cash", "credit"]),
-  gravado10: money,
-  gravado5: money,
-  exento: money,
+  // Optional (0) for the total-only codes 101/104/105.
+  gravado10: money.optional(),
+  gravado5: money.optional(),
+  exento: money.optional(),
   total: money,
   imputaIva: z.boolean(),
   imputaIre: z.boolean(),

@@ -38,8 +38,10 @@ type Form = {
   concept: string;
 };
 
-/** Registro exceptions: only the total is reported. */
+/** Registro reports only the total for these codes; the IVA split stays optional for the accounting. */
 const TOTAL_ONLY = new Set([101, 104, 105, 112]);
+/** Registro exceptions not representable yet (no number / timbrado 0). */
+const BLOCKED = new Set([106, 107, 112]);
 const today = () => new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD, local time
 const emptyForm = (): Form => ({
   direction: "received", docCode: 109, partyMode: "existing", partnerId: "", ruc: "", legalName: "",
@@ -76,7 +78,7 @@ export default function ManualDocumentPage() {
   const expenseAccounts = (accountsQuery.data ?? []).filter((a) => a.allowsPosting && a.nature === "expense");
   const [form, setForm] = useState<Form>(emptyForm);
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
-  const [saved, setSaved] = useState<{ documentId: string; entryId: string } | null>(null);
+  const [saved, setSaved] = useState<{ documentId: string; entryId: string; warnings: string[] } | null>(null);
 
   // One Idempotency-Key per form lifetime, renewed after success (Task 12 pattern).
   const idem = useIdempotencyKey();
@@ -92,7 +94,9 @@ export default function ManualDocumentPage() {
   const codes = Object.keys(TABLA_4).map(Number).filter((c) => isSupportedInRegistro(c, side));
   const totalOnly = TOTAL_ONLY.has(form.docCode);
   const isNote = form.docCode === 110 || form.docCode === 111;
-  const total = totalOnly ? amount(form.total) : amount(form.gravado10) + amount(form.gravado5) + amount(form.exento);
+  const split = amount(form.gravado10) + amount(form.gravado5) + amount(form.exento);
+  const withoutSplit = totalOnly && split === 0;
+  const total = withoutSplit ? amount(form.total) : split;
   const rucError = form.partyMode === "new" && form.ruc ? validateRuc(form.ruc).errors[0] : undefined;
   const selected = partners.find((p) => p.id === form.partnerId);
   const parties = partners.filter((p) => p.kind === "both" || p.kind === (form.direction === "received" ? "supplier" : "customer"));
@@ -111,9 +115,9 @@ export default function ManualDocumentPage() {
       number: form.number,
       issueDate: form.issueDate,
       condition: form.condition,
-      gravado10: totalOnly ? 0 : amount(form.gravado10),
-      gravado5: totalOnly ? 0 : amount(form.gravado5),
-      exento: totalOnly ? 0 : amount(form.exento),
+      gravado10: amount(form.gravado10),
+      gravado5: amount(form.gravado5),
+      exento: amount(form.exento),
       total,
       imputaIva: form.imputaIva,
       imputaIre: form.imputaIre,
@@ -124,7 +128,7 @@ export default function ManualDocumentPage() {
       ...(form.direction === "received" && form.expenseAccountId && { expenseAccountId: form.expenseAccountId }),
       ...(form.concept.trim() && { concept: form.concept.trim() }),
     };
-  }, [entityId, form, total, totalOnly, isNote, rucError]);
+  }, [entityId, form, total, isNote, rucError]);
 
   const debounced = useDebounced(input, 400);
   const preview = api["tax-documents"].previewManual.useQuery(saved || !debounced ? skipToken : debounced, { retry: false });
@@ -177,7 +181,11 @@ export default function ManualDocumentPage() {
           <label className={labelCls}>
             Tipo de comprobante
             <select value={form.docCode} onChange={(e) => set({ docCode: Number(e.target.value) })} className={inputCls}>
-              {codes.map((c) => <option key={c} value={c}>{c} — {TABLA_4[c].name}</option>)}
+              {codes.map((c) => (
+                <option key={c} value={c} disabled={BLOCKED.has(c)}>
+                  {c} — {TABLA_4[c].name}{BLOCKED.has(c) ? " (todavía no se puede cargar manualmente)" : ""}
+                </option>
+              ))}
             </select>
           </label>
           <label className={labelCls}>
@@ -227,21 +235,21 @@ export default function ManualDocumentPage() {
             </>
           )}
 
-          {totalOnly ? (
-            <div className="md:col-span-2">
-              <MoneyField label="Total" value={form.total} onChange={(v) => set({ total: v })} />
-              <p className="mt-1 text-xs text-gray-500">Este tipo de comprobante solo informa el total.</p>
-            </div>
+          <MoneyField label="Gravado 10 % (IVA incluido)" value={form.gravado10} onChange={(v) => set({ gravado10: v })} />
+          <MoneyField label="Gravado 5 % (IVA incluido)" value={form.gravado5} onChange={(v) => set({ gravado5: v })} />
+          <MoneyField label="Exento" value={form.exento} onChange={(v) => set({ exento: v })} />
+          {withoutSplit ? (
+            <MoneyField label="Total" value={form.total} onChange={(v) => set({ total: v })} />
           ) : (
-            <>
-              <MoneyField label="Gravado 10 % (IVA incluido)" value={form.gravado10} onChange={(v) => set({ gravado10: v })} />
-              <MoneyField label="Gravado 5 % (IVA incluido)" value={form.gravado5} onChange={(v) => set({ gravado5: v })} />
-              <MoneyField label="Exento" value={form.exento} onChange={(v) => set({ exento: v })} />
-              <div className={labelCls}>
-                Total
-                <p aria-label="Total" className="mt-1 px-3 py-2 bg-gray-800/50 border border-gray-800 rounded-lg text-sm text-white">{gs(total)}</p>
-              </div>
-            </>
+            <div className={labelCls}>
+              Total
+              <p aria-label="Total" className="mt-1 px-3 py-2 bg-gray-800/50 border border-gray-800 rounded-lg text-sm text-white">{gs(total)}</p>
+            </div>
+          )}
+          {totalOnly && (
+            <p className="md:col-span-2 -mt-2 text-xs text-gray-500">
+              Este tipo se informa en el Registro solo por el total. Si cargás gravado/exento se discrimina el IVA; si los dejás en cero, ingresá el total y se contabiliza sin IVA.
+            </p>
           )}
 
           <fieldset className="md:col-span-2 flex flex-wrap gap-4 text-sm text-gray-300">
@@ -277,6 +285,7 @@ export default function ManualDocumentPage() {
             <div role="status" className="md:col-span-2 flex flex-wrap items-center gap-3 p-3 rounded-lg bg-green-900/20 border border-green-800 text-sm text-green-400">
               <CheckCircle2 className="h-4 w-4" />
               <span>Comprobante guardado y asiento contabilizado</span>
+              {saved.warnings.map((w) => <span key={w} className="text-yellow-500">{w}</span>)}
               <Link href="/asientos" className="underline">Ver asientos</Link>
               <button type="button" onClick={reset} className="underline">Cargar otro</button>
             </div>
@@ -349,6 +358,7 @@ export default function ManualDocumentPage() {
                 </tbody>
               </table>
               {preview.data.notes.map((n) => <p key={n} className="text-xs text-red-400">{n}</p>)}
+              {preview.data.warnings.map((w) => <p key={w} className="text-xs text-yellow-500">{w}</p>)}
             </>
           )}
         </section>

@@ -16,18 +16,28 @@ const ROLES = {
   sales: { code: "4.1.01", label: "Ventas", match: /venta/i },
   ivaDebit10: { code: "2.1.02", label: "IVA Débito Fiscal", match: /iva d[eé]bito/i },
   ivaDebit5: { code: "2.1.03", label: "IVA Débito Fiscal 5%", match: /iva d[eé]bito/i },
-  retentionsPayable: { code: "2.1.05", label: "Retenciones a Pagar", match: /retenci/i },
+  // Liability only: an asset such as "Retenciones de IVA sufridas" must never receive the withholding credit.
+  retentionsPayable: { code: "2.1.05", label: "Retenciones por Pagar", match: /retenciones?\s+(a|por)\s+pagar/i, loose: /retenci/i, nature: "liability" },
 } as const;
 type Role = keyof typeof ROLES;
+type RoleDef = { code: string; label: string; match: RegExp; loose?: RegExp; nature?: string };
 
 type Resolved = { account?: AccountRef; byName: boolean };
 
 function resolve(role: Role, accounts: AccountRef[]): Resolved {
-  const r = ROLES[role];
-  const postable = accounts.filter((a) => a.allowsPosting).sort((a, b) => a.code.localeCompare(b.code));
+  const r: RoleDef = ROLES[role];
+  const postable = accounts
+    .filter((a) => a.allowsPosting && (!r.nature || a.nature === r.nature))
+    .sort((a, b) => a.code.localeCompare(b.code));
   const exact = postable.find((a) => a.code === r.code && r.match.test(a.name));
   if (exact) return { account: exact, byName: false };
-  return { account: postable.find((a) => r.match.test(a.name)), byName: true };
+  const named = postable.find((a) => r.match.test(a.name)) ?? (r.loose && postable.find((a) => r.loose!.test(a.name)));
+  return { account: named || undefined, byName: true };
+}
+
+/** Human label of a role's reference code (e.g. "2.1.05" -> "Retenciones por Pagar"), for missing-account messages. */
+export function referenceLabel(code: string): string | undefined {
+  return Object.values(ROLES).find((r) => r.code === code)?.label;
 }
 
 export type RuleOptions = {

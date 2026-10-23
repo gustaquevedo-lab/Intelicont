@@ -133,10 +133,8 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("manual tax documents with withhold
     await expect(docs().createManual(i)).rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringMatching(/total/i) });
     await expect(docs().previewManual(i)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(await count(t.owner`select count(*) n from tax_documents where number = ${i.number}`)).toBe(0);
-    // Total-only codes (e.g. 112 ticket) carry only the total.
-    const ticket = await docs().createManual(input({ docCode: 112, gravado10: 0, total: 50_000, partnerId: noProfile }));
-    expect(ticket.entryId).toBeTruthy();
-    await expect(docs().createManual(input({ docCode: 112, total: 11_000_000 }))).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // A total-only code with a split still needs total = sum.
+    await expect(docs().createManual(input({ docCode: 104, total: 11_000_001 }))).rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringMatching(/total/i) });
   });
 
   it("createManual rejects a credit note without a related document", async () => {
@@ -180,6 +178,10 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("manual tax documents with withhold
     const ci = await docs().createManual(input({ partnerId: undefined, partner: { ruc: "1234567", legalName: "Persona Física" }, foreignCurrency: true }));
     expect((await t.owner`select counterparty_id_type, foreign_currency from tax_documents where id = ${ci.documentId}`)[0])
       .toEqual({ counterparty_id_type: 12, foreign_currency: true });
+    // A foreign partner is 17 (identificación tributaria).
+    const foreign = (await caller().partners.create({ entityId: e1, kind: "supplier", ruc: "30712345678", legalName: "Proveedor Argentino", country: "ARG" })).id;
+    const fx = await docs().createManual(input({ partnerId: foreign }));
+    expect((await t.owner`select counterparty_id_type from tax_documents where id = ${fx.documentId}`)[0].counterparty_id_type).toBe(17);
   });
 
   it("createManual in a month without an open period fails and leaves nothing", async () => {
@@ -227,6 +229,76 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("manual tax documents with withhold
     expect((await t.owner`select retention_profile from partners where id = ${id}`)[0].retention_profile).toEqual({ iva: { rate: 0.7, minimum: 100_000 }, ire: { rate: 0.03 } });
     await caller().partners.update({ id, retentionProfile: null });
     expect((await t.owner`select retention_profile from partners where id = ${id}`)[0].retention_profile).toBeNull();
+  });
+
+  it("a manual document has no SIFEN status", async () => {
+    const { documentId } = await docs().createManual(input({ partnerId: noProfile }));
+    const [doc] = await t.owner`select sifen_status, is_electronic from tax_documents where id = ${documentId}`;
+    expect(doc).toEqual({ sifen_status: null, is_electronic: false });
+  });
+
+  it("withholding is never credited to an asset account", async () => {
+    // An asset with a lower code whose name also says "Retenciones" (withholdings suffered).
+    const [{ coa_id: coa }] = await t.owner`select a.coa_id from accounts a join chart_of_accounts c on c.id = a.coa_id where c.entity_id = ${e1} limit 1`;
+    const [{ id: asset }] = await t.owner`insert into accounts (coa_id, code, name, nature, allows_posting) values (${coa}, '1.1.00', 'Retenciones de IVA sufridas', 'asset', true) returning id`;
+    const preview = await docs().previewManual(input());
+    expect(preview.lines.some((l) => l.accountId === asset)).toBe(false);
+    const { entryId } = await docs().createManual(input());
+    expect(await count(t.owner`select count(*) n from journal_lines where entry_id = ${entryId} and account_id = ${asset}`)).toBe(0);
+    expect((await entryLines(entryId)).find((l) => l[2] === 300_000)?.[0]).toBe("2.1.03"); // Retenciones por Pagar (liability)
+  });
+
+  it("createManual fails when the chart has no liability account for withholdings", async () => {
+    const e3 = (await t.owner`insert into entities (ruc, legal_name) values ('80000004-8', 'Sin Retenciones') returning id`)[0].id as string;
+    await t.owner`insert into memberships (user_id, entity_id, role) values (${user}, ${e3}, 'admin')`;
+    const coa = (await t.owner`insert into chart_of_accounts (entity_id, kind, name) values (${e3}, 'fiscal_py', 'PC') returning id`)[0].id;
+    const accts = await t.owner`insert into accounts (coa_id, code, name, nature, allows_posting) values
+      (${coa}, '1.1.00', 'Retenciones de IVA sufridas', 'asset', true), (${coa}, '1.1.04', 'IVA Crédito Fiscal', 'asset', true),
+      (${coa}, '2.1.01', 'Proveedores', 'liability', true), (${coa}, '5.1.04', 'Honorarios', 'expense', true) returning id, code`;
+    await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e3}, 2026, 9, 'open')`;
+    const sup = (await caller().partners.create({ entityId: e3, kind: "supplier", ruc: "80014066-4", legalName: "Agente" })).id;
+    await caller().partners.update({ id: sup, retentionProfile: { iva: { rate: 0.3 } } });
+    const i = input({ entityId: e3, partnerId: sup, expenseAccountId: accts.find((a) => a.code === "5.1.04")!.id });
+    const preview = await docs().previewManual(i);
+    expect(preview.notes).toEqual(["Falta la cuenta de Retenciones por Pagar en el plan de cuentas"]);
+    expect(preview.lines.find((l) => l.credit === 300_000)?.accountId).toBeNull();
+    await expect(docs().createManual(i)).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Falta la cuenta de Retenciones por Pagar en el plan de cuentas" });
+    expect(await count(t.owner`select count(*) n from tax_documents where entity_id = ${e3}`)).toBe(0);
+  });
+
+  it("total-only code with IVA split books the IVA", async () => {
+    const res = await docs().createManual(input({ docCode: 104, partnerId: noProfile, gravado10: 1_100_000, exento: 0, total: 1_100_000 }));
+    expect(res.warnings).toEqual([]);
+    const [doc] = await t.owner`select doc_code, gravado_10, iva_10, exento, total from tax_documents where id = ${res.documentId}`;
+    expect(doc).toEqual({ doc_code: 104, gravado_10: "1100000", iva_10: "100000", exento: "0", total: "1100000" });
+    expect(await entryLines(res.entryId)).toEqual([["5.1.04", 1_000_000, 0], ["1.1.04", 100_000, 0], ["2.1.01", 0, 1_100_000]]);
+  });
+
+  it("total-only code without a split books no IVA and warns", async () => {
+    const i = input({ docCode: 105, partnerId: noProfile, gravado10: undefined, gravado5: undefined, exento: undefined, total: 50_000 });
+    const preview = await docs().previewManual(i);
+    expect(preview.warnings).toEqual(["Sin discriminación de IVA: se contabiliza sin IVA"]);
+    expect(preview).toMatchObject({ iva10: 0, iva5: 0 });
+    const res = await docs().createManual(i);
+    expect(res.warnings).toEqual(["Sin discriminación de IVA: se contabiliza sin IVA"]);
+    const [doc] = await t.owner`select gravado_10, gravado_5, exento, iva_10, iva_5, total from tax_documents where id = ${res.documentId}`;
+    expect(doc).toEqual({ gravado_10: "0", gravado_5: "0", exento: "0", iva_10: "0", iva_5: "0", total: "50000" });
+    expect(await entryLines(res.entryId)).toEqual([["5.1.04", 50_000, 0], ["2.1.01", 0, 50_000]]);
+  });
+
+  it("unsupported Registro codes are rejected", async () => {
+    for (const docCode of [106, 107, 112]) {
+      const i = input({ docCode });
+      await expect(docs().createManual(i), String(docCode)).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Este tipo de comprobante todavía no se puede cargar manualmente" });
+      await expect(docs().previewManual(i), String(docCode)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+  });
+
+  it("expenseAccountId of a liability account is rejected", async () => {
+    const [{ id: liability }] = await t.owner`select a.id from accounts a join chart_of_accounts c on c.id = a.coa_id where c.entity_id = ${e1} and a.code = '2.1.01'`;
+    await expect(docs().createManual(input({ expenseAccountId: liability }))).rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringMatching(/Cuenta de gasto inválida/) });
+    const [{ id: income }] = await t.owner`select a.id from accounts a join chart_of_accounts c on c.id = a.coa_id where c.entity_id = ${e1} and a.code = '4.1.01'`;
+    await expect(docs().previewManual(input({ expenseAccountId: income }))).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("a user of another entity cannot create or preview for this entity", async () => {
