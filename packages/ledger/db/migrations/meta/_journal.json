@@ -43,6 +43,13 @@
       "when": 1792701742779,
       "tag": "0005_registro_comprobantes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792760342647,
+      "tag": "0006_calendar_views",
+      "breakpoints": true
     }
   ]
 }

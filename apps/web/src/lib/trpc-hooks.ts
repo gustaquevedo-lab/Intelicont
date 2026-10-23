@@ -103,17 +103,3 @@ export function useCurrentPeriod(entityId: string) {
 export function useVencimientoIva(year: number, month: number, ruc: string) {
   return api.fiscal.vencimientoIva.useQuery({ year, month, ruc }, { enabled: !!ruc });
 }
-
-// ─── Reports ───────────────────────────────────────────────────────────
-
-export function useIvaSummary(entityId: string, year: number, month: number) {
-  return api.reports.ivaSummary.useQuery({ entityId, year, month }, { enabled: !!entityId });
-}
-
-export function useFiscalResume(entityId: string) {
-  return api.reports.fiscalResume.useQuery({ entityId }, { enabled: !!entityId });
-}
-
-export function useTrialBalance(entityId: string) {
-  return api.reports.trialBalance.useQuery({ entityId }, { enabled: !!entityId });
-}
