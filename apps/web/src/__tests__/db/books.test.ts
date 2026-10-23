@@ -57,7 +57,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("books: diario, mayor, sumas y sald
     e1 = (await caller().entities.create({ ruc: "1234567-9", legalName: "Cliente de Prueba", taxRegimes: ["IVA_GRAL"], baseCurrency: "PYG" })).id;
     e2 = (await caller(outsider).entities.create({ ruc: "80014066-4", legalName: "Otra", taxRegimes: ["IVA_GRAL"], baseCurrency: "PYG" })).id;
     await t.owner`insert into memberships (user_id, entity_id, role) values (${both}, ${e1}, 'accountant'), (${both}, ${e2}, 'accountant')`;
-    for (const m of [7, 8, 9]) await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e1}, 2026, ${m}, 'open') on conflict do nothing`;
+    for (const m of [5, 7, 8, 9]) await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e1}, 2026, ${m}, 'open') on conflict do nothing`;
     for (const r of await t.owner`select a.id, a.code from accounts a join chart_of_accounts c on c.id = a.coa_id where c.entity_id = ${e1}`) acc[r.code] = r.id;
 
     // July: capital contribution 1.000.000 (opening balance for August).
@@ -235,15 +235,32 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("books: diario, mayor, sumas y sald
     expect(d.rows.every((x) => e1Entries.has(x.entryId))).toBe(true);
   });
 
+  it("journal entry date must be a plain calendar date", async () => {
+    const make = async (date: string, number: string) => caller()["journal-entries"].create({
+      entityId: e1, periodId: await periodId(e1, 2026, 5), date, number,
+      lineas: [
+        { accountId: acc["1.1.01.001"], debit: 10, credit: 0, currencyCode: "PYG" },
+        { accountId: acc["3.1"], debit: 0, credit: 10, currencyCode: "PYG" },
+      ],
+    });
+    for (const bad of ["2026-05-01T23:30:00-04:00", "2026-13-40", "2026-02-30"]) {
+      await expect(make(bad, `BAD-${bad}`)).rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringContaining("Fecha inválida (AAAA-MM-DD)") });
+    }
+    const ok = await make("2026-05-01", "OK-DATE");
+    const [row] = await t.owner`select to_char(date at time zone 'UTC', 'YYYY-MM-DD HH24:MI') as d from journal_entries where id = ${ok.id}`;
+    expect(row.d).toBe("2026-05-01 00:00");
+  });
+
   it("reports reject an entityId the user cannot see", async () => {
     const r = reports(outsider);
+    // Lazy: each call starts only when its `.rejects` is attached (no unhandled rejection).
     const calls = [
-      r.diario({ entityId: e1, ...AUG }),
-      r.mayor({ entityId: e1, accountId: acc["1.1.01.001"], ...AUG }),
-      r.sumasSaldos({ entityId: e1, ...AUG }),
-      r.libroIva({ entityId: e1, year: 2026, month: 8, side: "compras" }),
+      () => r.diario({ entityId: e1, ...AUG }),
+      () => r.mayor({ entityId: e1, accountId: acc["1.1.01.001"], ...AUG }),
+      () => r.sumasSaldos({ entityId: e1, ...AUG }),
+      () => r.libroIva({ entityId: e1, year: 2026, month: 8, side: "compras" }),
     ];
-    for (const c of calls) await expect(c).rejects.toMatchObject({ code: "FORBIDDEN" });
+    for (const c of calls) await expect(c()).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(reports().mayor({ entityId: e1, accountId: crypto.randomUUID(), ...AUG })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });

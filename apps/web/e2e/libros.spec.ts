@@ -35,7 +35,10 @@ test.describe("libros", () => {
     await expect(page.getByRole("list", { name: "Asientos publicados" })).toContainText("publicado");
 
     await page.goto("/libros");
+    // Fill only after hydration (the book's totals render from a query), or the controlled input resets.
+    await expect(page.getByText(/TOTALES \(\d+ registros\)/)).toBeVisible();
     await page.getByLabel("Período").fill("2026-08");
+    await expect(page.getByText("Libro IVA, Diario, Mayor y Sumas y Saldos — 2026-08")).toBeVisible();
     const table = page.getByRole("table", { name: "Libro IVA Compras" });
     const row = table.getByRole("row").filter({ hasText: `CDC ${myCdc}` });
     await expect(row).toContainText("024-004-0049994");

@@ -55,7 +55,15 @@ export async function createTestDb(): Promise<TestDb> {
     await app?.end({ timeout: 2 }).catch(() => {});
     await owner?.end({ timeout: 2 }).catch(() => {});
     if (dbCreated) {
-      await admin`select pg_terminate_backend(pid) from pg_stat_activity where datname = ${dbName} and pid <> pg_backend_pid()`;
+      // Backends of the runtime role that are still exiting cannot be signalled by the admin role (not a
+      // member: "permission denied to terminate process"); wait for them, then terminate only the rest.
+      for (let i = 0; i < 50; i++) {
+        const [{ n }] = await admin`select count(*)::int as n from pg_stat_activity where datname = ${dbName} and usename = ${role}`;
+        if (n === 0) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      await admin`select pg_terminate_backend(pid) from pg_stat_activity
+        where datname = ${dbName} and pid <> pg_backend_pid() and usename is distinct from ${role}`;
       await admin.unsafe(`drop database if exists "${dbName}"`);
     }
     if (roleCreated) await admin.unsafe(`drop role if exists "${role}"`);
