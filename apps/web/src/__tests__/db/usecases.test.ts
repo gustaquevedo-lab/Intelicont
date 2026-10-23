@@ -17,6 +17,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
   let uc: UseCases;
   let audit: AuditModule;
   let user: string, outsider: string, e1: string, e2: string, cash: string, sales: string, p1: string, p2: string, cashE2: string;
+  let p1Day: string; // YYYY-MM-01 of p1 (the current month)
   const prevUrl = process.env.DATABASE_URL;
   const as = <T>(userId: string, fn: () => Promise<T>) => db.withTenant(userId, fn);
   const lines = (amount: number) => [
@@ -45,6 +46,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
     [cashE2] = await accts(e2);
     const nowYm = (await t.owner`select extract(year from (now() at time zone 'America/Asuncion'))::int as "year", extract(month from (now() at time zone 'America/Asuncion'))::int as "month"`)[0];
     p1 = (await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e1}, ${nowYm.year}, ${nowYm.month}, 'open') returning id`)[0].id;
+    p1Day = `${nowYm.year}-${String(nowYm.month).padStart(2, "0")}-01`;
     p2 = (await t.owner`insert into fiscal_periods (entity_id, year, month, status) values (${e2}, 2026, 10, 'open') returning id`)[0].id;
     process.env.DATABASE_URL = t.appUrl;
     vi.resetModules();
@@ -157,8 +159,14 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
   });
 
   it("every mutating use case emits an audit event", async () => {
-    expect(Object.keys(uc.MUTATING_USECASES).sort()).toEqual(["ingestDocument", "postEntry", "reverseEntry"]);
+    expect(Object.keys(uc.MUTATING_USECASES).sort()).toEqual(["createManual", "ingestDocument", "postEntry", "reverseEntry"]);
     const runners: Record<string, () => Promise<{ ok: boolean }>> = {
+      // Exempt cash sale: Dr Caja / Cr Ventas (the only accounts of this chart).
+      createManual: () => as(user, () => uc.createManual({
+        entityId: e1, direction: "issued", docCode: 109, partner: { ruc: "80014066-4", legalName: "Cliente" },
+        timbrado: "12345678", number: "001-001-0000001", issueDate: p1Day, condition: "cash",
+        gravado10: 0, gravado5: 0, exento: 1000, total: 1000, imputaIva: true, imputaIre: false, imputaIrp: false,
+      })),
       ingestDocument: () => as(user, () => uc.ingestDocument(e1, "received",
         readFileSync(path.resolve(__dirname, "../../__fixtures__/sifen/fac_024-004-0049994.xml"), "utf-8"))),
       postEntry: () => post("COVER-P", 50),

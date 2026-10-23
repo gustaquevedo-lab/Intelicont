@@ -3,7 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { SifenDocument } from "@intelicont/ledger/sifen";
 import { router, protectedProcedure, authedProcedure, z } from "../trpc";
 import { idempotentProcedure } from "../idempotent";
-import { ingestDocument, postEntry } from "@ledger/src/usecases";
+import { createManual, ingestDocument, postEntry, previewManual } from "@ledger/src/usecases";
 import { getTaxDocuments, getTaxDocument, getPendingTaxDocuments, getTaxDocumentLines } from "@ledger/db/repository";
 import { tenantDb, withTenant, type Db } from "@ledger/db/index";
 import { audited } from "@ledger/db/audit";
@@ -62,6 +62,32 @@ async function loadDecision(db: Db, decisionId: string) {
 
 const money = z.number().int().nonnegative().refine(Number.isSafeInteger);
 
+/** Mirrors `ManualInput` (packages/ledger/src/usecases/manual-document.ts); the use case applies the Registro rules. */
+const manualInput = z.object({
+  entityId: z.string().uuid(),
+  direction: z.enum(["received", "issued"]),
+  docCode: z.number().int().min(100).max(299),
+  partnerId: z.string().uuid().optional(),
+  partner: z.object({ ruc: z.string().trim().min(1).max(20), legalName: z.string().trim().min(1).max(200) }).optional(),
+  timbrado: z.string().trim().max(8),
+  number: z.string().trim().max(15),
+  issueDate: z.string().max(10),
+  condition: z.enum(["cash", "credit"]),
+  gravado10: money,
+  gravado5: money,
+  exento: money,
+  total: money,
+  imputaIva: z.boolean(),
+  imputaIre: z.boolean(),
+  imputaIrp: z.boolean(),
+  noImputa: z.boolean().optional(),
+  foreignCurrency: z.boolean().optional(),
+  relatedNumber: z.string().trim().max(15).optional(),
+  relatedTimbrado: z.string().trim().max(8).optional(),
+  expenseAccountId: z.string().uuid().optional(),
+  concept: z.string().trim().max(500).optional(),
+});
+
 /**
  * One in-flight provider call per document in this process: concurrent callers (double click, two
  * tabs) share the same promise and therefore the same decision. Each caller still runs phase 1
@@ -119,6 +145,24 @@ export const taxDocumentsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const res = await ingestDocument(input.entityId, input.direction, input.xml);
+      if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
+      return res.value;
+    }),
+
+  /** Live preview of a manual document: IVA, withholdings, net payable and the entry. Writes nothing. */
+  previewManual: protectedProcedure
+    .input(manualInput)
+    .query(async ({ input }) => {
+      const res = await previewManual(input);
+      if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
+      return res.value;
+    }),
+
+  /** Stores a manual (non-electronic) document with its withholdings and posts its entry. */
+  createManual: idempotentProcedure
+    .input(manualInput)
+    .mutation(async ({ input }) => {
+      const res = await createManual(input);
       if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
       return res.value;
     }),

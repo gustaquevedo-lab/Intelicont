@@ -1,5 +1,4 @@
-import type { SifenDocument } from "../sifen";
-import { DOC_LABELS, docEvidence, fmt, type AccountRef, type AIProvider, type Direction, type Suggestion, type SuggestionLine } from "./provider";
+import { DOC_LABELS, docEvidence, fmt, type AccountRef, type AIProvider, type Direction, type DocFacts, type Suggestion, type SuggestionLine } from "./provider";
 
 /**
  * Accounting roles used by the PY rules. `code` is the reference chart's code (packages/ledger/db/seed.ts);
@@ -17,6 +16,7 @@ const ROLES = {
   sales: { code: "4.1.01", label: "Ventas", match: /venta/i },
   ivaDebit10: { code: "2.1.02", label: "IVA Débito Fiscal", match: /iva d[eé]bito/i },
   ivaDebit5: { code: "2.1.03", label: "IVA Débito Fiscal 5%", match: /iva d[eé]bito/i },
+  retentionsPayable: { code: "2.1.05", label: "Retenciones a Pagar", match: /retenci/i },
 } as const;
 type Role = keyof typeof ROLES;
 
@@ -30,9 +30,16 @@ function resolve(role: Role, accounts: AccountRef[]): Resolved {
   return { account: postable.find((a) => r.match.test(a.name)), byName: true };
 }
 
+export type RuleOptions = {
+  /** Purchase base lines (gravado / exento) go to this account instead of Mercaderías / Otros Gastos. */
+  expenseAccount?: AccountRef;
+  /** Purchase withholdings: one credit to Retenciones a Pagar each; the counterpart is reduced by their sum. */
+  retentions?: { type: string; amount: number }[];
+};
+
 /** Deterministic PY accounting rules (port of the legacy `suggestJournalEntry`), integer amounts. */
 export class RuleBasedProvider implements AIProvider {
-  async suggestEntry(doc: SifenDocument, accounts: AccountRef[], direction: Direction = "received"): Promise<Suggestion> {
+  async suggestEntry(doc: DocFacts, accounts: AccountRef[], direction: Direction = "received", opts: RuleOptions = {}): Promise<Suggestion> {
     const sources = docEvidence(doc);
     if (doc.docType === "remito") {
       return { lines: [], confidence: 0, rationale: "Un remito no genera asiento contable.", sources, provider: "rules" };
@@ -42,7 +49,8 @@ export class RuleBasedProvider implements AIProvider {
     const found: string[] = [];
     let byName = false;
     const line = (role: Role, side: "debit" | "credit", amount: number, description: string): SuggestionLine => {
-      const { account, byName: viaName } = resolve(role, accounts);
+      const chosen = opts.expenseAccount && (role === "inventory" || role === "otherExpense") && direction === "received";
+      const { account, byName: viaName } = chosen ? { account: opts.expenseAccount, byName: false } : resolve(role, accounts);
       if (!account) missing.add(`${ROLES[role].code} ${ROLES[role].label}`);
       else {
         byName ||= viaName;
@@ -86,8 +94,16 @@ export class RuleBasedProvider implements AIProvider {
       push("ivaCredit5", doc.iva5, `IVA 5% — ${ref}`);
     }
     const sum = lines.reduce((s, l) => s + l.debit + l.credit, 0);
+    let withheld = 0;
+    if (!isSale) {
+      for (const r of opts.retentions ?? []) {
+        if (r.amount <= 0) continue;
+        withheld += r.amount;
+        lines.push(line("retentionsPayable", other, r.amount, `Retención ${r.type.toUpperCase()} — ${ref}`));
+      }
+    }
     const counterRole: Role = cash ? "cash" : isSale ? "customers" : "suppliers";
-    const counterpart = line(counterRole, other, sum, isSale ? `Cobro/a cobrar — ${ref}` : `Pago/a pagar ${doc.issuer.name} — ${ref}`);
+    const counterpart = line(counterRole, other, sum - withheld, isSale ? `Cobro/a cobrar — ${ref}` : `Pago/a pagar ${doc.issuer.name} — ${ref}`);
     if (sum > 0) {
       if (isSale) lines.unshift(counterpart); // sale: receivable/cash first, like the legacy rules
       else lines.push(counterpart);

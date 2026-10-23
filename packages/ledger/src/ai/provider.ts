@@ -20,6 +20,12 @@ export type Suggestion = {
   fallbackReason?: string;
 };
 
+/**
+ * The document facts the rules need. A SIFEN DE is one; a manual (non-electronic) document is
+ * another, with `cdc: ""`, `isElectronic: false` and no item lines.
+ */
+export type DocFacts = Omit<SifenDocument, "isElectronic"> & { isElectronic: boolean };
+
 /** "received" = purchase side (the entity is the receiver); "issued" = sale side. */
 export type Direction = "received" | "issued";
 
@@ -39,8 +45,8 @@ export const DOC_LABELS: Record<SifenDocument["docType"], string> = {
 };
 
 /** Human-readable evidence taken from the document. */
-export function docEvidence(doc: SifenDocument): string[] {
-  const out = [`CDC ${doc.cdc}`, `Comprobante ${doc.number} (${DOC_LABELS[doc.docType]})`];
+export function docEvidence(doc: DocFacts): string[] {
+  const out = [...(doc.cdc ? [`CDC ${doc.cdc}`] : []), `Comprobante ${doc.number} (${DOC_LABELS[doc.docType]})`];
   if (doc.gravado10) out.push(`Gravado 10%: ${fmt(doc.gravado10)}`);
   if (doc.iva10) out.push(`IVA 10%: ${fmt(doc.iva10)}`);
   if (doc.gravado5) out.push(`Gravado 5%: ${fmt(doc.gravado5)}`);
