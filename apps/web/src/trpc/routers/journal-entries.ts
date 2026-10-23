@@ -13,7 +13,7 @@ const uiStatus = (e: JournalEntryRow) => (e.reversedBy ? ("reversed" as const) :
 
 export const journalEntriesRouter = router({
   list: protectedProcedure
-    .input(z.object({ entityId: z.string(), limit: z.number().optional().default(50) }))
+    .input(z.object({ entityId: z.string(), limit: z.number().int().min(1).max(500).optional().default(50) }))
     .query(async ({ input }) => {
       const entries = await getJournalEntries(input.entityId);
       return entries.slice(0, input.limit).map((e) => ({
@@ -27,6 +27,7 @@ export const journalEntriesRouter = router({
         description: e.description,
         status: uiStatus(e),
         reversedBy: e.reversedBy,
+        total: Number(e.total),
         postedAt: e.postedAt,
         reversalOf: e.reversalOf,
         versionOf: e.versionOf,

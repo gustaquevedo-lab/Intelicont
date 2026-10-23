@@ -129,16 +129,22 @@ export async function getAllAccounts(entityId: string): Promise<Account[]> {
 // ─── Journal Entries ──────────────────────────────────────────────────────
 
 /** A journal entry plus the derived reversal state: id of the counter-entry whose `reversal_of` is this entry. */
-export type JournalEntryRow = JournalEntry & { reversedBy: string | null };
+export type JournalEntryRow = JournalEntry & { reversedBy: string | null; total: string };
 
 // Explicit qualifier: Drizzle would render a column ref in a single-table select unqualified, which binds to `r` inside the subquery.
 const entryWithReversal = {
   ...getTableColumns(schema.journalEntries),
   reversedBy: sql<string | null>`(select r.id from journal_entries r where r.reversal_of = journal_entries.id and r.status = 'posted' limit 1)`,
+  /** Sum of debits (= sum of credits per currency) as a digit string; bigint never goes through a float. */
+  total: sql<string>`(select coalesce(sum(l.debit), 0)::text from journal_lines l where l.entry_id = journal_entries.id)`,
 };
 
 function withMockReversal(list: JournalEntry[]): JournalEntryRow[] {
-  return list.map((e) => ({ ...e, reversedBy: mockStore.journalEntries.find((r) => r.reversalOf === e.id)?.id ?? null }));
+  return list.map((e) => ({
+    ...e,
+    reversedBy: mockStore.journalEntries.find((r) => r.reversalOf === e.id)?.id ?? null,
+    total: String(mockStore.journalLines.filter((l) => l.entryId === e.id).reduce((s, l) => s + l.debit, 0)),
+  }));
 }
 
 export async function getJournalEntries(entityId: string): Promise<JournalEntryRow[]> {

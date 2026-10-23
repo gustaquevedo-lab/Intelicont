@@ -100,6 +100,10 @@ export default async function globalSetup() {
       ids.set(a.code, id);
     }
     await db.owner`insert into fiscal_periods (entity_id, year, month, status) values (${sifenEntityId}, 2026, 8, 'open')`;
+    // Reversals are dated today, so they need the open period of the current month (Asunción).
+    await db.owner`insert into fiscal_periods (entity_id, year, month, status)
+      select ${sifenEntityId}, extract(year from n)::int, extract(month from n)::int, 'open' from (select now() at time zone 'America/Asuncion' as n) t
+      on conflict do nothing`;
     // A supplier with an IVA 30 % withholding profile (manual document spec).
     await db.owner`insert into partners (entity_id, kind, ruc, dv_ruc, legal_name, retention_profile)
       values (${sifenEntityId}, 'supplier', '80005427', '0', 'Proveedor Agente E2E', '{"iva":{"rate":0.3}}'::jsonb)`;

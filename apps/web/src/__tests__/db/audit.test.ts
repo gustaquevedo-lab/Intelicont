@@ -114,4 +114,10 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("audit.list and journal-entries.get
     expect(o).toMatchObject({ status: "reversed", reversedBy: rev, reversalOf: null });
     expect(r).toMatchObject({ reversalOf: orig, reversedBy: null });
   });
+
+  it("journal-entries.list returns each entry's total", async () => {
+    const id = await post(user, e1, p1, acc, "AU-8", 7777);
+    const row = (await caller()["journal-entries"].list({ entityId: e1, limit: 500 })).find((e) => e.id === id);
+    expect(row?.total).toBe(7777);
+  });
 });
