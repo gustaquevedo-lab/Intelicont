@@ -8,6 +8,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     include: ["src/**/*.test.{ts,tsx}"],
+    // TEST_DB_SLOW=1: latency profile for real-Postgres tests over a remote tunnel (many sequential
+    // round trips per test). Otherwise vitest's defaults (5 s per test, 10 s per hook).
+    ...(process.env.TEST_DB_SLOW === "1" && { testTimeout: 30_000, hookTimeout: 60_000 }),
   },
   resolve: {
     alias: [
