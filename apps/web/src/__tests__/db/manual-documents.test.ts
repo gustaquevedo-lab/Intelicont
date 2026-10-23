@@ -220,6 +220,15 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("manual tax documents with withhold
     await expect(docs().createManual(i)).rejects.toMatchObject({ message: "Comprobante duplicado" });
   });
 
+  it("partners.update validates the retention profile and null removes it", async () => {
+    const id = (await caller().partners.create({ entityId: e1, kind: "supplier", ruc: "80000003-0", legalName: "Perfil" })).id;
+    await expect(caller().partners.update({ id, retentionProfile: { iva: { rate: 0.5 } } as never })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await caller().partners.update({ id, retentionProfile: { iva: { rate: 0.7, minimum: 100_000 }, ire: { rate: 0.03 } } });
+    expect((await t.owner`select retention_profile from partners where id = ${id}`)[0].retention_profile).toEqual({ iva: { rate: 0.7, minimum: 100_000 }, ire: { rate: 0.03 } });
+    await caller().partners.update({ id, retentionProfile: null });
+    expect((await t.owner`select retention_profile from partners where id = ${id}`)[0].retention_profile).toBeNull();
+  });
+
   it("a user of another entity cannot create or preview for this entity", async () => {
     const i = input();
     await expect(docs(outsider).previewManual(i)).rejects.toMatchObject({ code: "BAD_REQUEST", message: "Empresa no encontrada" });
