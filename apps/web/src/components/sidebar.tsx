@@ -13,6 +13,7 @@ import {
   Calculator,
   Calendar,
   FileCode,
+  FilePlus,
   CreditCard,
   BarChart3,
   Hash,
@@ -38,6 +39,7 @@ const navGroups = [
     title: "Contabilidad",
     items: [
       { path: "/asientos", icon: FileText, label: "Asientos Contables" },
+      { path: "/documentos/nuevo", icon: FilePlus, label: "Comprobante manual" },
       { path: "/cuentas", icon: Hash, label: "Plan de Cuentas" },
       { path: "/libros", icon: BookOpen, label: "Libros" },
       { path: "/terceros", icon: Users, label: "Clientes / Proveedores" },

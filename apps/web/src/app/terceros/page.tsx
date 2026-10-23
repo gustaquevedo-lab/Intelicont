@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Users, Plus, Search, Edit, X } from "lucide-react";
 import { validateRuc } from "@intelicont/ledger/fiscal-py";
+import type { RetentionProfile } from "@intelicont/ledger/retentions";
 import { api } from "@/trpc/client";
 import { useAuthStore } from "@/lib/auth-store";
 import { useIdempotencyKey, usePartners } from "@/lib/trpc-hooks";
@@ -13,6 +14,32 @@ const KIND_LABEL: Record<Kind, string> = { customer: "Cliente", supplier: "Prove
 const emptyForm = { kind: "customer" as Kind, ruc: "", legalName: "", tradeName: "", country: "PRY", terms: "30", email: "", phone: "", address: "" };
 type Form = typeof emptyForm;
 type Partner = NonNullable<ReturnType<typeof usePartners>["data"]>[number];
+
+/** Withholding profile form: IVA rate as a fraction ("0.3"), IRE/IRP rates in percent ("3"); "" = none. */
+type RetForm = { ivaRate: "" | "0.3" | "0.7" | "1"; ivaMin: string; ireRate: string; ireMin: string; irpRate: string; irpMin: string };
+const pct = (rate?: number) => (rate === undefined ? "" : String(Math.round(rate * 10000) / 100));
+function retFormOf(p: RetentionProfile | null | undefined): RetForm {
+  return {
+    ivaRate: p?.iva ? (String(p.iva.rate) as RetForm["ivaRate"]) : "", ivaMin: p?.iva?.minimum ? String(p.iva.minimum) : "",
+    ireRate: pct(p?.ire?.rate), ireMin: p?.ire?.minimum ? String(p.ire.minimum) : "",
+    irpRate: pct(p?.irp?.rate), irpMin: p?.irp?.minimum ? String(p.irp.minimum) : "",
+  };
+}
+/** null when no tax is configured; an error message when a value is out of range. */
+function profileOf(f: RetForm): RetentionProfile | null | string {
+  const min = (v: string) => (v.trim() === "" ? undefined : Number(v));
+  const out: RetentionProfile = {};
+  const mins = [f.ivaMin, f.ireMin, f.irpMin].map(min);
+  if (mins.some((m) => m !== undefined && !(Number.isSafeInteger(m) && m >= 0))) return "El mínimo debe ser un entero no negativo";
+  if (f.ivaRate) out.iva = { rate: Number(f.ivaRate) as 0.3 | 0.7 | 1, ...(mins[0] !== undefined && { minimum: mins[0] }) };
+  for (const [k, rate, m] of [["ire", f.ireRate, mins[1]], ["irp", f.irpRate, mins[2]]] as const) {
+    if (rate.trim() === "") continue;
+    const r = Number(rate) / 100;
+    if (!(r > 0 && r <= 1)) return `La tasa de ${k.toUpperCase()} debe estar entre 0 y 100 %`;
+    out[k] = { rate: r, ...(m !== undefined && { minimum: m }) };
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
 
 export default function TercerosPage() {
   const entity = useAuthStore((s) => s.selectedEntity);
@@ -149,6 +176,9 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const rucError = !editing && form.ruc && form.country === "PRY" ? validateRuc(form.ruc).errors[0] : undefined;
   const contacts = { email: form.email, phone: form.phone, address: form.address };
+  const [ret, setRet] = useState<RetForm>(() => retFormOf(editing?.retentionProfile));
+  const profile = profileOf(ret);
+  const profileError = typeof profile === "string" ? profile : undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -165,7 +195,8 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
             e.preventDefault();
             const terms = Number(form.terms);
             if (editing) {
-              update.mutate({ id: editing.id, kind: form.kind, legalName: form.legalName, tradeName: form.tradeName, defaultPaymentTerms: terms, contacts });
+              if (typeof profile === "string") return;
+              update.mutate({ id: editing.id, kind: form.kind, legalName: form.legalName, tradeName: form.tradeName, defaultPaymentTerms: terms, contacts, retentionProfile: profile });
             } else {
               create.mutate({ entityId, kind: form.kind, ruc: form.ruc, legalName: form.legalName, tradeName: form.tradeName, country: form.country, defaultPaymentTerms: terms, contacts });
             }
@@ -188,10 +219,32 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
           <Field label="Email" type="email" value={form.email} onChange={(v) => set({ email: v })} />
           <Field label="Teléfono" value={form.phone} onChange={(v) => set({ phone: v })} />
           <div className="md:col-span-2"><Field label="Dirección" value={form.address} onChange={(v) => set({ address: v })} /></div>
+          {editing && (
+            <fieldset className="md:col-span-2 border border-gray-800 rounded-lg p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <legend className="px-1 text-sm font-medium text-gray-300">Perfil de retención</legend>
+              <p className="md:col-span-2 text-xs text-gray-500">Sin perfil no se calcula ninguna retención. El mínimo es el total del comprobante desde el que se retiene.</p>
+              <label className="block text-sm font-medium text-gray-300">
+                Retención de IVA
+                <select aria-label="Retención de IVA" value={ret.ivaRate} onChange={(e) => setRet({ ...ret, ivaRate: e.target.value as RetForm["ivaRate"] })} className={inputCls}>
+                  <option value="">No retiene</option>
+                  <option value="0.3">30 %</option>
+                  <option value="0.7">70 %</option>
+                  <option value="1">100 %</option>
+                </select>
+              </label>
+              <Field label="Mínimo IVA (Gs.)" type="number" value={ret.ivaMin} disabled={!ret.ivaRate} onChange={(v) => setRet({ ...ret, ivaMin: v })} />
+              <Field label="Tasa IRE (%)" type="number" placeholder="no retiene" value={ret.ireRate} onChange={(v) => setRet({ ...ret, ireRate: v })} />
+              <Field label="Mínimo IRE (Gs.)" type="number" value={ret.ireMin} onChange={(v) => setRet({ ...ret, ireMin: v })} />
+              <Field label="Tasa IRP (%)" type="number" placeholder="no retiene" value={ret.irpRate} onChange={(v) => setRet({ ...ret, irpRate: v })} />
+              <Field label="Mínimo IRP (Gs.)" type="number" value={ret.irpMin} onChange={(v) => setRet({ ...ret, irpMin: v })} />
+              <p className="md:col-span-2 text-xs text-yellow-500">Tasas de IRE/IRP no verificadas: se aplica la tasa que configures.</p>
+              {profileError && <p role="alert" className="md:col-span-2 text-xs text-red-400">{profileError}</p>}
+            </fieldset>
+          )}
           {mutation.error && <p role="alert" className="md:col-span-2 text-sm text-red-400">{mutation.error.message}</p>}
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm border border-gray-700">Cancelar</button>
-            <button type="submit" disabled={mutation.isPending || !!rucError} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium">
+            <button type="submit" disabled={mutation.isPending || !!rucError || (!!editing && !!profileError)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium">
               {editing ? "Guardar cambios" : "Crear tercero"}
             </button>
           </div>
