@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { request } from "@playwright/test";
 import { createTestDb, type TestDb } from "../../../packages/ledger/db/test-db";
+import { PY_CHART_OF_ACCOUNTS, flattenTree } from "../src/lib/chart-of-accounts";
 import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, STORAGE_STATE_CREATOR, STORAGE_STATE_SIFEN, SIFEN_EMAIL, CREATOR_EMAIL, USER_EMAIL, ADMIN_EMAIL, USER_ENTITY_NAME } from "./helpers";
 
 const WEB_DIR = process.cwd(); // playwright runs from apps/web (pnpm test:e2e)
@@ -66,6 +67,7 @@ export default async function globalSetup() {
       BETTER_AUTH_SECRET: randomBytes(32).toString("base64"),
       BETTER_AUTH_URL: E2E_BASE_URL,
       NEXT_DIST_DIR: ".next-e2e",
+      AI_PROVIDER: "rules", // e2e never needs the local model
     };
 
     const userPassword = randomBytes(12).toString("hex");
@@ -88,6 +90,16 @@ export default async function globalSetup() {
     const [{ id: sifenEntityId }] = await db.owner`insert into entities (ruc, legal_name) values ('1234567-9', 'Cliente de Prueba E2E') returning id`;
     await db.owner`insert into memberships (user_id, entity_id, role)
       select id, ${sifenEntityId}, 'accountant' from users where email = ${SIFEN_EMAIL}`;
+    // Default chart + the fixture's month (2026-08) open, so a suggestion can be approved and posted.
+    const [{ id: coaId }] = await db.owner`insert into chart_of_accounts (entity_id, kind, name) values (${sifenEntityId}, 'fiscal_py', 'Plan de Cuentas PY') returning id`;
+    const ids = new Map<string, string>();
+    for (const a of flattenTree(PY_CHART_OF_ACCOUNTS)) {
+      const parentId = a.parentCode ? ids.get(a.parentCode) ?? null : null;
+      const [{ id }] = await db.owner`insert into accounts (coa_id, code, name, nature, parent_id, allows_posting)
+        values (${coaId}, ${a.code}, ${a.name}, ${a.nature}, ${parentId}, ${a.allowsPosting}) returning id`;
+      ids.set(a.code, id);
+    }
+    await db.owner`insert into fiscal_periods (entity_id, year, month, status) values (${sifenEntityId}, 2026, 8, 'open')`;
 
     server = spawn("node_modules/.bin/next", ["dev", "--turbo", "-p", String(E2E_PORT)], {
       cwd: WEB_DIR,

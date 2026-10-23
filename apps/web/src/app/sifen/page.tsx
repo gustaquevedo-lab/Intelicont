@@ -3,58 +3,44 @@
 import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
-  Upload,
   FileCode,
-  FileText,
   Sparkles,
   CheckCircle2,
   ArrowRight,
-  ArrowLeft,
-  Building2,
-  Calendar,
-  Receipt,
-  CreditCard,
   Loader2,
-  ChevronDown,
-  ChevronUp,
   Clock,
   AlertTriangle,
   Copy,
-  Trash2,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { parseSifenXML, suggestJournalEntry, SifenInvoice } from "@/lib/sifen-parser";
-import { createAsiento } from "@/lib/actions";
 import { useAuthStore } from "@/lib/auth-store";
 import { api } from "@/trpc/client";
+import type { Suggestion } from "@intelicont/ledger/ai";
 
 type IngestOutcome = { fileName: string; status: "saved" | "duplicate" | "error"; warnings: string[]; message?: string };
+type PostableAccount = { id: string; code: string; name: string };
+type SifenMeta = { sifen?: { issuer?: { name?: string } } } | null;
+type Posted = { documentNumber: string; entryNumber: string };
 
-type Step = "upload" | "review" | "success";
+const DOC_LABEL: Record<string, string> = {
+  invoice: "Factura", credit_note: "Nota de crédito", debit_note: "Nota de débito", self_invoice: "Autofactura", remito: "Remito",
+};
+const gs = (n: number) => `₲ ${n.toLocaleString("es-PY")}`;
+const errMsg = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
 
 export default function SifenPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<Step>("upload");
   const [isDragging, setIsDragging] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const [invoice, setInvoice] = useState<SifenInvoice | null>(null);
-  const [suggestion, setSuggestion] = useState<ReturnType<typeof suggestJournalEntry> | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const [empresaSeleccionada, setEmpresaSeleccionada] = useState("");
-  const [pendingDocs, setPendingDocs] = useState<SifenInvoice[]>([]);
-  // One Idempotency-Key per parsed document: approving the same document again (double click,
-  // retry, batch re-run) replays the first result instead of booking a second entry.
-  const docKeys = useRef(new WeakMap<SifenInvoice, string>());
-  const keyFor = (doc: SifenInvoice) => {
-    let key = docKeys.current.get(doc);
-    if (!key) docKeys.current.set(doc, (key = crypto.randomUUID()));
-    return key;
-  };
+  const entity = useAuthStore((s) => s.selectedEntity);
+  const entityId = entity?.id ?? "";
+  const utils = api.useUtils();
+  const pending = api["tax-documents"].pending.useQuery({ entityId }, { enabled: !!entityId });
+  const accountsQuery = api.accounts.list.useQuery({ entityId }, { enabled: !!entityId });
+  const postable: PostableAccount[] = (accountsQuery.data ?? []).filter((a) => a.allowsPosting);
+  const [posted, setPosted] = useState<Posted[]>([]);
 
   // Server-side ingest (validate, dedupe, store): one Idempotency-Key per uploaded file.
-  const entity = useAuthStore((s) => s.selectedEntity);
-  const utils = api.useUtils();
   const [outcomes, setOutcomes] = useState<IngestOutcome[]>([]);
   const fileKeys = useRef(new WeakMap<File, string>());
   const ingestFiles = useCallback(async (files: File[]) => {
@@ -73,474 +59,331 @@ export default function SifenPage() {
           );
           outcome = { fileName: file.name, status: r.duplicate ? "duplicate" : "saved", warnings: r.warnings };
         } catch (e) {
-          outcome = { fileName: file.name, status: "error", warnings: [], message: e instanceof Error ? e.message : "Error al guardar" };
+          outcome = { fileName: file.name, status: "error", warnings: [], message: errMsg(e, "Error al guardar") };
         }
       }
       setOutcomes((prev) => [...prev, outcome]);
     }
+    void utils["tax-documents"].pending.invalidate();
   }, [entity, utils]);
 
-  const handleFile = useCallback((file: File) => {
-    if (!file.name.endsWith(".xml")) return;
-    setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      processXML(content);
-    };
-    reader.readAsText(file);
-  }, []);
-
-  const handleBatchFiles = useCallback((files: FileList) => {
-    const xmlFiles = Array.from(files).filter((f) => f.name.endsWith(".xml"));
-    if (xmlFiles.length === 0) return;
-    void ingestFiles(xmlFiles);
-
-    if (xmlFiles.length === 1) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        setFileName(xmlFiles[0].name);
-        processXML(content);
-      };
-      reader.readAsText(xmlFiles[0]);
-    } else {
-      xmlFiles.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          const parsed = parseSifenXML(content);
-          if (parsed) {
-            setPendingDocs((prev) => [...prev, { ...parsed, fileName: file.name }]);
-          }
-        };
-        reader.readAsText(file);
-      });
-    }
+  const handleFiles = useCallback((files: FileList) => {
+    const xmlFiles = Array.from(files).filter((f) => f.name.toLowerCase().endsWith(".xml"));
+    if (xmlFiles.length > 0) void ingestFiles(xmlFiles);
   }, [ingestFiles]);
 
-  const processXML = (content: string) => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      const parsed = parseSifenXML(content);
-      if (parsed) {
-        setInvoice(parsed);
-        const sug = suggestJournalEntry(parsed);
-        setSuggestion(sug);
-        setStep("review");
-      }
-      setIsProcessing(false);
-    }, 800);
-  };
+  const onPosted = useCallback((p: Posted) => {
+    setPosted((prev) => [p, ...prev]);
+    void utils["tax-documents"].pending.invalidate();
+  }, [utils]);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-      const files = e.dataTransfer.files;
-      if (files.length > 0) handleBatchFiles(files);
-    },
-    [handleBatchFiles]
-  );
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback(() => setIsDragging(false), []);
-
-  const handleApprove = async () => {
-    if (!invoice || !suggestion) return;
-    setIsProcessing(true);
-    const result = await createAsiento({
-      entityId: empresaSeleccionada || "mock-1",
-      periodId: "",
-      date: invoice.fechaEmision || new Date().toISOString().split("T")[0],
-      descripcion: `${invoice.tipoDoc === "factura" ? "Factura" : invoice.tipoDoc === "nota_credito" ? "Nota de Crédito" : "Documento"} ${invoice.numero} — ${invoice.emisor.nombre}`,
-      lineas: suggestion.lines.map((l) => ({
-        accountId: l.accountCode,
-        debit: Number(l.debit) || 0,
-        credit: Number(l.credit) || 0,
-        currencyCode: "PYG",
-        description: l.description,
-      })),
-    }, keyFor(invoice));
-    setIsProcessing(false);
-    if (result.success) setStep("success");
-  };
-
-  const handleBatchApprove = async () => {
-    setIsProcessing(true);
-    for (const doc of pendingDocs) {
-      const sug = suggestJournalEntry(doc);
-      if (sug.balanced) {
-        await createAsiento({
-          entityId: empresaSeleccionada || "mock-1",
-          periodId: "",
-          date: doc.fechaEmision || new Date().toISOString().split("T")[0],
-          descripcion: `${doc.tipoDoc === "factura" ? "Factura" : "Documento"} ${doc.numero}`,
-          lineas: sug.lines.map((l) => ({
-            accountId: l.accountCode,
-            debit: Number(l.debit) || 0,
-            credit: Number(l.credit) || 0,
-            currencyCode: "PYG",
-            description: l.description,
-          })),
-        }, keyFor(doc));
-      }
-    }
-    setIsProcessing(false);
-    setStep("success");
-  };
-
-  const handleDemo = () => {
-    const demoXml = `<?xml version="1.0" encoding="UTF-8"?>
-<dFE>
-  <dEmis>5897185478912345678901234567890123456789012345</dEmis>
-  <dTimbrado>12345678</dTimbrado>
-  <dNroEstab>001</dNroEstab>
-  <dPtoExp>001</dPtoExp>
-  <dNroDoc>00234</dNroDoc>
-  <dFEEmis>2026-05-01</dFEEmis>
-  <cTiOpe>1</cTiOpe>
-  <cCond>2</cCond>
-  <dRucEmis>80012345-0</dRucEmis>
-  <dNomEmis>Importadora del Este S.A.</dNomEmis>
-  <dNomFanEmis>ImportEste</dNomFanEmis>
-  <dRucRece>80023456-2</dRucRece>
-  <dNomRece>Tecnología Asunción SRL</dNomRece>
-  <dTot Grav 10>10000000</dTot Grav 10>
-  <dTot Grav 5>0</dTot Grav 5>
-  <dTot Exe>0</dTot Exe>
-  <dTotIVA10>1000000</dTotIVA10>
-  <dTotIVA5>0</dTotIVA5>
-  <dTotOpe>11000000</dTotOpe>
-</dFE>`;
-    setFileName("demo-factura-001-001-00234.xml");
-    processXML(demoXml);
-  };
-
-  const reset = () => {
-    setStep("upload");
-    setInvoice(null);
-    setSuggestion(null);
-    setFileName("");
-  };
-
-  if (step === "success") {
-    return (
-      <div className="p-4 sm:p-8 lg:p-12 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4">
-        <div className="glass-card rounded-3xl p-8 sm:p-16 text-center premium-shadow overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/5 pointer-events-none" />
-          <div className="relative z-10">
-            <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6 sm:mb-8 shadow-2xl shadow-primary/20 animate-ai-pulse">
-              <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
-            </div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-            {pendingDocs.length > 0 ? `${pendingDocs.length} Facturas Procesadas` : "Asiento Publicado"}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mb-6 sm:mb-8 text-sm">
-            {pendingDocs.length > 0
-              ? `Se crearon los asientos contables automáticamente para ${pendingDocs.length} documentos.`
-              : `La factura ${invoice?.numero} fue procesada y el asiento contable fue creado exitosamente.`}
-          </p>
-          {invoice && (
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 max-w-sm mx-auto mb-6 sm:mb-8 text-left">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-gray-500 dark:text-gray-400">Proveedor</span>
-                <span className="text-gray-900 dark:text-white font-medium">{invoice.emisor.nombre}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-gray-500 dark:text-gray-400">Total</span>
-                <span className="text-gray-900 dark:text-white font-mono font-medium">₲ {invoice.montos.total.toLocaleString("es-PY")}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Líneas</span>
-                <span className="text-gray-900 dark:text-white">{suggestion?.lines.length}</span>
-              </div>
-            </div>
-          )}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={reset}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 glass-card hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl text-sm font-black uppercase tracking-widest transition-all"
-              >
-                <Upload className="h-4 w-4" />
-                Cargar otra
-              </button>
-              <Link
-                href="/asientos"
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-primary text-white hover:bg-primary-dark rounded-xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20 transition-all"
-              >
-                Ver Asientos
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "review" && invoice && suggestion) {
-    return (
-      <div className="p-3 sm:p-4 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={reset}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors no-tap-highlight"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            </button>
-            <div>
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Revisar Factura SIFEN</h1>
-              <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Verificar datos y aprobar asiento sugerido por IA</p>
-            </div>
-          </div>
-          <button
-            disabled={isProcessing}
-            onClick={handleApprove}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all no-tap-highlight",
-              isProcessing
-                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20"
-            )}
-          >
-            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            {isProcessing ? "Procesando..." : "Aprobar y Publicar"}
-          </button>
-        </div>
-
-        <IngestOutcomes outcomes={outcomes} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Invoice Data */}
-          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-            <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileCode className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-                <h2 className="text-gray-900 dark:text-white text-sm sm:text-base font-medium">Datos de la Factura</h2>
-              </div>
-              <span className="text-[10px] sm:text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded truncate max-w-[120px]">{fileName}</span>
-            </div>
-            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <InfoBlock icon={Receipt} label="Número" value={invoice.numero} />
-                <InfoBlock icon={Calendar} label="Fecha" value={invoice.fechaEmision || "N/A"} />
-                <InfoBlock icon={Building2} label="Emisor" value={invoice.emisor.nombre || "N/A"} />
-                <InfoBlock icon={CreditCard} label="Condición" value={invoice.condicion === "contado" ? "Contado" : "Crédito"} />
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 sm:p-4 space-y-2">
-                <h3 className="text-gray-500 dark:text-gray-400 text-[10px] sm:text-xs uppercase tracking-wide mb-2 sm:mb-3">Desglose de Montos</h3>
-                {invoice.montos.gravado10 > 0 && <AmountRow label="Gravado 10%" value={invoice.montos.gravado10} />}
-                {invoice.montos.gravado5 > 0 && <AmountRow label="Gravado 5%" value={invoice.montos.gravado5} />}
-                {invoice.montos.exento > 0 && <AmountRow label="Exento" value={invoice.montos.exento} />}
-                {invoice.montos.iva10 > 0 && <AmountRow label="IVA 10%" value={invoice.montos.iva10} />}
-                {invoice.montos.iva5 > 0 && <AmountRow label="IVA 5%" value={invoice.montos.iva5} />}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                  <AmountRow label="Total" value={invoice.montos.total} bold />
-                </div>
-              </div>
-              {invoice.items.length > 0 && (
-                <>
-                  <button
-                    onClick={() => setShowDetails(!showDetails)}
-                    className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors no-tap-highlight"
-                  >
-                    {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    {invoice.items.length} ítems
-                  </button>
-                  {showDetails && (
-                    <div className="space-y-1">
-                      {invoice.items.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/30 rounded-lg p-2">
-                          <span className="truncate flex-1">{item.descripcion || item.codigo}</span>
-                          <span className="font-mono ml-2">₲ {item.total.toLocaleString("es-PY")}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* AI Suggested Entry */}
-          <div className="bg-white dark:bg-gray-900/50 border border-purple-200 dark:border-purple-800/50 rounded-xl overflow-hidden">
-            <div className="p-3 sm:p-4 border-b border-purple-200 dark:border-purple-800/30 flex items-center justify-between bg-purple-50/50 dark:bg-purple-900/10">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-purple-500 dark:text-purple-400" />
-                <h2 className="text-gray-900 dark:text-white text-sm sm:text-base font-medium">Asiento Sugerido por IA</h2>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className={cn(
-                  "text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full",
-                  suggestion.balanced ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400" : "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400"
-                )}>
-                  {suggestion.balanced ? "✓ Balanceado" : "⚠ Ajustar"}
-                </span>
-                <span className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-purple-200 dark:border-purple-800/50">
-                  {(suggestion.confidence * 100).toFixed(0)}%
-                </span>
-              </div>
-            </div>
-            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Empresa destino</label>
-                <select
-                  value={empresaSeleccionada}
-                  onChange={(e) => setEmpresaSeleccionada(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 no-tap-highlight"
-                >
-                  <option value="">Seleccionar empresa</option>
-                  <option value="mock-1">Importadora del Este S.A.</option>
-                  <option value="mock-2">Tecnología Asunción SRL</option>
-                  <option value="mock-3">Distribuciones Ñandutí SA</option>
-                </select>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs sm:text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-800">
-                      <th className="text-left py-2 text-gray-400 text-[10px] sm:text-xs">Cuenta</th>
-                      <th className="text-right py-2 text-gray-400 text-[10px] sm:text-xs">Débito</th>
-                      <th className="text-right py-2 text-gray-400 text-[10px] sm:text-xs">Crédito</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
-                    {suggestion.lines.map((line, i) => (
-                      <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
-                        <td className="py-2 pr-2">
-                          <span className="text-purple-500 dark:text-purple-400 font-mono text-[10px] sm:text-xs">{line.accountCode}</span>{" "}
-                          <span className="text-gray-700 dark:text-gray-300 text-[10px] sm:text-xs">{line.accountName}</span>
-                        </td>
-                        <td className="py-2 text-right font-mono text-[10px] sm:text-xs text-gray-900 dark:text-white tabular-nums">
-                          {line.debit ? `₲ ${parseFloat(line.debit).toLocaleString("es-PY")}` : "—"}
-                        </td>
-                        <td className="py-2 text-right font-mono text-[10px] sm:text-xs text-gray-900 dark:text-white tabular-nums">
-                          {line.credit ? `₲ ${parseFloat(line.credit).toLocaleString("es-PY")}` : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-gray-200 dark:border-gray-700">
-                      <td className="py-2 text-right text-gray-500 dark:text-gray-400 font-medium text-[10px] sm:text-xs">TOTALES</td>
-                      <td className="py-2 text-right font-mono font-bold text-xs sm:text-sm text-green-600 dark:text-green-400 tabular-nums">
-                        ₲ {suggestion.totalDebit.toLocaleString("es-PY")}
-                      </td>
-                      <td className="py-2 text-right font-mono font-bold text-xs sm:text-sm text-green-600 dark:text-green-400 tabular-nums">
-                        ₲ {suggestion.totalCredit.toLocaleString("es-PY")}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-2.5 sm:p-3 border border-gray-200 dark:border-gray-700/50">
-                <p className="text-gray-500 dark:text-gray-400 text-[10px] sm:text-xs">{suggestion.rationale}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const docs = pending.data ?? [];
 
   return (
-    <div className="p-3 sm:p-4 lg:p-8 max-w-4xl mx-auto space-y-4 sm:space-y-6">
-      {/* Header */}
+    <div className="p-3 sm:p-4 lg:p-8 max-w-5xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Carga de Facturas SIFEN</h1>
           <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
-            Arrastra archivos XML de facturas electrónicas paraguayas. La IA sugerirá el asiento contable automáticamente.
+            Cargá los XML de comprobantes electrónicos. La IA sugiere el asiento y vos lo aprobás antes de postear.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/sifen/historial"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs sm:text-sm transition-colors border border-gray-200 dark:border-gray-700 no-tap-highlight"
-          >
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Bandeja ({pendingDocs.length})</span>
-          </Link>
-        </div>
+        <Link
+          href="/sifen/historial"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs sm:text-sm transition-colors border border-gray-200 dark:border-gray-700 no-tap-highlight self-start"
+        >
+          <Clock className="h-4 w-4" />
+          <span className="hidden sm:inline">Historial</span>
+        </Link>
       </div>
 
-      {/* Drop Zone */}
       <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
+        onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files); }}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
         onClick={() => fileInputRef.current?.click()}
         className={cn(
-          "relative border-2 border-dashed rounded-3xl p-8 sm:p-16 text-center cursor-pointer transition-all no-tap-highlight overflow-hidden",
+          "relative border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center cursor-pointer transition-all no-tap-highlight overflow-hidden",
           isDragging
             ? "border-primary bg-primary/5 shadow-2xl shadow-primary/10"
-            : "glass-card border-gray-300 dark:border-gray-800 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-900/50"
+            : "glass-card border-gray-300 dark:border-gray-800 hover:border-primary/50 hover:bg-gray-50 dark:hover:bg-gray-900/50",
         )}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 pointer-events-none opacity-50" />
-        
         <input
           ref={fileInputRef}
           type="file"
           accept=".xml"
           multiple
           className="hidden"
-          onChange={(e) => { const files = e.target.files; if (files && files.length > 0) handleBatchFiles(files); }}
+          onChange={(e) => { const files = e.target.files; if (files && files.length > 0) handleFiles(files); e.target.value = ""; }}
         />
-
-        {isProcessing ? (
-          <div className="space-y-3 sm:space-y-4">
-            <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 text-blue-500 animate-spin mx-auto" />
-            <p className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">Procesando factura...</p>
-            <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Extrayendo datos y generando asiento con IA</p>
+        <div className="space-y-3">
+          <div className="h-14 w-14 rounded-2xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center mx-auto">
+            <FileCode className="h-7 w-7 text-blue-500 dark:text-blue-400" />
           </div>
-        ) : (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center mx-auto">
-              <FileCode className="h-7 w-7 sm:h-8 sm:w-8 text-blue-500 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">
-                {fileName || "Arrastra tus archivos XML aquí"}
-              </p>
-              <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-1">
-                {fileName ? "Archivo cargado — procesando..." : "o hacé clic para seleccionar — múltiples archivos permitidos"}
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-[10px] sm:text-xs text-gray-400">
-              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">.xml</span>
-              <span>Facturas SIFEN — DNIT Paraguay</span>
-            </div>
-          </div>
-        )}
+          <p className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">Arrastrá tus archivos XML aquí</p>
+          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">o hacé clic para seleccionar — múltiples archivos permitidos</p>
+        </div>
       </div>
 
       <IngestOutcomes outcomes={outcomes} />
 
-      {/* Demo Button */}
-      <div className="flex items-center justify-center">
-        <button
-          onClick={handleDemo}
-          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs sm:text-sm transition-colors border border-gray-200 dark:border-gray-700 no-tap-highlight"
-        >
-          <Sparkles className="h-4 w-4 text-purple-500 dark:text-purple-400" />
-          Probar con factura de demostración
-        </button>
+      {posted.length > 0 && (
+        <ul aria-label="Asientos publicados" className="space-y-2">
+          {posted.map((p) => (
+            <li key={p.entryNumber} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 text-sm">
+              <span className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                Asiento {p.entryNumber} publicado ({p.documentNumber})
+              </span>
+              <Link href="/asientos" className="flex items-center gap-1 text-green-700 dark:text-green-400 font-medium hover:underline shrink-0">
+                Ver asientos <ArrowRight className="h-4 w-4" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <section aria-label="Comprobantes pendientes" className="space-y-3">
+        <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Comprobantes pendientes de contabilizar</h2>
+        {!entity && <p className="text-xs text-gray-500">Seleccioná una empresa para ver sus comprobantes.</p>}
+        {entity && pending.isLoading && <Loader2 className="h-5 w-5 animate-spin text-gray-400" />}
+        {entity && !pending.isLoading && docs.length === 0 && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">No hay comprobantes pendientes.</p>
+        )}
+        {docs.map((d) => (
+          <PendingDocument
+            key={d.id}
+            doc={{
+              id: d.id, number: d.number, docType: d.docType, issueDate: String(d.issueDate), cdc: d.cdc,
+              total: Number(d.total), issuer: (d.metadata as SifenMeta)?.sifen?.issuer?.name ?? "",
+            }}
+            accounts={postable}
+            onPosted={onPosted}
+          />
+        ))}
+      </section>
+    </div>
+  );
+}
+
+type DocView = { id: string; number: string; docType: string; issueDate: string; cdc: string | null; total: number; issuer: string };
+
+function PendingDocument({ doc, accounts, onPosted }: { doc: DocView; accounts: PostableAccount[]; onPosted: (p: Posted) => void }) {
+  const utils = api.useUtils();
+  const [proposal, setProposal] = useState<{ decisionId: string; suggestion: Suggestion } | null>(null);
+  const [accountIds, setAccountIds] = useState<string[]>([]);
+  const [busy, setBusy] = useState<"suggest" | "approve" | "reject" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
+  // One Idempotency-Key per (document, decision) and action: a double click or retry replays.
+  const keys = useRef(new Map<string, string>());
+  const keyFor = (action: string, decisionId: string) => {
+    const k = `${action}:${doc.id}:${decisionId}`;
+    let v = keys.current.get(k);
+    if (!v) keys.current.set(k, (v = crypto.randomUUID()));
+    return v;
+  };
+
+  const suggest = async (refresh = false) => {
+    setBusy("suggest");
+    setError(null);
+    try {
+      const r = await utils.client["tax-documents"].suggestEntry.mutate({ documentId: doc.id, refresh });
+      setProposal(r);
+      setAccountIds(r.suggestion.lines.map((l) => l.accountId));
+      setRejecting(false);
+    } catch (e) {
+      setError(errMsg(e, "No se pudo sugerir el asiento"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const approve = async () => {
+    if (!proposal) return;
+    setBusy("approve");
+    setError(null);
+    const edited = proposal.suggestion.lines.some((l, i) => l.accountId !== accountIds[i]);
+    try {
+      const r = await utils.client["tax-documents"].approveEntry.mutate(
+        {
+          documentId: doc.id,
+          decisionId: proposal.decisionId,
+          ...(edited && {
+            lines: proposal.suggestion.lines.map((l, i) => ({ accountId: accountIds[i], debit: l.debit, credit: l.credit, description: l.description })),
+          }),
+        },
+        { context: { idempotencyKey: keyFor(edited ? `approve-${accountIds.join(",")}` : "approve", proposal.decisionId) } },
+      );
+      onPosted({ documentNumber: doc.number, entryNumber: r.number });
+    } catch (e) {
+      setError(errMsg(e, "No se pudo postear el asiento"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const reject = async () => {
+    if (!proposal || reason.trim().length < 3) return;
+    setBusy("reject");
+    setError(null);
+    try {
+      await utils.client["tax-documents"].rejectSuggestion.mutate(
+        { decisionId: proposal.decisionId, reason: reason.trim() },
+        { context: { idempotencyKey: keyFor("reject", proposal.decisionId) } },
+      );
+      setProposal(null);
+      setRejecting(false);
+      setReason("");
+    } catch (e) {
+      setError(errMsg(e, "No se pudo rechazar"));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const s = proposal?.suggestion;
+  const pct = s ? Math.round(s.confidence * 100) : 0;
+  const tone = pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-yellow-500" : "bg-red-500";
+  const missingAccount = accountIds.some((id) => !id);
+
+  return (
+    <article
+      aria-label={`Comprobante ${doc.number}`}
+      className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden"
+    >
+      <div className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-gray-900 dark:text-white">
+            {DOC_LABEL[doc.docType] ?? "Comprobante"} {doc.number}
+            <span className="text-gray-500 dark:text-gray-400 font-normal"> · {doc.issueDate}</span>
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{doc.issuer || "—"} · <span className="font-mono">{gs(doc.total)}</span></p>
+          {doc.cdc && <p className="text-[10px] text-gray-400 font-mono truncate">CDC {doc.cdc}</p>}
+        </div>
+        {!proposal && (
+          <button
+            onClick={() => suggest()}
+            disabled={busy !== null}
+            className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-60 shrink-0"
+          >
+            {busy === "suggest" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Sugerir asiento
+          </button>
+        )}
       </div>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <InfoCard icon={FileCode} title="Parseo automático" desc="Extrae CDC, timbrado, montos, IVA y datos del emisor" />
-        <InfoCard icon={Sparkles} title="Asiento inteligente" desc="Genera automáticamente débitos, créditos y cuentas contables" />
-        <InfoCard icon={CheckCircle2} title="Revisión humana" desc="Verificá y aprobá el asiento antes de publicar" />
-      </div>
-    </div>
+      {error && <p role="alert" className="px-3 sm:px-4 pb-3 text-xs text-red-600 dark:text-red-400">{error}</p>}
+
+      {s && proposal && (
+        <div aria-label="Asiento propuesto" className="border-t border-purple-200 dark:border-purple-800/40 bg-purple-50/40 dark:bg-purple-900/10 p-3 sm:p-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+              {s.provider === "ollama" ? "IA local" : "Reglas"}
+            </span>
+            <span className="text-xs text-gray-600 dark:text-gray-300">Confianza {pct}%</span>
+            <div className="h-1.5 w-24 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden" aria-hidden>
+              <div className={cn("h-full", tone)} style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+          {s.fallbackReason && (
+            <p className="flex items-start gap-1 text-xs text-yellow-700 dark:text-yellow-400">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" /> {s.fallbackReason}
+            </p>
+          )}
+          <p className="text-xs text-gray-700 dark:text-gray-300">{s.rationale}</p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-800">
+                  <th className="text-left py-2 text-gray-400 text-[10px] sm:text-xs">Cuenta</th>
+                  <th className="text-right py-2 text-gray-400 text-[10px] sm:text-xs">Debe</th>
+                  <th className="text-right py-2 text-gray-400 text-[10px] sm:text-xs">Haber</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                {s.lines.map((l, i) => (
+                  <tr key={i}>
+                    <td className="py-2 pr-2">
+                      <select
+                        aria-label={`Cuenta de la línea ${i + 1}`}
+                        value={accountIds[i] ?? ""}
+                        onChange={(e) => setAccountIds((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))}
+                        className="w-full max-w-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white"
+                      >
+                        <option value="">Elegí una cuenta…</option>
+                        {accounts.map((a) => <option key={a.id} value={a.id}>{a.code} {a.name}</option>)}
+                      </select>
+                      <p className="text-[10px] text-gray-400 mt-0.5 truncate max-w-xs">{l.description}</p>
+                    </td>
+                    <td className="py-2 text-right font-mono tabular-nums text-gray-900 dark:text-white">{l.debit ? gs(l.debit) : "—"}</td>
+                    <td className="py-2 text-right font-mono tabular-nums text-gray-900 dark:text-white">{l.credit ? gs(l.credit) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-200 dark:border-gray-700">
+                  <td className="py-2 text-right text-gray-500 dark:text-gray-400 text-[10px] sm:text-xs">TOTALES</td>
+                  <td className="py-2 text-right font-mono font-bold tabular-nums">{gs(s.lines.reduce((a, l) => a + l.debit, 0))}</td>
+                  <td className="py-2 text-right font-mono font-bold tabular-nums">{gs(s.lines.reduce((a, l) => a + l.credit, 0))}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {s.sources.length > 0 && (
+            <details className="text-xs text-gray-600 dark:text-gray-400">
+              <summary className="cursor-pointer">Fuentes ({s.sources.length})</summary>
+              <ul aria-label="Fuentes" className="list-disc pl-5 mt-1 space-y-0.5">
+                {s.sources.map((src) => <li key={src} className="break-all">{src}</li>)}
+              </ul>
+            </details>
+          )}
+
+          {rejecting ? (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                aria-label="Motivo del rechazo"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Motivo del rechazo (mín. 3 caracteres)"
+                className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm"
+              />
+              <button onClick={reject} disabled={busy !== null || reason.trim().length < 3} className="px-3 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-500 text-white disabled:opacity-60">
+                Confirmar rechazo
+              </button>
+              <button onClick={() => setRejecting(false)} className="px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700">Cancelar</button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+              <button onClick={() => suggest(true)} disabled={busy !== null} className="px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 disabled:opacity-60">
+                Volver a sugerir
+              </button>
+              <button
+                onClick={() => setRejecting(true)}
+                disabled={busy !== null}
+                className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 disabled:opacity-60"
+              >
+                <XCircle className="h-4 w-4" /> Rechazar
+              </button>
+              <button
+                onClick={approve}
+                disabled={busy !== null || missingAccount || s.lines.length < 2}
+                title={missingAccount ? "Elegí una cuenta para cada línea" : undefined}
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20 disabled:opacity-60"
+              >
+                {busy === "approve" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Aprobar y postear
+              </button>
+            </div>
+          )}
+          {missingAccount && <p className="text-xs text-yellow-700 dark:text-yellow-400">Elegí una cuenta para cada línea antes de aprobar.</p>}
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -575,40 +418,5 @@ function IngestOutcomes({ outcomes }: { outcomes: IngestOutcome[] }) {
         );
       })}
     </ul>
-  );
-}
-
-function InfoBlock({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-2.5 sm:p-3">
-      <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-400" />
-        <span className="text-gray-400 text-[10px] sm:text-xs">{label}</span>
-      </div>
-      <p className="text-gray-900 dark:text-white text-xs sm:text-sm font-medium truncate">{value}</p>
-    </div>
-  );
-}
-
-function AmountRow({ label, value, bold = false }: { label: string; value: number; bold?: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">{label}</span>
-      <span className={cn("font-mono tabular-nums text-xs sm:text-sm", bold ? "text-gray-900 dark:text-white font-bold" : "text-gray-700 dark:text-gray-300")}>
-        ₲ {value.toLocaleString("es-PY")}
-      </span>
-    </div>
-  );
-}
-
-function InfoCard({ icon: Icon, title, desc }: { icon: any; title: string; desc: string }) {
-  return (
-    <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-3 sm:p-4">
-      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-2 sm:mb-3">
-        <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-      </div>
-      <h3 className="text-gray-900 dark:text-white text-xs sm:text-sm font-medium mb-0.5 sm:mb-1">{title}</h3>
-      <p className="text-gray-400 text-[10px] sm:text-xs">{desc}</p>
-    </div>
   );
 }

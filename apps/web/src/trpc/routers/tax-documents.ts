@@ -243,7 +243,7 @@ export const taxDocumentsRouter = router({
             .where(eq(schema.aiDecisions.id, decision.id));
         },
       );
-      return { journalEntryId: entry.id, number: entry.number };
+      return { journalEntryId: entry.id, number: entry.number ?? `AS-${doc.number}` };
     })),
 
   /** The document stays pending; the decision stays `accepted=false`; the reason is audited. */
