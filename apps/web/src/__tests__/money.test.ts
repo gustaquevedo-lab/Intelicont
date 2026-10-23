@@ -16,7 +16,7 @@ describe("integer money", () => {
 });
 
 import { calculateTaxFromTotal } from "@ledger/src/fiscal-py";
-import { calculateRetentions } from "@/lib/retentions-engine";
+import { calculateRetentions } from "@intelicont/ledger/retentions";
 
 describe("integer flow", () => {
   it("calculateTaxFromTotal splits gross into integers that add up", () => {
@@ -25,7 +25,8 @@ describe("integer flow", () => {
     expect(r.gravado10 + r.iva10).toBe(58000);
   });
   it("retention amounts are safe integers", () => {
-    const rs = calculateRetentions({ gravado10: 2500000, gravado5: 0, exento: 0, iva10: 250000, iva5: 0, total: 2750001, concept: "x", partner: { retentionConfig: { rateIre: 0.333 } } as never });
+    const rs = calculateRetentions({ gravado10: 2750001, gravado5: 0, exento: 0, iva10: 250000, iva5: 0, total: 2750001, profile: { iva: { rate: 0.3 }, ire: { rate: 0.333 } } });
+    expect(rs).toHaveLength(2);
     for (const r of rs) expect(Number.isSafeInteger(r.amount) && Number.isSafeInteger(r.base)).toBe(true);
   });
 });

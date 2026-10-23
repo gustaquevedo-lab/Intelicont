@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { generateCDC, validateCDCStructure, generateSecurityCode, generateInvoiceData } from "@/lib/cdc-generator";
-import { calculateRetentions, calculateNetPayable } from "@/lib/retentions-engine";
+import { calculateRetentions, calculateNetPayable } from "@intelicont/ledger/retentions";
 import { matchBankToGL } from "@/lib/bank-matcher";
 import { parseBankCSV } from "@/lib/bank-parser";
 
@@ -67,43 +67,38 @@ describe("CDC Generator", () => {
 });
 
 describe("Retentions Engine", () => {
-  it("calculates IRP retention on honorarios", () => {
+  it("calculates IRP retention on honorarios from the supplier profile (base without IVA)", () => {
     const result = calculateRetentions({
-      gravado10: 2500000, gravado5: 0, exento: 0,
+      gravado10: 2750000, gravado5: 0, exento: 0,
       iva10: 250000, iva5: 0, total: 2750000,
-      concept: "Honorarios profesionales",
-      partner: { regime: "general" },
+      profile: { irp: { rate: 0.1 } },
     });
     const irp = result.find((r) => r.type === "irp");
-    expect(irp).toBeDefined();
-    expect(irp!.rate).toBe(0.10);
-    expect(irp!.amount).toBeGreaterThan(0);
+    expect(irp).toMatchObject({ rate: 0.1, base: 2500000, amount: 250000, unverified: true });
   });
 
-  it("respects partner retention config", () => {
+  it("respects the partner retention profile: no IVA entry means no IVA retention", () => {
     const result = calculateRetentions({
-      gravado10: 1000000, gravado5: 0, exento: 0,
+      gravado10: 1100000, gravado5: 0, exento: 0,
       iva10: 100000, iva5: 0, total: 1100000,
-      concept: "Servicios",
-      partner: { regime: "simple", retentionConfig: { iva: false, ire: false } },
+      profile: { ire: { rate: 0.02 } },
     });
-    const iva = result.find((r) => r.type === "iva");
-    expect(iva).toBeUndefined();
+    expect(result.find((r) => r.type === "iva")).toBeUndefined();
   });
 
   it("skips below minimum amount", () => {
     const result = calculateRetentions({
-      gravado10: 10000, gravado5: 0, exento: 0,
+      gravado10: 11000, gravado5: 0, exento: 0,
       iva10: 1000, iva5: 0, total: 11000,
-      concept: "Servicios",
+      profile: { iva: { rate: 0.3, minimum: 100000 } },
     });
     expect(result.length).toBe(0);
   });
 
   it("calculates net payable after retentions", () => {
     const retentions = [
-      { type: "irp" as const, concept: "IRP", base: 1000000, rate: 0.10, amount: 100000, certificateRequired: true },
-      { type: "iva" as const, concept: "IVA", base: 1000000, rate: 0.30, amount: 300000, certificateRequired: false },
+      { type: "irp" as const, concept: "IRP", base: 1000000, rate: 0.10, amount: 100000, certificateRequired: true, unverified: true },
+      { type: "iva" as const, concept: "IVA", base: 1000000, rate: 0.30, amount: 300000, certificateRequired: true, unverified: false },
     ];
     const net = calculateNetPayable(1100000, retentions);
     expect(net).toBe(700000);

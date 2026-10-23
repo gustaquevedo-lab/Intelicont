@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { validateRuc } from "@intelicont/ledger/fiscal-py";
+import { retentionProfileSchema, type RetentionProfile } from "@intelicont/ledger/retentions";
 import { router, protectedProcedure, z } from "../trpc";
 import { idempotentProcedure } from "../idempotent";
 import { getPartners, getPartner, createPartner, updatePartner } from "@ledger/db/repository";
@@ -12,6 +13,11 @@ const contacts = z.object({ email: optText, phone: optText, address: optText });
 const clearable = z.string().trim().max(200).nullish();
 const contactsPatch = z.object({ email: clearable, phone: clearable, address: clearable });
 const terms = z.number().int().min(0).max(365);
+// The ledger package resolves its own zod copy, so its schema is wrapped instead of nested.
+const retentionProfile = z.custom<RetentionProfile | null>(
+  (v) => v === null || retentionProfileSchema.safeParse(v).success,
+  "Perfil de retención inválido (IVA 30/70/100 %, tasas entre 0 y 1, mínimo entero)",
+);
 
 const createInput = z.object({
   entityId: z.string().uuid(),
@@ -31,7 +37,8 @@ const updateInput = z.object({
   kind: kind.optional(),
   defaultPaymentTerms: terms.optional(),
   contacts: contactsPatch.optional(),
-  retentionProfile: z.record(z.string(), z.unknown()).optional(),
+  /** Withholding profile (shape in @intelicont/ledger/retentions); null removes it. */
+  retentionProfile: retentionProfile.optional(),
 }).strict(); // the RUC is immutable: unknown keys (ruc, dvRuc, entityId...) are rejected
 
 export const isPartnerRucUniqueViolation = (err: unknown) => isUniqueViolation(err, "partners_entity_id_ruc_unique");
@@ -62,7 +69,7 @@ export const partnersRouter = router({
         legalName: p.legalName, tradeName: p.tradeName,
         contacts: p.contacts as { email?: string; phone?: string; address?: string } | null,
         defaultPaymentTerms: p.defaultPaymentTerms,
-        retentionProfile: p.retentionProfile, country: p.country,
+        retentionProfile: p.retentionProfile as RetentionProfile | null, country: p.country,
         createdAt: p.createdAt, updatedAt: p.updatedAt,
       }));
     }),
