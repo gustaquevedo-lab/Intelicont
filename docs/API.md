@@ -91,7 +91,7 @@ packages/
 | `periods` | `{ entityId }` | `FiscalPeriod[]` |
 | `currentPeriod` | `{ entityId }` | `FiscalPeriod` |
 | `vencimientoIva` | `{ year, month, ruc }` | `{ date, label }` |
-| `vencimientoHechauka` | `{ year, month }` | `{ date, label }` |
+| `registroPreview` | `{ entityId, year, month }` | `{ files: { name, rows, part }[], errors, excluded, counts }` (el .zip: `GET /api/registro/<entityId>/<MMAAAA>?part=N`) |
 
 ### `reports`
 | Procedure | Input | Output |

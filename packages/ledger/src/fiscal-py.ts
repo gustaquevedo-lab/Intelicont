@@ -307,7 +307,3 @@ export function getVencimientoIVA(year: number, month: number, ruc: string): Dat
   return baseDate;
 }
 
-// Hechauka submission deadline (25th of following month)
-export function getVencimientoHechauka(year: number, month: number): Date {
-  return new Date(year, month + 1, 25);
-}

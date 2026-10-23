@@ -3,7 +3,15 @@ import { getFiscalPeriods, getOpenPeriod } from "@ledger/db/repository";
 import { getLibroIva } from "@ledger/db/reports";
 import { buildForm104 } from "@intelicont/ledger/form104";
 import { assertVisible } from "./reports";
-import { getVencimientoIVA, getVencimientoHechauka } from "@intelicont/ledger/fiscal-py";
+import { getRegistroDocs } from "@ledger/db/registro";
+import { buildRegistro } from "@intelicont/ledger/registro";
+import { getVencimientoIVA } from "@intelicont/ledger/fiscal-py";
+
+const period = {
+  entityId: z.string().uuid(),
+  year: z.number().int().min(2000).max(2100),
+  month: z.number().int().min(1).max(12),
+};
 
 export const fiscalRouter = router({
   periods: protectedProcedure
@@ -20,11 +28,7 @@ export const fiscalRouter = router({
 
   /** Form 104 summary; built from the same getLibroIva as reports.libroIva so both always agree. */
   form104: protectedProcedure
-    .input(z.object({
-      entityId: z.string().uuid(),
-      year: z.number().int().min(2000).max(2100),
-      month: z.number().int().min(1).max(12),
-    }))
+    .input(z.object(period))
     .query(async ({ input }) => {
       await assertVisible(input.entityId);
       const [ventas, compras] = await Promise.all([
@@ -41,10 +45,16 @@ export const fiscalRouter = router({
       return { date: date.toISOString(), label: date.toLocaleDateString("es-PY") };
     }),
 
-  vencimientoHechauka: protectedProcedure
-    .input(z.object({ year: z.number(), month: z.number() }))
+  /** Registro de Comprobantes (obligación 955) for the month: the files' names and row counts, errors and exclusions; the .zip comes from /api/registro. */
+  registroPreview: protectedProcedure
+    .input(z.object(period))
     .query(async ({ input }) => {
-      const date = getVencimientoHechauka(input.year, input.month);
-      return { date: date.toISOString(), label: date.toLocaleDateString("es-PY") };
+      await assertVisible(input.entityId);
+      const { docs, entityRuc } = await getRegistroDocs(input.entityId, input.year, input.month);
+      const r = buildRegistro({ ruc: entityRuc, year: input.year, month: input.month, docs });
+      return {
+        files: r.files.map((f, i) => ({ name: f.name, rows: f.rows, part: i + 1 })),
+        errors: r.errors, excluded: r.excluded, counts: r.counts,
+      };
     }),
 });
