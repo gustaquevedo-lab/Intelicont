@@ -10,7 +10,8 @@
     "./registro": "./src/registro-comprobantes.ts",
     "./ai": "./src/ai/index.ts",
     "./retentions": "./src/retentions.ts",
-    "./form104": "./src/form104.ts"
+    "./form104": "./src/form104.ts",
+    "./tax-calendar": "./src/tax-calendar.ts"
   },
   "scripts": {
     "db:seed": "tsx db/seed.ts"
