@@ -219,6 +219,22 @@
 - [ ] **Step 1: Tests primero:** con el fixture ingestado y posteado, `libroIva` compras de agosto 2026 = 1 fila (58.000 / 5.273); sumas y saldos balancea (debe = haber); usuario de otra empresa ve vacío; cada fila trae `entryId` para el drill-down.
 - [ ] **Step 2:** Implementar vistas y routers; las páginas muestran datos reales con enlaces al asiento y al comprobante. Commit `feat(books): real journal, ledger, trial balance, VAT book`.
 
+### Task 17b: Asientos reales, reversión desde la UI y auditoría
+
+(Agregada por el controlador: el spec §2 pasos 5 y 8 exigen drill-down hasta el asiento, revertir y ver el rastro; ninguna tarea lo cubría.)
+
+**Files:** Modify `apps/web/src/app/asientos/page.tsx` (hoy datos de ejemplo), `apps/web/src/app/auditoria/page.tsx` (hoy datos de ejemplo), `apps/web/src/trpc/routers/journal-entries.ts`; Create `apps/web/src/app/asientos/[id]/page.tsx`, `apps/web/src/trpc/routers/audit.ts` (registrar en `trpc/index.ts`); Test `apps/web/src/__tests__/db/audit.test.ts`, e2e.
+
+**Interfaces:**
+- Consumes: `journal-entries.list/get/reverse` (Task 11: `reversedBy`, status derivado), `audit_events` (Task 11), `tax_documents.journal_entry_id`.
+- Produces: `audit.list({ entityId: uuid, targetType?: string, targetId?: uuid, action?: string, limit = 100, offset = 0 }) → { events: { id; createdAt; action; targetType; targetId; reason; before; after; actor: { id; name; email } | null }[] }` (más nuevos primero); `journal-entries.get` devuelve además cuenta (código y nombre) por línea, `reversedBy`, `reversalOf` y `document: { id; number; cdc } | null`.
+
+- [ ] **Step 1: Tests primero** (`audit.test.ts`, patrón de `usecases.test.ts`): `audit.list returns the entity events newest first with the actor`, `audit.list filters by targetId and action`, `audit.list does not show other entities' events`, `journal-entries.get returns lines with account code and name and the linked document`, `a reversed entry shows reversedBy and the reversal shows reversalOf`.
+- [ ] **Step 2:** Implementar `audit.list` (protectedProcedure; join con `users` para el actor; RLS por entidad) y ampliar `journal-entries.get`.
+- [ ] **Step 3:** UI: `asientos/page.tsx` lista asientos reales de la entidad activa (número, fecha, origen, descripción, total, estado Posteado/Reversado/Reversión) con búsqueda y filtro de estado; `asientos/[id]/page.tsx` muestra cabecera, líneas, enlace al comprobante de origen y a la reversión/original, botón "Revertir" (modal con motivo ≥ 3 caracteres, una `Idempotency-Key` por modal, deshabilitado mientras envía y tras éxito) y panel "Rastro de auditoría" (eventos con `targetId` = asiento); `auditoria/page.tsx` lista eventos reales con filtros (acción, tipo, fechas) y detalle expandible before/after. Español, estilo existente.
+- [ ] **Step 4:** e2e: tras ingestar y aprobar el comprobante del fixture, abrir el asiento desde el Libro IVA, revertirlo con motivo y ver "Reversado" y los eventos `journal_entry.posted` y `journal_entry.reversed` en el rastro; la página de auditoría los lista.
+- [ ] **Step 5:** Commit `feat(ledger-ui): real journal entries, reversal from the UI and audit trail`.
+
 ### Task 18: Formulario 104
 
 **Files:** Modify `routers/fiscal.ts` (`form104`), `app/fiscal/formulario-104/page.tsx`; Test `apps/web/src/__tests__/db/form104.test.ts`.
