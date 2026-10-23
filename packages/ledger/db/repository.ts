@@ -152,7 +152,7 @@ export async function getJournalEntries(entityId: string): Promise<JournalEntryR
   return tenantDb(async (db) => {
     return db.select(entryWithReversal).from(schema.journalEntries)
       .where(eq(schema.journalEntries.entityId, entityId))
-      .orderBy(desc(schema.journalEntries.date));
+      .orderBy(desc(schema.journalEntries.date), desc(schema.journalEntries.createdAt), desc(schema.journalEntries.id));
   });
 }
 

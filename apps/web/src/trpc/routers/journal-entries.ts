@@ -5,7 +5,7 @@ import { getJournalEntries, getJournalEntry, getJournalLines, type JournalEntryR
 import { postEntry, reverseEntry } from "@ledger/src/usecases";
 import { isMockMode, tenantDb } from "@ledger/db/index";
 import * as schema from "@ledger/db/schema";
-import { asc, desc, eq, getTableColumns } from "drizzle-orm";
+import { asc, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { isCalendarDate, CALENDAR_DATE_ERROR } from "@/lib/calendar-date";
 
 /** `reversed` is derived (D10): the DB row stays `posted`, a counter-entry points at it. */
@@ -13,10 +13,10 @@ const uiStatus = (e: JournalEntryRow) => (e.reversedBy ? ("reversed" as const) :
 
 export const journalEntriesRouter = router({
   list: protectedProcedure
-    .input(z.object({ entityId: z.string(), limit: z.number().int().min(1).max(500).optional().default(50) }))
+    .input(z.object({ entityId: z.string(), limit: z.number().int().min(1).max(500).optional().default(50), offset: z.number().int().min(0).optional().default(0) }))
     .query(async ({ input }) => {
       const entries = await getJournalEntries(input.entityId);
-      return entries.slice(0, input.limit).map((e) => ({
+      return entries.slice(input.offset, input.offset + input.limit).map((e) => ({
         id: e.id,
         entityId: e.entityId,
         periodId: e.periodId,
@@ -34,6 +34,15 @@ export const journalEntriesRouter = router({
         metadata: e.metadata,
         createdAt: e.createdAt,
       }));
+    }),
+
+  count: protectedProcedure
+    .input(z.object({ entityId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      if (isMockMode()) return { total: (await getJournalEntries(input.entityId)).length };
+      const [{ total }] = await tenantDb((db) =>
+        db.select({ total: sql<number>`count(*)::int` }).from(schema.journalEntries).where(eq(schema.journalEntries.entityId, input.entityId)));
+      return { total };
     }),
 
   get: protectedProcedure

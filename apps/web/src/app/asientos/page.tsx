@@ -16,11 +16,20 @@ const ESTADO_COLOR: Record<Estado, string> = {
   reversal: "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400",
   draft: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
 };
+const PAGE = 100;
 const gs = (v: number) => `₲ ${v.toLocaleString("es-PY")}`;
 
 export default function AsientosPage() {
   const entity = useAuthStore((s) => s.selectedEntity);
-  const { data: entries = [], isLoading, error } = api["journal-entries"].list.useQuery({ entityId: entity?.id ?? "", limit: 500 }, { enabled: !!entity });
+  const [pages, setPages] = useState(1);
+  const entityId = entity?.id ?? "";
+  const results = api.useQueries((t) =>
+    Array.from({ length: pages }, (_, i) => t["journal-entries"].list({ entityId, limit: PAGE, offset: i * PAGE }, { enabled: !!entity })));
+  const count = api["journal-entries"].count.useQuery({ entityId }, { enabled: !!entity });
+  const entries = results.flatMap((r) => r.data ?? []);
+  const total = count.data?.total ?? entries.length;
+  const isLoading = results.some((r) => r.isLoading);
+  const error = results.find((r) => r.error)?.error;
   const [search, setSearch] = useState("");
   const [estado, setEstado] = useState<"" | Estado>("");
 
@@ -109,6 +118,12 @@ export default function AsientosPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {!isLoading && !error && total > entries.length && (
+            <div className="p-3 border-t border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+              <span role="status">Mostrando los últimos {entries.length} de {total} asientos — usá el Libro Diario para el detalle completo</span>
+              <button onClick={() => setPages((n) => n + 1)} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">Cargar más</button>
             </div>
           )}
         </div>

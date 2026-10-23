@@ -120,4 +120,52 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("audit.list and journal-entries.get
     const row = (await caller()["journal-entries"].list({ entityId: e1, limit: 500 })).find((e) => e.id === id);
     expect(row?.total).toBe(7777);
   });
+
+  const seedEvents = async (action: string, stamps: string[]) => {
+    for (const ts of stamps) {
+      await t.owner`insert into audit_events (entity_id, actor_id, action, target_type, created_at) values (${e1}, ${user}, ${action}, 'test', ${ts}::timestamptz)`;
+    }
+  };
+
+  it("audit.list clamps limit at 500 and pages with offset", async () => {
+    await seedEvents("test.page", Array.from({ length: 7 }, (_, i) => `2026-02-0${i + 1}T12:00:00-03:00`));
+    const page = (offset: number) => caller().audit.list({ entityId: e1, action: "test.page", limit: 3, offset });
+    const [p1_, p2_, p3_] = [await page(0), await page(3), await page(6)];
+    expect([p1_.events.length, p2_.events.length, p3_.events.length]).toEqual([3, 3, 1]);
+    const ids = [...p1_.events, ...p2_.events, ...p3_.events].map((e) => e.id);
+    expect(new Set(ids).size).toBe(7);
+    const times = [...p1_.events, ...p2_.events, ...p3_.events].map((e) => new Date(e.createdAt!).getTime());
+    expect(times).toEqual([...times].sort((a, b) => b - a));
+    expect(p1_.total).toBe(7);
+    const big = await caller().audit.list({ entityId: e1, limit: 100_000 });
+    expect(big.events.length).toBeLessThanOrEqual(500);
+  });
+
+  it("audit.list filters by date range in Asunción days", async () => {
+    await seedEvents("test.date", ["2026-03-10T23:30:00-03:00", "2026-03-11T00:10:00-03:00", "2026-03-09T12:00:00-03:00"]);
+    const at = async (from?: string, to?: string) =>
+      (await caller().audit.list({ entityId: e1, action: "test.date", from, to })).events.map((e) => new Date(e.createdAt!).toISOString());
+    expect(await at("2026-03-10", "2026-03-10")).toEqual(["2026-03-11T02:30:00.000Z"]);
+    expect(await at("2026-03-11", "2026-03-11")).toEqual(["2026-03-11T03:10:00.000Z"]);
+    expect(await at("2026-03-09", "2026-03-10")).toHaveLength(2);
+    expect(await at("2026-03-10")).toHaveLength(2);
+    expect(await at(undefined, "2026-03-09")).toHaveLength(1);
+  });
+
+  it("audit.list total counts the filtered set", async () => {
+    const r = await caller().audit.list({ entityId: e1, action: "test.date", from: "2026-03-10", limit: 1 });
+    expect(r.events).toHaveLength(1);
+    expect(r.total).toBe(2);
+    expect((await caller().audit.actions({ entityId: e1 })).actions).toEqual(expect.arrayContaining(["journal_entry.posted", "test.date", "test.page"]));
+    await expect(caller(outsider).audit.actions({ entityId: e1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("journal-entries.count and offset page the entries", async () => {
+    const n = await caller()["journal-entries"].count({ entityId: e1 });
+    const all = await caller()["journal-entries"].list({ entityId: e1, limit: 500 });
+    expect(n.total).toBe(all.length);
+    const a = await caller()["journal-entries"].list({ entityId: e1, limit: 2, offset: 0 });
+    const b = await caller()["journal-entries"].list({ entityId: e1, limit: 2, offset: 2 });
+    expect([...a, ...b].map((e) => e.id)).toEqual(all.slice(0, 4).map((e) => e.id));
+  });
 });

@@ -1,32 +1,39 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { Shield, ChevronDown, ChevronUp, Building2, Loader2 } from "lucide-react";
 import { api } from "@/trpc/client";
 import { useAuthStore } from "@/lib/auth-store";
 import { actionLabel, formatDateTime, targetLabel, TARGET_LABELS } from "@/lib/audit-labels";
 
+const PAGE = 100;
 const selectCls = "px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300";
-/** Calendar day (Asunción) of an event timestamp, for the from/to filters. */
-const dayOf = (d: Date | string | null) => (d ? new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Asuncion" }) : "");
-
 export default function AuditoriaPage() {
   const entity = useAuthStore((s) => s.selectedEntity);
-  const [action, setAction] = useState("");
-  const [targetType, setTargetType] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [filters, setFilters] = useState({ action: "", targetType: "", from: "", to: "" });
+  const [pages, setPages] = useState(1);
   const [open, setOpen] = useState<string | null>(null);
-  // Actions are filtered client-side over the loaded page so the select can list every distinct action returned.
-  const { data, isLoading, error } = api.audit.list.useQuery({ entityId: entity?.id ?? "", limit: 500 }, { enabled: !!entity });
-  const all = data?.events ?? [];
-  const actions = useMemo(() => [...new Set(all.map((e) => e.action))].sort(), [all]);
-  const types = useMemo(() => [...new Set([...Object.keys(TARGET_LABELS), ...all.map((e) => e.targetType)])].sort(), [all]);
-  const events = all.filter((e) => {
-    const day = dayOf(e.createdAt);
-    return (!action || e.action === action) && (!targetType || e.targetType === targetType) && (!from || day >= from) && (!to || day <= to);
-  });
+  const setFilter = (patch: Partial<typeof filters>) => {
+    setFilters((f) => ({ ...f, ...patch }));
+    setPages(1);
+  };
+  const entityId = entity?.id ?? "";
+  // Filters run on the server; pages of 100 are appended with `offset`.
+  const results = api.useQueries((t) =>
+    Array.from({ length: pages }, (_, i) =>
+      t.audit.list({
+        entityId, limit: PAGE, offset: i * PAGE,
+        action: filters.action || undefined, targetType: filters.targetType || undefined,
+        from: filters.from || undefined, to: filters.to || undefined,
+      }, { enabled: !!entity })));
+  const actionsQ = api.audit.actions.useQuery({ entityId }, { enabled: !!entity });
+  const actions = actionsQ.data?.actions ?? [];
+  const types = Object.keys(TARGET_LABELS).sort();
+  const events = results.flatMap((r) => r.data?.events ?? []);
+  const total = results[0]?.data?.total ?? 0;
+  const isLoading = results.some((r) => r.isLoading);
+  const error = results.find((r) => r.error)?.error;
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -43,16 +50,16 @@ export default function AuditoriaPage() {
       ) : (
         <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
           <div className="p-3 border-b border-gray-200 dark:border-gray-800 flex flex-wrap items-center gap-2">
-            <select aria-label="Filtrar por acción" value={action} onChange={(e) => setAction(e.target.value)} className={selectCls}>
+            <select aria-label="Filtrar por acción" value={filters.action} onChange={(e) => setFilter({ action: e.target.value })} className={selectCls}>
               <option value="">Todas las acciones</option>
               {actions.map((a) => <option key={a} value={a}>{actionLabel(a)}</option>)}
             </select>
-            <select aria-label="Filtrar por tipo" value={targetType} onChange={(e) => setTargetType(e.target.value)} className={selectCls}>
+            <select aria-label="Filtrar por tipo" value={filters.targetType} onChange={(e) => setFilter({ targetType: e.target.value })} className={selectCls}>
               <option value="">Todos los tipos</option>
               {types.map((t) => <option key={t} value={t}>{targetLabel(t)}</option>)}
             </select>
-            <input type="date" aria-label="Desde" value={from} onChange={(e) => setFrom(e.target.value)} className={selectCls} />
-            <input type="date" aria-label="Hasta" value={to} onChange={(e) => setTo(e.target.value)} className={selectCls} />
+            <input type="date" aria-label="Desde" value={filters.from} onChange={(e) => setFilter({ from: e.target.value })} className={selectCls} />
+            <input type="date" aria-label="Hasta" value={filters.to} onChange={(e) => setFilter({ to: e.target.value })} className={selectCls} />
           </div>
 
           {isLoading ? (
@@ -119,6 +126,14 @@ export default function AuditoriaPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {!isLoading && !error && total > 0 && (
+            <div className="p-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500">
+              <span>Mostrando {events.length} de {total} eventos</span>
+              {events.length < total && (
+                <button onClick={() => setPages((n) => n + 1)} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg">Cargar más</button>
+              )}
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, RotateCcw, X, FileText } from "lucide-react";
@@ -97,6 +97,8 @@ export default function AsientoDetallePage() {
         <h2 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Rastro de auditoría</h2>
         {own.isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+        ) : own.error || other.error ? (
+          <p role="alert" className="text-sm text-red-500">No se pudo cargar el rastro: {(own.error ?? other.error)!.message}</p>
         ) : (
           <ul className="space-y-2">
             {events.map((ev) => (
@@ -124,16 +126,24 @@ function ReverseModal({ entryId, onClose, onDone }: { entryId: string; onClose: 
     trpc: idem.trpc,
     onSuccess: async () => {
       idem.renew();
-      await onDone();
-      onClose();
+      try {
+        await onDone();
+      } finally {
+        onClose();
+      }
     },
   });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !reverse.isPending && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [reverse.isPending, onClose]);
   const tooShort = reason.trim().length < 3;
   const locked = reverse.isPending || reverse.isSuccess;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div role="dialog" aria-label="Revertir asiento" className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 lg:p-6">
+      <div role="dialog" aria-modal="true" aria-label="Revertir asiento" className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 lg:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white">Revertir asiento</h2>
           <button aria-label="Cerrar" onClick={onClose} disabled={reverse.isPending} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"><X className="h-4 w-4 text-gray-400" /></button>
