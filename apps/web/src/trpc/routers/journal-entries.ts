@@ -3,7 +3,9 @@ import { idempotentProcedure } from "../idempotent";
 import { TRPCError } from "@trpc/server";
 import { getJournalEntries, getJournalEntry, getJournalLines, type JournalEntryRow } from "@ledger/db/repository";
 import { postEntry, reverseEntry } from "@ledger/src/usecases";
-import { isMockMode } from "@ledger/db/index";
+import { isMockMode, tenantDb } from "@ledger/db/index";
+import * as schema from "@ledger/db/schema";
+import { asc, desc, eq, getTableColumns } from "drizzle-orm";
 import { isCalendarDate, CALENDAR_DATE_ERROR } from "@/lib/calendar-date";
 
 /** `reversed` is derived (D10): the DB row stays `posted`, a counter-entry points at it. */
@@ -38,8 +40,18 @@ export const journalEntriesRouter = router({
     .query(async ({ input }) => {
       const entry = await getJournalEntry(input.id);
       if (!entry) throw new TRPCError({ code: "NOT_FOUND", message: "Asiento no encontrado" });
-      const lines = await getJournalLines(input.id);
-      return { ...entry, status: uiStatus(entry), lines };
+      if (isMockMode()) return { ...entry, status: uiStatus(entry), lines: (await getJournalLines(input.id)).map((l) => ({ ...l, accountCode: "", accountName: "" })), document: null };
+      const { lines, document } = await tenantDb(async (db) => {
+        const lines = await db.select({ ...getTableColumns(schema.journalLines), accountCode: schema.accounts.code, accountName: schema.accounts.name })
+          .from(schema.journalLines)
+          .innerJoin(schema.accounts, eq(schema.accounts.id, schema.journalLines.accountId))
+          .where(eq(schema.journalLines.entryId, input.id))
+          .orderBy(desc(schema.journalLines.debit), asc(schema.accounts.code));
+        const [document = null] = await db.select({ id: schema.taxDocuments.id, number: schema.taxDocuments.number, cdc: schema.taxDocuments.cdc })
+          .from(schema.taxDocuments).where(eq(schema.taxDocuments.journalEntryId, input.id)).limit(1);
+        return { lines, document };
+      });
+      return { ...entry, status: uiStatus(entry), lines, document };
     }),
 
   getLines: protectedProcedure
