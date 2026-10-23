@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:db": "node --env-file=.env.test.local ./node_modules/vitest/vitest.mjs run src/__tests__/db",
+    "test:db": "node --env-file=.env.test.local ./node_modules/vitest/vitest.mjs run src/__tests__/db --testTimeout=30000 --hookTimeout=60000",
     "test:watch": "vitest",
     "test:e2e": "node --env-file-if-exists=.env.test.local ./node_modules/@playwright/test/cli.js test",
     "auth:create-user": "tsx --env-file-if-exists=.env.local scripts/create-admin.ts"

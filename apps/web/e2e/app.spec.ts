@@ -30,7 +30,7 @@ test.describe("InteliCont E2E", () => {
   test("navigates to SIFEN page", async ({ page }) => {
     await page.goto("/sifen");
     await expect(page.locator("h1")).toContainText("SIFEN");
-    await expect(page.getByRole("button", { name: "Probar con factura de demostración" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Comprobantes pendientes" })).toBeVisible();
   });
 
   test("SIFEN historial shows documents", async ({ page }) => {
