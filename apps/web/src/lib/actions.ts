@@ -8,6 +8,7 @@ import { postEntry } from "@ledger/src/usecases";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "./session";
 import { loadGuardUser, needs2FA } from "./auth-guard";
+import { isCalendarDate, CALENDAR_DATE_ERROR } from "./calendar-date";
 
 /**
  * Runs repository work in the session user's tenant scope. Throws without a session, and for an
@@ -106,6 +107,7 @@ export async function getAsientoLines(entryId: string) {
 
 export async function createAsiento(input: CreateAsientoInput, idempotencyKey: string) {
   if (!isIdempotencyKey(idempotencyKey)) return KEY_ERROR;
+  if (typeof input.date !== "string" || !isCalendarDate(input.date)) return { success: false, message: CALENDAR_DATE_ERROR };
   // Validate balance
   let totalDebito = 0;
   let totalCredito = 0;

@@ -39,7 +39,7 @@ export async function insertPostedEntry(tx: Db, input: PostEntryInput & { revers
   const [draft] = await tx.insert(schema.journalEntries).values({
     entityId: input.entityId,
     periodId: input.periodId,
-    date: input.date,
+    date: input.date, // date is UTC midnight of the Asunción calendar date; v_diario/v_mayor read it at UTC
     number: input.number,
     source: input.source ?? "manual",
     sourceRef: input.sourceRef ?? null,

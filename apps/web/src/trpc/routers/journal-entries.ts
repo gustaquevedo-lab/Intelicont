@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getJournalEntries, getJournalEntry, getJournalLines, type JournalEntryRow } from "@ledger/db/repository";
 import { postEntry, reverseEntry } from "@ledger/src/usecases";
 import { isMockMode } from "@ledger/db/index";
+import { isCalendarDate, CALENDAR_DATE_ERROR } from "@/lib/calendar-date";
 
 /** `reversed` is derived (D10): the DB row stays `posted`, a counter-entry points at it. */
 const uiStatus = (e: JournalEntryRow) => (e.reversedBy ? ("reversed" as const) : e.status);
@@ -63,7 +64,7 @@ export const journalEntriesRouter = router({
     .input(z.object({
       entityId: z.string(),
       periodId: z.string(),
-      date: z.string(),
+      date: z.string().refine(isCalendarDate, CALENDAR_DATE_ERROR),
       number: z.string().optional(),
       source: z.string().optional(),
       description: z.string().optional(),

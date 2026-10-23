@@ -3,8 +3,9 @@ import { router, protectedProcedure, z } from "../trpc";
 import { getEntity } from "@ledger/db/repository";
 import { getDiario, getMayor, getSumasSaldos, getLibroIva } from "@ledger/db/reports";
 import { isMockMode } from "@ledger/db/index";
+import { isCalendarDate, CALENDAR_DATE_ERROR } from "@/lib/calendar-date";
 
-const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (AAAA-MM-DD)");
+const day = z.string().refine(isCalendarDate, CALENDAR_DATE_ERROR);
 const range = { entityId: z.string().uuid(), from: day, to: day };
 
 /** RLS already hides other tenants; this turns "invisible entity" into an explicit FORBIDDEN (no empty-looking book). */
