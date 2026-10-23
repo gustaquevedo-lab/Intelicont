@@ -8,7 +8,6 @@ import {
   ChevronDown,
   Sparkles,
   Calendar,
-  TrendingUp,
   Sun,
   Moon,
   Monitor,
@@ -23,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { useTheme, Theme } from "@/lib/theme-context";
 import { useAuthStore, useCurrentUser } from "@/lib/auth-store";
 import { useNotificationStore } from "@/lib/notification-store";
+import { api } from "@/trpc/client";
+import { OBLIGATION_HREF, OBLIGATION_NAME, noticeLabel } from "@/lib/fiscal-calendar";
 import { Logo } from "./logo";
 
 const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
@@ -35,10 +36,23 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { selectedEntity, availableEntities, selectEntity } = useAuthStore();
   const { user, logout } = useCurrentUser();
-  const notifications = useNotificationStore((s) => s.notifications);
-  const unreadCount = useNotificationStore((s) => s.getUnreadCount());
+  const readIds = useNotificationStore((s) => s.readIds);
   const markRead = useNotificationStore((s) => s.markRead);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
+  // Real fiscal notices (7/3/1 days and overdue) of the active entity; one per obligation/period/level.
+  const upcoming = api.fiscal.upcoming.useQuery({ entityId: selectedEntity?.id ?? "", days: 7 }, { enabled: !!selectedEntity });
+  const notifications = (upcoming.data?.items ?? [])
+    .filter((i) => i.level)
+    .map((i) => ({
+      id: `${selectedEntity?.id}:${i.obligation}:${i.period}:${i.level}`,
+      title: OBLIGATION_NAME[i.obligation] ?? i.obligation,
+      description: `Período ${i.period} — ${noticeLabel(i.daysLeft)}`,
+      daysLeft: i.daysLeft,
+      level: i.level,
+      href: OBLIGATION_HREF[i.obligation],
+      read: readIds.includes(`${selectedEntity?.id}:${i.obligation}:${i.period}:${i.level}`),
+    }));
+  const unreadCount = notifications.filter((n) => !n.read).length;
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
@@ -249,7 +263,10 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                       <span className="text-xs text-blue-500 dark:text-blue-400">{unreadCount} nuevas</span>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
-                      {notifications.slice(0, 10).map((n) => (
+                      {notifications.length === 0 && (
+                        <p className="p-4 text-xs text-gray-400">Sin vencimientos en los próximos 7 días.</p>
+                      )}
+                      {notifications.map((n) => (
                         <div
                           key={n.id}
                           onClick={() => markRead(n.id)}
@@ -261,26 +278,22 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                           <div className="flex gap-3">
                             <div className={cn(
                               "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
-                              n.urgency === "critical" && "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400",
-                              n.urgency === "warning" && "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400",
-                              n.urgency === "info" && "bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                              (n.level === "overdue" || n.level === "1") && "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400",
+                              (n.level === "3" || n.level === "7") && "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
                             )}>
-                              {n.type === "iva" && <Calendar className="h-4 w-4" />}
-                              {n.type === "sifen" && <Sparkles className="h-4 w-4" />}
-                              {n.type === "ire" && <TrendingUp className="h-4 w-4" />}
-                              {n.type !== "iva" && n.type !== "sifen" && n.type !== "ire" && <Calendar className="h-4 w-4" />}
+                              <Calendar className="h-4 w-4" />
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-2">
                                 <p className="text-gray-900 dark:text-white text-sm font-medium truncate">{n.title}</p>
-                                <span className={cn("text-[10px] shrink-0", n.urgency === "critical" ? "text-red-500 font-medium" : "text-gray-400")}>
-                                  {n.daysLeft}d
+                                <span className={cn("text-[10px] shrink-0", n.level === "overdue" || n.level === "1" ? "text-red-500 font-medium" : "text-gray-400")}>
+                                  {n.level === "overdue" ? "vencido" : `${n.daysLeft}d`}
                                 </span>
                               </div>
-                              <p className="text-gray-500 dark:text-gray-400 text-xs truncate">{n.entityName} — {n.description}</p>
-                              {n.action && (
-                                <a href={n.action.href} className="inline-block mt-1 text-[10px] text-blue-500 hover:text-blue-400 font-medium">
-                                  {n.action.label} →
+                              <p className="text-gray-500 dark:text-gray-400 text-xs truncate">{n.description}</p>
+                              {n.href && (
+                                <a href={n.href} className="inline-block mt-1 text-[10px] text-blue-500 hover:text-blue-400 font-medium">
+                                  Preparar →
                                 </a>
                               )}
                             </div>
@@ -290,7 +303,7 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
                     </div>
                     <div className="p-2 border-t border-gray-200 dark:border-gray-800">
                       <button
-                        onClick={() => { markAllRead(); setShowNotifications(false); }}
+                        onClick={() => { markAllRead(notifications.map((n) => n.id)); setShowNotifications(false); }}
                         className="w-full py-1.5 text-gray-500 dark:text-gray-400 text-xs hover:text-gray-900 dark:hover:text-white transition-colors">
                         Marcar todo como leído
                       </button>

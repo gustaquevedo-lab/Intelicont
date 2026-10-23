@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth-store";
 import { useDataStore } from "@/lib/data-store";
 import { useSifenStore } from "@/lib/sifen-store";
+import { api } from "@/trpc/client";
+import { LEVEL_BADGE, OBLIGATION_NAME, dueLabel } from "@/lib/fiscal-calendar";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, LineChart, Line, Area, AreaChart,
@@ -63,13 +65,9 @@ export default function DashboardPage() {
   const ivaCredito = 3212500;
   const saldoFavor = ivaCredito - ivaDebito;
 
-  // Upcoming deadlines
-  const upcomingDeadlines = [
-    { id: 1, label: "IVA — Form. 104", entity: "Importadora del Este", date: "12 May", days: 7, urgent: true },
-    { id: 2, label: "Registro de Comprobantes (955)", entity: "Importadora del Este", date: "25 May", days: 20, urgent: false },
-    { id: 3, label: "IRE — Form. 1301", entity: "Tech Asunción", date: "15 May", days: 10, urgent: false },
-    { id: 4, label: "Retenciones IRP", entity: "Dist. Ñandutí", date: "20 May", days: 15, urgent: false },
-  ];
+  // Upcoming deadlines: real calendar of the active entity (next 30 days and overdue)
+  const upcoming = api.fiscal.upcoming.useQuery({ entityId: selectedEntity?.id ?? "", days: 30 }, { enabled: !!selectedEntity });
+  const upcomingDeadlines = upcoming.data?.items ?? [];
 
   // Activity feed
   const activityFeed = [
@@ -242,26 +240,26 @@ export default function DashboardPage() {
               <Calendar className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 divide-y divide-gray-200/30 dark:divide-gray-800/30">
+              {upcomingDeadlines.length === 0 && (
+                <p className="p-4 text-xs text-gray-400">Sin vencimientos en los próximos 30 días.</p>
+              )}
               {upcomingDeadlines.map((d) => (
-                <div key={d.id} className="p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-all group cursor-pointer">
+                <div key={`${d.obligation}-${d.period}`} className="p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-all group">
                   <div className="flex items-center justify-between mb-1">
-                    <span className={cn(
-                      "text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full",
-                      d.urgent ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-gray-100 dark:bg-gray-800 text-gray-500"
-                    )}>
-                      {d.label}
+                    <span className={cn("text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full", LEVEL_BADGE[d.level ?? "none"])}>
+                      {OBLIGATION_NAME[d.obligation] ?? d.obligation}
                     </span>
-                    <span className="text-xs font-black text-gray-400 group-hover:text-primary transition-colors">{d.date}</span>
+                    <span className="text-xs font-black text-gray-400 group-hover:text-primary transition-colors">{dueLabel(d.dueDate)}</span>
                   </div>
-                  <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{d.entity}</p>
+                  <p className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">Período {d.period}</p>
                   <div className="mt-3 flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div 
-                        className={cn("h-full rounded-full", d.urgent ? "bg-red-500" : "bg-primary")} 
-                        style={{ width: `${Math.max(10, 100 - d.days * 5)}%` }} 
+                      <div
+                        className={cn("h-full rounded-full", d.level === "overdue" || d.level === "1" ? "bg-red-500" : "bg-primary")}
+                        style={{ width: `${Math.max(10, 100 - Math.max(d.daysLeft, 0) * 3)}%` }}
                       />
                     </div>
-                    <span className="text-[10px] font-black text-gray-400 shrink-0">{d.days}d</span>
+                    <span className="text-[10px] font-black text-gray-400 shrink-0">{d.daysLeft < 0 ? "vencido" : `${d.daysLeft}d`}</span>
                   </div>
                 </div>
               ))}

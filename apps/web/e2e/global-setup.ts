@@ -87,7 +87,7 @@ export default async function globalSetup() {
     const [{ id: userEntityId }] = await db.owner`insert into entities (ruc, legal_name) values ('80099997-3', ${USER_ENTITY_NAME}) returning id`;
     await db.owner`insert into memberships (user_id, entity_id, role)
       select id, ${userEntityId}, 'accountant' from users where email = ${USER_EMAIL}`;
-    const [{ id: sifenEntityId }] = await db.owner`insert into entities (ruc, legal_name) values ('1234567-9', 'Cliente de Prueba E2E') returning id`;
+    const [{ id: sifenEntityId }] = await db.owner`insert into entities (ruc, legal_name, tax_regimes) values ('1234567-9', 'Cliente de Prueba E2E', array['IVA_GRAL']) returning id`;
     await db.owner`insert into memberships (user_id, entity_id, role)
       select id, ${sifenEntityId}, 'accountant' from users where email = ${SIFEN_EMAIL}`;
     // Default chart + the fixture's month (2026-08) open, so a suggestion can be approved and posted.
