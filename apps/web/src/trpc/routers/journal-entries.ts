@@ -98,20 +98,20 @@ export const journalEntriesRouter = router({
       date: z.string().refine(isCalendarDate, CALENDAR_DATE_ERROR),
       number: z.string().optional(),
       source: z.string().optional(),
-      description: z.string().optional(),
+      description: z.string().max(500).optional(),
       lineas: z.array(z.object({
         accountId: z.string(),
         debit: z.number().int().nonnegative().refine(Number.isSafeInteger),
         credit: z.number().int().nonnegative().refine(Number.isSafeInteger),
         currencyCode: z.string().default("PYG"),
         description: z.string().optional(),
-      })),
+      })).min(2),
     }))
     .mutation(async ({ input }) => {
       const totalDebit = input.lineas.reduce((s, l) => s + l.debit, 0);
       const totalCredit = input.lineas.reduce((s, l) => s + l.credit, 0);
       if (totalDebit !== totalCredit) {
-        throw new Error("El asiento no esta balanceado");
+        throw new TRPCError({ code: "BAD_REQUEST", message: "El asiento no está balanceado" });
       }
 
       if (isMockMode()) {

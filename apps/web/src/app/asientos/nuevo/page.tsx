@@ -7,7 +7,7 @@ import { todayInAsuncionISO } from "@intelicont/ledger/tax-calendar";
 import { useAuthStore } from "@/lib/auth-store";
 import { useIdempotencyKey } from "@/lib/trpc-hooks";
 import { clampDateToPeriod, validateEntryForm } from "@/lib/entry-form";
-import { formatGs, parseGs } from "@/lib/gs";
+import { formatGs, parseGsInput } from "@/lib/gs";
 import { api } from "@/trpc/client";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +52,7 @@ function EntryForm({ entityId, entityName }: { entityId: string; entityName: str
   const [lines, setLines] = useState<Line[]>(() => [newLine(), newLine()]);
   const [saved, setSaved] = useState<{ id: string; number: string } | null>(null);
   const [errorShown, setErrorShown] = useState(true);
+  const [amountHint, setAmountHint] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const focusRow = useRef<number | null>(null);
 
@@ -200,14 +201,15 @@ function EntryForm({ entityId, entityName }: { entityId: string; entityName: str
                   <div className="col-span-2 md:col-span-1">
                     <AccountCombobox label={`Cuenta línea ${i + 1}`} index={i} accounts={accounts} value={l.accountId} onChange={(id) => setLine(l.key, { accountId: id })} />
                   </div>
-                  <AmountInput label={`Debe línea ${i + 1}`} value={l.debit} onChange={(n) => setLine(l.key, { debit: n, ...(n > 0 && { credit: 0 }) })} />
-                  <AmountInput label={`Haber línea ${i + 1}`} value={l.credit} onChange={(n) => setLine(l.key, { credit: n, ...(n > 0 && { debit: 0 }) })} />
+                  <AmountInput label={`Debe línea ${i + 1}`} value={l.debit} onInvalid={setAmountHint} onChange={(n) => setLine(l.key, { debit: n, ...(n > 0 && { credit: 0 }) })} />
+                  <AmountInput label={`Haber línea ${i + 1}`} value={l.credit} onInvalid={setAmountHint} onChange={(n) => setLine(l.key, { credit: n, ...(n > 0 && { debit: 0 }) })} />
                   <input
                     aria-label={`Descripción línea ${i + 1}`}
                     value={l.description}
                     onChange={(e) => setLine(l.key, { description: e.target.value })}
                     onKeyDown={(e) => {
-                      if (e.key === "Tab" && !e.shiftKey && i === lines.length - 1) { e.preventDefault(); addLine(); }
+                      // Only a filled last line grows the grid; a blank one lets Tab move on to the buttons (no keyboard trap).
+                      if (e.key === "Tab" && !e.shiftKey && i === lines.length - 1 && (l.accountId || l.debit || l.credit)) { e.preventDefault(); addLine(); }
                     }}
                     placeholder="Opcional"
                     className={cn(cellCls, "col-span-2 md:col-span-1")}
@@ -223,6 +225,7 @@ function EntryForm({ entityId, entityName }: { entityId: string; entityName: str
                   </button>
                 </div>
               ))}
+              <p aria-live="polite" className="text-xs text-yellow-500 min-h-4">{amountHint ? "Solo importes enteros en guaraníes" : ""}</p>
               <button type="button" onClick={addLine} className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300">
                 <Plus className="h-4 w-4" />Agregar línea <span className="text-xs text-gray-500">(Ctrl+Enter)</span>
               </button>
@@ -236,6 +239,7 @@ function EntryForm({ entityId, entityName }: { entityId: string; entityName: str
               <div className="flex gap-2"><dt className="text-gray-400">Diferencia</dt><dd data-testid="difference" className="text-white tabular-nums">₲ {formatGs(Math.abs(totals.diff))}</dd></div>
               <span
                 data-testid="balance-chip"
+                aria-live="polite"
                 className={cn("px-2.5 py-1 rounded-full text-xs font-medium", balanced ? "bg-green-900/30 text-green-400" : totals.diff !== 0 ? "bg-red-900/30 text-red-400" : "bg-gray-800 text-gray-400")}
               >
                 {balanced ? "Balanceado" : totals.diff !== 0 ? `Descuadrado por ₲ ${formatGs(Math.abs(totals.diff))}` : "Sin importes"}
@@ -251,7 +255,7 @@ function EntryForm({ entityId, entityName }: { entityId: string; entityName: str
             </button>
           </div>
           {dirty && !validation.ok && !saved && (
-            <ul aria-label="Pendientes" className="text-xs text-gray-500 list-disc pl-5 space-y-0.5">
+            <ul aria-label="Pendientes" aria-live="polite" className="text-xs text-gray-500 list-disc pl-5 space-y-0.5">
               {validation.errors.map((m) => <li key={m}>{m}</li>)}
             </ul>
           )}
@@ -261,18 +265,22 @@ function EntryForm({ entityId, entityName }: { entityId: string; entityName: str
   );
 }
 
-function AmountInput({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+function AmountInput({ label, value, onChange, onInvalid }: { label: string; value: number; onChange: (n: number) => void; onInvalid: (invalid: boolean) => void }) {
+  const shown = value ? formatGs(value) : "";
   return (
     <input
       aria-label={label}
       inputMode="numeric"
       autoComplete="off"
-      value={value ? formatGs(value) : ""}
+      value={shown}
       placeholder="0"
       onChange={(e) => {
-        const n = parseGs(e.target.value.replace(/\D/g, ""));
+        // Never coerce: an invalid edit (comma, decimals, letters, bad grouping) keeps the previous value.
+        const n = parseGsInput(shown, e.target.value);
+        onInvalid(n === null);
         if (n !== null) onChange(n);
       }}
+      onBlur={() => onInvalid(false)}
       className={cn(cellCls, "text-right tabular-nums")}
     />
   );
@@ -281,16 +289,17 @@ function AmountInput({ label, value, onChange }: { label: string; value: number;
 /** Searchable account select: type to filter by code or name, ↑/↓ to move, Enter (or Tab on a filtered list) to pick, Esc to close. */
 function AccountCombobox({ label, index, accounts, value, onChange }: { label: string; index: number; accounts: Account[]; value: string; onChange: (id: string) => void }) {
   const [query, setQuery] = useState("");
+  const [typing, setTyping] = useState(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const listId = `accounts-${index}`;
   const selected = accounts.find((a) => a.id === value);
   const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = typing ? query.trim().toLowerCase() : "";
     return (q ? accounts.filter((a) => `${a.code} ${a.name}`.toLowerCase().includes(q)) : accounts).slice(0, 50);
-  }, [accounts, query]);
+  }, [accounts, query, typing]);
 
-  const pick = (a: Account) => { onChange(a.id); setQuery(""); setOpen(false); };
+  const pick = (a: Account) => { onChange(a.id); setQuery(""); setTyping(false); setOpen(false); };
 
   return (
     <div className="relative">
@@ -304,16 +313,17 @@ function AccountCombobox({ label, index, accounts, value, onChange }: { label: s
         data-account-input={index}
         autoComplete="off"
         placeholder="Buscar cuenta…"
-        value={open ? query : selected ? `${selected.code} — ${selected.name}` : ""}
+        value={typing ? query : selected ? `${selected.code} — ${selected.name}` : ""}
         onFocus={(e) => { setOpen(true); setActive(0); e.currentTarget.select(); }}
-        onBlur={() => setOpen(false)}
-        onChange={(e) => { setQuery(e.target.value); setActive(0); setOpen(true); }}
+        onBlur={() => { setOpen(false); setTyping(false); setQuery(""); }}
+        onMouseUp={(e) => e.preventDefault() /* keep the select-all from onFocus */}
+        onChange={(e) => { setQuery(e.target.value); setTyping(true); setActive(0); setOpen(true); }}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") { e.preventDefault(); setOpen(true); setActive((a) => Math.min(a + 1, matches.length - 1)); }
           else if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
           else if (e.key === "Enter" && open && matches[active] && !(e.ctrlKey || e.metaKey)) { e.preventDefault(); e.stopPropagation(); pick(matches[active]); }
           else if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); }
-          else if (e.key === "Tab" && open && query.trim() && matches[active]) pick(matches[active]);
+          else if (e.key === "Tab" && open && typing && query.trim() && matches[active]) pick(matches[active]);
         }}
         className={cellCls}
       />

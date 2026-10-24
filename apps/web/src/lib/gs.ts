@@ -12,3 +12,26 @@ export function parseGs(s: string): number | null {
 export function formatGs(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
+
+/** True when `next` is `prev` with exactly one character inserted or deleted (typing / Backspace, not a paste). */
+function isSingleEdit(prev: string, next: string): boolean {
+  if (Math.abs(prev.length - next.length) !== 1) return false;
+  const [short, long] = prev.length < next.length ? [prev, next] : [next, prev];
+  let p = 0;
+  while (p < short.length && short[p] === long[p]) p++;
+  return short.slice(p) === long.slice(p + 1);
+}
+
+/**
+ * Value of an amount cell after an edit. `prev` is the text shown before, `next` the text after.
+ * Typing one character while the cell shows `1.234` yields `1.2345`, which is not valid grouping, so a
+ * single-character edit may drop the dots and keep the digits; anything else (a paste such as `1.234,50`
+ * or `1.5`) must be a valid amount on its own. Returns null when the edit must be rejected, never a coerced number.
+ */
+export function parseGsInput(prev: string, next: string): number | null {
+  const strict = parseGs(next);
+  if (strict !== null) return strict;
+  if (!isSingleEdit(prev, next) || !/^[\d.]+$/.test(next)) return null;
+  const n = Number(next.replace(/\./g, ""));
+  return Number.isSafeInteger(n) ? n : null;
+}

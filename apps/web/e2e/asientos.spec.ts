@@ -102,8 +102,30 @@ test.describe("asientos", () => {
     await form.getByLabel("Descripción", { exact: true }).press("Control+Enter");
     await expect(form.getByLabel("Descripción línea 3")).toBeVisible();
     await expect(form.getByRole("combobox", { name: "Cuenta línea 3" })).toBeFocused();
-    // Tab from the last cell of the last line adds another.
+    // Tab from the last cell of a filled last line adds another.
+    await form.getByLabel("Debe línea 3").fill("10");
     await form.getByLabel("Descripción línea 3").press("Tab");
     await expect(form.getByLabel("Descripción línea 4")).toBeVisible();
+  });
+
+  test("keyboard-only user can reach the save button by Tab from a blank last line", async ({ page }) => {
+    await page.goto("/asientos/nuevo");
+    const form = page.getByRole("form", { name: "Asiento manual" });
+    const last = form.getByLabel("Descripción línea 2");
+    await last.focus();
+    await page.keyboard.press("Tab");
+    await expect(form.getByLabel("Descripción línea 3")).toHaveCount(0);
+    expect(await page.evaluate(() => document.activeElement?.tagName)).toBe("BUTTON");
+  });
+
+  test("a pasted decimal amount is rejected, not multiplied", async ({ page }) => {
+    await page.goto("/asientos/nuevo");
+    const form = page.getByRole("form", { name: "Asiento manual" });
+    const debe = form.getByLabel("Debe línea 1");
+    await debe.fill("1.234,50");
+    await expect(debe).toHaveValue("");
+    await expect(form.getByText("Solo importes enteros en guaraníes")).toBeVisible();
+    await debe.fill("1.234.567");
+    await expect(debe).toHaveValue("1.234.567");
   });
 });

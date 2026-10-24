@@ -4,18 +4,11 @@ import { createTestDb, type TestDb } from "../../../../../packages/ledger/db/tes
 
 type DbModule = typeof import("@ledger/db/index");
 type AppRouter = typeof import("@/trpc").appRouter;
-type Actions = typeof import("@/lib/actions");
-
-// Server actions read the user from the Next request; here it comes from the test.
-const session = vi.hoisted(() => ({ userId: "" }));
-vi.mock("@/lib/session", () => ({ requireUser: async () => ({ userId: session.userId }) }));
-vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
 describe.skipIf(!process.env.TEST_ADMIN_URL)("idempotency keys (real Postgres)", () => {
   let t: TestDb;
   let db: DbModule;
   let appRouter: AppRouter;
-  let actions: Actions;
   let u1: string, u2: string, e1: string, p1: string, cash: string, sales: string;
   const prevUrl = process.env.DATABASE_URL;
   const caller = (userId: string, idempotencyKey?: string) => appRouter.createCaller({ userId, requestId: "t", idempotencyKey });
@@ -44,7 +37,6 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("idempotency keys (real Postgres)",
     vi.resetModules();
     db = await import("@ledger/db/index");
     appRouter = (await import("@/trpc")).appRouter;
-    actions = await import("@/lib/actions");
   }, 120_000);
 
   afterAll(async () => {
@@ -116,17 +108,17 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("idempotency keys (real Postgres)",
       .rejects.toThrow(/row-level security/);
   });
 
-  it("server action createAsiento is idempotent", async () => {
-    session.userId = u1;
+  it("runIdempotent replays the same key, rejects another body and runs once under concurrency", async () => {
+    const { runIdempotent, requestHash, IdempotencyConflictError } = await import("@ledger/db/idempotency");
     const key = crypto.randomUUID();
-    const input = { entityId: e1, periodId: p1, date: "2026-10-01", descripcion: "IDEM-ACTION", lineas: entry("x").lineas.map((l) => ({ ...l, description: "" })) };
-    const count = async () => Number((await t.owner`select count(*) n from journal_entries where description = 'IDEM-ACTION'`)[0].n);
-    const [a, b] = await Promise.all([actions.createAsiento(input, key), actions.createAsiento(input, key)]);
-    expect(a.success).toBe(true);
+    let runs = 0;
+    const call = (body: unknown) => db.withTenant(u1, (tx) =>
+      runIdempotent(tx, { userId: u1, endpoint: "test.helper", key, requestHash: requestHash("test.helper", body), run: async () => ({ n: ++runs }) }));
+    const [a, b] = await Promise.all([call({ x: 1 }), call({ x: 1 })]);
+    expect(a).toEqual({ n: 1 });
     expect(b).toEqual(a);
-    expect(await count()).toBe(1);
-    expect(await actions.createAsiento({ ...input, descripcion: "OTRO" }, key)).toMatchObject({ success: false, message: "Idempotency-Key reutilizada con otro cuerpo" });
-    expect(await actions.createAsiento(input, "nope")).toMatchObject({ success: false });
-    expect(await count()).toBe(1);
+    expect(await call({ x: 1 })).toEqual(a);
+    await expect(call({ x: 2 })).rejects.toBeInstanceOf(IdempotencyConflictError);
+    expect(runs).toBe(1);
   });
 });
