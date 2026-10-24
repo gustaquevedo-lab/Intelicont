@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<rLoteDE><rDE xmlns="http://ekuatia.set.gov.py/sifen/xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://ekuatia.set.gov.py/sifen/xsd siRecepDE_v150.xsd">
+    <dVerFor>150</dVerFor>
+    <DE Id="01800140664024004004999422026080911264669314">
+        <dDVId>4</dDVId>
+        <dFecFirma>2026-08-09T13:41:41</dFecFirma>
+        <dSisFact>1</dSisFact>
+        <gOpeDE>
+            <iTipEmi>1</iTipEmi>
+            <dDesTipEmi>Normal</dDesTipEmi>
+            <dCodSeg>126466931</dCodSeg>
+        </gOpeDE>
+        <gTimb>
+            <iTiDE>1</iTiDE>
+            <dDesTiDE>Factura electrónica</dDesTiDE>
+            <dNumTim>16284685</dNumTim>
+            <dEst>024</dEst>
+            <dPunExp>004</dPunExp>
+            <dNumDoc>0049994</dNumDoc>
+            <dFeIniT>2023-03-16</dFeIniT>
+        </gTimb>
+        <gDatGralOpe>
+            <dFeEmiDE>2026-08-09T12:22:07</dFeEmiDE>
+            <gOpeCom>
+                <iTipTra>1</iTipTra>
+                <dDesTipTra>Venta de mercadería</dDesTipTra>
+                <iTImp>1</iTImp>
+                <dDesTImp>IVA</dDesTImp>
+                <cMoneOpe>PYG</cMoneOpe>
+                <dDesMoneOpe>Guarani</dDesMoneOpe>
+            </gOpeCom>
+            <gEmis>
+                <dRucEm>80014066</dRucEm>
+                <dDVEmi>4</dDVEmi>
+                <iTipCont>2</iTipCont>
+                <cTipReg>2</cTipReg>
+                <dNomEmi>SERVICIOS RAPIDOS DEL PARAGUAY S.A.</dNomEmi>
+                <dNomFanEmi>SERVICIOS RAPIDOS DEL PARAGUAY S.A.</dNomFanEmi>
+                <dDirEmi>AVDA MCAL LOPEZ Y 26 DE FEBRERO</dDirEmi>
+                <dNumCas>0</dNumCas>
+                <dCompDir1>N/A</dCompDir1>
+                <dCompDir2>N/A</dCompDir2>
+                <cDepEmi>12</cDepEmi>
+                <dDesDepEmi>CENTRAL</dDesDepEmi>
+                <cDisEmi>164</cDisEmi>
+                <dDesDisEmi>SAN LORENZO</dDesDisEmi>
+                <cCiuEmi>6010</cCiuEmi>
+                <dDesCiuEmi>SAN LORENZO</dDesCiuEmi>
+                <dTelEmi>0974 200352</dTelEmi>
+                <dEmailE>fesrpa@mcd.com.py</dEmailE>
+                <dDenSuc>PINEDO</dDenSuc>
+                <gActEco>
+                    <cActEco>56101</cActEco>
+                    <dDesActEco>RESTAURANTES Y PARRILLADAS</dDesActEco>
+                </gActEco>
+            </gEmis>
+            <gDatRec>
+                <iNatRec>1</iNatRec>
+                <iTiOpe>2</iTiOpe>
+                <cPaisRec>PRY</cPaisRec>
+                <dDesPaisRe>Paraguay</dDesPaisRe>
+                <iTiContRec>1</iTiContRec>
+                <dRucRec>1234567</dRucRec>
+                <dDVRec>9</dDVRec>
+                <dNomRec>CLIENTE DE PRUEBA</dNomRec>
+                <dEmailRec>cliente@example.com</dEmailRec>
+            </gDatRec>
+        </gDatGralOpe>
+        <gDtipDE>
+            <gCamFE>
+                <iIndPres>1</iIndPres>
+                <dDesIndPres>Operación presencial</dDesIndPres>
+            </gCamFE>
+            <gCamCond>
+                <iCondOpe>1</iCondOpe>
+                <dDCondOpe>Contado</dDCondOpe>
+                <gPaConEIni>
+                    <iTiPago>99</iTiPago>
+                    <dDesTiPag>Otro</dDesTiPag>
+                    <dMonTiPag>58000.0000</dMonTiPag>
+                    <cMoneTiPag>PYG</cMoneTiPag>
+                    <dDMoneTiPag>Guarani</dDMoneTiPag>
+                </gPaConEIni>
+            </gCamCond>
+            <gCamItem>
+                <dCodInt>9450</dCodInt>
+                <dDesProSer>Recargo12Mil</dDesProSer>
+                <cUniMed>77</cUniMed>
+                <dDesUniMed>UNI</dDesUniMed>
+                <dCantProSer>1.0000</dCantProSer>
+                <gValorItem>
+                    <dPUniProSer>12000.00000000</dPUniProSer>
+                    <dTotBruOpeItem>12000.00000000</dTotBruOpeItem>
+                    <gValorRestaItem>
+                        <dTotOpeItem>12000.00000000</dTotOpeItem>
+                    </gValorRestaItem>
+                </gValorItem>
+                <gCamIVA>
+                    <iAfecIVA>1</iAfecIVA>
+                    <dDesAfecIVA>Gravado IVA</dDesAfecIVA>
+                    <dPropIVA>100.00000000</dPropIVA>
+                    <dTasaIVA>10</dTasaIVA>
+                    <dBasGravIVA>10909.09000000</dBasGravIVA>
+                    <dLiqIVAItem>1090.90900000</dLiqIVAItem>
+                    <dBasExe>0.00000000</dBasExe>
+                </gCamIVA>
+            </gCamItem>
+            <gCamItem>
+                <dCodInt>9827</dCodInt>
+                <dDesProSer>CboMcMeltDoMd</dDesProSer>
+                <cUniMed>77</cUniMed>
+                <dDesUniMed>UNI</dDesUniMed>
+                <dCantProSer>1.0000</dCantProSer>
+                <gValorItem>
+                    <dPUniProSer>46000.00000000</dPUniProSer>
+                    <dTotBruOpeItem>46000.00000000</dTotBruOpeItem>
+                    <gValorRestaItem>
+                        <dTotOpeItem>46000.00000000</dTotOpeItem>
+                    </gValorRestaItem>
+                </gValorItem>
+                <gCamIVA>
+                    <iAfecIVA>1</iAfecIVA>
+                    <dDesAfecIVA>Gravado IVA</dDesAfecIVA>
+                    <dPropIVA>100.00000000</dPropIVA>
+                    <dTasaIVA>10</dTasaIVA>
+                    <dBasGravIVA>41818.18000000</dBasGravIVA>
+                    <dLiqIVAItem>4181.81800000</dLiqIVAItem>
+                    <dBasExe>0.00000000</dBasExe>
+                </gCamIVA>
+            </gCamItem>
+        </gDtipDE>
+        <gTotSub>
+            <dSubExe>0.00000000</dSubExe>
+            <dSub5>0.00000000</dSub5>
+            <dSub10>58000.00000000</dSub10>
+            <dTotOpe>58000.00000000</dTotOpe>
+            <dTotDesc>0.00000000</dTotDesc>
+            <dTotDescGlotem>0.00000000</dTotDescGlotem>
+            <dTotAntItem>0.00000000</dTotAntItem>
+            <dTotAnt>0.00000000</dTotAnt>
+            <dPorcDescTotal>0.00000000</dPorcDescTotal>
+            <dDescTotal>0.00000000</dDescTotal>
+            <dAnticipo>0.00000000</dAnticipo>
+            <dRedon>0.0000</dRedon>
+            <dTotGralOpe>58000.00000000</dTotGralOpe>
+            <dIVA5>0.00000000</dIVA5>
+            <dIVA10>5273.00000000</dIVA10>
+            <dTotIVA>5273.00000000</dTotIVA>
+            <dBaseGrav5>0.00000000</dBaseGrav5>
+            <dBaseGrav10>52727.00000000</dBaseGrav10>
+            <dTBasGraIVA>52727.00000000</dTBasGraIVA>
+        </gTotSub>
+    </DE>
+
+	<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><Reference URI="#01800140664024004004999422026080911264669314"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><DigestValue>DUMMY</DigestValue></Reference></SignedInfo><SignatureValue>DUMMY</SignatureValue><KeyInfo><X509Data><X509Certificate>DUMMY</X509Certificate></X509Data></KeyInfo></Signature>
+	<gCamFuFD>
+		<dCarQR>https://ekuatia.set.gov.py/consultas/qr?nVersion=150&amp;Id=DUMMY&amp;dFeEmiDE=DUMMY&amp;dRucRec=DUMMY&amp;dTotGralOpe=DUMMY&amp;dTotIVA=DUMMY&amp;cItems=DUMMY&amp;DigestValue=DUMMY&amp;IdCSC=DUMMY&amp;cHashQR=DUMMY</dCarQR>
+	</gCamFuFD>
+</rDE>
+	</rLoteDE>

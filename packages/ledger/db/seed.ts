@@ -1,5 +1,6 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { eq } from "drizzle-orm";
 
 import * as schema from "./schema";
 
@@ -12,7 +13,7 @@ async function main() {
 
   console.log("🌱 Iniciando seed de base de datos...");
 
-  const sql = neon(dbUrl);
+  const sql = postgres(dbUrl, { max: 1 });
   const db = drizzle(sql, { schema });
 
   // 1. Crear entidad de ejemplo
@@ -20,7 +21,7 @@ async function main() {
   const [entity] = await db
     .insert(schema.entities)
     .values({
-      ruc: "80012345-1",
+      ruc: "80012345-0",
       legalName: "Importadora del Este S.A.",
       tradeName: "ImportEste",
       taxRegimes: ["IVA_GRAL", "IRE_GRAL"],
@@ -124,8 +125,7 @@ async function main() {
       number: "001-2026",
       source: "manual",
       description: "Compra mercadería Factura 001-233",
-      status: "posted",
-      postedAt: new Date(),
+      status: "draft",
     })
     .returning();
 
@@ -133,28 +133,34 @@ async function main() {
     {
       entryId: entry.id,
       accountId: cuentaMercaderia.id,
-      debit: "10000000.0000",
-      credit: "0.0000",
+      debit: 10000000,
+      credit: 0,
       currencyCode: "PYG",
       description: "Compra mercadería gravada 10%",
     },
     {
       entryId: entry.id,
       accountId: cuentaIvaCredito.id,
-      debit: "1000000.0000",
-      credit: "0.0000",
+      debit: 1000000,
+      credit: 0,
       currencyCode: "PYG",
       description: "IVA 10% compra",
     },
     {
       entryId: entry.id,
       accountId: cuentaProveedores.id,
-      debit: "0.0000",
-      credit: "11000000.0000",
+      debit: 0,
+      credit: 11000000,
       currencyCode: "PYG",
       description: "Compra a crédito",
     },
   ]);
+
+  // The ledger trigger validates balance/period and only then allows posting.
+  await db
+    .update(schema.journalEntries)
+    .set({ status: "posted", postedAt: new Date() })
+    .where(eq(schema.journalEntries.id, entry.id));
 
   console.log(`   ✓ Asiento creado: ${entry.number}`);
 
@@ -163,6 +169,7 @@ async function main() {
   console.log(`   Cuentas: ${insertedAccounts.length}`);
   console.log(`   Período: ${period.year}/${period.month}`);
   console.log(`   Asientos: 1`);
+  await sql.end();
 }
 
 main().catch((err) => {

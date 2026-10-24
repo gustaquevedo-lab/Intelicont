@@ -1,465 +1,349 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  Calendar,
-  FileText,
-  Building2,
-  Save,
-  Loader2,
-} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, BookPlus, CheckCircle2, Loader2, Plus, Trash2, X } from "lucide-react";
+import { todayInAsuncionISO } from "@intelicont/ledger/tax-calendar";
+import { useAuthStore } from "@/lib/auth-store";
+import { useIdempotencyKey } from "@/lib/trpc-hooks";
+import { clampDateToPeriod, validateEntryForm } from "@/lib/entry-form";
+import { formatGs, parseGsInput } from "@/lib/gs";
+import { api } from "@/trpc/client";
 import { cn } from "@/lib/utils";
-import { createAsiento } from "@/lib/actions";
 
-interface Linea {
-  id: string;
-  cuenta: string;
-  cuentaNombre: string;
-  descripcion: string;
-  debito: string;
-  credito: string;
-}
+type Account = { id: string; code: string; name: string };
+type Line = { key: string; accountId: string; debit: number; credit: number; description: string };
 
-const CUENTAS_MOCK = [
-  { code: "1.1.01", name: "Caja" },
-  { code: "1.1.02", name: "Banco Galicia Cta. Cte." },
-  { code: "1.1.03", name: "Banco Itau Cta. Cte." },
-  { code: "1.1.05", name: "Cuentas a Cobrar Clientes" },
-  { code: "1.1.06", name: "IVA Crédito Fiscal" },
-  { code: "1.1.07", name: "IVA Crédito Fiscal 5%" },
-  { code: "1.2.01", name: "Mercaderías" },
-  { code: "1.2.02", name: "Rodado" },
-  { code: "1.2.03", name: "Mobiliario y Útiles" },
-  { code: "1.2.04", name: "Equipo de Computación" },
-  { code: "2.1.01", name: "Cuentas a Pagar Proveedores" },
-  { code: "2.1.02", name: "IVA Débito Fiscal" },
-  { code: "2.1.03", name: "IVA Débito Fiscal 5%" },
-  { code: "2.1.05", name: "Retenciones a Pagar" },
-  { code: "2.1.06", name: "IRE a Pagar" },
-  { code: "3.1.01", name: "Capital Social" },
-  { code: "3.1.02", name: "Reserva Legal" },
-  { code: "3.1.03", name: "Resultados Acumulados" },
-  { code: "3.1.04", name: "Resultado del Ejercicio" },
-  { code: "4.1.01", name: "Ventas de Mercaderías" },
-  { code: "4.1.02", name: "Prestación de Servicios" },
-  { code: "4.1.03", name: "Otros Ingresos" },
-  { code: "5.1.01", name: "Costo de Mercaderías Vendidas" },
-  { code: "5.1.02", name: "Sueldos y Salarios" },
-  { code: "5.1.03", name: "Seguridad Social" },
-  { code: "5.1.04", name: "Honorarios Profesionales" },
-  { code: "5.1.05", name: "Alquileres" },
-  { code: "5.1.06", name: "Servicios Públicos" },
-  { code: "5.1.07", name: "Depreciación de Rodado" },
-  { code: "5.1.08", name: "Depreciación de Equipo de Computación" },
-  { code: "5.1.09", name: "Gastos Financieros" },
-  { code: "5.1.10", name: "Otros Gastos" },
-];
+const labelCls = "block text-sm font-medium text-gray-300";
+const inputCls = "mt-1 w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50";
+const cellCls = "w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50";
 
-function uid() {
-  return Math.random().toString(36).slice(2, 9);
-}
-
-function formatGs(value: string) {
-  const num = parseFloat(value);
-  if (isNaN(num)) return "";
-  return num.toLocaleString("es-PY");
-}
+const newLine = (): Line => ({ key: crypto.randomUUID(), accountId: "", debit: 0, credit: 0, description: "" });
+const monthLabel = (p: { year: number; month: number }) => `${String(p.month).padStart(2, "0")}/${p.year}`;
 
 export default function NuevoAsientoPage() {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  const [fecha, setFecha] = useState(new Date().toISOString().split("T")[0]);
-  const [descripcion, setDescripcion] = useState("");
-  const [empresa, setEmpresa] = useState("");
-  const [lineas, setLineas] = useState<Linea[]>([
-    { id: uid(), cuenta: "", cuentaNombre: "", descripcion: "", debito: "", credito: "" },
-    { id: uid(), cuenta: "", cuentaNombre: "", descripcion: "", debito: "", credito: "" },
-  ]);
-  const [showSuggestions, setShowSuggestions] = useState<string | null>(null);
-
-  const totals = useMemo(() => {
-    let totalDebito = 0;
-    let totalCredito = 0;
-    lineas.forEach((l) => {
-      totalDebito += parseFloat(l.debito) || 0;
-      totalCredito += parseFloat(l.credito) || 0;
-    });
-    return { totalDebito, totalCredito, balanced: Math.abs(totalDebito - totalCredito) < 0.01 };
-  }, [lineas]);
-
-  const addLinea = () => {
-    setLineas([...lineas, { id: uid(), cuenta: "", cuentaNombre: "", descripcion: "", debito: "", credito: "" }]);
-  };
-
-  const removeLinea = (id: string) => {
-    if (lineas.length <= 2) return;
-    setLineas(lineas.filter((l) => l.id !== id));
-  };
-
-  const updateLinea = (id: string, field: keyof Linea, value: string) => {
-    setLineas(
-      lineas.map((l) => {
-        if (l.id !== id) return l;
-        const updated = { ...l, [field]: value };
-        if (field === "debito" && parseFloat(value) > 0) updated.credito = "";
-        if (field === "credito" && parseFloat(value) > 0) updated.debito = "";
-        return updated;
-      })
+  const entity = useAuthStore((s) => s.selectedEntity);
+  if (!entity) {
+    return (
+      <div className="p-12 text-center">
+        <BookPlus className="h-12 w-12 text-gray-600 mx-auto mb-3" />
+        <p className="text-gray-500 text-sm">Seleccioná una empresa para registrar un asiento</p>
+      </div>
     );
+  }
+  // Keyed by entity: switching company starts a clean form (and a new Idempotency-Key).
+  return <EntryForm key={entity.id} entityId={entity.id} entityName={entity.tradeName || entity.legalName} />;
+}
+
+function EntryForm({ entityId, entityName }: { entityId: string; entityName: string }) {
+  const utils = api.useUtils();
+  const accountsQuery = api.accounts.list.useQuery({ entityId });
+  const periodsQuery = api.fiscal.periods.useQuery({ entityId });
+  const accounts = useMemo<Account[]>(
+    () => (accountsQuery.data ?? []).filter((a) => a.allowsPosting).sort((a, b) => a.code.localeCompare(b.code, "es", { numeric: true })),
+    [accountsQuery.data],
+  );
+  const openPeriods = useMemo(() => (periodsQuery.data ?? []).filter((p) => p.status === "open"), [periodsQuery.data]);
+
+  const today = todayInAsuncionISO();
+  const [periodChoice, setPeriodChoice] = useState("");
+  const [dateChoice, setDateChoice] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [lines, setLines] = useState<Line[]>(() => [newLine(), newLine()]);
+  const [saved, setSaved] = useState<{ id: string; number: string } | null>(null);
+  const [errorShown, setErrorShown] = useState(true);
+  const [amountHint, setAmountHint] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusRow = useRef<number | null>(null);
+
+  // Default period: the open one of the current Asunción month, else the most recent open one (list is newest first).
+  const currentMonth = openPeriods.find((p) => `${p.year}-${String(p.month).padStart(2, "0")}` === today.slice(0, 7));
+  const period = openPeriods.find((p) => p.id === periodChoice) ?? currentMonth ?? openPeriods[0] ?? null;
+  const date = dateChoice ?? (period ? clampDateToPeriod(today, period) : today);
+
+  const idem = useIdempotencyKey();
+  const create = api["journal-entries"].create.useMutation({
+    trpc: idem.trpc,
+    onSuccess: async (r) => {
+      setSaved({ id: r.id, number: r.number });
+      idem.renew();
+      await Promise.all([utils["journal-entries"].list.invalidate(), utils["journal-entries"].count.invalidate()]);
+    },
+  });
+
+  const validation = validateEntryForm({
+    entityId,
+    period: period ? { id: period.id, year: period.year, month: period.month } : null,
+    date,
+    description,
+    lines,
+  });
+  const { totals } = validation;
+  const canSave = validation.ok && !create.isPending && !saved;
+  const dirty = description.trim() !== "" || lines.some((l) => l.accountId || l.debit || l.credit);
+
+  const setLine = (key: string, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  const addLine = () => {
+    focusRow.current = lines.length;
+    setLines((ls) => [...ls, newLine()]);
   };
+  const removeLine = (key: string) => setLines((ls) => (ls.length > 2 ? ls.filter((l) => l.key !== key) : ls));
+  useEffect(() => {
+    if (focusRow.current === null) return;
+    formRef.current?.querySelector<HTMLInputElement>(`[data-account-input="${focusRow.current}"]`)?.focus();
+    focusRow.current = null;
+  }, [lines.length]);
 
-  const selectCuenta = (lineaId: string, code: string, name: string) => {
-    setLineas(lineas.map((l) => (l.id === lineaId ? { ...l, cuenta: code, cuentaNombre: name } : l)));
-    setShowSuggestions(null);
-  };
-
-  const handleSugerenciaIA = () => {
-    setDescripcion("Compra mercadería con IVA 10%");
-    setLineas([
-      { id: uid(), cuenta: "1.2.01", cuentaNombre: "Mercaderías", descripcion: "Compra mercadería gravada 10%", debito: "10000000", credito: "" },
-      { id: uid(), cuenta: "1.1.06", cuentaNombre: "IVA Crédito Fiscal", descripcion: "IVA 10% compra", debito: "1000000", credito: "" },
-      { id: uid(), cuenta: "2.1.01", cuentaNombre: "Cuentas a Pagar Proveedores", descripcion: "Compra a crédito", debito: "", credito: "11000000" },
-    ]);
-  };
-
-  const handlePublicar = () => {
-    setFeedback(null);
-    startTransition(async () => {
-      const result = await createAsiento({
-        entityId: empresa,
-        periodId: "",
-        date: fecha,
-        descripcion,
-        lineas: lineas
-          .filter((l) => l.cuenta)
-          .map((l) => ({
-            accountId: l.cuenta,
-            debit: l.debito || "0",
-            credit: l.credito || "0",
-            currencyCode: "PYG",
-            description: l.descripcion,
-          })),
-      });
-
-      if (result.success) {
-        setFeedback({ type: "success", message: result.message });
-        setTimeout(() => router.push("/asientos"), 1500);
-      } else {
-        setFeedback({ type: "error", message: result.message });
-      }
+  const submit = () => {
+    if (!canSave || !period) return;
+    setErrorShown(true);
+    create.mutate({
+      entityId,
+      periodId: period.id,
+      date,
+      description: description.trim(),
+      lineas: lines
+        .filter((l) => l.accountId || l.debit || l.credit)
+        .map((l) => ({ accountId: l.accountId, debit: l.debit, credit: l.credit, currencyCode: "PYG", ...(l.description.trim() && { description: l.description.trim() }) })),
     });
   };
 
-  const isComplete = descripcion && empresa && totals.balanced && totals.totalDebito > 0;
+  const reset = () => {
+    setPeriodChoice("");
+    setDateChoice(null);
+    setDescription("");
+    setLines([newLine(), newLine()]);
+    setSaved(null);
+    create.reset();
+  };
+
+  const balanced = totals.diff === 0 && totals.debit > 0;
+  const loading = accountsQuery.isLoading || periodsQuery.isLoading;
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <a href="/asientos" className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-            <ArrowLeft className="h-5 w-5 text-zinc-400" />
-          </a>
-          <div>
-            <h1 className="text-xl lg:text-2xl font-semibold text-white">Nuevo Asiento</h1>
-            <p className="text-zinc-400 text-sm mt-0.5">Crear asiento contable con doble partida</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleSugerenciaIA}
-            className="flex items-center gap-2 px-3 py-2 bg-purple-600/10 border border-purple-500/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-600/20 transition-colors"
-          >
-            <Sparkles className="h-4 w-4" />
-            Sugerir con IA
-          </button>
-          <button
-            disabled={!isComplete || isPending}
-            onClick={handlePublicar}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              isComplete && !isPending
-                ? "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20"
-                : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-            )}
-          >
-            {isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {isPending ? "Guardando..." : "Publicar Asiento"}
-          </button>
-        </div>
+    <div className="p-4 lg:p-8 max-w-6xl mx-auto space-y-6">
+      <Link href="/asientos" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-white"><ArrowLeft className="h-4 w-4" />Asientos</Link>
+      <div>
+        <h1 className="text-xl lg:text-2xl font-semibold text-white">Nuevo asiento</h1>
+        <p className="text-gray-400 text-sm mt-0.5">Asiento manual de {entityName}. Una vez posteado no se modifica: se corrige con un contra-asiento.</p>
       </div>
 
-      {/* Feedback */}
-      {feedback && (
-        <div className={cn(
-          "flex items-center gap-2 p-4 rounded-xl border animate-in",
-          feedback.type === "success"
-            ? "bg-green-900/10 border-green-800/50 text-green-400"
-            : "bg-red-900/10 border-red-800/50 text-red-400"
-        )}>
-          {feedback.type === "success" ? <CheckCircle2 className="h-5 w-5 shrink-0" /> : <AlertCircle className="h-5 w-5 shrink-0" />}
-          <span className="text-sm">{feedback.message}</span>
-        </div>
-      )}
-
-      {/* Balance Indicator */}
-      <div className={cn(
-        "flex items-center gap-3 p-4 rounded-xl border transition-colors",
-        totals.balanced && totals.totalDebito > 0
-          ? "bg-green-900/10 border-green-800/50"
-          : "bg-zinc-900/50 border-zinc-800"
-      )}>
-        {totals.balanced && totals.totalDebito > 0 ? (
-          <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0" />
-        ) : (
-          <AlertCircle className="h-5 w-5 text-yellow-400 shrink-0" />
-        )}
-        <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-6">
-            <div>
-              <span className="text-zinc-400 text-xs uppercase tracking-wide">Total Débitos</span>
-              <p className="text-white font-semibold tabular-nums">₲ {formatGs(totals.totalDebito.toString())}</p>
+      {loading ? (
+        <div className="p-12 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-gray-500" /></div>
+      ) : !period ? (
+        <p role="alert" className="p-4 rounded-lg bg-yellow-900/20 border border-yellow-800 text-sm text-yellow-500">
+          Esta empresa no tiene períodos fiscales abiertos, no se pueden registrar asientos.
+        </p>
+      ) : (
+        <form
+          ref={formRef}
+          aria-label="Asiento manual"
+          className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 lg:p-6 space-y-5"
+          onSubmit={(e) => { e.preventDefault(); submit(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (!saved) addLine(); }
+            else if (e.key === "Enter" && e.target instanceof HTMLInputElement) e.preventDefault(); // Enter must not post an immutable entry by accident
+          }}
+        >
+          {saved && (
+            <div role="status" className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-green-900/20 border border-green-800 text-sm text-green-400">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Asiento <strong data-testid="entry-number">{saved.number}</strong> posteado</span>
+              <Link href={`/asientos/${saved.id}`} className="underline">Ver asiento</Link>
+              <button type="button" onClick={reset} className="underline">Nuevo asiento</button>
             </div>
-            <div>
-              <span className="text-zinc-400 text-xs uppercase tracking-wide">Total Créditos</span>
-              <p className="text-white font-semibold tabular-nums">₲ {formatGs(totals.totalCredito.toString())}</p>
+          )}
+          {create.error && errorShown && (
+            <div role="alert" className="flex items-start justify-between gap-3 p-3 rounded-lg bg-red-900/20 border border-red-800 text-sm text-red-400">
+              <div>
+                <p>No se pudo postear el asiento.</p>
+                <details className="mt-1 text-xs text-red-300">
+                  <summary className="cursor-pointer">Detalle técnico</summary>
+                  <p className="mt-1 break-words">{create.error.message}</p>
+                </details>
+              </div>
+              <button type="button" aria-label="Cerrar alerta" onClick={() => setErrorShown(false)}><X className="h-4 w-4" /></button>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "text-xs font-medium px-2 py-1 rounded-full",
-              totals.balanced && totals.totalDebito > 0
-                ? "bg-green-900/30 text-green-400"
-                : "bg-yellow-900/30 text-yellow-400"
-            )}>
-              {totals.balanced && totals.totalDebito > 0 ? "✓ Balanceado" : "⚠ Desbalanceado"}
-            </span>
-            {totals.totalDebito > 0 && !totals.balanced && (
-              <span className="text-xs text-yellow-400">
-                Diferencia: ₲ {formatGs(Math.abs(totals.totalDebito - totals.totalCredito).toString())}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+          )}
 
-      {/* Header Fields */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 mb-1.5">
-              <Calendar className="h-3.5 w-3.5 text-zinc-500" />
-              Fecha *
-            </label>
-            <input
-              type="date"
-              value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            />
-          </div>
-          <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 mb-1.5">
-              <Building2 className="h-3.5 w-3.5 text-zinc-500" />
-              Empresa *
-            </label>
-            <select
-              value={empresa}
-              onChange={(e) => setEmpresa(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            >
-              <option value="">Seleccionar empresa</option>
-              <option value="mock-1">Importadora del Este S.A.</option>
-              <option value="mock-2">Tecnología Asunción SRL</option>
-              <option value="mock-3">Distribuciones Ñandutí SA</option>
-              <option value="mock-4">Consultora Guaraní SRL</option>
-              <option value="mock-5">Frigorífico Central SA</option>
-            </select>
-          </div>
-          <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-300 mb-1.5">
-              <FileText className="h-3.5 w-3.5 text-zinc-500" />
-              Descripción *
-            </label>
-            <input
-              type="text"
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Ej: Compra mercadería Factura 001-233"
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-            />
-          </div>
-        </div>
-      </div>
+          <fieldset disabled={!!saved || create.isPending} className="space-y-5 min-w-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className={labelCls}>
+                Período
+                <select
+                  value={period.id}
+                  onChange={(e) => {
+                    const next = openPeriods.find((p) => p.id === e.target.value);
+                    setPeriodChoice(e.target.value);
+                    if (next) setDateChoice(clampDateToPeriod(date, next));
+                  }}
+                  className={inputCls}
+                >
+                  {openPeriods.map((p) => <option key={p.id} value={p.id}>{monthLabel(p)}</option>)}
+                </select>
+              </label>
+              <label className={labelCls}>
+                Fecha
+                <input type="date" value={date} onChange={(e) => setDateChoice(e.target.value)} className={inputCls} />
+              </label>
+              <label className={labelCls}>
+                Descripción
+                <input type="text" value={description} maxLength={500} onChange={(e) => setDescription(e.target.value)} placeholder="Ej.: Aporte de capital" className={inputCls} />
+              </label>
+            </div>
 
-      {/* Lines Table */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="text-left py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider w-10">#</th>
-                <th className="text-left py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider min-w-[220px]">Cuenta</th>
-                <th className="text-left py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider min-w-[180px]">Descripción</th>
-                <th className="text-right py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider w-40">Débito</th>
-                <th className="text-right py-3 px-4 text-zinc-500 text-xs font-medium uppercase tracking-wider w-40">Crédito</th>
-                <th className="w-12"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/50">
-              {lineas.map((linea, idx) => (
-                <tr key={linea.id} className="hover:bg-zinc-800/20 transition-colors group">
-                  <td className="py-2 px-4 text-zinc-600 font-mono text-xs">{idx + 1}</td>
-                  <td className="py-2 px-4">
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowSuggestions(showSuggestions === linea.id ? null : linea.id)}
-                        className={cn(
-                          "w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors",
-                          linea.cuenta
-                            ? "text-white bg-zinc-800/50 border border-zinc-700"
-                            : "text-zinc-500 bg-zinc-800/30 border border-zinc-700/50 hover:border-zinc-600"
-                        )}
-                      >
-                        {linea.cuenta ? (
-                          <span>
-                            <span className="text-blue-400 font-mono">{linea.cuenta}</span>{" "}
-                            <span className="text-zinc-400">{linea.cuentaNombre}</span>
-                          </span>
-                        ) : (
-                          "Seleccionar cuenta"
-                        )}
-                      </button>
-                      {showSuggestions === linea.id && (
-                        <>
-                          <div className="fixed inset-0 z-10" onClick={() => setShowSuggestions(null)} />
-                          <div className="absolute z-20 top-full left-0 mt-1 w-80 max-h-64 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl shadow-black/50">
-                            <div className="p-2 border-b border-zinc-800">
-                              <p className="text-zinc-400 text-xs">Plan de cuentas</p>
-                            </div>
-                            {CUENTAS_MOCK.map((c) => (
-                              <button
-                                key={c.code}
-                                onClick={() => selectCuenta(linea.id, c.code, c.name)}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-800 transition-colors"
-                              >
-                                <span className="text-blue-400 font-mono text-xs">{c.code}</span>{" "}
-                                <span className="text-zinc-300">{c.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-2 px-4">
-                    <input
-                      type="text"
-                      value={linea.descripcion}
-                      onChange={(e) => updateLinea(linea.id, "descripcion", e.target.value)}
-                      placeholder="Detalle de la línea"
-                      className="w-full px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                    />
-                  </td>
-                  <td className="py-2 px-4">
-                    <input
-                      type="text"
-                      value={linea.debito}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9.]/g, "");
-                        updateLinea(linea.id, "debito", val);
-                      }}
-                      placeholder="0"
-                      className="w-full text-right px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-green-500/50"
-                    />
-                  </td>
-                  <td className="py-2 px-4">
-                    <input
-                      type="text"
-                      value={linea.credito}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9.]/g, "");
-                        updateLinea(linea.id, "credito", val);
-                      }}
-                      placeholder="0"
-                      className="w-full text-right px-3 py-1.5 bg-zinc-800/30 border border-zinc-700/50 rounded-lg text-sm text-white font-mono tabular-nums placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                    />
-                  </td>
-                  <td className="py-2 px-2">
-                    <button
-                      onClick={() => removeLinea(linea.id)}
-                      disabled={lineas.length <= 2}
-                      className="p-1.5 hover:bg-red-900/20 hover:text-red-400 rounded-lg transition-colors disabled:opacity-20 disabled:cursor-not-allowed text-zinc-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
+            <div role="group" aria-label="Líneas del asiento" className="space-y-2">
+              <div className="hidden md:grid grid-cols-[minmax(0,2fr)_1fr_1fr_minmax(0,1.5fr)_2.25rem] gap-2 text-xs font-medium text-gray-400 px-0.5">
+                <span>Cuenta</span><span className="text-right">Debe</span><span className="text-right">Haber</span><span>Descripción de línea</span><span />
+              </div>
+              {lines.map((l, i) => (
+                <div key={l.key} data-row={i} className="grid grid-cols-2 md:grid-cols-[minmax(0,2fr)_1fr_1fr_minmax(0,1.5fr)_2.25rem] gap-2 items-start">
+                  <div className="col-span-2 md:col-span-1">
+                    <AccountCombobox label={`Cuenta línea ${i + 1}`} index={i} accounts={accounts} value={l.accountId} onChange={(id) => setLine(l.key, { accountId: id })} />
+                  </div>
+                  <AmountInput label={`Debe línea ${i + 1}`} value={l.debit} onInvalid={setAmountHint} onChange={(n) => setLine(l.key, { debit: n, ...(n > 0 && { credit: 0 }) })} />
+                  <AmountInput label={`Haber línea ${i + 1}`} value={l.credit} onInvalid={setAmountHint} onChange={(n) => setLine(l.key, { credit: n, ...(n > 0 && { debit: 0 }) })} />
+                  <input
+                    aria-label={`Descripción línea ${i + 1}`}
+                    value={l.description}
+                    onChange={(e) => setLine(l.key, { description: e.target.value })}
+                    onKeyDown={(e) => {
+                      // Only a filled last line grows the grid; a blank one lets Tab move on to the buttons (no keyboard trap).
+                      if (e.key === "Tab" && !e.shiftKey && i === lines.length - 1 && (l.accountId || l.debit || l.credit)) { e.preventDefault(); addLine(); }
+                    }}
+                    placeholder="Opcional"
+                    className={cn(cellCls, "col-span-2 md:col-span-1")}
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Eliminar línea ${i + 1}`}
+                    disabled={lines.length <= 2}
+                    onClick={() => removeLine(l.key)}
+                    className="p-2 text-gray-400 hover:text-red-400 disabled:opacity-30 disabled:hover:text-gray-400"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-zinc-700 bg-zinc-800/50">
-                <td colSpan={3} className="py-3 px-4 text-right text-zinc-400 font-medium">
-                  TOTALES
-                </td>
-                <td className="py-3 px-4 text-right">
-                  <span className={cn("font-mono font-bold text-lg tabular-nums", totals.balanced ? "text-green-400" : "text-white")}>
-                    ₲ {formatGs(totals.totalDebito.toString())}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-right">
-                  <span className={cn("font-mono font-bold text-lg tabular-nums", totals.balanced ? "text-green-400" : "text-white")}>
-                    ₲ {formatGs(totals.totalCredito.toString())}
-                  </span>
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+              <p aria-live="polite" className="text-xs text-yellow-500 min-h-4">{amountHint ? "Solo importes enteros en guaraníes" : ""}</p>
+              <button type="button" onClick={addLine} className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300">
+                <Plus className="h-4 w-4" />Agregar línea <span className="text-xs text-gray-500">(Ctrl+Enter)</span>
+              </button>
+            </div>
+          </fieldset>
 
-        <div className="p-3 border-t border-zinc-800">
-          <button
-            onClick={addLinea}
-            className="flex items-center gap-2 px-3 py-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg text-sm transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Agregar línea
-          </button>
-        </div>
-      </div>
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-800">
+            <dl className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm" aria-label="Totales">
+              <div className="flex gap-2"><dt className="text-gray-400">Σ Debe</dt><dd data-testid="total-debit" className="text-white tabular-nums">₲ {formatGs(totals.debit)}</dd></div>
+              <div className="flex gap-2"><dt className="text-gray-400">Σ Haber</dt><dd data-testid="total-credit" className="text-white tabular-nums">₲ {formatGs(totals.credit)}</dd></div>
+              <div className="flex gap-2"><dt className="text-gray-400">Diferencia</dt><dd data-testid="difference" className="text-white tabular-nums">₲ {formatGs(Math.abs(totals.diff))}</dd></div>
+              <span
+                data-testid="balance-chip"
+                aria-live="polite"
+                className={cn("px-2.5 py-1 rounded-full text-xs font-medium", balanced ? "bg-green-900/30 text-green-400" : totals.diff !== 0 ? "bg-red-900/30 text-red-400" : "bg-gray-800 text-gray-400")}
+              >
+                {balanced ? "Balanceado" : totals.diff !== 0 ? `Descuadrado por ₲ ${formatGs(Math.abs(totals.diff))}` : "Sin importes"}
+              </span>
+            </dl>
+            <button
+              type="submit"
+              disabled={!canSave}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium"
+            >
+              {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Guardar y postear
+            </button>
+          </div>
+          {dirty && !validation.ok && !saved && (
+            <ul aria-label="Pendientes" aria-live="polite" className="text-xs text-gray-500 list-disc pl-5 space-y-0.5">
+              {validation.errors.map((m) => <li key={m}>{m}</li>)}
+            </ul>
+          )}
+        </form>
+      )}
+    </div>
+  );
+}
 
-      {/* Validation Messages */}
-      {!empresa && (
-        <div className="flex items-center gap-2 text-sm text-yellow-400 bg-yellow-900/10 border border-yellow-800/30 rounded-lg p-3">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          Selecciona una empresa para continuar
-        </div>
-      )}
-      {!descripcion && (
-        <div className="flex items-center gap-2 text-sm text-yellow-400 bg-yellow-900/10 border border-yellow-800/30 rounded-lg p-3">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          Agrega una descripción al asiento
-        </div>
-      )}
-      {totals.totalDebito > 0 && !totals.balanced && (
-        <div className="flex items-center gap-2 text-sm text-red-400 bg-red-900/10 border border-red-800/30 rounded-lg p-3">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          El asiento está desbalanceado. Diferencia: ₲ {formatGs(Math.abs(totals.totalDebito - totals.totalCredito).toString())}
-        </div>
+function AmountInput({ label, value, onChange, onInvalid }: { label: string; value: number; onChange: (n: number) => void; onInvalid: (invalid: boolean) => void }) {
+  const shown = value ? formatGs(value) : "";
+  return (
+    <input
+      aria-label={label}
+      inputMode="numeric"
+      autoComplete="off"
+      value={shown}
+      placeholder="0"
+      onChange={(e) => {
+        // Never coerce: an invalid edit (comma, decimals, letters, bad grouping) keeps the previous value.
+        const n = parseGsInput(shown, e.target.value);
+        onInvalid(n === null);
+        if (n !== null) onChange(n);
+      }}
+      onBlur={() => onInvalid(false)}
+      className={cn(cellCls, "text-right tabular-nums")}
+    />
+  );
+}
+
+/** Searchable account select: type to filter by code or name, ↑/↓ to move, Enter (or Tab on a filtered list) to pick, Esc to close. */
+function AccountCombobox({ label, index, accounts, value, onChange }: { label: string; index: number; accounts: Account[]; value: string; onChange: (id: string) => void }) {
+  const [query, setQuery] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const listId = `accounts-${index}`;
+  const selected = accounts.find((a) => a.id === value);
+  const matches = useMemo(() => {
+    const q = typing ? query.trim().toLowerCase() : "";
+    return (q ? accounts.filter((a) => `${a.code} ${a.name}`.toLowerCase().includes(q)) : accounts).slice(0, 50);
+  }, [accounts, query, typing]);
+
+  const pick = (a: Account) => { onChange(a.id); setQuery(""); setTyping(false); setOpen(false); };
+
+  return (
+    <div className="relative">
+      <input
+        role="combobox"
+        aria-label={label}
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={open && matches[active] ? `${listId}-${active}` : undefined}
+        data-account-input={index}
+        autoComplete="off"
+        placeholder="Buscar cuenta…"
+        value={typing ? query : selected ? `${selected.code} — ${selected.name}` : ""}
+        onFocus={(e) => { setOpen(true); setActive(0); e.currentTarget.select(); }}
+        onBlur={() => { setOpen(false); setTyping(false); setQuery(""); }}
+        onMouseUp={(e) => e.preventDefault() /* keep the select-all from onFocus */}
+        onChange={(e) => { setQuery(e.target.value); setTyping(true); setActive(0); setOpen(true); }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown") { e.preventDefault(); setOpen(true); setActive((a) => Math.min(a + 1, matches.length - 1)); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
+          else if (e.key === "Enter" && open && matches[active] && !(e.ctrlKey || e.metaKey)) { e.preventDefault(); e.stopPropagation(); pick(matches[active]); }
+          else if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); }
+          else if (e.key === "Tab" && open && typing && query.trim() && matches[active]) pick(matches[active]);
+        }}
+        className={cellCls}
+      />
+      {open && (
+        <ul id={listId} role="listbox" aria-label={`Cuentas línea ${index + 1}`} className="absolute z-20 mt-1 max-h-60 w-full min-w-64 overflow-auto rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl">
+          {matches.length === 0 && <li className="px-3 py-2 text-sm text-gray-500">Sin resultados</li>}
+          {matches.map((a, i) => (
+            <li
+              key={a.id}
+              id={`${listId}-${i}`}
+              role="option"
+              aria-selected={i === active}
+              onMouseDown={(e) => { e.preventDefault(); pick(a); }}
+              onMouseEnter={() => setActive(i)}
+              className={cn("px-3 py-1.5 text-sm cursor-pointer", i === active ? "bg-blue-600 text-white" : "text-gray-200")}
+            >
+              {a.code} — {a.name}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

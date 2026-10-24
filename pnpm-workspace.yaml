@@ -2,3 +2,11 @@ packages:
 - 'apps/*'
 - 'packages/*'
 - 'backlog/*'
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - unrs-resolver

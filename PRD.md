@@ -31,7 +31,7 @@ Estudios contables PY usan sistemas legacy (Expert360 líder) con UX 2010s, sin 
 3. Carga manual con motor de retenciones.
 4. Libro IVA, Diario, Mayor.
 5. Formularios 104/106 y 500v3.
-6. Hechauka mensual.
+6. Registro de Comprobantes 955 mensual (reemplazo oficial de Hechauka).
 7. Dashboard con obligaciones y vencimientos.
 
 ## No-MVP

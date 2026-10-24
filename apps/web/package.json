@@ -1,31 +1,53 @@
 {
-  "name": "intelicont-web",
+  "name": "@intelicont/web",
   "private": true,
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "cd ../.. && eslint apps/web packages/ledger packages/core",
+    "test": "vitest run",
+    "test:db": "TEST_DB_SLOW=1 node --env-file-if-exists=.env.test.local ./node_modules/vitest/vitest.mjs run src/__tests__/db",
+    "test:cov": "node --env-file-if-exists=.env.test.local ./node_modules/vitest/vitest.mjs run --coverage",
+    "test:watch": "vitest",
+    "test:e2e": "node --env-file-if-exists=.env.test.local ./node_modules/@playwright/test/cli.js test",
+    "auth:create-user": "tsx --env-file-if-exists=.env.local scripts/create-admin.ts"
   },
   "dependencies": {
-    "next": "^15.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "lucide-react": "^0.460.0",
+    "@intelicont/core": "workspace:*",
+    "@intelicont/ledger": "workspace:*",
+    "@tanstack/react-query": "^5.100.9",
+    "@trpc/client": "^11.17.0",
+    "@trpc/react-query": "^11.17.0",
+    "@trpc/server": "^11.17.0",
+    "better-auth": "^1.7.12",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.4"
+    "lucide-react": "^0.460.0",
+    "next": "^15.0.0",
+    "pino": "^10.4.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^3.8.1",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^4.6.7",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.6.0",
-    "tailwindcss": "^3.4.14",
-    "postcss": "^8.4.49",
+    "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "4.1.5",
     "autoprefixer": "^10.4.20",
-    "eslint": "^9.0.0",
-    "eslint-config-next": "15.0.3"
+    "eslint-config-next": "15.0.3",
+    "jsdom": "^29.1.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.5"
   }
 }

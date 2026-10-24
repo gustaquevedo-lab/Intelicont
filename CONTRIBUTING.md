@@ -16,5 +16,5 @@ Guía rápida de formato de commits
 - docs: Actualización de documentación
 
 Ambiente de desarrollo
-- Requisitos: Node.js, PNPM, acceso a GitHub, acceso a Supabase para desarrollo (free tier).
-- Pasos iniciales: clonar, instalar dependencias, configurar envs locales, correr dev.
+- Requisitos: Node.js ≥ 22, pnpm 12.14+, acceso a GitHub, acceso a PostgreSQL 16 de desarrollo (dev-server vía túnel SSH).
+- Pasos iniciales: clonar, instalar dependencias, configurar envs locales, correr dev (ver docs/STARTUP.md).
