@@ -219,6 +219,23 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("post/reverse use cases and audit (
     expect(Number(a[0].fx_rate)).toBe(7300);
   });
 
+  it("a draft entry cannot be reversed", async () => {
+    const [draft] = await t.owner`insert into journal_entries (entity_id, period_id, date, number, source, status)
+      values (${e1}, ${p1}, '2026-10-01', 'DRAFT-1', 'manual', 'draft') returning id`;
+    expect(await as(user, () => uc.reverseEntry(draft.id, "borrador"))).toEqual({ ok: false, error: "Sólo se pueden revertir asientos posteados" });
+  });
+
+  it("reversing an entry that has no number falls back to its id", async () => {
+    const [e] = await t.owner`insert into journal_entries (entity_id, period_id, date, source, status)
+      values (${e1}, ${p1}, '2026-10-01', 'manual', 'draft') returning id`;
+    await t.owner`insert into journal_lines (entry_id, account_id, debit, credit, currency_code)
+      values (${e.id}, ${cash}, 80, 0, 'PYG'), (${e.id}, ${sales}, 0, 80, 'PYG')`;
+    await t.owner`update journal_entries set status = 'posted' where id = ${e.id}`;
+    const res = await as(user, () => uc.reverseEntry(e.id, "sin numero"));
+    if (!res.ok) throw new Error(res.error);
+    expect(res.value.number).toBe(`REV-${e.id}`);
+  });
+
   it("a reversal entry cannot be reversed", async () => {
     const orig = await post("REV-OF-REV", 90);
     if (!orig.ok) throw new Error(orig.error);

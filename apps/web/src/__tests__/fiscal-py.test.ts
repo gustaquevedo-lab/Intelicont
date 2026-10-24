@@ -9,6 +9,8 @@ import {
   calculateTaxFromBase,
   calculateIre,
   getVencimientoIVA,
+  getIvaConditionDescription,
+  getRegimenDescription,
   IVA_RATES,
   IRE_RATES,
   IRP_RETENTION_RATES,
@@ -333,5 +335,55 @@ describe("Constants", () => {
     expect(IRP_RETENTION_RATES.honorarios).toBe(0.10);
     expect(IRP_RETENTION_RATES.alquileres).toBe(0.10);
     expect(IRP_RETENTION_RATES.dividendos).toBe(0.06);
+  });
+});
+
+describe("validateInvoiceData - error propagation", () => {
+  const base = { timbrado: "12345678", establecimiento: "001", puntoEmision: "001", numeroDocumento: "234", fechaEmision: "2026-05-01" };
+
+  it("prefixes timbrado errors", () => {
+    const r = validateInvoiceData({ ...base, timbrado: "123" });
+    expect(r.valid).toBe(false);
+    expect(r.errors.some((e) => e.startsWith("Timbrado:"))).toBe(true);
+  });
+
+  it("rejects an unparseable issue date", () => {
+    const r = validateInvoiceData({ ...base, fechaEmision: "not-a-date" });
+    expect(r.valid).toBe(false);
+    expect(r.errors).toContain("La fecha de emisión no es válida");
+  });
+
+  it("warns about dates before 2022", () => {
+    const r = validateInvoiceData({ ...base, fechaEmision: "2020-01-01" });
+    expect(r.valid).toBe(true);
+    expect(r.warnings.some((w) => w.includes("anterior a 2022"))).toBe(true);
+  });
+
+  it("prefixes CDC errors", () => {
+    const r = validateInvoiceData({ ...base, cdc: "123" });
+    expect(r.valid).toBe(false);
+    expect(r.errors.some((e) => e.startsWith("CDC:"))).toBe(true);
+  });
+});
+
+describe("descriptions", () => {
+  it("describes known IVA conditions and echoes unknown ones", () => {
+    expect(getIvaConditionDescription("exento")).toContain("Exento de IVA");
+    expect(getIvaConditionDescription("otro")).toBe("otro");
+  });
+
+  it("describes known regimes and echoes unknown ones", () => {
+    expect(getRegimenDescription("resimple")).toContain("ReSimple");
+    expect(getRegimenDescription("otro")).toBe("otro");
+  });
+});
+
+describe("getVencimientoIVA - weekends roll to Monday", () => {
+  it("moves a Sunday due date (2026-05-10) to Monday the 11th", () => {
+    expect(getVencimientoIVA(2026, 4, "80012345-0").getDate()).toBe(11);
+  });
+
+  it("moves a Saturday due date (2026-05-16) to Monday the 18th", () => {
+    expect(getVencimientoIVA(2026, 4, "80012345-6").getDate()).toBe(18);
   });
 });

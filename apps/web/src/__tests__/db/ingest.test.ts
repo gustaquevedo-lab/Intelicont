@@ -180,6 +180,19 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("ingestDocument (real Postgres)", (
     expect(doc.metadata).toEqual({ sifen: parsed.value });
   });
 
+  it("an issued document books the receiver as customer and is marked uploaded", async () => {
+    // e3 is the fixture's issuer, so the addressee check passes with no warning.
+    const e3 = (await t.owner`insert into entities (ruc, legal_name) values ('80014066-4', 'Emisor') returning id`)[0].id as string;
+    await t.owner`insert into memberships (user_id, entity_id, role) values (${user}, ${e3}, 'admin')`;
+    const res = await as(user, () => uc.ingestDocument(e3, "issued", variant(20)));
+    if (!res.ok) throw new Error(res.error);
+    expect(res.value.warnings.filter((w) => /otro RUC/.test(w))).toEqual([]);
+    const [doc] = await t.owner`select direction, sifen_status from tax_documents where id = ${res.value.documentId}`;
+    expect(doc).toEqual({ direction: "issued", sifen_status: "uploaded" });
+    const [partner] = await t.owner`select kind, ruc from partners where entity_id = ${e3}`;
+    expect(partner).toEqual({ kind: "customer", ruc: "1234567" });
+  });
+
   it("documents ingested by another entity are not visible", async () => {
     const xml = variant(14);
     const mine = await ingest(xml);
