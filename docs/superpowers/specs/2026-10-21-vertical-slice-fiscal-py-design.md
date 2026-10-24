@@ -253,3 +253,15 @@ paralelo.
 - `intelicont-pg` en `dev-server` (puerto 5440, solo local) es el entorno de desarrollo.
 - Better Auth con contraseña y TOTP es aceptable como reemplazo de Supabase Auth.
 - El seed (`Importadora del Este S.A.`) se conserva solo para desarrollo y pruebas.
+
+## 12. Cambios durante la implementación
+
+Durante la ejecución del plan SDD en la rama `feat/vertical-slice`, se tomaron las siguientes decisiones y ajustes de diseño:
+1. **Numeración de Migraciones**: La migración de vistas y calendario se dividió en `0006_calendar_views.sql` (vistas SQL `v_diario`, `v_mayor`, `v_libro_iva` con `security_invoker`) y `0007_tax_calendar.sql` para evitar mutar migraciones previamente aplicadas.
+2. **Patrón de Procedimientos y Transacciones (`authedProcedure`)**: Para llamadas que involucran inferencia local con Ollama (`suggestEntry`), se introdujo `authedProcedure` que valida la sesión y 2FA en una lectura corta fuera de la transacción DB principal, evitando retener conexiones de base de datos durante los 15-78 segundos que toma el modelo en CPU.
+3. **Manejo de Errores e Idempotencia (`errorFormatter`)**: El formateador de tRPC enmascara cualquier `INTERNAL_SERVER_ERROR` devolviendo un `requestId` único sin revelar trazas ni parámetros SQL al cliente; los errores de validación de Zod se registran únicamente con sus paths y códigos de error.
+4. **Adición de Tareas 17b y 23c**:
+   - **Task 17b**: Interfaz visual de asientos reales con reversión asistida por diálogo y visualización de la bitácora de auditoría.
+   - **Task 23c**: Reconstrucción de la pantalla de creación manual de asientos (`/asientos/nuevo`) sobre cuentas contables y períodos reales, validando estrictamente en el router que la fecha pertenezca al mes del período activo.
+5. **Registro de Comprobantes**: Soporte de códigos especiales de la Tabla 4 (`106`, `107`, `112`) que admiten timbrados y numeraciones simplificadas.
+

@@ -1,58 +1,153 @@
-# Modelo de datos — InteliCont
+# Modelo de Datos — InteliCont
 
-snake_case en DB. UUIDs. timestamptz. Money: numeric(20,4) + currency_code char(3).
+Convención: Nombres en `snake_case` en PostgreSQL, identificadores UUID (`defaultRandom()`), marcas de tiempo `timestamptz`.
 
-## Núcleo
+## 💰 Manejo de Dinero y Moneda
+- **Dinero**: `bigint` en base de datos representando la unidad mínima de la moneda (para PYG sin decimales: ₲ 1.000 = `1000`; para monedas con decimales: centavos). En TypeScript se procesa como enteros seguros (`assertMoney`).
+- **Tasas de Cambio / Coeficientes**: `numeric(12, 4)` exclusivamente para tipos de cambio (`fx_rate`).
 
-### entities
-id, group_id?, ruc unique, legal_name, trade_name, tax_regimes text[] (IVA_GRAL, IRE_GRAL, IRE_SIMPLE, IRE_RESIMPLE, IRP, INR, IDU, EXPORTADOR), base_currency default PYG, created_at, updated_at.
+---
 
-### fiscal_periods
-id, entity_id, year, month, status (open, closing, closed, reopened), closed_at, closed_by.
+## 🏛️ Núcleo Contable
 
-### chart_of_accounts
-id, entity_id, kind (fiscal_py, niif, eef, mgmt), name.
+### `entities`
+Empresas u organizaciones gestionadas en el sistema.
+- `id` (uuid, PK)
+- `ruc` (varchar(20), unique, validado con Módulo 11)
+- `legal_name` (text, not null)
+- `trade_name` (text)
+- `tax_regimes` (text[])
+- `base_currency` (varchar(3), default 'PYG')
+- `status` (entity_status: active, inactive, closed)
+- `created_at`, `updated_at` (timestamptz)
 
-### accounts
-id, coa_id, code, name, nature (asset/liability/equity/income/expense), parent_id?, allows_posting, cost_center_required, tax_mappings jsonb, eef_line_id?.
+### `fiscal_periods`
+Períodos contables y fiscales mensuales.
+- `id` (uuid, PK), `entity_id` (uuid, FK)
+- `year` (int), `month` (int)
+- `status` (fiscal_period_status: open, closing, closed, reopened)
+- `closed_at`, `closed_by`
 
-### journal_entries (INMUTABLE posteado)
-id, entity_id, period_id, date, number, source (manual/sales/purchase/payment/collection/bank/depreciation/fx_adjustment/payroll/import), source_ref, description, status (draft/posted/reversed), posted_at, posted_by, reversal_of?, version_of?, metadata jsonb.
+### `chart_of_accounts` & `accounts`
+Plan de cuentas contables.
+- `accounts`: `id` (uuid, PK), `entity_id` (uuid, FK), `code` (varchar), `name` (text), `nature` (account_nature: asset, liability, equity, income, expense), `parent_id` (uuid, FK opcional), `allows_posting` (boolean), `cost_center_required` (boolean), `tax_mappings` (jsonb).
 
-### journal_lines
-id, entry_id, account_id, debit, credit, currency_code, fx_rate, amount_base, cost_center_id?, partner_id?, tax_document_id?, description.
+### `journal_entries` (Inmutable)
+Asientos contables posteados. Protegidos por trigger en base de datos que rechaza `UPDATE` y `DELETE`.
+- `id` (uuid, PK), `entity_id` (uuid, FK), `period_id` (uuid, FK)
+- `date` (date), `number` (text), `source` (journal_source)
+- `description` (text), `status` (journal_entry_status: draft, posted, reversed)
+- `posted_at`, `posted_by`
+- `reversal_of` (uuid, FK a journal_entries para contra-asientos)
+- `version_of` (uuid, FK para ajustes)
+- `metadata` (jsonb)
 
-INVARIANTE: por entry_id, sum(debit) == sum(credit) por moneda y por moneda base.
+### `journal_lines`
+Líneas de débito y crédito asociadas a un asiento.
+- `id` (uuid, PK), `entry_id` (uuid, FK)
+- `account_id` (uuid, FK)
+- `debit` (bigint, not null, default 0)
+- `credit` (bigint, not null, default 0)
+- `currency_code` (varchar(3), default 'PYG')
+- `fx_rate` (numeric)
+- `amount_base` (bigint)
+- `partner_id` (uuid, FK opcional)
+- `tax_document_id` (uuid, FK opcional)
+- `cost_center_id` (uuid, FK opcional)
+- `description` (text)
+- *Invariante*: Por cada asiento, `sum(debit) == sum(credit)` por moneda. Verificado por trigger de consistencia.
 
-## Fiscal
+---
 
-### tax_documents
-id, entity_id, direction (issued/received), doc_type (invoice/credit_note/debit_note/receipt/self_invoice/remito/import), number, timbrado, cdc, issue_date, partner_id, currency_code, fx_rate, condition (cash/credit), status, sifen_status, totals (gravado_10/gravado_5/exento/iva_10/iva_5/total), iva_book_period?, journal_entry_id?.
+## 🧾 Fiscal y Comprobantes
 
-### tax_document_lines
-id, document_id, item_code, description, quantity, unit_price, iva_rate, rubro_ire, rubro_irp, inciso_iva, account_id, amount.
+### `tax_documents`
+Comprobantes tributarios (electrónicos SIFEN o manuales no electrónicos).
+- `id` (uuid, PK), `entity_id` (uuid, FK)
+- `direction` (doc_direction: issued, received)
+- `doc_type` (doc_type: invoice, credit_note, debit_note, receipt, self_invoice, remito, import)
+- `doc_code` (varchar(3), código numérico según Tabla 4 DNIT, ej. '109' para factura)
+- `number` (varchar), `timbrado` (varchar)
+- `cdc` (varchar(44), único por entidad: constraint `unique (entity_id, cdc)`)
+- `is_electronic` (boolean, true si proviene de SIFEN)
+- `issue_date` (date), `partner_id` (uuid, FK)
+- `counterparty_id_type` (int, tipo de identificación DNIT: 11 RUC, 12 Cédula, etc.)
+- `condition` (doc_condition: cash, credit)
+- `currency_code` (varchar(3)), `foreign_currency` (boolean)
+- `status` (text), `sifen_status` (sifen_status, nulo en documentos manuales)
+- Totales (`bigint`): `gravado_10`, `gravado_5`, `exento`, `iva_10`, `iva_5`, `total`
+- Imputaciones RG 90: `imputa_iva` (bool), `imputa_ire` (bool), `imputa_irp` (bool), `no_imputa` (bool)
+- Documentos asociados: `related_doc_number`, `related_timbrado`, `related_cdc`
+- `journal_entry_id` (uuid, FK a journal_entries una vez contabilizado)
+- `metadata` (jsonb, almacena el `sifen` parseado completo)
 
-### retentions
-id, document_id, retention_type (iva/ire/irp/inr), base, rate, amount, certificate_number, withheld_at.
+### `tax_document_lines`
+Detalle de ítems del comprobante.
+- `id` (uuid, PK), `document_id` (uuid, FK), `description` (text), `quantity` (numeric), `unit_price` (bigint), `iva_rate` (int), `amount` (bigint).
 
-### partners
-id, entity_id, kind (customer/supplier/both), ruc, legal_name, trade_name, contacts jsonb, default_payment_terms, default_account_id, retention_profile, country.
+### `timbrados`
+Registro de timbrados fiscales autorizados para compras y ventas.
+- `id` (uuid, PK), `entity_id` (uuid, FK), `partner_id` (uuid, FK opcional), `timbrado` (varchar), `valid_from` (date), `valid_to` (date).
 
-## Bancos
-bank_accounts (id, entity_id, bank, account_number, currency, gl_account_id).
-bank_movements (id, account_id, date, amount, direction, ref, description, source).
-bank_statements (id, account_id, period, file_ref, parsed_at).
-reconciliations (id, account_id, gl_movement_id, bank_movement_id, status, score, matched_by, matched_at).
+### `tax_calendar`
+Vencimientos tributarios calculados para la entidad.
+- `id` (uuid, PK), `entity_id` (uuid, FK), `tax_type` (text), `period` (text), `due_date` (date), `status` (text).
 
-## Activos fijos
-fixed_assets (id, entity_id, code, name, category, purchase_doc_id, purchase_date, cost, residual, life_months, method, status).
-depreciation_schedules (id, asset_id, period_id, amount, journal_entry_id).
-asset_revaluations (id, asset_id, date, coefficient, new_cost).
+### `retentions`
+Retenciones impositivas aplicadas a documentos.
+- `id` (uuid, PK), `document_id` (uuid, FK), `retention_type` (retention_type: iva, ire, irp, inr), `base` (bigint), `rate` (numeric), `amount` (bigint), `certificate_number` (text).
 
-## Ops
-closing_checklists (id, entity_id, period_id, status, items jsonb).
-audit_events (id, entity_id, actor_id, action, target_type, target_id, before, after, reason, created_at).
-ai_decisions (id, entity_id, kind, input, output, confidence, accepted, accepted_by, created_at).
+### `partners`
+Clientes y proveedores.
+- `id` (uuid, PK), `entity_id` (uuid, FK), `kind` (customer, supplier, both), `ruc` (text), `legal_name` (text), `retention_profile` (jsonb).
 
-## Usuarios
-Supabase Auth + profiles. memberships (user_id, entity_id, role: admin/accountant/assistant/auditor/client, permissions jsonb).
+---
+
+## 👥 Identidad y Acceso (Better Auth + Membresías)
+
+### `users`
+Usuarios del sistema.
+- `id` (uuid, PK), `name` (text), `email` (text, unique), `email_verified` (boolean), `two_factor_enabled` (boolean).
+
+### `sessions`
+Sesiones activas.
+- `id` (uuid, PK), `user_id` (uuid, FK a users), `token` (text, unique), `expires_at` (timestamptz).
+
+### `auth_accounts` & `verifications` & `two_factors`
+Tablas de soporte de Better Auth para contraseñas hasheadas y secretos TOTP.
+
+### `memberships`
+Asociación multi-tenant entre usuarios y entidades con control de acceso por roles.
+- `id` (uuid, PK), `user_id` (uuid, FK a users), `entity_id` (uuid, FK a entities), `role` (text: 'admin', 'accountant', 'assistant', etc.).
+- Protegido por RLS estricto que restringe qué registros de membresía puede consultar cada usuario.
+
+---
+
+## 🛡️ Control Operativo e Idempotencia
+
+### `idempotency_keys`
+Garantía de ejecución única en mutaciones.
+- `id` (uuid, PK), `user_id` (uuid, not null), `endpoint` (text), `key` (varchar(36)), `request_hash` (text), `response_body` (jsonb), `created_at` (timestamptz).
+- Constraint: `unique (user_id, endpoint, key)`.
+
+### `audit_events`
+Bitácora de auditoría append-only para trazabilidad y cumplimiento tributario.
+- `id` (uuid, PK), `entity_id` (uuid, FK), `actor_id` (uuid), `action` (text), `target_type` (text), `target_id` (uuid), `before` (jsonb), `after` (jsonb), `reason` (text), `created_at` (timestamptz).
+
+### `ai_decisions`
+Registro de propuestas contables generadas por IA y su aceptación/rechazo humano.
+- `id` (uuid, PK), `entity_id` (uuid, FK), `kind` (text), `input` (jsonb), `output` (jsonb), `confidence` (numeric), `accepted` (boolean), `accepted_by` (uuid).
+
+---
+
+## 👁️ Vistas SQL (`security_invoker = true`)
+
+1. **`v_diario`**: Proyección consolidada del Libro Diario que une `journal_entries` y `journal_lines` con nombres de cuenta y datos de terceros.
+2. **`v_mayor`**: Agrupación del Libro Mayor calculando sumas de débitos y créditos con saldos progresivos.
+3. **`v_libro_iva`**: Consolidación fiscal para liquidación de IVA Compras y Ventas, calculando bases y débitos/créditos a partir de `tax_documents`.
+
+---
+
+## 🚧 Módulos No Implementados (Pendientes)
+- **Activos Fijos y Depreciación** (`fixed_assets`, `depreciation_schedules`, `asset_revaluations`): No implementados en la rebanada vertical actual.
+- **Conciliación Bancaria Avanzada** (`bank_accounts`, `bank_movements`, `reconciliations`): En estado de vista previa simulada.

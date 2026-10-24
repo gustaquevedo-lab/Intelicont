@@ -1,7 +1,7 @@
 # Roadmap — InteliCont
 
 ## Fase 1 — MVP fiscal PY (meses 1-3)
-Setup monorepo, auth, multi-tenant RLS. Modelo: entities, fiscal_periods, chart_of_accounts, accounts, journal_entries, journal_lines, partners, tax_documents. Plan de cuentas seed PY. Casos de uso: postJournalEntry, reverseJournalEntry, libros Diario/Mayor/Sumas y Saldos. Ingesta XML SIFEN con IA. Carga manual con retenciones. Libro IVA, formulario 104, exportador Hechauka. Dashboard.
+Setup monorepo, auth, multi-tenant RLS. Modelo: entities, fiscal_periods, chart_of_accounts, accounts, journal_entries, journal_lines, partners, tax_documents. Plan de cuentas seed PY. Casos de uso: postJournalEntry, reverseJournalEntry, libros Diario/Mayor/Sumas y Saldos. Ingesta XML SIFEN con IA. Carga manual con retenciones. Libro IVA, formulario 104, exportador Registro de Comprobantes 955. Dashboard.
 
 ## Fase 2 — AR/AP, Bancos, Activos (meses 4-6)
 Cuenta corriente clientes/proveedores, anticipos, cuotas. Cobros y pagos con asientos. Bancos con matching IA. Activos fijos con depreciación.
