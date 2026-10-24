@@ -5,7 +5,7 @@ import { getJournalEntries, getJournalEntry, getJournalLines, type JournalEntryR
 import { postEntry, reverseEntry } from "@ledger/src/usecases";
 import { isMockMode, tenantDb } from "@ledger/db/index";
 import * as schema from "@ledger/db/schema";
-import { asc, desc, eq, getTableColumns, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gte, lt, sql } from "drizzle-orm";
 import { isCalendarDate, CALENDAR_DATE_ERROR } from "@/lib/calendar-date";
 
 /** `reversed` is derived (D10): the DB row stays `posted`, a counter-entry points at it. */
@@ -36,12 +36,21 @@ export const journalEntriesRouter = router({
       }));
     }),
 
+  /** Entries of the entity; with `year`+`month` only those dated in that calendar month (dates are stored as UTC midnight of the Asunción day). */
   count: protectedProcedure
-    .input(z.object({ entityId: z.string().uuid() }))
+    .input(z.object({ entityId: z.string().uuid(), year: z.number().int().min(2000).max(2100).optional(), month: z.number().int().min(1).max(12).optional() }))
     .query(async ({ input }) => {
-      if (isMockMode()) return { total: (await getJournalEntries(input.entityId)).length };
+      const monthly = input.year !== undefined && input.month !== undefined;
+      const from = monthly ? new Date(Date.UTC(input.year!, input.month! - 1, 1)) : null;
+      const to = monthly ? new Date(Date.UTC(input.year!, input.month!, 1)) : null;
+      if (isMockMode()) {
+        const rows = await getJournalEntries(input.entityId);
+        return { total: from && to ? rows.filter((r) => r.date >= from && r.date < to).length : rows.length };
+      }
+      const j = schema.journalEntries;
       const [{ total }] = await tenantDb((db) =>
-        db.select({ total: sql<number>`count(*)::int` }).from(schema.journalEntries).where(eq(schema.journalEntries.entityId, input.entityId)));
+        db.select({ total: sql<number>`count(*)::int` }).from(j)
+          .where(from && to ? and(eq(j.entityId, input.entityId), gte(j.date, from), lt(j.date, to)) : eq(j.entityId, input.entityId)));
       return { total };
     }),
 

@@ -1,83 +1,44 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
-  Building2, Plus, AlertTriangle, TrendingUp, TrendingDown,
-  Clock, Search, ArrowUpRight, Sparkles, FileText,
-  Receipt, Calculator, ArrowRight, Calendar, CreditCard,
-  CheckCircle2, Upload, BarChart3, DollarSign,
-  Zap, X, ChevronRight, BookOpen,
+  Building2, Plus, TrendingUp, TrendingDown, Calendar, Calculator, FileText, BookOpen, Receipt,
+  BarChart3, FileCode, Clock, History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth-store";
-import { useDataStore } from "@/lib/data-store";
-import { useSifenStore } from "@/lib/sifen-store";
 import { api } from "@/trpc/client";
 import { LEVEL_BADGE, OBLIGATION_NAME, dueLabel } from "@/lib/fiscal-calendar";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, Area, AreaChart,
-  Legend,
-} from "recharts";
+import { actionLabel, targetLabel, formatDateTime } from "@/lib/audit-labels";
 
-// ─── Chart Data ──────────────────────────────────────────────────────────
-
-const IVA_MONTHLY = [
-  { month: "Ene", debito: 4500000, credito: 2800000 },
-  { month: "Feb", debito: 5200000, credito: 3100000 },
-  { month: "Mar", debito: 3800000, credito: 2200000 },
-  { month: "Abr", debito: 6100000, credito: 3500000 },
-  { month: "May", debito: 705000, credito: 3212500 },
-  { month: "Jun", debito: 0, credito: 0 },
-];
-
-const CASHFLOW = [
-  { month: "Ene", ingresos: 52000000, egresos: 38000000 },
-  { month: "Feb", ingresos: 48000000, egresos: 42000000 },
-  { month: "Mar", ingresos: 61000000, egresos: 45000000 },
-  { month: "Abr", ingresos: 55000000, egresos: 48000000 },
-  { month: "May", ingresos: 31050000, egresos: 35625000 },
-];
-
-const EXPENSE_BREAKDOWN = [
-  { name: "Compras", value: 32125000, color: "#3b82f6" },
-  { name: "Sueldos", value: 8000000, color: "#8b5cf6" },
-  { name: "Honorarios", value: 2500000, color: "#f59e0b" },
-  { name: "Alquiler", value: 2500000, color: "#ef4444" },
-  { name: "Servicios", value: 1200000, color: "#10b981" },
-  { name: "Otros", value: 800000, color: "#6b7280" },
-];
+const gs = (v: number) => `₲ ${Math.abs(v).toLocaleString("es-PY")}`;
+const currentMonth = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Asuncion" }).slice(0, 7);
 
 // ─── Dashboard ────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const { selectedEntity } = useAuthStore();
-  const { asientos, reportes } = useDataStore();
-  const sifenPending = useSifenStore((s) => s.documents.filter((d) => d.status === "pending").length);
-  const sifenTotalPendiente = useSifenStore((s) => s.documents.filter((d) => d.status === "pending" || d.status === "reviewing").reduce((sum, d) => sum + Math.abs(parseFloat(d.total)), 0));
+  const entityId = selectedEntity?.id ?? "";
+  const [periodo, setPeriodo] = useState(currentMonth);
+  const valid = /^\d{4}-(0[1-9]|1[0-2])$/.test(periodo);
+  const [year, month] = valid ? periodo.split("-").map(Number) : [0, 0];
+  const enabled = !!selectedEntity && valid;
 
-  const today = new Date();
-  const monthName = today.toLocaleDateString("es-PY", { month: "long", year: "numeric" });
-
-  // Current month IVA
-  const ivaDebito = 705000;
-  const ivaCredito = 3212500;
-  const saldoFavor = ivaCredito - ivaDebito;
-
+  const form104 = api.fiscal.form104.useQuery({ entityId, year, month }, { enabled });
+  const pending = api["tax-documents"].pending.useQuery({ entityId }, { enabled: !!selectedEntity });
+  const entries = api["journal-entries"].count.useQuery({ entityId, year, month }, { enabled });
+  const activity = api.audit.list.useQuery({ entityId, limit: 8 }, { enabled: !!selectedEntity });
   // Upcoming deadlines: real calendar of the active entity (next 30 days and overdue)
-  const upcoming = api.fiscal.upcoming.useQuery({ entityId: selectedEntity?.id ?? "", days: 30 }, { enabled: !!selectedEntity });
+  const upcoming = api.fiscal.upcoming.useQuery({ entityId, days: 30 }, { enabled: !!selectedEntity });
   const upcomingDeadlines = upcoming.data?.items ?? [];
   // Overdue = not filed until a "presentado" state exists.
   const overdueDeadlines = upcomingDeadlines.filter((d) => d.level === "overdue");
+  const next = upcomingDeadlines.find((d) => d.daysLeft >= 0);
 
-  // Activity feed
-  const activityFeed = [
-    { id: 1, type: "asiento", title: "JE-001-2026 posteado", desc: "Compra ImportEste — Gs. 11.000.000", time: "Hoy 10:30", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { id: 2, type: "sifen", title: "XML procesado", desc: "Factura 001-001-01145 — IA 94%", time: "Hoy 09:15", icon: Zap, color: "text-primary", bg: "bg-primary/10" },
-    { id: 3, type: "vencimiento", title: "IVA vence en 7 días", desc: "Importadora del Este — Form. 104", time: "Ayer", icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10" },
-    { id: 4, type: "asiento", title: "JE-004-2026 posteado", desc: "Venta ComerPar — Gs. 6.050.000", time: "Ayer 16:00", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  ];
+  const r = form104.data;
+  const events = activity.data?.events ?? [];
+  const dash = (loading: boolean) => (loading ? "…" : "—");
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in no-theme-transition">
@@ -86,150 +47,103 @@ export default function DashboardPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px]">
             <BarChart3 className="h-3 w-3" />
-            <span>Sistema Contable Inteligente</span>
+            <span>Panel General</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">
-            {selectedEntity ? (selectedEntity.tradeName || selectedEntity.legalName) : "Consolidado Global"}
+            {selectedEntity ? (selectedEntity.tradeName || selectedEntity.legalName) : "Sin empresa seleccionada"}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium flex items-center gap-2">
-            {monthName} <span className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-700" /> RUC {selectedEntity?.ruc || "—"}
-          </p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">RUC {selectedEntity?.ruc || "—"}</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 card hover:bg-gray-50 dark:hover:bg-gray-800 transition-all rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300">
-            <Upload className="h-4 w-4" />
-            Importar
-          </button>
-          <button className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white hover:bg-primary-dark transition-all rounded-xl text-sm font-black shadow-xl shadow-primary/20">
+          <input
+            type="month"
+            aria-label="Período"
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            className="px-2.5 py-2.5 card rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          />
+          <Link href="/sifen" className="flex items-center gap-2 px-4 py-2.5 card hover:bg-gray-50 dark:hover:bg-gray-800 transition-all rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300">
+            <FileCode className="h-4 w-4" />
+            Cargar SIFEN
+          </Link>
+          <Link href="/documentos/nuevo" className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white hover:bg-primary-dark transition-all rounded-xl text-sm font-black shadow-xl shadow-primary/20">
             <Plus className="h-4 w-4" />
-            Nuevo Asiento
-          </button>
+            Comprobante manual
+          </Link>
         </div>
       </div>
 
+      {!selectedEntity ? (
+        <div className="card rounded-2xl p-10 text-center space-y-3">
+          <Building2 className="h-8 w-8 mx-auto text-gray-400" />
+          <p className="text-sm text-gray-500">Todavía no hay una empresa activa. Creá una para empezar a contabilizar.</p>
+          <Link href="/empresas?nueva=1" className="inline-block text-sm font-bold text-primary hover:underline">Crear empresa</Link>
+        </div>
+      ) : (
+      <>
       {/* KPI Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <KpiCard
-          title="Saldo IVA a Favor"
-          value={`Gs. ${(saldoFavor / 1000000).toFixed(1)}M`}
-          sub={saldoFavor > 0 ? "Crédito Fiscal" : "A pagar"}
-          icon={TrendingDown}
+          title={r ? (r.saldo > 0 ? "IVA a pagar" : r.saldo < 0 ? "Saldo a favor" : "IVA del mes") : "IVA del mes"}
+          value={r ? (r.saldo === 0 ? "Sin saldo" : gs(r.saldo)) : dash(form104.isLoading)}
+          sub={r ? `Débito ${gs(r.debitoFiscal)} − Crédito ${gs(r.creditoFiscal)}` : "Formulario 104"}
+          icon={r && r.saldo < 0 ? TrendingDown : TrendingUp}
           variant="secondary"
-          trend={{ value: 5, positive: true }}
+          href="/fiscal/formulario-104"
         />
         <KpiCard
-          title="Ingresos Mayo"
-          value={`Gs. ${(31050000 / 1000000).toFixed(1)}M`}
-          sub="Basado en facturación"
-          icon={TrendingUp}
-          variant="primary"
-          trend={{ value: 12, positive: true }}
-        />
-        <KpiCard
-          title="SIFEN Pendientes"
-          value={sifenPending.toString()}
-          sub={`Gs. ${(sifenTotalPendiente / 1000000).toFixed(1)}M`}
-          icon={Zap}
+          title="Comprobantes pendientes"
+          value={pending.data ? String(pending.data.length) : dash(pending.isLoading)}
+          sub="Sin contabilizar"
+          icon={Receipt}
           variant="accent"
-          trend={null}
+          href="/sifen"
         />
         <KpiCard
-          title="Próx. Vencimiento"
-          value="12 May"
-          sub="IVA - Form 104"
+          title="Asientos del mes"
+          value={entries.data ? String(entries.data.total) : dash(entries.isLoading)}
+          sub={valid ? periodo : "Elegí un período válido"}
+          icon={FileText}
+          variant="primary"
+          href="/asientos"
+        />
+        <KpiCard
+          title="Próx. vencimiento"
+          value={next ? dueLabel(next.dueDate) : "—"}
+          sub={next ? `${OBLIGATION_NAME[next.obligation] ?? next.obligation} · ${next.period}` : "Sin vencimientos en 30 días"}
           icon={Calendar}
           variant="neutral"
-          trend={null}
+          href="/calendario"
         />
       </div>
 
-      {/* Main Grid: Charts & Details */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Col: Main Charts */}
         <div className="lg:col-span-8 space-y-6">
-          {/* IVA Evolution */}
+          {/* IVA of the month: Formulario 104 débito vs crédito */}
           <div className="card rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Evolución de IVA</h2>
-                <p className="text-xs text-gray-500 font-medium">Débito vs Crédito mensual</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-primary" />
-                  <span className="text-[10px] font-black uppercase text-gray-400">Débito</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-secondary" />
-                  <span className="text-[10px] font-black uppercase text-gray-400">Crédito</span>
-                </div>
-              </div>
+            <div className="mb-6">
+              <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">IVA del mes</h2>
+              <p className="text-xs text-gray-500 font-medium">Débito vs crédito fiscal según el Libro IVA de {valid ? periodo : "—"}</p>
             </div>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={IVA_MONTHLY} barGap={8}>
-                  <defs>
-                    <linearGradient id="barGradPrimary" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#104c91" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#104c91" stopOpacity={0.7} />
-                    </linearGradient>
-                    <linearGradient id="barGradSecondary" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#00a651" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#00a651" stopOpacity={0.7} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 11, fontWeight: 600, fill: "hsl(var(--muted-foreground))" }} 
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 11, fontWeight: 600, fill: "hsl(var(--muted-foreground))" }} 
-                    tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`}
-                  />
-                  <Tooltip 
-                    cursor={{ fill: "hsl(var(--primary) / 0.05)" }}
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="card p-3 rounded-xl shadow-2xl">
-                            <p className="text-xs font-black text-gray-900 dark:text-white mb-2 uppercase tracking-tighter">
-                              {payload[0].payload.month} 2026
-                            </p>
-                            <div className="space-y-1">
-                              {payload.map((p, i) => (
-                                <div key={i} className="flex items-center justify-between gap-4 text-xs">
-                                  <span className="text-gray-500 font-medium">{p.name}:</span>
-                                  <span className="font-black tabular-nums" style={{ color: p.color }}>
-                                    Gs. {Number(p.value).toLocaleString("es-PY")}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Bar dataKey="debito" name="Débito" fill="url(#barGradPrimary)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="credito" name="Crédito" fill="url(#barGradSecondary)" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {!r ? (
+              <p className="text-sm text-gray-400">{form104.isLoading ? "Cargando…" : "No hay datos de IVA para este período."}</p>
+            ) : r.debitoFiscal === 0 && r.creditoFiscal === 0 ? (
+              <p className="text-sm text-gray-400">Sin documentos con IVA en este período.</p>
+            ) : (
+              <div className="space-y-4">
+                <IvaBar label="Débito fiscal" value={r.debitoFiscal} max={Math.max(r.debitoFiscal, r.creditoFiscal)} className="bg-primary" />
+                <IvaBar label="Crédito fiscal" value={r.creditoFiscal} max={Math.max(r.debitoFiscal, r.creditoFiscal)} className="bg-secondary" />
+              </div>
+            )}
           </div>
 
           {/* Quick Shortcuts */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <ShortcutCard icon={Receipt} label="Facturación" href="/sifen" color="primary" />
+            <ShortcutCard icon={FileCode} label="Carga SIFEN" href="/sifen" color="primary" />
             <ShortcutCard icon={BookOpen} label="Libros IVA" href="/libros" color="secondary" />
-            <ShortcutCard icon={Calculator} label="Impuestos" href="/impuestos" color="amber" />
-            <ShortcutCard icon={CreditCard} label="Bancos" href="/banco" color="primary" />
+            <ShortcutCard icon={Calculator} label="Formulario 104" href="/fiscal/formulario-104" color="amber" />
+            <ShortcutCard icon={Calendar} label="Calendario" href="/calendario" color="primary" />
           </div>
         </div>
 
@@ -276,29 +190,44 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* AI Feed */}
-          <div className="card rounded-2xl p-6 bg-gradient-to-br from-primary/5 to-secondary/5">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                <Sparkles className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">InteliInsights</h3>
-                <p className="text-[10px] text-gray-500 font-bold">Asistente de Inteligencia</p>
-              </div>
+          {/* Recent activity (audit trail) */}
+          <div className="card rounded-2xl overflow-hidden">
+            <div className="p-6 border-b border-gray-200/50 dark:border-gray-800/50 flex items-center justify-between">
+              <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Actividad reciente</h3>
+              <History className="h-4 w-4 text-primary" />
             </div>
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-white/50 dark:bg-gray-900/50 border border-white dark:border-gray-800 shadow-lg">
-                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
-                  Hemos detectado <span className="font-black text-primary">4 nuevas facturas</span> en el portal SIFEN que coinciden con gastos recurrentes. ¿Deseas procesar los asientos?
-                </p>
-                <button className="mt-3 w-full py-2 bg-primary text-white rounded-lg text-[11px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
-                  Revisar Ahora
-                </button>
-              </div>
-            </div>
+            <ul aria-label="Actividad reciente" className="divide-y divide-gray-200/30 dark:divide-gray-800/30">
+              {events.length === 0 && <li className="p-4 text-xs text-gray-400">{activity.isLoading ? "Cargando…" : "Sin actividad registrada."}</li>}
+              {events.map((ev) => (
+                <li key={ev.id} className="p-4">
+                  <p className="text-xs font-bold text-gray-800 dark:text-gray-200">{actionLabel(ev.action)} · {targetLabel(ev.targetType)}</p>
+                  <p className="mt-0.5 flex items-center gap-1 text-[10px] text-gray-400">
+                    <Clock className="h-3 w-3" />{formatDateTime(ev.createdAt)}{ev.actor ? ` · ${ev.actor.name}` : " · sistema"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <Link href="/auditoria" className="block p-4 text-center text-xs font-black text-primary hover:bg-primary/5 transition-all border-t border-gray-200/50 dark:border-gray-800/50 uppercase tracking-widest">
+              Ver auditoría
+            </Link>
           </div>
         </div>
+      </div>
+      </>
+      )}
+    </div>
+  );
+}
+
+function IvaBar({ label, value, max, className }: { label: string; value: number; max: number; className: string }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className="font-bold text-gray-600 dark:text-gray-300">{label}</span>
+        <span className="font-black tabular-nums text-gray-900 dark:text-white" data-testid={`iva-${label.startsWith("Débito") ? "debito" : "credito"}`}>{gs(value)}</span>
+      </div>
+      <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+        <div className={cn("h-full rounded-full", className)} style={{ width: `${max > 0 ? Math.max(2, Math.round((Math.abs(value) / max) * 100)) : 0}%` }} />
       </div>
     </div>
   );
@@ -306,10 +235,10 @@ export default function DashboardPage() {
 
 // ─── Sub-Components ────────────────────────────────────────────────────────
 
-function KpiCard({ title, value, sub, icon: Icon, variant, trend }: {
+function KpiCard({ title, value, sub, icon: Icon, variant, href }: {
   title: string; value: string; sub: string;
-  icon: any; variant: "primary" | "secondary" | "accent" | "neutral";
-  trend: { value: number; positive: boolean } | null;
+  icon: React.ComponentType<{ className?: string }>; variant: "primary" | "secondary" | "accent" | "neutral";
+  href: string;
 }) {
   const styles = {
     primary: "from-primary/20 to-primary/5 text-primary border-primary/20",
@@ -317,44 +246,24 @@ function KpiCard({ title, value, sub, icon: Icon, variant, trend }: {
     accent: "from-amber-500/20 to-amber-500/5 text-amber-600 border-amber-500/20",
     neutral: "from-gray-500/10 to-gray-500/5 text-gray-500 border-gray-200 dark:border-gray-800",
   };
+  const iconStyles = {
+    primary: "bg-primary text-white shadow-primary/20",
+    secondary: "bg-secondary text-white shadow-secondary/20",
+    accent: "bg-amber-500 text-white shadow-amber-500/20",
+    neutral: "bg-gray-100 dark:bg-gray-800 text-gray-500",
+  };
 
   return (
-    <div className={cn(
-      "card rounded-2xl p-6 transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl group relative overflow-hidden",
-      "bg-gradient-to-br", styles[variant]
-    )}>
-      {/* Background Decor */}
-      <div className="absolute -right-4 -top-4 h-24 w-24 bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-      
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500 dark:text-gray-400">{title}</span>
-          <div className={cn(
-            "h-10 w-10 rounded-xl flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:rotate-12",
-            variant === "primary" ? "bg-primary text-white shadow-primary/20" :
-            variant === "secondary" ? "bg-secondary text-white shadow-secondary/20" :
-            variant === "accent" ? "bg-amber-500 text-white shadow-amber-500/20" :
-            "bg-gray-100 dark:bg-gray-800 text-gray-500"
-          )}>
-            <Icon className="h-5 w-5" />
-          </div>
+    <Link href={href} aria-label={title} className={cn("card rounded-2xl p-6 transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl bg-gradient-to-br block", styles[variant])}>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500 dark:text-gray-400">{title}</span>
+        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shadow-lg", iconStyles[variant])}>
+          <Icon className="h-5 w-5" />
         </div>
-        
-        <div className="flex items-baseline gap-2">
-          <h4 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter tabular-nums">{value}</h4>
-          {trend && (
-            <span className={cn(
-              "text-[10px] font-black px-1.5 py-0.5 rounded-lg flex items-center gap-0.5",
-              trend.positive ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"
-            )}>
-              {trend.positive ? <TrendingUp className="h-2 w-2" /> : <TrendingDown className="h-2 w-2" />}
-              {trend.value}%
-            </span>
-          )}
-        </div>
-        <p className="text-xs font-bold text-gray-400 mt-1">{sub}</p>
       </div>
-    </div>
+      <h4 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter tabular-nums" data-testid="kpi-value">{value}</h4>
+      <p className="text-xs font-bold text-gray-400 mt-1">{sub}</p>
+    </Link>
   );
 }
 
