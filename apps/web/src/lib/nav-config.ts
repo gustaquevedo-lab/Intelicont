@@ -41,6 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Finanzas y Fiscal",
     items: [
+      { path: "/timbrados", icon: Receipt, label: "Timbrados", keywords: ["timbrado", "factura", "vencimiento", "establecimiento"] },
       { path: "/calendario", icon: Calendar, label: "Calendario Fiscal", keywords: ["vencimiento", "fecha", "obligación"] },
       { path: "/fiscal/formulario-104", icon: Calculator, label: "Formulario 104", keywords: ["iva", "declaración", "liquidación"] },
       { path: "/fiscal/registro-comprobantes", icon: ClipboardList, label: "Registro de Comprobantes", keywords: ["955", "compras", "ventas"] },

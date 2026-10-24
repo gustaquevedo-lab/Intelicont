@@ -9,6 +9,7 @@ import { bankRouter } from "./routers/bank";
 import { fiscalRouter } from "./routers/fiscal";
 import { reportsRouter } from "./routers/reports";
 import { auditRouter } from "./routers/audit";
+import { timbradosRouter } from "./routers/timbrados";
 
 export const appRouter = router({
   health: publicProcedure.query(() => ({
@@ -25,6 +26,7 @@ export const appRouter = router({
   fiscal: fiscalRouter,
   reports: reportsRouter,
   audit: auditRouter,
+  timbrados: timbradosRouter,
 });
 
 export type AppRouter = typeof appRouter;
