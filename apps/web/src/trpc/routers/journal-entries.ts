@@ -115,7 +115,7 @@ export const journalEntriesRouter = router({
       }
 
       if (isMockMode()) {
-        return { success: true, id: "mock-je-" + Math.random().toString(36).slice(2, 10) };
+        return { success: true, id: "mock-je-" + Math.random().toString(36).slice(2, 10), number: "MOCK" };
       }
 
       // Checked here, not in postEntry: reversals are dated today whatever the period of the original.
@@ -136,7 +136,7 @@ export const journalEntriesRouter = router({
       });
       if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
 
-      return { success: true, id: res.value.id };
+      return { success: true, id: res.value.id, number: res.value.number ?? "" };
     }),
 
   reverse: idempotentProcedure

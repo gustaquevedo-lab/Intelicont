@@ -46,8 +46,8 @@ describe("nav-config", () => {
     for (const p of ["/activos", "/banco", "/banco/conciliacion", "/cierre", "/cobros-pagos", "/cuentas-corrientes", "/rg90", "/multimoneda", "/portal", "/documentos", "/importar", "/impuestos", "/reportes", "/reportes/eeff", "/sifen/historial", "/fiscal/formularios"]) {
       expect(isPreviewPath(p), p).toBe(true);
     }
-    for (const p of ["/asientos/nuevo", "/sifen/emitir"]) expect(isPreviewPath(p), p).toBe(true);
-    for (const p of ["/", "/documentos/nuevo", "/terceros", "/sifen", "/asientos", "/auditoria", "/fiscal/formulario-104", "/bancos-x"]) {
+    expect(isPreviewPath("/sifen/emitir")).toBe(true);
+    for (const p of ["/", "/documentos/nuevo", "/terceros", "/sifen", "/asientos", "/asientos/nuevo", "/asientos/6f1c2b1e-8d3a-4c55-9b0e-0a1b2c3d4e5f", "/auditoria", "/fiscal/formulario-104", "/bancos-x"]) {
       expect(isPreviewPath(p), p).toBe(false);
     }
   });
@@ -108,11 +108,9 @@ describe("no real page links to a preview route", () => {
     const bad: string[] = [];
     for (const f of files(appDir)) {
       if (isPreviewPath(routeOf(f))) continue;
-      for (const h of hits(readFileSync(f, "utf8"))) if (inPreview(h) && !PREVIEW_LINK_ALLOWED.has(`${routeOf(f)}->${h}`)) bad.push(`${path.relative(appDir, f)} -> ${h}`);
+      for (const h of hits(readFileSync(f, "utf8"))) if (inPreview(h)) bad.push(`${path.relative(appDir, f)} -> ${h}`);
     }
     expect(bad).toEqual([]);
   });
 });
 
-/** Deliberate entry points that are labelled "(vista previa)" in the UI (Task 23c removes them). */
-const PREVIEW_LINK_ALLOWED = new Set(["/asientos->/asientos/nuevo"]);

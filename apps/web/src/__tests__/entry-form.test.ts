@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateEntryForm, type EntryFormState } from "@/lib/entry-form";
+import { clampDateToPeriod, validateEntryForm, type EntryFormState } from "@/lib/entry-form";
 
 const base = (over: Partial<EntryFormState> = {}): EntryFormState => ({
   entityId: "e1",
@@ -47,5 +47,15 @@ describe("validateEntryForm", () => {
     const blank = { accountId: "", debit: 0, credit: 0, description: "" };
     expect(validateEntryForm(base({ lines: [...base().lines, blank] })).ok).toBe(true);
     expect(has(base({ lines: [...base().lines, { ...blank, debit: 3 }] }), /cuenta/)).toBe(true);
+  });
+});
+
+describe("clampDateToPeriod", () => {
+  it("keeps a date inside the month and clamps to the nearest edge otherwise", () => {
+    const p = { year: 2026, month: 8 };
+    expect(clampDateToPeriod("2026-08-15", p)).toBe("2026-08-15");
+    expect(clampDateToPeriod("2026-10-24", p)).toBe("2026-08-31");
+    expect(clampDateToPeriod("2026-02-03", p)).toBe("2026-08-01");
+    expect(clampDateToPeriod("2026-03-20", { year: 2026, month: 2 })).toBe("2026-02-28");
   });
 });

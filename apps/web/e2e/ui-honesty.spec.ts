@@ -38,11 +38,12 @@ test.describe("preview modules", () => {
     await expect(page.getByTestId("preview-banner")).toHaveCount(0);
   });
 
-  test("a banner also shows on the mock entry form and the emit page", async ({ page }) => {
-    for (const url of ["/asientos/nuevo", "/sifen/emitir"]) {
-      await page.goto(url);
-      await expect(page.getByTestId("preview-banner")).toBeVisible();
-    }
+  test("a banner shows on the emit page but not on the real entry form", async ({ page }) => {
+    await page.goto("/sifen/emitir");
+    await expect(page.getByTestId("preview-banner")).toBeVisible();
+    await page.goto("/asientos/nuevo");
+    await expect(page.getByRole("heading", { name: "Nuevo asiento" })).toBeVisible();
+    await expect(page.getByTestId("preview-banner")).toHaveCount(0);
   });
 
   test("Ctrl+E is ignored while typing in a field", async ({ page }) => {

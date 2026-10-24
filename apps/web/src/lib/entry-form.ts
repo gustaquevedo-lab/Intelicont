@@ -40,3 +40,11 @@ export function validateEntryForm(s: EntryFormState): { ok: boolean; errors: str
 
   return { ok: errors.length === 0, errors, totals };
 }
+
+/** `date` moved into the period month: kept if already inside, else the nearest edge (first or last day). */
+export function clampDateToPeriod(date: string, period: { year: number; month: number }): string {
+  const ym = `${period.year}-${String(period.month).padStart(2, "0")}`;
+  if (date.slice(0, 7) === ym) return date;
+  if (date.slice(0, 7) > ym) return `${ym}-${String(new Date(Date.UTC(period.year, period.month, 0)).getUTCDate()).padStart(2, "0")}`;
+  return `${ym}-01`;
+}
