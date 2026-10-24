@@ -19,7 +19,7 @@ import {
 export * from "@intelicont/ledger/ai";
 
 export const DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434";
-export const DEFAULT_OLLAMA_MODEL = "qwen2.5:7b";
+export const DEFAULT_OLLAMA_MODEL = "qwen2.5-coder:1.5b";
 
 let testProvider: AIProvider | null = null;
 

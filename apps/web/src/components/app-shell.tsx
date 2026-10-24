@@ -12,12 +12,15 @@ import { usePreviewStore } from "@/lib/preview-store";
 import { useKey } from "@/lib/use-keyboard-shortcuts";
 import { useEntities } from "@/lib/trpc-hooks";
 import { useAuthStore } from "@/lib/auth-store";
+import { AiCopilotDrawer } from "@/components/ai-copilot-drawer";
+import { Sparkles } from "lucide-react";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => { void usePreviewStore.persist.rehydrate(); }, []);
 
@@ -30,6 +33,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useKey("k", () => setCommandPaletteOpen(true), true);
   useKey(",", () => setCommandPaletteOpen(true), true);
+  useKey("j", () => setAiDrawerOpen((prev) => !prev), true);
   // Ctrl/Cmd+E: entity switcher (UX principle 7); never while typing.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,21 +59,36 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
-      <main className="flex-1 overflow-auto w-full">
+      <main className="flex-1 overflow-auto w-full relative">
         <TopBar
           onMenuToggle={() => setMobileMenuOpen(true)}
           onCommandPalette={() => setCommandPaletteOpen(true)}
+          onAiToggle={() => setAiDrawerOpen((prev) => !prev)}
         />
         <div className="p-4 sm:p-6 lg:p-8">
           {isPreviewPath(pathname) && <PreviewBanner />}
           {children}
         </div>
+
+        {/* Floating AI launcher badge (always accessible) */}
+        <button
+          onClick={() => setAiDrawerOpen(true)}
+          title="Copilot Contable AI (⌘J)"
+          className="fixed bottom-6 right-6 h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-xl shadow-purple-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95 z-[70] cursor-pointer"
+        >
+          <Sparkles className="h-5 w-5" />
+          <span className="sr-only">Abrir Copilot Contable</span>
+        </button>
       </main>
 
       <EntitySwitcher open={switcherOpen} onClose={() => setSwitcherOpen(false)} />
       <CommandPalette
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
+      />
+      <AiCopilotDrawer
+        open={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
       />
     </div>
   );

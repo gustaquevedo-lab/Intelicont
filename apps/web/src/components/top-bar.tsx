@@ -32,7 +32,15 @@ const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: "system", label: "Sistema", icon: Monitor },
 ];
 
-export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () => void; onCommandPalette: () => void }) {
+export function TopBar({
+  onMenuToggle,
+  onCommandPalette,
+  onAiToggle,
+}: {
+  onMenuToggle: () => void;
+  onCommandPalette: () => void;
+  onAiToggle?: () => void;
+}) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { selectedEntity, availableEntities, selectEntity } = useAuthStore();
   const { user, logout } = useCurrentUser();
@@ -185,11 +193,18 @@ export function TopBar({ onMenuToggle, onCommandPalette }: { onMenuToggle: () =>
           )}
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {/* Quick AI button */}
-            <button className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-100 dark:bg-purple-600/10 border border-purple-200 dark:border-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-600/20 transition-colors">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="text-xs">IA</span>
+            <button
+              onClick={onAiToggle}
+              title="Abrir Copilot Contable (⌘J)"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-100 dark:bg-purple-600/10 border border-purple-200 dark:border-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-600/20 transition-colors shadow-xs cursor-pointer"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-semibold">Copilot IA</span>
+              <kbd className="hidden lg:inline-flex items-center px-1 py-0.2 bg-purple-200/50 dark:bg-purple-900/40 rounded text-[9px] font-mono text-purple-700 dark:text-purple-300">
+                ⌘J
+              </kbd>
             </button>
 
             {/* Theme toggle */}

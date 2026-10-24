@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { router, publicProcedure } from "./trpc";
 import { entitiesRouter } from "./routers/entities";
 import { accountsRouter } from "./routers/accounts";
@@ -10,6 +9,7 @@ import { fiscalRouter } from "./routers/fiscal";
 import { reportsRouter } from "./routers/reports";
 import { auditRouter } from "./routers/audit";
 import { timbradosRouter } from "./routers/timbrados";
+import { agentRouter } from "./routers/agent";
 
 export const appRouter = router({
   health: publicProcedure.query(() => ({
@@ -27,6 +27,7 @@ export const appRouter = router({
   reports: reportsRouter,
   audit: auditRouter,
   timbrados: timbradosRouter,
+  agent: agentRouter,
 });
 
 export type AppRouter = typeof appRouter;
