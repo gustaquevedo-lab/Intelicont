@@ -49,7 +49,7 @@ export default function AsientosPage() {
         </div>
         <Link href="/asientos/nuevo" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors">
           <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Nuevo asiento</span>
+          <span className="hidden sm:inline">Nuevo asiento (vista previa)</span>
         </Link>
       </div>
 

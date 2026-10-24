@@ -23,6 +23,19 @@ export function nextIndex(index: number, key: string, length: number): number | 
   return null;
 }
 
+export type SwitcherAction<E> =
+  | { type: "move"; index: number }
+  | { type: "select"; entity: E }
+  | { type: "close" };
+
+/** Pure key -> action for the open switcher: arrows move the highlight, Enter selects THAT entity, Escape closes. */
+export function switcherAction<E>(index: number, key: string, entities: E[]): SwitcherAction<E> | null {
+  if (key === "Escape") return { type: "close" };
+  if (key === "Enter") return entities[index] === undefined ? { type: "close" } : { type: "select", entity: entities[index] };
+  const next = nextIndex(index, key, entities.length);
+  return next === null ? null : { type: "move", index: next };
+}
+
 export function EntitySwitcher({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { selectedEntity, availableEntities, selectEntity } = useAuthStore();
   const [index, setIndex] = useState(0);
@@ -51,10 +64,12 @@ export function EntitySwitcher({ open, onClose }: { open: boolean; onClose: () =
         aria-label="Cambiar empresa"
         tabIndex={-1}
         onKeyDown={(e) => {
-          if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
-          if (e.key === "Enter") { e.preventDefault(); choose(index); return; }
-          const next = nextIndex(index, e.key, availableEntities.length);
-          if (next !== null) { e.preventDefault(); setIndex(next); }
+          const a = switcherAction(index, e.key, availableEntities);
+          if (!a) return;
+          e.preventDefault();
+          if (a.type === "move") setIndex(a.index);
+          else if (a.type === "select") { selectEntity(a.entity); onClose(); }
+          else onClose();
         }}
         className="relative w-full max-w-md glass-card rounded-2xl overflow-hidden premium-shadow outline-none"
       >

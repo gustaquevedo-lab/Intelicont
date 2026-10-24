@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { STORAGE_STATE_SIFEN, requireE2eEnv, approveFixtureInvoice, USER_ENTITY_NAME } from "./helpers";
+import { STORAGE_STATE_SIFEN, STORAGE_STATE_MULTI, requireE2eEnv, approveFixtureInvoice } from "./helpers";
 
 const digits = (s: string | null) => Number((s ?? "").replace(/\D/g, "") || 0);
 
@@ -38,27 +38,51 @@ test.describe("preview modules", () => {
     await expect(page.getByTestId("preview-banner")).toHaveCount(0);
   });
 
+  test("a banner also shows on the mock entry form and the emit page", async ({ page }) => {
+    for (const url of ["/asientos/nuevo", "/sifen/emitir"]) {
+      await page.goto(url);
+      await expect(page.getByTestId("preview-banner")).toBeVisible();
+    }
+  });
+
+  test("Ctrl+E is ignored while typing in a field", async ({ page }) => {
+    await page.goto("/asientos");
+    const search = page.getByLabel("Buscar asiento");
+    const dialog = page.getByRole("dialog", { name: "Cambiar empresa" });
+    // Hydration signal: the shortcut works from the page body; then, once typing in a field, it must not.
+    await expect(async () => {
+      await page.locator("body").click({ position: { x: 5, y: 5 } });
+      await page.keyboard.press("Control+e");
+      await expect(dialog).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 20_000 });
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await search.click();
+    await page.keyboard.press("Control+e");
+    await expect(dialog).toBeHidden();
+  });
+});
+
+test.describe("entity switcher", () => {
+  requireE2eEnv();
+  test.use({ storageState: STORAGE_STATE_MULTI });
+
   test("Ctrl+E opens the entity switcher and Enter selects", async ({ page }) => {
     await page.goto("/");
-    const trigger = page.getByRole("button", { name: /RUC 80099997-3/ }).first();
+    const trigger = page.getByRole("button", { name: /RUC 8009991/ }).first();
     await expect(trigger).toBeVisible();
+    const before = (await trigger.textContent()) ?? "";
     const dialog = page.getByRole("dialog", { name: "Cambiar empresa" });
     await expect(async () => {
       await page.keyboard.press("Control+e");
       await expect(dialog).toBeVisible({ timeout: 1_000 });
     }).toPass({ timeout: 20_000 });
-    await expect(dialog.getByRole("option", { selected: true })).toContainText(USER_ENTITY_NAME);
+    await expect(dialog.getByRole("option")).toHaveCount(2);
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
     await expect(dialog).toBeHidden();
-    await expect(trigger).toBeVisible();
-
-    // Not while typing in a field.
-    await page.goto("/asientos");
-    const search = page.getByLabel("Buscar asiento");
-    await search.click();
-    await page.keyboard.press("Control+e");
-    await expect(dialog).toBeHidden();
+    await expect(trigger).not.toHaveText(before);
+    await expect(trigger).toContainText(/Alfa Multi E2E|Beta Multi E2E/);
   });
 });
 

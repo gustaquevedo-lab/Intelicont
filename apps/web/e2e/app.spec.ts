@@ -14,7 +14,7 @@ test.describe("InteliCont E2E", () => {
 
   test("dashboard loads and shows KPIs", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "Comprobante manual" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "IVA del mes" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "IVA del mes" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Comprobantes pendientes" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Asientos del mes" })).toBeVisible();
@@ -101,7 +101,7 @@ test.describe("InteliCont E2E", () => {
 
   test("command palette opens with Cmd+K", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "Comprobante manual" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "IVA del mes" })).toBeVisible();
     // Retry until hydrated: the shortcut listener only exists after hydration.
     await expect(async () => {
       await page.keyboard.press("Meta+k");

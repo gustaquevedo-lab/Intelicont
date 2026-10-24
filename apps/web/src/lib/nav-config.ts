@@ -63,7 +63,10 @@ export const NAV_GROUPS: NavGroup[] = [
 /** Real sub-pages that live under a preview path. */
 const REAL_PATHS = ["/documentos/nuevo"];
 
-const PREVIEW_ROOTS = NAV_GROUPS.flatMap((g) => g.items).filter((i) => i.preview).map((i) => i.path);
+/** Pages that still run on example data but are not (or should not be) in the nav. /asientos/nuevo: remove once Task 23c rebuilds it on real data. */
+const PREVIEW_ONLY_ROUTES = ["/asientos/nuevo", "/sifen/emitir"];
+
+export const PREVIEW_ROOTS = [...NAV_GROUPS.flatMap((g) => g.items).filter((i) => i.preview).map((i) => i.path), ...PREVIEW_ONLY_ROUTES];
 
 /** True for a preview page or any sub-page of one (`/banco/conciliacion`, `/reportes/eeff`), except the real sub-pages. */
 export function isPreviewPath(pathname: string): boolean {

@@ -48,7 +48,7 @@ export default function AsientoDetallePage() {
           </p>
           <div className="text-xs mt-2 space-x-4">
             {entry.document && (
-              <Link href="/documentos" className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline">
+              <Link href={`/libros?tab=${entry.document.direction === "issued" ? "iva_ventas" : "iva_compras"}&periodo=${String(entry.document.issueDate).slice(0, 7)}`} className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline">
                 <FileText className="h-3 w-3" />Comprobante {entry.document.number}
               </Link>
             )}

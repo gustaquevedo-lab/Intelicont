@@ -1,8 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { isTwoFactorRequired, redirectIfTwoFactorRequired } from "@/lib/two-factor";
-import { NAV_GROUPS, isPreviewPath, visibleNavGroups } from "@/lib/nav-config";
-import { isSwitcherShortcut, nextIndex } from "@/components/entity-switcher";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
+import { PREVIEW_ROOTS, NAV_GROUPS, isPreviewPath, visibleNavGroups } from "@/lib/nav-config";
+import { isSwitcherShortcut, nextIndex, switcherAction } from "@/components/entity-switcher";
 
 const forbidden2fa = { message: "2FA requerido", data: { code: "FORBIDDEN" } };
 
@@ -44,6 +46,7 @@ describe("nav-config", () => {
     for (const p of ["/activos", "/banco", "/banco/conciliacion", "/cierre", "/cobros-pagos", "/cuentas-corrientes", "/rg90", "/multimoneda", "/portal", "/documentos", "/importar", "/impuestos", "/reportes", "/reportes/eeff", "/sifen/historial", "/fiscal/formularios"]) {
       expect(isPreviewPath(p), p).toBe(true);
     }
+    for (const p of ["/asientos/nuevo", "/sifen/emitir"]) expect(isPreviewPath(p), p).toBe(true);
     for (const p of ["/", "/documentos/nuevo", "/terceros", "/sifen", "/asientos", "/auditoria", "/fiscal/formulario-104", "/bancos-x"]) {
       expect(isPreviewPath(p), p).toBe(false);
     }
@@ -70,3 +73,46 @@ describe("entity switcher keys", () => {
     expect(nextIndex(0, "ArrowDown", 0)).toBeNull();
   });
 });
+
+describe("switcherAction", () => {
+  const list = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  it("Enter selects the highlighted entity after arrow navigation", () => {
+    let i = 0;
+    for (const k of ["ArrowDown", "ArrowDown"]) {
+      const a = switcherAction(i, k, list);
+      expect(a?.type).toBe("move");
+      i = (a as { index: number }).index;
+    }
+    expect(switcherAction(i, "Enter", list)).toEqual({ type: "select", entity: list[2] });
+  });
+  it("Escape closes, other keys do nothing, Enter on an empty list closes", () => {
+    expect(switcherAction(0, "Escape", list)).toEqual({ type: "close" });
+    expect(switcherAction(0, "x", list)).toBeNull();
+    expect(switcherAction(0, "Enter", [])).toEqual({ type: "close" });
+  });
+});
+
+describe("no real page links to a preview route", () => {
+  const appDir = path.resolve(__dirname, "../app");
+  const files = (dir: string): string[] =>
+    readdirSync(dir).flatMap((f) => {
+      const full = path.join(dir, f);
+      return statSync(full).isDirectory() ? files(full) : /\.tsx?$/.test(f) ? [full] : [];
+    });
+  const routeOf = (f: string) => "/" + path.relative(appDir, path.dirname(f)).split(path.sep).filter((s) => !/^\(.*\)$/.test(s)).join("/");
+  const hits = (src: string) =>
+    [...src.matchAll(/(?:href=|href:|push\(|replace\(|link:)\s*[{(]?\s*[`"'](\/[^`"'?#$]*)/g)].map((m) => m[1].replace(/\/$/, "") || "/");
+  const inPreview = (p: string) => PREVIEW_ROOTS.some((r) => p === r || p.startsWith(`${r}/`)) && !p.startsWith("/documentos/nuevo");
+
+  it("finds links to preview routes only inside preview pages", () => {
+    const bad: string[] = [];
+    for (const f of files(appDir)) {
+      if (isPreviewPath(routeOf(f))) continue;
+      for (const h of hits(readFileSync(f, "utf8"))) if (inPreview(h) && !PREVIEW_LINK_ALLOWED.has(`${routeOf(f)}->${h}`)) bad.push(`${path.relative(appDir, f)} -> ${h}`);
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
+/** Deliberate entry points that are labelled "(vista previa)" in the UI (Task 23c removes them). */
+const PREVIEW_LINK_ALLOWED = new Set(["/asientos->/asientos/nuevo"]);

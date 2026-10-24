@@ -8,6 +8,9 @@ export const STORAGE_STATE = "e2e/.auth/user.json";
 export const STORAGE_STATE_CREATOR = "e2e/.auth/creator.json";
 /** User whose only entity has the SIFEN fixture's receiver RUC (1234567-9). */
 export const STORAGE_STATE_SIFEN = "e2e/.auth/sifen.json";
+/** User with two entities (entity switcher spec). */
+export const STORAGE_STATE_MULTI = "e2e/.auth/multi.json";
+export const MULTI_EMAIL = "multi@e2e.test";
 export const SIFEN_EMAIL = "sifen@e2e.test";
 /** Starts with no entities; flagged 2FA-enabled in the DB (creating an entity makes it admin, which the TOTP policy would block). */
 export const CREATOR_EMAIL = "creador@e2e.test";

@@ -101,7 +101,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("audit.list and journal-entries.get
       [["1.1.01.001", expect.any(String)], ["3.1", expect.any(String)]],
     );
     expect(got.lines.every((l) => l.accountName.length > 0)).toBe(true);
-    expect(got.document).toEqual({ id: doc, number: "001-001-0000001", cdc: "1".repeat(44) });
+    expect(got.document).toEqual({ id: doc, number: "001-001-0000001", cdc: "1".repeat(44), issueDate: "2026-10-01", direction: "received" });
     const plain = await caller()["journal-entries"].get({ id: await post(user, e1, p1, acc, "AU-6") });
     expect(plain.document).toBeNull();
   });

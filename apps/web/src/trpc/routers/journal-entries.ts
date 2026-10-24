@@ -66,7 +66,7 @@ export const journalEntriesRouter = router({
           .innerJoin(schema.accounts, eq(schema.accounts.id, schema.journalLines.accountId))
           .where(eq(schema.journalLines.entryId, input.id))
           .orderBy(desc(schema.journalLines.debit), asc(schema.accounts.code));
-        const [document = null] = await db.select({ id: schema.taxDocuments.id, number: schema.taxDocuments.number, cdc: schema.taxDocuments.cdc })
+        const [document = null] = await db.select({ id: schema.taxDocuments.id, number: schema.taxDocuments.number, cdc: schema.taxDocuments.cdc, issueDate: schema.taxDocuments.issueDate, direction: schema.taxDocuments.direction })
           .from(schema.taxDocuments).where(eq(schema.taxDocuments.journalEntryId, input.id)).limit(1);
         return { lines, document };
       });

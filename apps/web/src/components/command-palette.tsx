@@ -93,7 +93,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       {
         label: "Acciones rápidas",
         items: [
-          { id: "new-asiento", label: "Nuevo Asiento", icon: iconMap.Plus, shortcut: "N", action: () => { router.push("/asientos/nuevo"); onClose(); }, keywords: ["crear", "entrada", "journal"] },
+          { id: "new-asiento", label: "Nuevo Asiento (vista previa)", icon: iconMap.Plus, shortcut: "N", action: () => { router.push("/asientos/nuevo"); onClose(); }, keywords: ["crear", "entrada", "journal"] },
           { id: "new-empresa", label: "Nueva Empresa", icon: iconMap.Plus, action: () => { router.push("/empresas?nueva=1"); onClose(); }, keywords: ["crear", "compañía"] },
           { id: "export-asientos", label: "Exportar Asientos", icon: iconMap.Download, action: () => { router.push("/asientos"); onClose(); }, keywords: ["descargar", "csv", "excel"] },
         ],

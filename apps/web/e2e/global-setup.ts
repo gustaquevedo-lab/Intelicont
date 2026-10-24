@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { request } from "@playwright/test";
 import { createTestDb, type TestDb } from "../../../packages/ledger/db/test-db";
 import { PY_CHART_OF_ACCOUNTS, flattenTree } from "../src/lib/chart-of-accounts";
-import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, STORAGE_STATE_CREATOR, STORAGE_STATE_SIFEN, SIFEN_EMAIL, CREATOR_EMAIL, USER_EMAIL, ADMIN_EMAIL, USER_ENTITY_NAME } from "./helpers";
+import { E2E_BASE_URL, E2E_PORT, STORAGE_STATE, STORAGE_STATE_CREATOR, STORAGE_STATE_SIFEN, STORAGE_STATE_MULTI, SIFEN_EMAIL, MULTI_EMAIL, CREATOR_EMAIL, USER_EMAIL, ADMIN_EMAIL, USER_ENTITY_NAME } from "./helpers";
 
 const WEB_DIR = process.cwd(); // playwright runs from apps/web (pnpm test:e2e)
 
@@ -79,6 +79,9 @@ export default async function globalSetup() {
     const sifenPassword = randomBytes(12).toString("hex");
     createUser(env, SIFEN_EMAIL, sifenPassword, "SIFEN E2E");
 
+    const multiPassword = randomBytes(12).toString("hex");
+    createUser(env, MULTI_EMAIL, multiPassword, "Multi E2E");
+
     // Memberships through the owner connection (runtime role cannot write memberships).
     // The user's tenant scope comes only from these rows: it must see its entity, not the admin's.
     const [{ id: entityId }] = await db.owner`insert into entities (ruc, legal_name) values ('80099998-1', 'Empresa E2E') returning id`;
@@ -90,6 +93,10 @@ export default async function globalSetup() {
     const [{ id: sifenEntityId }] = await db.owner`insert into entities (ruc, legal_name, tax_regimes) values ('1234567-9', 'Cliente de Prueba E2E', array['IVA_GRAL']) returning id`;
     await db.owner`insert into memberships (user_id, entity_id, role)
       select id, ${sifenEntityId}, 'accountant' from users where email = ${SIFEN_EMAIL}`;
+    for (const [ruc, name] of [["80099911-0", "Alfa Multi E2E"], ["80099912-0", "Beta Multi E2E"]]) {
+      const [{ id }] = await db.owner`insert into entities (ruc, legal_name) values (${ruc}, ${name}) returning id`;
+      await db.owner`insert into memberships (user_id, entity_id, role) select id, ${id}, 'accountant' from users where email = ${MULTI_EMAIL}`;
+    }
     // Default chart + the fixture's month (2026-08) open, so a suggestion can be approved and posted.
     const [{ id: coaId }] = await db.owner`insert into chart_of_accounts (entity_id, kind, name) values (${sifenEntityId}, 'fiscal_py', 'Plan de Cuentas PY') returning id`;
     const ids = new Map<string, string>();
@@ -141,6 +148,12 @@ export default async function globalSetup() {
     if (!res3.ok()) throw new Error(`[e2e] sign-in for sifen storage state failed: ${res3.status()}`);
     await ctx3.storageState({ path: STORAGE_STATE_SIFEN });
     await ctx3.dispose();
+
+    const ctx4 = await request.newContext({ baseURL: E2E_BASE_URL, extraHTTPHeaders: { Origin: E2E_BASE_URL } });
+    const res4 = await ctx4.post("/api/auth/sign-in/email", { data: { email: MULTI_EMAIL, password: multiPassword } });
+    if (!res4.ok()) throw new Error(`[e2e] sign-in for multi storage state failed: ${res4.status()}`);
+    await ctx4.storageState({ path: STORAGE_STATE_MULTI });
+    await ctx4.dispose();
 
     process.env.E2E_READY = "1";
     process.env.E2E_USER_PASSWORD = userPassword;

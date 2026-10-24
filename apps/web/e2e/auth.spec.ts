@@ -14,7 +14,7 @@ test.describe("auth", () => {
   test("valid login reaches the dashboard", async ({ page }) => {
     await login(page, USER_EMAIL, process.env.E2E_USER_PASSWORD!);
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("link", { name: "Comprobante manual" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "IVA del mes" })).toBeVisible();
     // Top-bar initials come from the real session user ("Usuario E2E").
     await expect(page.getByRole("button", { name: "Us", exact: true })).toBeVisible();
   });
