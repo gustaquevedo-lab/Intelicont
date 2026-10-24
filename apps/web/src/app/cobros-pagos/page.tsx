@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   CreditCard, ArrowDown, ArrowUp, CheckCircle2, DollarSign,
   Search, Calendar, Building2, FileText, TrendingUp, TrendingDown,
@@ -130,9 +131,9 @@ export default function CobrosPagosPage() {
             <button onClick={reset} className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium no-tap-highlight">
               {esCobro ? "Nuevo Cobro" : "Nuevo Pago"}
             </button>
-            <a href="/asientos" className="flex items-center justify-center px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium no-tap-highlight">
+            <Link href="/asientos" className="flex items-center justify-center px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium no-tap-highlight">
               <FileText className="h-4 w-4 mr-1.5" /> Ver Asientos
-            </a>
+            </Link>
           </div>
         </div>
       </div>

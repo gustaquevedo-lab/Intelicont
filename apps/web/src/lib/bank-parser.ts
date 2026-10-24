@@ -114,10 +114,10 @@ function parseCSVLine(line: string): string[] {
 function parseDate(value: string): string {
   const cleaned = value.replace(/"/g, "").trim();
   // Try DD/MM/YYYY
-  const ddmmyyyy = cleaned.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  const ddmmyyyy = cleaned.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
   if (ddmmyyyy) return `${ddmmyyyy[3]}-${ddmmyyyy[2].padStart(2, "0")}-${ddmmyyyy[1].padStart(2, "0")}`;
   // Try YYYY-MM-DD
-  const yyyymmdd = cleaned.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  const yyyymmdd = cleaned.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$/);
   if (yyyymmdd) return `${yyyymmdd[1]}-${yyyymmdd[2].padStart(2, "0")}-${yyyymmdd[3].padStart(2, "0")}`;
   return cleaned;
 }
