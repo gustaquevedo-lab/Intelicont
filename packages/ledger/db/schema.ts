@@ -323,6 +323,32 @@ export const taxCalendar = pgTable("tax_calendar", {
   unique("tax_calendar_entity_obligation_period_uq").on(t.entityId, t.obligation, t.period),
 ]);
 
+// ─── Fiscal: Retenciones (Tesaka) ──────────────────────────────────────────
+
+export const retenciones = pgTable("retenciones", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  periodoYear: integer("periodo_year").notNull(),
+  periodoMonth: integer("periodo_month").notNull(),
+  fecha: timestamp("fecha", { withTimezone: true }).notNull(),
+  terceroRuc: varchar("tercero_ruc", { length: 20 }).notNull(),
+  terceroNombre: text("tercero_nombre").notNull(),
+  docTipo: varchar("doc_tipo", { length: 30 }).default("factura"),
+  docNumero: varchar("doc_numero", { length: 20 }),
+  montoBase: bigint("monto_base", { mode: "number" }).notNull(),
+  tipoRetencion: varchar("tipo_retencion", { length: 50 }).notNull(),
+  tasa: numeric("tasa", { precision: 6, scale: 4 }).notNull(),
+  montoRetencion: bigint("monto_retencion", { mode: "number" }).notNull(),
+  comprobanteRet: varchar("comprobante_ret", { length: 20 }),
+  status: varchar("status", { length: 20 }).default("borrador"),
+  taxDocumentId: uuid("tax_document_id").references(() => taxDocuments.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export type Retencion = typeof retenciones.$inferSelect;
+export type NewRetencion = typeof retenciones.$inferInsert;
+
 // ─── Fiscal: Tax Document Lines ───────────────────────────────────────────
 
 export const taxDocumentLines = pgTable("tax_document_lines", {
