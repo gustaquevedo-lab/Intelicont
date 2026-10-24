@@ -11,7 +11,8 @@
     "./ai": "./src/ai/index.ts",
     "./retentions": "./src/retentions.ts",
     "./form104": "./src/form104.ts",
-    "./tax-calendar": "./src/tax-calendar.ts"
+    "./tax-calendar": "./src/tax-calendar.ts",
+    "./cgr-report": "./src/cgr-report.ts"
   },
   "scripts": {
     "db:seed": "tsx db/seed.ts"
