@@ -4,6 +4,7 @@ import { getRegistroDocs } from "@ledger/db/registro";
 import { buildRegistro, zipRegistro } from "@intelicont/ledger/registro";
 import { getSession } from "@/lib/auth";
 import { loadGuardUser, needs2FA } from "@/lib/auth-guard";
+import { logger } from "@/lib/logger";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const text = (body: string, status: number) => new Response(body, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -29,8 +30,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ entityId
       if (!(await getEntity(entityId))) return "forbidden" as const;
       return getRegistroDocs(entityId, year, month);
     });
-  } catch {
-    return text("No se pudo generar el archivo", 500);
+  } catch (err) {
+    const requestId = crypto.randomUUID();
+    logger.error({ requestId, userId: session.userId, entityId, period, errName: err instanceof Error ? err.name : "unknown", errorMessage: err instanceof Error ? err.message : String(err) }, "registro download failed");
+    return text(`No se pudo generar el archivo (ref ${requestId})`, 500);
   }
   if (data === "forbidden") return text("Empresa no accesible", 403);
 

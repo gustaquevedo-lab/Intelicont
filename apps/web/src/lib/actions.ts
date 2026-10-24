@@ -8,18 +8,27 @@ import { postEntry } from "@ledger/src/usecases";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "./session";
 import { loadGuardUser, needs2FA } from "./auth-guard";
+import { logger } from "./logger";
 import { isCalendarDate, CALENDAR_DATE_ERROR } from "./calendar-date";
 
 /**
  * Runs repository work in the session user's tenant scope. Throws without a session, and for an
  * admin without TOTP (same policy as the tRPC middleware).
  */
-async function scoped<T>(fn: (db: Db, userId: string) => Promise<T>): Promise<T> {
-  const { userId } = await requireUser();
-  return withTenant(userId, async (db) => {
-    if (needs2FA(await loadGuardUser(db, userId))) throw new Error("2FA requerido");
-    return fn(db, userId);
-  });
+async function scoped<T>(fn: (db: Db, userId: string) => Promise<T>, action?: string): Promise<T> {
+  let userId: string | undefined;
+  try {
+    ({ userId } = await requireUser());
+    const uid = userId;
+    return await withTenant(uid, async (db) => {
+      if (needs2FA(await loadGuardUser(db, uid))) throw new Error("2FA requerido");
+      return fn(db, uid);
+    });
+  } catch (err) {
+    // Server actions have no request context; log who/what failed (never the input) and rethrow.
+    logger.warn({ action, userId, errName: err instanceof Error ? err.name : "unknown", errorMessage: err instanceof Error ? err.message : String(err) }, "action failed");
+    throw err;
+  }
 }
 
 const KEY_ERROR = { success: false, message: "Falta la Idempotency-Key (UUID)" } as const;
@@ -30,7 +39,7 @@ const KEY_ERROR = { success: false, message: "Falta la Idempotency-Key (UUID)" }
  */
 function idempotent<T>(endpoint: string, key: string, input: unknown, fn: () => Promise<T>): Promise<T> {
   return scoped((db, userId) =>
-    runIdempotent(db, { userId, endpoint, key, requestHash: requestHash(endpoint, input), run: fn }));
+    runIdempotent(db, { userId, endpoint, key, requestHash: requestHash(endpoint, input), run: fn }), endpoint);
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────
