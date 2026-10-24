@@ -14,9 +14,10 @@ test.describe("InteliCont E2E", () => {
 
   test("dashboard loads and shows KPIs", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("button", { name: "Nuevo Asiento" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Evolución de IVA" })).toBeVisible();
-    await expect(page.getByText("Crédito Fiscal")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Comprobante manual" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "IVA del mes" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Comprobantes pendientes" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Asientos del mes" })).toBeVisible();
   });
 
   test("entity selector lists the user's real entity", async ({ page }) => {
@@ -100,9 +101,15 @@ test.describe("InteliCont E2E", () => {
 
   test("command palette opens with Cmd+K", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("button", { name: "Nuevo Asiento" })).toBeVisible();
-    await page.keyboard.press("Meta+k");
-    await expect(page.getByPlaceholder("¿Qué necesitás hacer hoy?...")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Comprobante manual" }).first()).toBeVisible();
+    // Retry until hydrated: the shortcut listener only exists after hydration.
+    await expect(async () => {
+      await page.keyboard.press("Meta+k");
+      await expect(page.getByPlaceholder("¿Qué necesitás hacer hoy?...")).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 20_000 });
+    // Preview modules are not offered while the setting is off.
+    await page.getByPlaceholder("¿Qué necesitás hacer hoy?...").fill("Conciliación");
+    await expect(page.getByText("No se encontraron resultados")).toBeVisible();
     await page.keyboard.press("Escape");
   });
 

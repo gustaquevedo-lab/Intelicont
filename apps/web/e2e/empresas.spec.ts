@@ -26,4 +26,9 @@ test.describe("empresas", () => {
     await page.goto("/cuentas");
     await expect(page.getByText("ACTIVO").first()).toBeVisible();
   });
+
+  test("/empresas?nueva=1 (command palette) opens the create form", async ({ page }) => {
+    await page.goto("/empresas?nueva=1");
+    await expect(page.getByRole("button", { name: "Crear Empresa" })).toBeVisible();
+  });
 });
