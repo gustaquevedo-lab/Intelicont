@@ -87,6 +87,8 @@ export default function NuevoAsientoPage() {
     { id: uid(), cuenta: "", cuentaNombre: "", descripcion: "", debito: "", credito: "" },
   ]);
   const [showSuggestions, setShowSuggestions] = useState<string | null>(null);
+  // After a successful publish the form stays locked until the redirect, so a second click cannot create a second entry.
+  const [done, setDone] = useState(false);
 
   const totals = useMemo(() => {
     let totalDebito = 0;
@@ -157,6 +159,7 @@ export default function NuevoAsientoPage() {
 
       if (result.success) {
         idem.renew();
+        setDone(true);
         setFeedback({ type: "success", message: result.message });
         setTimeout(() => router.push("/asientos"), 1500);
       } else {
@@ -189,11 +192,11 @@ export default function NuevoAsientoPage() {
             Sugerir con IA
           </button>
           <button
-            disabled={!isComplete || isPending}
+            disabled={!isComplete || isPending || done}
             onClick={handlePublicar}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              isComplete && !isPending
+              isComplete && !isPending && !done
                 ? "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20"
                 : "bg-gray-800 text-gray-500 cursor-not-allowed"
             )}

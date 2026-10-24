@@ -28,6 +28,7 @@ export default function Formulario104Page() {
   const matches = !!r && !!ventasBook.data && !!comprasBook.data
     && r.debitoFiscal === ventasBook.data.totals.iva10 + ventasBook.data.totals.iva5
     && r.creditoFiscal === comprasBook.data.totals.iva10 + comprasBook.data.totals.iva5;
+  const totalOnlyCount = [...(ventasBook.data?.rows ?? []), ...(comprasBook.data?.rows ?? [])].filter((x) => x.totalOnly).length;
   const empty = !!r && !ventasBook.data?.rows.length && !comprasBook.data?.rows.length;
   const libro = (tab: "iva_ventas" | "iva_compras") => `/libros?tab=${tab}&periodo=${periodo}`;
 
@@ -62,12 +63,24 @@ export default function Formulario104Page() {
         <>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-gray-500 dark:text-gray-400">{MESES[month - 1]} {year} · RUC <span className="font-mono">{entity.ruc}</span></span>
+            {!!r && !!ventasBook.data && !!comprasBook.data && !matches && (
+              <span role="alert" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-medium">
+                <AlertCircle className="h-3.5 w-3.5" /> No cuadra con el Libro IVA
+              </span>
+            )}
             {matches && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Cuadra con el Libro IVA
               </span>
             )}
           </div>
+
+          {totalOnlyCount > 0 && (
+            <p role="note" className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400">
+              <Info className="h-3.5 w-3.5 shrink-0" />
+              {totalOnlyCount} {totalOnlyCount === 1 ? "documento" : "documentos"} solo total sin IVA desglosado
+            </p>
+          )}
 
           {empty && <Empty text="Sin documentos con IVA en este período" />}
 
@@ -113,10 +126,10 @@ export default function Formulario104Page() {
               </div>
               <div className="text-right shrink-0">
                 <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                  {r.saldo > 0 ? "IVA a pagar" : "Saldo a favor"}
+                  {r.saldo > 0 ? "IVA a pagar" : r.saldo < 0 ? "Saldo a favor" : "Saldo"}
                 </p>
                 <p className={cn("text-2xl sm:text-3xl lg:text-4xl font-bold tabular-nums font-mono", r.saldo > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400")}>
-                  {gs(Math.abs(r.saldo))}
+                  {r.saldo === 0 ? "Sin saldo" : gs(Math.abs(r.saldo))}
                 </p>
               </div>
             </div>
