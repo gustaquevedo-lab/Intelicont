@@ -5,7 +5,19 @@ import reactHooks from "eslint-plugin-react-hooks";
 
 export default tseslint.config(
   {
-    ignores: ["**/.next/**", "**/.next-e2e/**", "**/playwright-report/**", "**/test-results/**", "**/coverage/**", "**/e2e/.auth/**", "**/next-env.d.ts", "**/*.config.*", "apps/web/server-ui.js", "packages/ledger/db/migrations/**"],
+    ignores: [
+      "**/.next/**",
+      "**/.next-e2e/**",
+      "**/playwright-report/**",
+      "**/test-results/**",
+      "**/coverage/**",
+      "**/e2e/.auth/**",
+      "**/next-env.d.ts",
+      "**/*.config.*",
+      "apps/web/server-ui.js",
+      "packages/ledger/db/migrations/**",
+      "**/public/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

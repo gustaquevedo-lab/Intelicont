@@ -9,7 +9,7 @@ type GuardUser = { isAdmin: boolean; twoFactorEnabled: boolean } | null;
 
 /** Where a page request must be sent instead, or null to render it. */
 export function guardRedirect(path: string, user: GuardUser): string | null {
-  if (path === LOGIN_PATH) return null;
+  if (path === LOGIN_PATH || path === "/landing" || path.startsWith("/manual")) return null;
   if (!user) return LOGIN_PATH;
   if (needs2FA(user) && path !== TOTP_SETUP_PATH) return TOTP_SETUP_PATH;
   return null;

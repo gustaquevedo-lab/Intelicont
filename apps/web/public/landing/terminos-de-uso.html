@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Términos de Uso | InteliCont</title>
+  <meta name="description" content="Términos y condiciones de uso de InteliCont, el software SaaS contable AI-First para Paraguay. Desarrollado por IntelliHouse, Pedro Juan Caballero." />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #104c91; --primary-dark: #0a356b; --primary-light: #256ebf;
+      --primary-600: #1561e1; --secondary: #00a651; --secondary-dark: #00823e;
+      --body-bg: #f0f4f8; --text-dark: #0f172a; --text-muted: #64748b; --border: #e2e8f0;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--body-bg); color: var(--text-dark); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(16,76,145,0.07); transition: box-shadow 0.3s; }
+    .navbar.scrolled { box-shadow: 0 2px 24px rgba(16,76,145,0.10); }
+    .navbar-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-text span:first-child { font-size: 18px; font-weight: 700; color: var(--primary-light); }
+    .nav-logo-text span:last-child { font-size: 18px; font-weight: 800; color: var(--secondary); }
+    .btn-nav { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white; font-weight: 700; font-size: 14px; padding: 10px 22px; border-radius: 12px; border: none; cursor: pointer; text-decoration: none; box-shadow: 0 4px 18px rgba(0,166,81,0.35); transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-nav:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,166,81,0.45); }
+
+    .page-hero { background: linear-gradient(135deg, #071e3d 0%, #0d3a6b 35%, #104c91 70%, #1561e1 100%); padding: 120px 24px 80px; text-align: center; position: relative; overflow: hidden; }
+    .page-hero::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1px); background-size: 26px 26px; pointer-events: none; }
+    .page-hero-inner { max-width: 800px; margin: 0 auto; position: relative; z-index: 1; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,166,81,0.15); border: 1px solid rgba(0,166,81,0.3); border-radius: 99px; padding: 6px 16px; margin-bottom: 28px; }
+    .hero-badge span { font-size: 12px; font-weight: 700; color: #4ade80; letter-spacing: 0.04em; }
+    .page-hero h1 { font-size: clamp(32px, 4.5vw, 52px); font-weight: 900; line-height: 1.08; letter-spacing: -0.03em; color: white; margin-bottom: 20px; }
+    .page-hero p { font-size: 17px; line-height: 1.7; color: rgba(255,255,255,0.72); max-width: 600px; margin: 0 auto; }
+
+    .content-outer { max-width: 1100px; margin: 0 auto; padding: 64px 24px 96px; display: grid; grid-template-columns: 260px 1fr; gap: 48px; align-items: start; }
+    .sidebar { position: sticky; top: 92px; }
+    .sidebar-card { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(16,76,145,0.06); overflow: hidden; }
+    .sidebar-header { background: linear-gradient(135deg, var(--primary), var(--primary-600)); padding: 16px 20px; }
+    .sidebar-header h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.8); }
+    .sidebar-links { padding: 8px 0; }
+    .sidebar-links a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; transition: all 0.2s; border-left: 3px solid transparent; }
+    .sidebar-links a:hover { color: var(--primary); background: #f8faff; border-left-color: var(--primary-600); }
+    .sidebar-links .num { font-size: 11px; font-weight: 800; color: var(--primary-600); width: 20px; flex-shrink: 0; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; transition: color 0.2s; margin-bottom: 20px; }
+    .back-link:hover { color: var(--primary); }
+
+    .section-block { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(16,76,145,0.06); margin-bottom: 24px; overflow: hidden; }
+    .section-block-header { display: flex; align-items: center; gap: 20px; padding: 28px 32px 0; }
+    .section-num { font-size: 48px; font-weight: 900; color: var(--border); line-height: 1; letter-spacing: -0.04em; flex-shrink: 0; user-select: none; }
+    .section-block-header h2 { font-size: 20px; font-weight: 800; color: var(--text-dark); letter-spacing: -0.01em; line-height: 1.3; }
+    .section-block-body { padding: 16px 32px 32px; }
+    .section-block-body p { font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 14px; }
+    .section-block-body p:last-child { margin-bottom: 0; }
+    .section-block-body ul { margin: 12px 0 14px 20px; }
+    .section-block-body ul li { font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 8px; }
+    .section-block-body ul li::marker { color: var(--primary-600); }
+
+    .callout { display: flex; gap: 14px; align-items: flex-start; border-radius: 12px; padding: 18px 20px; margin: 18px 0; }
+    .callout.blue { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .callout.green { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .callout.yellow { background: #fffbeb; border: 1px solid #fcd34d; }
+    .callout p { font-size: 14px; color: #334155; line-height: 1.7; margin-bottom: 0 !important; }
+    .callout strong { color: var(--text-dark); }
+
+    .footer-mini { background: #0f172a; color: rgba(255,255,255,0.5); padding: 32px 24px; text-align: center; font-size: 14px; }
+    .footer-mini a { color: rgba(255,255,255,0.6); text-decoration: none; margin: 0 8px; }
+    .footer-mini a:hover { color: white; }
+
+    @media (max-width: 768px) {
+      .content-outer { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .section-block-body { padding: 16px 20px 24px; }
+      .section-block-header { padding: 20px 20px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <div class="navbar-inner">
+    <a href="/landing/" class="nav-logo">
+      <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="tBg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#1a6eff"/><stop offset="1" stop-color="#0d47c9"/></linearGradient></defs>
+        <rect width="40" height="40" rx="11" fill="url(#tBg)"/>
+        <rect x="7" y="12" width="26" height="2.5" rx="1.25" fill="white"/>
+        <rect x="18.75" y="12" width="2.5" height="17" rx="1.25" fill="white"/>
+        <rect x="9" y="19.5" width="7" height="2" rx="1" fill="rgba(255,255,255,0.8)"/>
+        <rect x="9" y="23.5" width="5" height="2" rx="1" fill="rgba(255,255,255,0.5)"/>
+        <path d="M23.5 21.5 L26 24.5 L32 18" stroke="#00d46a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="33.5" cy="6.5" r="3.5" fill="#00a651"/>
+      </svg>
+      <div class="nav-logo-text"><span>Inteli</span><span>Cont</span></div>
+    </a>
+    <a href="/app" class="btn-nav">Empezar gratis</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="hero-badge"><span>📄 Documento legal · Última actualización: Mayo 2026</span></div>
+    <h1>Términos de Uso</h1>
+    <p>Las condiciones bajo las cuales podés usar InteliCont. Leelos tranquilo — están escritos para ser entendidos, no para confundir.</p>
+  </div>
+</section>
+
+<div class="content-outer">
+  <aside class="sidebar">
+    <a href="/landing/" class="back-link">← Volver a InteliCont</a>
+    <div class="sidebar-card">
+      <div class="sidebar-header"><h3>Contenido</h3></div>
+      <div class="sidebar-links">
+        <a href="#s1"><span class="num">01</span>Aceptación</a>
+        <a href="#s2"><span class="num">02</span>El servicio</a>
+        <a href="#s3"><span class="num">03</span>Tu cuenta</a>
+        <a href="#s4"><span class="num">04</span>Uso permitido</a>
+        <a href="#s5"><span class="num">05</span>Datos y privacidad</a>
+        <a href="#s6"><span class="num">06</span>Propiedad intelectual</a>
+        <a href="#s7"><span class="num">07</span>Pagos y cancelación</a>
+        <a href="#s8"><span class="num">08</span>Limitación de responsabilidad</a>
+        <a href="#s9"><span class="num">09</span>Modificaciones</a>
+        <a href="#s10"><span class="num">10</span>Contacto</a>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+
+    <div class="section-block" id="s1">
+      <div class="section-block-header">
+        <div class="section-num">01</div>
+        <h2>Aceptación de los Términos</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Al crear una cuenta o utilizar InteliCont (en adelante "el Servicio"), aceptás estos Términos de Uso en su totalidad. Si accedés en representación de una empresa o estudio contable, declarás tener autorización para obligar a dicha entidad por estos términos.</p>
+        <p>El Servicio es proporcionado por <strong>IntelliHouse Soluciones E.A.S.</strong>, RUC 80144114-5, con domicilio en Pedro Juan Caballero, Amambay, Paraguay (en adelante "IntelliHouse", "nosotros" o "la Empresa").</p>
+        <div class="callout blue">
+          <span style="font-size:18px;">ℹ️</span>
+          <p><strong>Si no aceptás estos términos</strong>, no podés usar el Servicio. El uso continuado implica aceptación de cualquier versión vigente de estos términos.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block" id="s2">
+      <div class="section-block-header">
+        <div class="section-num">02</div>
+        <h2>Descripción del Servicio</h2>
+      </div>
+      <div class="section-block-body">
+        <p>InteliCont es una plataforma SaaS (Software as a Service) de contabilidad diseñada para el mercado paraguayo. El Servicio incluye, entre otros:</p>
+        <ul>
+          <li>Gestión multi-empresa de libros contables bajo doble partida</li>
+          <li>Integración con SIFEN (Sistema de Facturación Electrónica Nacional) del DNIT</li>
+          <li>Generación de libros IVA, Hechauka, RG90 y estados financieros</li>
+          <li>Sugerencias de asientos contables mediante inteligencia artificial</li>
+          <li>Calendario fiscal con alertas de vencimientos del DNIT</li>
+          <li>Conciliación bancaria y gestión de terceros</li>
+        </ul>
+        <p>IntelliHouse se reserva el derecho de modificar, ampliar o discontinuar funciones del Servicio con notificación razonable al usuario.</p>
+        <div class="callout green">
+          <span style="font-size:18px;">⚖️</span>
+          <p><strong>Responsabilidad contable:</strong> InteliCont es una herramienta de apoyo. La responsabilidad profesional por las declaraciones fiscales y estados financieros corresponde al contador o firma contable que firma los documentos. La IA actúa siempre con humano en el loop.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block" id="s3">
+      <div class="section-block-header">
+        <div class="section-num">03</div>
+        <h2>Tu Cuenta</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Para usar el Servicio debés crear una cuenta con información verídica y actualizada. Sos responsable de mantener la confidencialidad de tus credenciales de acceso.</p>
+        <ul>
+          <li>Debés tener al menos 18 años o ser representante autorizado de una entidad legal</li>
+          <li>Una cuenta puede gestionar múltiples empresas (según el plan contratado)</li>
+          <li>No podés compartir credenciales de acceso con personas fuera de tu equipo autorizado</li>
+          <li>Notificá inmediatamente a <a href="mailto:hola@intelicont.com.py" style="color:var(--primary-600);">hola@intelicont.com.py</a> ante cualquier acceso no autorizado</li>
+          <li>IntelliHouse no se responsabiliza por pérdidas derivadas del uso no autorizado de tu cuenta</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-block" id="s4">
+      <div class="section-block-header">
+        <div class="section-num">04</div>
+        <h2>Uso Permitido y Prohibiciones</h2>
+      </div>
+      <div class="section-block-body">
+        <p>El Servicio se licencia para uso profesional contable legítimo. <strong>Queda expresamente prohibido:</strong></p>
+        <ul>
+          <li>Usar el Servicio para registrar operaciones ilegales, evasión fiscal o lavado de activos</li>
+          <li>Intentar acceder a datos de otros tenants (empresas de otros usuarios)</li>
+          <li>Realizar ingeniería inversa, descompilar o desensamblar el software</li>
+          <li>Automatizar accesos masivos (scraping) sin autorización escrita</li>
+          <li>Revender o sublicenciar el acceso al Servicio a terceros sin acuerdo previo</li>
+          <li>Cargar contenido malicioso, virus o código que interfiera con el Servicio</li>
+          <li>Suplantar a otra persona o entidad</li>
+        </ul>
+        <p>El incumplimiento de estas prohibiciones puede resultar en la suspensión inmediata de la cuenta sin reembolso.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="s5">
+      <div class="section-block-header">
+        <div class="section-num">05</div>
+        <h2>Datos y Privacidad</h2>
+      </div>
+      <div class="section-block-body">
+        <p>El tratamiento de tus datos personales y los de tus clientes se rige por nuestra <a href="/landing/politica-de-privacidad.html" style="color:var(--primary-600);font-weight:600;">Política de Privacidad</a>, incorporada por referencia a estos Términos.</p>
+        <ul>
+          <li><strong>Tus datos son tuyos:</strong> IntelliHouse no vende ni comparte datos de clientes con terceros</li>
+          <li><strong>Aislamiento multi-tenant:</strong> los datos de cada empresa están aislados mediante Row Level Security (RLS) en base de datos</li>
+          <li><strong>Exportación:</strong> podés exportar todos tus datos en cualquier momento en formatos estándar (CSV, PDF, JSON)</li>
+          <li><strong>Retención:</strong> ante cancelación, los datos se conservan 60 días para exportación, luego se eliminan definitivamente</li>
+          <li><strong>IA:</strong> los datos contables pueden ser procesados por modelos de IA (Anthropic Claude) para generar sugerencias. No se usan para entrenar modelos públicos</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-block" id="s6">
+      <div class="section-block-header">
+        <div class="section-num">06</div>
+        <h2>Propiedad Intelectual</h2>
+      </div>
+      <div class="section-block-body">
+        <p>El software InteliCont, incluyendo su código fuente, diseño, algoritmos, marcas y documentación, es propiedad exclusiva de IntelliHouse o sus licenciantes. Estos términos no te transfieren ningún derecho de propiedad.</p>
+        <p>Se te otorga una licencia no exclusiva, no transferible y revocable para usar el Servicio según los términos aquí descritos y el plan contratado.</p>
+        <p><strong>Tus datos contables</strong> (asientos, libros, documentos cargados) son de tu propiedad. IntelliHouse tiene licencia limitada para procesarlos únicamente con el fin de prestar el Servicio.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="s7">
+      <div class="section-block-header">
+        <div class="section-num">07</div>
+        <h2>Pagos, Planes y Cancelación</h2>
+      </div>
+      <div class="section-block-body">
+        <p><strong>Período de prueba:</strong> todos los planes incluyen 14 días gratuitos sin tarjeta de crédito requerida. Al finalizar la prueba, debés suscribirte para continuar.</p>
+        <p><strong>Facturación:</strong> los planes se facturan mensualmente por adelantado en guaraníes (PYG). Los precios están sujetos a cambios con notificación de 30 días.</p>
+        <p><strong>Cancelación:</strong> podés cancelar en cualquier momento desde la configuración de tu cuenta. La cancelación es efectiva al fin del período facturado en curso. No hay reembolsos proporcionales por cancelación anticipada, salvo falla del servicio imputable a IntelliHouse.</p>
+        <div class="callout yellow">
+          <span style="font-size:18px;">💳</span>
+          <p><strong>Falta de pago:</strong> ante mora de más de 7 días, el acceso puede suspenderse. Los datos se conservan por 30 días adicionales para regularización antes de cualquier eliminación.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block" id="s8">
+      <div class="section-block-header">
+        <div class="section-num">08</div>
+        <h2>Limitación de Responsabilidad</h2>
+      </div>
+      <div class="section-block-body">
+        <p>El Servicio se proporciona "tal cual" y "según disponibilidad". IntelliHouse no garantiza que el Servicio sea ininterrumpido, libre de errores o que cumpla exactamente con todos los requisitos específicos de tu práctica.</p>
+        <p>En ningún caso IntelliHouse será responsable por:</p>
+        <ul>
+          <li>Daños indirectos, incidentales o consecuentes derivados del uso del Servicio</li>
+          <li>Multas, recargos o sanciones del DNIT derivadas de datos incorrectos ingresados por el usuario</li>
+          <li>Pérdida de datos por causas de fuerza mayor o fallos de terceros (proveedores de nube, SIFEN, etc.)</li>
+          <li>Decisiones contables o fiscales tomadas con base en sugerencias de la IA sin revisión profesional</li>
+        </ul>
+        <p>La responsabilidad máxima de IntelliHouse en cualquier caso no excederá el monto pagado por el usuario en los últimos 3 meses de servicio.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="s9">
+      <div class="section-block-header">
+        <div class="section-num">09</div>
+        <h2>Modificaciones a los Términos</h2>
+      </div>
+      <div class="section-block-body">
+        <p>IntelliHouse puede actualizar estos Términos de Uso en cualquier momento. Las modificaciones materiales se notificarán con al menos <strong>30 días de anticipación</strong> por correo electrónico y mediante aviso destacado en el Servicio.</p>
+        <p>El uso continuado del Servicio tras la notificación implica aceptación de los términos actualizados. Si no aceptás los cambios, podés cancelar tu suscripción antes de la fecha de vigencia.</p>
+        <p>La versión vigente siempre estará disponible en <a href="/landing/terminos-de-uso.html" style="color:var(--primary-600);">intelicont.com.py/terminos</a>.</p>
+      </div>
+    </div>
+
+    <div class="section-block" id="s10">
+      <div class="section-block-header">
+        <div class="section-num">10</div>
+        <h2>Ley Aplicable y Contacto</h2>
+      </div>
+      <div class="section-block-body">
+        <p>Estos Términos se rigen por las leyes de la República del Paraguay. Cualquier disputa se someterá a la jurisdicción de los tribunales competentes de la ciudad de Pedro Juan Caballero, Amambay, Paraguay, salvo acuerdo de mediación entre las partes.</p>
+        <p>Para consultas sobre estos Términos, contactanos:</p>
+        <ul>
+          <li><strong>Email:</strong> <a href="mailto:legal@intelicont.com.py" style="color:var(--primary-600);">legal@intelicont.com.py</a></li>
+          <li><strong>WhatsApp:</strong> <a href="https://wa.me/595994516360" style="color:var(--primary-600);">+595 994 516 360</a></li>
+          <li><strong>Dirección:</strong> IntelliHouse · Pedro Juan Caballero, Amambay, Paraguay</li>
+        </ul>
+        <div class="callout green">
+          <span style="font-size:18px;">✅</span>
+          <p><strong>Última actualización:</strong> Mayo 2026. Versión 1.0.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer class="footer-mini">
+  <p>© 2026 Todos los derechos reservados. IntelliHouse Soluciones E.A.S. RUC 80144114-5 · <a href="/landing/">InteliCont</a> · <a href="/landing/terminos-de-uso.html">Términos</a> · <a href="/landing/politica-de-privacidad.html">Privacidad</a> · <a href="https://wa.me/595994516360">+595 994 516 360</a></p>
+</footer>
+
+<script>
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 20));
+</script>
+</body>
+</html>

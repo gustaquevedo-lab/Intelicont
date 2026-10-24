@@ -139,7 +139,7 @@ export async function loadResumenPeriodos(entityId: string): Promise<ActionResul
         periodoLabel: `${MONTHS_ES[(r.periodoMonth ?? 1) - 1]} ${r.periodoYear}`,
         totalBase: parseInt(r.totalBase ?? "0", 10),
         totalRetencion: parseInt(r.totalRetencion ?? "0", 10),
-        count: parseInt(String(r.count) ?? "0", 10),
+        count: parseInt(String(r.count || 0), 10),
         declarado: r.declarado ?? false,
       })),
     };
