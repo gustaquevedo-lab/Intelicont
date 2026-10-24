@@ -26,6 +26,8 @@ import {
   Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { visibleNavGroups } from "@/lib/nav-config";
+import { usePreviewStore } from "@/lib/preview-store";
 
 type CommandGroup = {
   label: string;
@@ -68,6 +70,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const showPreview = usePreviewStore((s) => s.showPreview);
 
   const commands = useMemo<CommandGroup[]>(() => {
     const navigate = (href: string) => {
@@ -78,27 +81,20 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     return [
       {
         label: "Navegación",
-        items: [
-          { id: "dashboard", label: "Panel General", icon: iconMap.LayoutDashboard, shortcut: "G D", action: () => navigate("/"), keywords: ["inicio", "home", "dashboard"] },
-          { id: "sifen", label: "Carga SIFEN", icon: iconMap.FileCode, action: () => navigate("/sifen"), keywords: ["factura", "electrónica", "cargar", "xml"] },
-          { id: "sifen-historial", label: "Historial SIFEN", icon: iconMap.FileCode, action: () => navigate("/sifen/historial"), keywords: ["factura", "historial", "documentos"] },
-          { id: "empresas", label: "Empresas", icon: iconMap.Building2, shortcut: "G E", action: () => navigate("/empresas"), keywords: ["compañía", "entidad"] },
-          { id: "asientos", label: "Asientos Contables", icon: iconMap.FileText, shortcut: "G A", action: () => navigate("/asientos"), keywords: ["journal", "entrada", "ledger"] },
-          { id: "cuentas", label: "Plan de Cuentas", icon: iconMap.Hash, shortcut: "G C", action: () => navigate("/cuentas"), keywords: ["cuenta", "chart", "árbol", "estructura"] },
-          { id: "libros", label: "Libros", icon: iconMap.BookOpen, action: () => navigate("/libros"), keywords: ["diario", "mayor", "iva"] },
-          { id: "terceros", label: "Clientes / Proveedores", icon: iconMap.Users, action: () => navigate("/terceros"), keywords: ["partner", "contacto", "persona"] },
-          { id: "banco", label: "Conciliación Bancaria", icon: iconMap.CreditCard, action: () => navigate("/banco"), keywords: ["banco", "movimientos", "conciliar"] },
-          { id: "calendario", label: "Calendario Fiscal", icon: iconMap.Calendar, action: () => navigate("/calendario"), keywords: ["vencimiento", "fecha", "obligación"] },
-          { id: "impuestos", label: "Impuestos", icon: iconMap.Calculator, action: () => navigate("/impuestos"), keywords: ["iva", "ire", "retención"] },
-          { id: "reportes", label: "Reportes", icon: iconMap.BarChart3, action: () => navigate("/reportes"), keywords: ["informe", "estadística"] },
-          { id: "config", label: "Configuración", icon: iconMap.Settings, shortcut: ",", action: () => navigate("/configuracion"), keywords: ["settings", "tema", "preferencias"] },
-        ],
+        items: visibleNavGroups(showPreview).flatMap((g) => g.items).map((i) => ({
+          id: i.path,
+          label: i.preview ? `${i.label} (vista previa)` : i.label,
+          icon: i.icon,
+          shortcut: i.shortcut,
+          keywords: i.keywords,
+          action: () => navigate(i.path),
+        })),
       },
       {
         label: "Acciones rápidas",
         items: [
           { id: "new-asiento", label: "Nuevo Asiento", icon: iconMap.Plus, shortcut: "N", action: () => { router.push("/asientos/nuevo"); onClose(); }, keywords: ["crear", "entrada", "journal"] },
-          { id: "new-empresa", label: "Nueva Empresa", icon: iconMap.Plus, action: () => { router.push("/empresas/nueva"); onClose(); }, keywords: ["crear", "compañía"] },
+          { id: "new-empresa", label: "Nueva Empresa", icon: iconMap.Plus, action: () => { router.push("/empresas?nueva=1"); onClose(); }, keywords: ["crear", "compañía"] },
           { id: "export-asientos", label: "Exportar Asientos", icon: iconMap.Download, action: () => { router.push("/asientos"); onClose(); }, keywords: ["descargar", "csv", "excel"] },
         ],
       },
@@ -111,7 +107,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         ],
       },
     ];
-  }, [router, onClose]);
+  }, [router, onClose, showPreview]);
 
   const filteredGroups = useMemo(() => {
     if (!query.trim()) return commands;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Building2, Plus, Search, Filter, MoreHorizontal, Edit, Trash, AlertTriangle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/client";
@@ -25,6 +25,11 @@ export default function EmpresasPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
+
+  // The command palette opens "/empresas?nueva=1": show the create form right away.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("nueva") === "1") setShowForm(true);
+  }, []);
 
   const toggleRegime = (r: string) =>
     setForm((f) => ({ ...f, taxRegimes: f.taxRegimes.includes(r) ? f.taxRegimes.filter((x) => x !== r) : [...f.taxRegimes, r] }));

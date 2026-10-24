@@ -1,66 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import {
-  LayoutDashboard,
-  Building2,
-  FileText,
-  BookOpen,
-  Users,
-  Settings,
-  Calculator,
-  Calendar,
-  FileCode,
-  FilePlus,
-  CreditCard,
-  BarChart3,
-  Hash,
-  X,
-  LogOut,
-  Menu,
-  Sparkles,
-} from "lucide-react";
+import { X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { visibleNavGroups } from "@/lib/nav-config";
+import { usePreviewStore } from "@/lib/preview-store";
 import { Logo } from "./logo";
-
-const navGroups = [
-  {
-    title: "Gestión Principal",
-    items: [
-      { path: "/", icon: LayoutDashboard, label: "Panel General" },
-      { path: "/sifen", icon: FileCode, label: "Carga SIFEN", highlight: true },
-      { path: "/sifen/historial", icon: FileCode, label: "Historial SIFEN" },
-      { path: "/empresas", icon: Building2, label: "Empresas" },
-    ],
-  },
-  {
-    title: "Contabilidad",
-    items: [
-      { path: "/asientos", icon: FileText, label: "Asientos Contables" },
-      { path: "/documentos/nuevo", icon: FilePlus, label: "Comprobante manual" },
-      { path: "/cuentas", icon: Hash, label: "Plan de Cuentas" },
-      { path: "/libros", icon: BookOpen, label: "Libros" },
-      { path: "/terceros", icon: Users, label: "Clientes / Proveedores" },
-    ],
-  },
-  {
-    title: "Finanzas y Fiscal",
-    items: [
-      { path: "/banco", icon: CreditCard, label: "Conciliación Bancaria" },
-      { path: "/calendario", icon: Calendar, label: "Calendario Fiscal" },
-      { path: "/impuestos", icon: Calculator, label: "Impuestos" },
-      { path: "/reportes", icon: BarChart3, label: "Reportes" },
-    ],
-  },
-  {
-    title: "Configuración",
-    items: [
-      { path: "/configuracion", icon: Settings, label: "Mi Estudio" },
-    ],
-  },
-];
 
 export function Sidebar({
   collapsed = false,
@@ -74,6 +20,7 @@ export function Sidebar({
   onMobileClose?: () => void;
 }) {
   const pathname = usePathname();
+  const showPreview = usePreviewStore((s) => s.showPreview);
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -90,7 +37,7 @@ export function Sidebar({
 
       {/* Navigation */}
       <nav className="flex-1 p-3 overflow-y-auto space-y-6">
-        {navGroups.map((group, groupIdx) => (
+        {visibleNavGroups(showPreview).map((group, groupIdx) => (
           <div key={groupIdx}>
             {!collapsed && (
               <h3 className="px-4 text-[10px] font-black text-blue-300/40 uppercase tracking-[0.2em] mb-4">
@@ -118,6 +65,11 @@ export function Sidebar({
                     </div>
                     {!collapsed && (
                       <span className="truncate">{item.label}</span>
+                    )}
+                    {!collapsed && item.preview && (
+                      <span className="ml-auto text-[9px] px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-300/20 font-black uppercase tracking-widest">
+                        Vista previa
+                      </span>
                     )}
                     {!collapsed && item.highlight && (
                       <span className="ml-auto text-[9px] px-2 py-0.5 rounded-full bg-white/10 text-secondary-light border border-white/10 font-black uppercase tracking-widest">

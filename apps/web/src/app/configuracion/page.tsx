@@ -8,8 +8,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuthStore, useCurrentUser } from "@/lib/auth-store";
 import { useTheme, type Theme } from "@/lib/theme-context";
+import { usePreviewStore } from "@/lib/preview-store";
 
-type SettingsTab = "profile" | "notifications" | "security" | "appearance";
+type SettingsTab = "profile" | "notifications" | "security" | "appearance" | "modules";
 
 export default function ProfilePage() {
   const { selectedEntity } = useAuthStore();
@@ -23,6 +24,7 @@ export default function ProfilePage() {
     { id: "notifications", label: "Notificaciones", icon: Bell },
     { id: "security", label: "Seguridad", icon: Shield },
     { id: "appearance", label: "Apariencia", icon: Palette },
+    { id: "modules", label: "Módulos", icon: Settings },
   ];
 
   return (
@@ -85,6 +87,7 @@ export default function ProfilePage() {
           {activeTab === "notifications" && <NotificationsTab />}
           {activeTab === "security" && <SecurityTab />}
           {activeTab === "appearance" && <AppearanceTab theme={theme} setTheme={setTheme} />}
+          {activeTab === "modules" && <ModulesTab />}
         </div>
       </div>
     </div>
@@ -221,6 +224,28 @@ function AppearanceTab({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme)
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ModulesTab() {
+  const showPreview = usePreviewStore((s) => s.showPreview);
+  const setShowPreview = usePreviewStore((s) => s.setShowPreview);
+  return (
+    <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-4 sm:p-6 space-y-4">
+      <h2 className="text-base font-medium text-gray-900 dark:text-white">Módulos</h2>
+      <label className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800/30 rounded-lg cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showPreview}
+          onChange={(e) => setShowPreview(e.target.checked)}
+          className="mt-0.5 h-4 w-4"
+        />
+        <span>
+          <span className="block text-sm text-gray-900 dark:text-white">Mostrar módulos en vista previa (datos de ejemplo)</span>
+          <span className="block text-[10px] text-gray-400">Banco, cierre, reportes, impuestos y otros módulos que todavía no usan tu contabilidad real.</span>
+        </span>
+      </label>
     </div>
   );
 }
