@@ -73,13 +73,25 @@ const BANK_TEMPLATES: Record<string, ColumnMap> = {
       column: "Tipo",
     },
   },
+  bnf: {
+    date: ["Fecha", "FECHA", "F. Operación", "F. Valor"],
+    description: ["Concepto", "CONCEPTO", "Descripción", "Detalle"],
+    ref: ["Nro. Cheque/Op.", "Comprobante", "Referencia"],
+    amount: ["Monto", "MONTO", "Importe"],
+    direction: {
+      credit: ["Depósito", "Crédito", "Haberes"],
+      debit: ["Extracción", "Débito", "Retiro"],
+      column: "Operación",
+    },
+  },
 };
 
 function detectBank(headers: string[]): string {
   const headerStr = headers.join(",").toLowerCase();
-  if (headerStr.includes("gnb") || headerStr.includes("gnb")) return "gnb";
+  if (headerStr.includes("gnb")) return "gnb";
   if (headerStr.includes("itau") || headerStr.includes("itaú")) return "itau";
   if (headerStr.includes("continental")) return "continental";
+  if (headerStr.includes("bnf") || headerStr.includes("fomento")) return "bnf";
   return "generic";
 }
 

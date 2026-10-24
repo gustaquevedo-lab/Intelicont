@@ -10,6 +10,9 @@ import {
 import { cn } from "@/lib/utils";
 import { matchBankToGL, type BankMovement, type GLTransaction, type MatchResult } from "@/lib/bank-matcher";
 import { parseBankCSV } from "@/lib/bank-parser";
+import { useAuthStore } from "@/lib/auth-store";
+import { api } from "@/trpc/client";
+import { useToast } from "@/components/ui/toast";
 
 const MOCK_GL: GLTransaction[] = [
   { id: "gl1", date: "2026-05-01", amount: 11000000, direction: "credit", description: "Pago a Importadora del Este", partnerName: "ImportEste", accountCode: "2.1.01" },
@@ -30,6 +33,8 @@ const SAMPLE_CSV = `Fecha,Descripción,Referencia,Crédito,Débito
 16/05/2026,"Intereses ganados","",85000,0`;
 
 export default function ConciliacionBancariaPage() {
+  const { selectedEntity } = useAuthStore();
+  const { addToast } = useToast();
   const [step, setStep] = useState<"import" | "review" | "done">("import");
   const [csvText, setCsvText] = useState("");
   const [bankMovements, setBankMovements] = useState<BankMovement[]>([]);
@@ -40,10 +45,48 @@ export default function ConciliacionBancariaPage() {
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
   const [tolerance, setTolerance] = useState(2);
 
-  const handleImport = () => {
+  // Consultar cuentas bancarias y movimientos del libro mayor reales de la empresa
+  const accountsQuery = api.bank.accounts.useQuery(
+    { entityId: selectedEntity?.id ?? "" },
+    { enabled: !!selectedEntity?.id }
+  );
+
+  const selectedBankAccountId = accountsQuery.data?.[0]?.id;
+
+  const glQuery = api.bank.glTransactions.useQuery(
+    { entityId: selectedEntity?.id ?? "", bankAccountId: selectedBankAccountId },
+    { enabled: !!selectedEntity?.id }
+  );
+
+  const reconcileMutation = api.bank.reconcile.useMutation();
+  const importMovementsMutation = api.bank.importMovements.useMutation();
+
+  const realGLTransactions: GLTransaction[] = useMemo(() => {
+    if (glQuery.data && glQuery.data.length > 0) {
+      return glQuery.data.map((l) => ({
+        id: l.id,
+        date: l.date,
+        amount: l.amount,
+        direction: l.direction,
+        description: l.description,
+        accountCode: l.accountCode,
+        partnerName: l.partnerName,
+      }));
+    }
+    return MOCK_GL;
+  }, [glQuery.data]);
+
+  const handleImport = async () => {
     const text = csvText.trim() || SAMPLE_CSV;
     const result = parseBankCSV(text, bankName);
-    if (!result.success) return;
+    if (!result.success) {
+      addToast({
+        type: "error",
+        title: "Error al parsear extracto",
+        message: result.errors.join(", "),
+      });
+      return;
+    }
 
     const movements: BankMovement[] = result.movements.map((m, i) => ({
       id: `bm-${i}`,
@@ -55,16 +98,38 @@ export default function ConciliacionBancariaPage() {
     }));
 
     setBankMovements(movements);
+
+    // Si hay cuenta bancaria real seleccionada, persistir los movimientos importados
+    if (selectedBankAccountId) {
+      try {
+        await importMovementsMutation.mutateAsync({
+          bankAccountId: selectedBankAccountId,
+          movements: movements.map((m) => ({
+            date: m.date,
+            amount: m.amount,
+            direction: m.direction,
+            ref: m.ref,
+            description: m.description,
+          })),
+        });
+      } catch {
+        // Modo offline / mock continuo
+      }
+    }
+
     runMatching(movements);
     setStep("review");
   };
 
-  const runMatching = useCallback((movements: BankMovement[]) => {
-    const result = matchBankToGL(movements, MOCK_GL, tolerance / 100);
-    setMatches(result.matches.map(m => ({ ...m, confirmed: false })));
-    setUnmatchedBank(result.unmatchedBank);
-    setUnmatchedGL(result.unmatchedGL);
-  }, [tolerance]);
+  const runMatching = useCallback(
+    (movements: BankMovement[]) => {
+      const result = matchBankToGL(movements, realGLTransactions, tolerance / 100);
+      setMatches(result.matches.map((m) => ({ ...m, confirmed: false })));
+      setUnmatchedBank(result.unmatchedBank);
+      setUnmatchedGL(result.unmatchedGL);
+    },
+    [realGLTransactions, tolerance]
+  );
 
   const confirmMatch = (bankId: string) => {
     setMatches(prev => prev.map(m => m.bankMovementId === bankId ? { ...m, confirmed: true } : m));
@@ -78,13 +143,38 @@ export default function ConciliacionBancariaPage() {
     setMatches(prev => prev.filter(m => m.bankMovementId !== bankId));
   };
 
-  const getGLTransaction = (id: string) => MOCK_GL.find(gl => gl.id === id);
-  const getBankMovement = (id: string) => bankMovements.find(bm => bm.id === id);
+  const getGLTransaction = (id: string) => realGLTransactions.find((gl) => gl.id === id);
+  const getBankMovement = (id: string) => bankMovements.find((bm) => bm.id === id);
 
-  const confirmedCount = matches.filter(m => m.confirmed).length;
+  const confirmedCount = matches.filter((m) => m.confirmed).length;
   const totalCount = matches.length;
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    const confirmedMatches = matches.filter((m) => m.confirmed);
+    if (selectedBankAccountId && confirmedMatches.length > 0) {
+      try {
+        await reconcileMutation.mutateAsync({
+          bankAccountId: selectedBankAccountId,
+          matches: confirmedMatches.map((m) => ({
+            bankMovementId: m.bankMovementId,
+            glTransactionId: m.glTransactionId,
+            score: m.score,
+            status: "matched",
+          })),
+        });
+        addToast({
+          type: "success",
+          title: "Conciliación guardada",
+          message: `Se persistieron ${confirmedMatches.length} conciliaciones en la base de datos.`,
+        });
+      } catch {
+        addToast({
+          type: "info",
+          title: "Conciliación local",
+          message: "La conciliación se completó en memoria.",
+        });
+      }
+    }
     setStep("done");
   };
 
@@ -142,6 +232,7 @@ export default function ConciliacionBancariaPage() {
               <option value="gnb">Banco GNB</option>
               <option value="itau">Banco Itaú</option>
               <option value="continental">Banco Continental</option>
+              <option value="bnf">Banco BNF</option>
               <option value="generic">Otro / Genérico</option>
             </select>
             <div className="flex items-center gap-2 text-xs text-gray-400">
