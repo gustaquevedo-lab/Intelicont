@@ -1,3 +1,6 @@
+// Testing: `pnpm --filter @intelicont/web test:cov` needs TEST_ADMIN_URL (a Postgres admin URL, e.g.
+// in apps/web/.env.test.local). The use cases and repository are only exercised by the DB suite, so
+// without it the coverage thresholds below fail by design.
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -19,8 +22,10 @@ export default defineConfig({
       allowExternal: true,
       include: [
         path.resolve(__dirname, "../../packages/ledger/src/**/*.ts"),
-        path.resolve(__dirname, "../../packages/ledger/db/{audit,calendar,idempotency,registro,reports}.ts"),
+        path.resolve(__dirname, "../../packages/ledger/db/{audit,calendar,idempotency,registro,reports,repository}.ts"),
       ],
+      // Not measured: db/index.ts (connection wiring), db/mock.ts + db/seed.ts (dev-only data),
+      // db/schema.ts (declarative table definitions) and db/test-db.ts (test harness itself).
       // index.ts = barrels; domain.ts = type-only (no runtime code to measure).
       exclude: [path.resolve(__dirname, "../../packages/ledger/src/**/index.ts"), path.resolve(__dirname, "../../packages/ledger/src/domain.ts")],
       // Needs the DB suite (TEST_ADMIN_URL): the use cases are only exercised by src/__tests__/db.
@@ -34,6 +39,7 @@ export default defineConfig({
         "../../packages/ledger/src/fiscal-py.ts": critical,
         "../../packages/ledger/src/retentions.ts": critical,
         "../../packages/ledger/src/usecases/**": critical,
+        "../../packages/ledger/db/repository.ts": { lines: 90, statements: 90, functions: 90, branches: 80 },
       },
     },
     ...(process.env.TEST_DB_SLOW === "1" && { testTimeout: 30_000, hookTimeout: 60_000 }),

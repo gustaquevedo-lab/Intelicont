@@ -180,6 +180,17 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("ingestDocument (real Postgres)", (
     expect(doc.metadata).toEqual({ sifen: parsed.value });
   });
 
+  it("rejects an unknown entity id, a bad receiver DV, a bad CDC and a bad timbrado", async () => {
+    expect(await ingest(variant(30), "not-a-uuid")).toEqual({ ok: false, error: "Empresa no encontrada" });
+    const badReceiver = await ingest(variant(31).replace("<dDVRec>9<", "<dDVRec>8<"));
+    expect(badReceiver).toEqual({ ok: false, error: expect.stringMatching(/^RUC del receptor inválido/) });
+    const v = variant(32);
+    const badCdc = await ingest(v.replace(cdcOf(v), cdcOf(v).slice(0, 43) + ((Number(cdcOf(v)[43]) + 1) % 10)));
+    expect(badCdc).toEqual({ ok: false, error: expect.stringMatching(/CDC/) });
+    const badTimbrado = await ingest(variant(33).replace("<dNumTim>16284685<", "<dNumTim>1628468<"));
+    expect(badTimbrado.ok).toBe(false);
+  });
+
   it("an issued document books the receiver as customer and is marked uploaded", async () => {
     // e3 is the fixture's issuer, so the addressee check passes with no warning.
     const e3 = (await t.owner`insert into entities (ruc, legal_name) values ('80014066-4', 'Emisor') returning id`)[0].id as string;

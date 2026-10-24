@@ -5,7 +5,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 
 export default tseslint.config(
   {
-    ignores: [".next/**", ".next-e2e/**", "playwright-report/**", "test-results/**", "coverage/**", "e2e/.auth/**", "next-env.d.ts", "*.config.*", "server-ui.js"],
+    ignores: ["**/.next/**", "**/.next-e2e/**", "**/playwright-report/**", "**/test-results/**", "**/coverage/**", "**/e2e/.auth/**", "**/next-env.d.ts", "**/*.config.*", "apps/web/server-ui.js", "packages/ledger/db/migrations/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -18,6 +18,7 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
       "@typescript-eslint/no-empty-object-type": "off",
+      eqeqeq: ["error", "always", { null: "ignore" }],
       "no-empty": ["error", { allowEmptyCatch: true }],
     },
   },

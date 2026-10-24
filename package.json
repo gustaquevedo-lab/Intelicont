@@ -12,7 +12,7 @@
     "dev": "pnpm --filter @intelicont/web dev",
     "build": "pnpm --filter @intelicont/web build",
     "start": "pnpm --filter @intelicont/web start",
-    "lint": "pnpm --filter @intelicont/web lint",
+    "lint": "eslint apps/web packages/ledger packages/core",
     "test": "pnpm --filter @intelicont/web test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -22,7 +22,12 @@
     "auth:create-user": "pnpm --filter @intelicont/web auth:create-user"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.31.10"
+    "@eslint/js": "^9.39.4",
+    "@next/eslint-plugin-next": "15.5.15",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "typescript-eslint": "^8.72.0"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
