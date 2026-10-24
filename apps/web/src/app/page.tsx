@@ -68,6 +68,8 @@ export default function DashboardPage() {
   // Upcoming deadlines: real calendar of the active entity (next 30 days and overdue)
   const upcoming = api.fiscal.upcoming.useQuery({ entityId: selectedEntity?.id ?? "", days: 30 }, { enabled: !!selectedEntity });
   const upcomingDeadlines = upcoming.data?.items ?? [];
+  // Overdue = not filed until a "presentado" state exists.
+  const overdueDeadlines = upcomingDeadlines.filter((d) => d.level === "overdue");
 
   // Activity feed
   const activityFeed = [
@@ -264,6 +266,11 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+            {overdueDeadlines.length > 0 && (
+              <Link href={`/calendario?mes=${overdueDeadlines[0].dueDate.slice(0, 7)}`} className="px-4 py-3 text-center text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border-t border-red-200/50 dark:border-red-500/20 hover:underline">
+                {overdueDeadlines.length} {overdueDeadlines.length === 1 ? "vencimiento anterior sin presentar" : "vencimientos anteriores sin presentar"}
+              </Link>
+            )}
             <Link href="/calendario" className="p-4 text-center text-xs font-black text-primary hover:bg-primary/5 transition-all border-t border-gray-200/50 dark:border-gray-800/50 uppercase tracking-widest">
               Ver Calendario Fiscal
             </Link>

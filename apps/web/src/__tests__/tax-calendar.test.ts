@@ -14,6 +14,11 @@ describe("tax calendar rule (unverified formula, see tax-calendar.ts)", () => {
     expect(dueDateFor(2026, 9, "1234567-9")).toBe("2026-10-19"); // Oct 17 is a Saturday -> Monday 19
   });
 
+  it("dueDateFor rejects a month outside 1..12", () => {
+    expect(() => dueDateFor(2026, 0, "1234567-9")).toThrow(RangeError);
+    expect(() => dueDateFor(2026, 13, "1234567-9")).toThrow(RangeError);
+  });
+
   it("weekend due dates move forward to Monday", () => {
     expect(dueDateFor(2026, 9, "1234560-0")).toBe("2026-10-12"); // Sat Oct 10 -> Mon 12
     expect(dueDateFor(2026, 9, "1234561-0")).toBe("2026-10-12"); // Sun Oct 11 -> Mon 12

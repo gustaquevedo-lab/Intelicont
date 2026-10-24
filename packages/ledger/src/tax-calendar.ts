@@ -23,6 +23,7 @@ function rucBodyLastDigit(ruc: string): number {
  */
 // shortcut: unverified formula, no Paraguayan holidays — replace with the DNIT annual calendar
 export function dueDateFor(periodYear: number, periodMonth: number, ruc: string): string {
+  if (!Number.isInteger(periodMonth) || periodMonth < 1 || periodMonth > 12) throw new RangeError(`Mes inválido: ${periodMonth}`);
   // Date.UTC month is 0-based, so passing the 1-based period month yields the following month (and rolls the year).
   const t = Date.UTC(periodYear, periodMonth, 10 + rucBodyLastDigit(ruc));
   const dow = new Date(t).getUTCDay();
@@ -73,7 +74,13 @@ export function todayInAsuncionISO(now = new Date()): string {
   return now.toLocaleDateString("en-CA", { timeZone: "America/Asuncion" });
 }
 
+/** The period `delta` months from `year`/`month` (1..12). */
+export function shiftPeriod(year: number, month: number, delta: number): { year: number; month: number } {
+  const idx = year * 12 + (month - 1) + delta;
+  return { year: Math.floor(idx / 12), month: (idx % 12) + 1 };
+}
+
 /** The period before `year`/`month` (1..12): the one whose obligations fall due in that month. */
 export function previousPeriod(year: number, month: number): { year: number; month: number } {
-  return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
+  return shiftPeriod(year, month, -1);
 }

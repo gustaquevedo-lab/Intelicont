@@ -8,7 +8,7 @@ import { buildRegistro } from "@intelicont/ledger/registro";
 import { getVencimientoIVA } from "@intelicont/ledger/fiscal-py";
 import { isMockMode } from "@ledger/db/index";
 import { ensureCalendar, getCalendarMonth, getUpcoming } from "@ledger/db/calendar";
-import { daysLeft, levelFor, previousPeriod, todayInAsuncionISO } from "@intelicont/ledger/tax-calendar";
+import { daysLeft, levelFor, previousPeriod, shiftPeriod, todayInAsuncionISO } from "@intelicont/ledger/tax-calendar";
 
 const period = {
   entityId: z.string().uuid(),
@@ -73,8 +73,9 @@ export const fiscalRouter = router({
       const today = todayInAsuncionISO();
       if (isMockMode()) return { today, items: [] };
       await assertVisible(input.entityId);
-      const prev = previousPeriod(Number(today.slice(0, 4)), Number(today.slice(5, 7)));
-      await ensureCalendar(input.entityId, prev.year, prev.month, 3);
+      // Previous 3 periods plus the current and next 2, so recently skipped periods get rows (overdue = not filed).
+      const from = shiftPeriod(Number(today.slice(0, 4)), Number(today.slice(5, 7)), -3);
+      await ensureCalendar(input.entityId, from.year, from.month, 6);
       return { today, items: await getUpcoming(input.entityId, input.days, today) };
     }),
 
@@ -85,9 +86,9 @@ export const fiscalRouter = router({
       const today = todayInAsuncionISO();
       if (isMockMode()) return { today, items: [] };
       await assertVisible(input.entityId);
-      // Next 3 months from today, plus the period whose filing falls due in the month being viewed.
-      const prev = previousPeriod(Number(today.slice(0, 4)), Number(today.slice(5, 7)));
-      await ensureCalendar(input.entityId, prev.year, prev.month, 3);
+      // Previous 3 + next 3 periods from today, plus the period whose filing falls due in the month being viewed.
+      const from = shiftPeriod(Number(today.slice(0, 4)), Number(today.slice(5, 7)), -3);
+      await ensureCalendar(input.entityId, from.year, from.month, 6);
       const viewed = previousPeriod(input.year, input.month);
       await ensureCalendar(input.entityId, viewed.year, viewed.month, 1);
       const rows = await getCalendarMonth(input.entityId, input.year, input.month);
