@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Usuario Completo — InteliCont v1.2</title>
+  <meta name="description" content="Guía de uso oficial, guías técnicas y documentación de cumplimiento tributario de InteliCont para estudios contables y empresas de Paraguay.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #104c91; --primary-dark: #0a356b; --primary-light: #eef6ff;
+      --secondary: #00a651; --secondary-dark: #00823e; --secondary-light: #effef5;
+      --accent: #3b82f6; --navy: #0d2137; --navy-light: #0f2d4a;
+      --gray-text: #64748b; --gray-light: #f8fafc; --gray-border: #e2e8f0;
+      --white: #ffffff; --red: #ef4444; --red-light: #fef2f2; --amber: #d97706; --amber-light: #fef3c7;
+      --sidebar-w: 290px;
+    }
+    .dark {
+      --gray-light: #0f172a; --white: #1e293b; --gray-border: #334155;
+      --gray-text: #94a3b8; --navy: #020617; --navy-light: #0f172a;
+      --primary-light: #0c2a52; --secondary-light: #055d34; --amber-light: #451a03;
+      --red-light: #450a0a;
+      color-scheme: dark;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--gray-light); color: #1e293b; line-height: 1.7;
+      transition: background 0.3s, color 0.3s;
+    }
+    .dark body { color: #cbd5e1; }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+      background: var(--navy); color: var(--white); overflow-y: auto; z-index: 200;
+      display: flex; flex-direction: column; transition: transform 0.3s;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    .sidebar-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-header .logo { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+    .sidebar-header .logo span:first-child { color: #3b82f6; }
+    .sidebar-header .logo span:last-child { color: var(--secondary); }
+    .sidebar-header .version { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+    
+    .sidebar-search { padding: 12px 16px; position: relative; }
+    .sidebar-search input {
+      width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; padding: 8px 12px 8px 32px; color: white; font-size: 13px; outline: none;
+    }
+    .sidebar-search input::placeholder { color: rgba(255,255,255,0.35); }
+    .sidebar-search .search-icon {
+      position: absolute; left: 26px; top: 50%; transform: translateY(-50%);
+      color: rgba(255,255,255,0.35); font-size: 14px; pointer-events: none;
+    }
+
+    .sidebar-nav { flex: 1; padding: 8px 0; }
+    .sidebar-nav .group-label {
+      padding: 12px 20px 4px; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 1.5px; color: rgba(255,255,255,0.3); font-weight: 700;
+    }
+    .sidebar-nav a {
+      display: flex; align-items: center; gap: 10px; padding: 7px 20px;
+      color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px;
+      transition: all 0.15s; border-left: 3px solid transparent;
+    }
+    .sidebar-nav a:hover, .sidebar-nav a.active {
+      background: rgba(255,255,255,0.06); color: white; border-left-color: #3b82f6;
+    }
+    .sidebar-nav a .icon { width: 18px; text-align: center; font-size: 13px; opacity: 0.7; }
+    
+    .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-footer a {
+      display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.5);
+      text-decoration: none; font-size: 12px; padding: 6px 0; transition: color 0.15s;
+    }
+    .sidebar-footer a:hover { color: white; }
+
+    /* ─── Main ─── */
+    .main { margin-left: var(--sidebar-w); min-height: 100vh; }
+    .topbar {
+      background: var(--white); border-bottom: 1px solid var(--gray-border);
+      padding: 12px 32px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .topbar h1 { font-size: 18px; font-weight: 800; color: var(--primary); }
+    .dark .topbar h1 { color: #60a5fa; }
+    
+    .content { max-width: 900px; margin: 0 auto; padding: 32px 32px 100px; }
+    .section {
+      background: var(--white); border: 1px solid var(--gray-border); border-radius: 16px;
+      padding: 32px; margin-bottom: 24px; transition: background 0.3s, border-color 0.3s;
+    }
+    .section h2 {
+      font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 2px solid var(--gray-light);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .dark .section h2 { color: #f1f5f9; }
+    .section h2 .num {
+      background: var(--primary); color: white; width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+    }
+    .section h3 {
+      font-size: 16px; font-weight: 700; color: var(--primary); margin: 24px 0 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dark .section h3 { color: #60a5fa; }
+    .section h4 { font-size: 14px; font-weight: 600; margin: 16px 0 4px; }
+    .section p { margin-bottom: 12px; color: #334155; font-size: 14px; }
+    .dark .section p { color: #94a3b8; }
+    .section ul, .section ol { margin: 8px 0 14px 20px; }
+    .section li { margin-bottom: 6px; color: #334155; font-size: 14px; }
+    .dark .section li { color: #94a3b8; }
+    .section strong { color: #0f172a; }
+    .dark .section strong { color: #f8fafc; }
+    
+    .section code {
+      background: var(--gray-light); padding: 2px 6px; border-radius: 4px; font-size: 12.5px;
+      font-family: 'SF Mono', Consolas, Monaco, monospace; color: var(--primary);
+      border: 1px solid var(--gray-border);
+    }
+    .dark .section code { color: #60a5fa; }
+    
+    .section .note, .section .tip, .section .warn {
+      border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start;
+    }
+    .section .note { background: var(--primary-light); border: 1px solid #bfdbfe; color: #1e3a8a; }
+    .dark .section .note { color: #93c5fd; border-color: #1e3a8a; }
+    .section .tip { background: var(--secondary-light); border: 1px solid #bbf7d0; color: #15803d; }
+    .dark .section .tip { color: #86efac; border-color: #15803d; }
+    .section .warn { background: var(--amber-light); border: 1px solid #fde68a; color: #92400e; }
+    .dark .section .warn { color: #fcd34d; border-color: #92400e; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--gray-border); }
+    th { background: var(--gray-light); font-weight: 700; color: var(--navy); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .dark th { color: #f1f5f9; }
+
+    /* Collapsible */
+    .collapsible {
+      border: 1px solid var(--gray-border); border-radius: 10px; margin: 10px 0; overflow: hidden;
+    }
+    .collapsible summary {
+      padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 14px;
+      display: flex; align-items: center; gap: 8px; user-select: none;
+      background: var(--gray-light);
+    }
+    .collapsible .collapsible-body { padding: 16px; border-top: 1px solid var(--gray-border); }
+
+    /* kbd */
+    kbd {
+      background: var(--gray-light); border: 1px solid var(--gray-border); border-radius: 4px;
+      padding: 2px 6px; font-size: 11px; font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <svg viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:34px;width:auto;">
+        <path d="M 28 20 C 14 4, 3 10, 3 20 C 3 30, 14 36, 28 20 C 42 4, 53 10, 53 20 C 53 30, 42 36, 28 20 Z" stroke="url(#loopGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        <path d="M 28 14 Q 28 20 34 20 Q 28 20 28 26 Q 28 20 22 20 Q 28 20 28 14 Z" fill="#ffffff" />
+        <text x="64" y="27" font-family="Inter,sans-serif" font-weight="700" font-size="19" fill="#ffffff" letter-spacing="-0.5">InteliCont</text>
+        <defs>
+          <linearGradient id="loopGrad" x1="3" y1="20" x2="53" y2="20" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1b63c4" />
+            <stop offset="35%" stop-color="#2f80ed" />
+            <stop offset="50%" stop-color="#33c1cc" />
+            <stop offset="70%" stop-color="#1bbb75" />
+            <stop offset="100%" stop-color="#08a14b" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div class="version">Manual de Usuario · v1.2 · Junio 2026</div>
+  </div>
+  
+  <div class="sidebar-nav">
+    <div class="group-label">General</div>
+    <a href="#introduccion" class="active"><span class="icon">📖</span> Introducción</a>
+    <a href="#onboarding"><span class="icon">🚀</span> Onboarding & RUC</a>
+    <a href="#cuentas"><span class="icon">📋</span> Plan de Cuentas</a>
+    
+    <div class="group-label">Operaciones</div>
+    <a href="#asientos"><span class="icon">📝</span> Asientos Contables</a>
+    <a href="#sifen"><span class="icon">⚡</span> Carga SIFEN XML & IA</a>
+    <a href="#retenciones"><span class="icon">✂️</span> Motor de Retenciones</a>
+    
+    <div class="group-label">Cumplimiento & Impuestos</div>
+    <a href="#rg90"><span class="icon">🏛️</span> Módulo RG 90 & DNIT</a>
+    <a href="#bancos"><span class="icon">🏦</span> Conciliación Bancaria</a>
+    <a href="#cierre"><span class="icon">🔒</span> Cierre de Periodo</a>
+    
+    <div class="group-label">Administración & SaaS</div>
+    <a href="#superadmin"><span class="icon">🔑</span> Panel de Superadmin</a>
+    <a href="#auditoria"><span class="icon">🛡️</span> Auditoría (Audit Trail)</a>
+    <a href="#atajos"><span class="icon">⌨️</span> Atajos de Teclado</a>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <h1>Manual de Operaciones Contable Completo</h1>
+    <span style="font-size: 12px; font-weight: 700; color: var(--primary);">InteliCont Enterprise v1.2</span>
+  </div>
+
+  <div class="content">
+
+    <!-- Section 1 -->
+    <div class="section" id="introduccion">
+      <h2><span class="num">1</span> Introducción a InteliCont</h2>
+      <p><strong>InteliCont</strong> es un ecosistema contable avanzado diseñado para estudios y empresas de Paraguay. Basado en un diseño <strong>AI-First</strong>, automatiza las tareas operativas más lentas (lectura de comprobantes SIFEN, contra-asientos, conciliación bancaria y cálculos de retenciones), permitiendo al profesional actuar como auditor de control en lugar de digitador de datos.</p>
+      
+      <h3>Filosofía del Sistema</h3>
+      <ul>
+        <li><strong>Inmutabilidad Contable</strong>: Los asientos contables una vez aprobados y publicados no pueden ser borrados o modificados de forma directa para proteger el histórico financiero. Toda corrección se realiza vía contra-asiento o asientos de diario de ajuste.</li>
+        <li><strong>Humano en el Bucle (Human-in-the-Loop)</strong>: La Inteligencia Artificial clasifica y sugiere, pero el contador tiene la decisión final de validar, editar cuentas o publicar las sugerencias contables.</li>
+      </ul>
+
+      <h3>Flujo General de Datos</h3>
+      <p>El flujo en InteliCont sigue un camino lineal de tres etapas que asegura la consistencia de los libros contables:</p>
+      <ol>
+        <li><strong>Ingesta (Input):</strong> Entrada de datos a través de SIFEN XML, extractos bancarios en formato CSV/Excel, o carga manual usando atajos rápidos.</li>
+        <li><strong>Procesamiento (AI & Rule Engine):</strong> El motor de inteligencia artificial y el motor de impuestos de Paraguay analizan los importes, identifican bases imponibles (10%, 5%, Exentas) y determinan las cuentas sugeridas.</li>
+        <li><strong>Validación & Publicación:</strong> El usuario verifica las sugerencias y publica en el Libro Mayor, bloqueando automáticamente el período una vez finalizado el mes contable.</li>
+      </ol>
+    </div>
+
+    <!-- Section 2 -->
+    <div class="section" id="onboarding">
+      <h2><span class="num">2</span> Onboarding & Gestión Multi-Empresa</h2>
+      <p>InteliCont aísla la información de cada empresa de manera segura mediante políticas RLS (Row Level Security) en base de datos. Cada entidad opera en un entorno independiente de cuentas y periodos.</p>
+      
+      <h3>Paso a Paso: Crear una Empresa</h3>
+      <ol>
+        <li><strong>Formulario General</strong>: Ingresa el nombre legal (Razón Social), Nombre Comercial, y RUC (Registro Único de Contribuyentes) con su dígito verificador.</li>
+        <li><strong>Validación de RUC</strong>: El sistema calcula algorítmicamente el DV del RUC paraguayo antes de permitir el registro. RUCs inválidos serán rechazados por la interfaz de onboarding.</li>
+        <li><strong>Configuración Fiscal</strong>: Asigna los regímenes impositivos aplicables (ej: <code>IVA General</code>, <code>IRE General</code>, <code>IRE Simple</code>) y la moneda base del libro mayor (por defecto <code>PYG - Guaraníes</code>).</li>
+      </ol>
+
+      <div class="note"><span class="icon">💡</span>
+        <div>
+          <strong>Cálculo del Dígito Verificador (DV):</strong><br>
+          El cálculo utiliza la fórmula estándar de Paraguay basada en el módulo 11 adaptado, multiplicando cada número de RUC por factores decrecientes antes de calcular el residuo. El sistema valida este DV automáticamente para evitar errores de carga en las planillas impositivas.
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3 -->
+    <div class="section" id="cuentas">
+      <h2><span class="num">3</span> Catálogo y Plan de Cuentas (CoA)</h2>
+      <p>El plan de cuentas estructura la contabilidad de la empresa. En Paraguay, debe cumplir con las regulaciones generales de la DNIT para el mapeo impositivo.</p>
+      
+      <h3>Clasificación Estructural de Cuentas</h3>
+      <table>
+        <thead>
+          <tr><th>Primer Dígito</th><th>Clase Contable</th><th>Naturaleza de Saldo</th><th>Cuentas Principales de Control</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>1</code></td><td>Activo</td><td>Deudora</td><td>Caja, Bancos, Clientes, IVA Crédito Fiscal</td></tr>
+          <tr><td><code>2</code></td><td>Pasivo</td><td>Acreedora</td><td>Proveedores, Retenciones a Pagar, IVA Débito Fiscal</td></tr>
+          <tr><td><code>3</code></td><td>Patrimonio Neto</td><td>Acreedora</td><td>Capital Social, Resultados Acumulados</td></tr>
+          <tr><td><code>4</code></td><td>Ingresos</td><td>Acreedora</td><td>Ventas de Mercaderías, Servicios Gravados</td></tr>
+          <tr><td><code>5</code></td><td>Egresos / Gastos</td><td>Deudora</td><td>Alquileres, Salarios, Gastos Bancarios, Costo de Ventas</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Configuración del Plan de Cuentas</h3>
+      <p>Para configurar o expandir el Plan de Cuentas (CoA), el sistema permite:</p>
+      <ul>
+        <li><strong>Mapeo Impositivo:</strong> Cada cuenta de gasto o ingreso debe asociarse a una categoría del clasificador fiscal (por ejemplo, Gastos deducibles de IVA, Costos directos de producción).</li>
+        <li><strong>Códigos Estructurados:</strong> El sistema soporta jerarquías de hasta 5 niveles (ej. <code>1.1.01.01.001</code> - Caja Chica PYG).</li>
+      </ul>
+    </div>
+
+    <!-- Section 4 -->
+    <div class="section" id="asientos">
+      <h2><span class="num">4</span> Gestión de Asientos Contables</h2>
+      <p>El diario contable de InteliCont requiere la partida doble balanceada en cada registro manual o sugerido por la IA.</p>
+      
+      <h3>Estados del Asiento</h3>
+      <ul>
+        <li><strong>Borrador (Draft)</strong>: El asiento puede ser modificado, agregando o eliminando líneas contables libremente. No afecta el Libro Mayor.</li>
+        <li><strong>Publicado (Posted)</strong>: Asiento verificado e ingresado al Libro Mayor. No puede modificarse ni eliminarse directamente.</li>
+      </ul>
+      
+      <h3>Procedimiento de Corrección de Errores</h3>
+      <p>Si se comete un error en un asiento publicado, la plataforma ofrece el botón **Reversión (Contra-asiento)** en la vista del asiento:</p>
+      <ol>
+        <li>Haz clic en **Contra-asiento** en la vista del detalle del asiento contable.</li>
+        <li>El sistema creará un asiento inverso automático balanceado de ajuste con montos contrarios que anula por completo la transacción original.</li>
+        <li>Registra una justificación contable para el ajuste en el campo de observaciones, el cual quedará registrado en el módulo de auditoría.</li>
+      </ol>
+
+      <div class="warn"><span class="icon">⚠️</span>
+        <div>
+          <strong>Normativa Anti-Alteraciones:</strong><br>
+          De acuerdo con los principios de contabilidad generalmente aceptados y las normas fiscales locales de la DNIT, alterar o borrar asientos publicados invalida la trazabilidad de los libros diarios. Por ello, la reversión crea un histórico transparente de la corrección.
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5 -->
+    <div class="section" id="sifen">
+      <h2><span class="num">5</span> Carga masiva SIFEN XML & IA</h2>
+      <p>La integración con el SIFEN (DNIT) permite procesar comprobantes electrónicos directamente a partir de archivos XML oficiales paraguayos (Kuetia o similares).</p>
+      
+      <h3>Pasos para Registrar Facturas con IA</h3>
+      <ol>
+        <li>Dirígete a la sección **Bandeja SIFEN** y suelta o selecciona tus archivos XML.</li>
+        <li>El sistema procesa y parsea los metadatos obligatorios (RUC emisor/receptor, CDC de 44 dígitos, Timbrado y Condición de Pago).</li>
+        <li>El **Auditor IA** desglosa las bases imponibles en Gravado 10%, Gravado 5%, Exento y sugiere las cuentas de gasto y pasivos con su nivel de confianza (%).</li>
+        <li>Revisa el asiento sugerido, edita cualquier cuenta contable si es necesario y presiona **Aprobar y Publicar** para ingresarlo directamente al diario.</li>
+      </ol>
+
+      <h3>Mapeo de Datos XML parseados</h3>
+      <ul>
+        <li><strong>CDC (Código de Control):</strong> Los 44 caracteres únicos del comprobante electrónico se guardan en el asiento para su posterior vinculación y exportación fiscal.</li>
+        <li><strong>Timbrado:</strong> Número de timbrado y su validez, útil para auditar proveedores antiguos.</li>
+        <li><strong>Condición de Pago:</strong> Contado o Crédito. Si es Crédito, la IA sugiere automáticamente la provisión a Proveedores antes del pago.</li>
+      </ul>
+    </div>
+
+    <!-- Section 6 -->
+    <div class="section" id="retenciones">
+      <h2><span class="num">6</span> Motor Contable de Retenciones</h2>
+      <p>InteliCont cuenta con un motor impositivo que calcula automáticamente las retenciones de impuestos vigentes en Paraguay para proveedores locales o profesionales independientes.</p>
+      
+      <h3>Reglas del Motor</h3>
+      <ul>
+        <li><strong>Compras a Profesionales (Servicios Personales)</strong>: Cuando el sistema detecta un gasto de servicios personales gravados por IVA, aplica la retención correspondiente (30% o 50% de la tasa de IVA) e IRE de forma automática.</li>
+        <li><strong>Asientos Generados</strong>: El motor desglosa el crédito de IVA retenido a la cuenta de pasivo de retención, permitiendo presentar la planilla de retención consolidada.</li>
+      </ul>
+
+      <h3>Tabla de Retenciones de IVA Frecuentes</h3>
+      <table>
+        <thead>
+          <tr><th>Concepto</th><th>Base de Retención</th><th>% Retención IVA</th><th>Ejemplo de Asiento Contable</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Servicios Personales (Profesionales)</td><td>IVA Liquidado</td><td><code>50%</code></td><td>Debe: Honorarios Profesionales / IVA Crédito. Haber: Caja / Retención IVA a Pagar (50%)</td></tr>
+          <tr><td>Adquisición de Bienes locales</td><td>IVA Liquidado</td><td><code>30%</code></td><td>Debe: Compra Mercaderías / IVA Crédito. Haber: Proveedores / Retención IVA a Pagar (30%)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Section 7 -->
+    <div class="section" id="rg90">
+      <h2><span class="num">7</span> Cumplimiento Impositivo RG 90 & DNIT</h2>
+      <p>La **Dirección Nacional de Ingresos Tributarios (DNIT)** centraliza los informes fiscales mensuales de compras y ventas de los contribuyentes bajo la Resolución General 90/2021.</p>
+      
+      <div class="note"><span class="icon">🏛️</span>
+        <div>
+          <strong>Transición Normativa Histórica: SET ya no existe</strong><br>
+          La Subsecretaría de Estado de Tributación (SET) fue unificada bajo la ley de creación de la **DNIT**. Asimismo, las antiguas declaraciones informativas del formato **Hechauka** (como el Libro Compras Formulario 211 y Libro Ventas Formulario 221) han quedado derogadas en su totalidad para los periodos actuales, siendo reemplazadas por el registro electrónico unificado **RG 90**. InteliCont prioriza el cumplimiento de la RG 90 formateando las planillas de importación listas para el portal Marangatú.
+        </div>
+      </div>
+      
+      <h3>Pasos para Generar el Archivo RG 90</h3>
+      <ol>
+        <li>Ingresa a la sección **Impuestos -> RG 90**.</li>
+        <li>Selecciona el periodo mensual y el tipo de libro (Compras, Ventas, Ingresos o Egresos).</li>
+        <li>Haz clic en **Exportar Excel** o **Generar JSON** para descargar el archivo estructurado listo para la carga en el portal de la DNIT.</li>
+      </ol>
+    </div>
+
+    <!-- Section 8 -->
+    <div class="section" id="bancos">
+      <h2><span class="num">8</span> Conciliación Bancaria</h2>
+      <p>La conciliación bancaria permite cruzar los extractos reales del banco con los movimientos registrados en las cuentas contables de InteliCont.</p>
+      
+      <h3>Proceso de Conciliación</h3>
+      <ol>
+        <li>Importa el archivo CSV o Excel del extracto bancario (GNB, Itaú, Continental, etc.).</li>
+        <li>El motor **Bank Matcher** evalúa los registros asignándoles una puntuación de coincidencia (Score) de 0 a 100 en base al monto, fecha de operación y referencia.</li>
+        <li>Para coincidencias correctas (Score > 80), haz clic en **Aprobar**; los movimientos se marcarán como conciliados inmediatamente.</li>
+        <li>Para registros bancarios sin correspondencia, puedes crear el asiento directamente desde la grilla (gastos bancarios, transferencias, etc.).</li>
+      </ol>
+    </div>
+
+    <!-- Section 9 -->
+    <div class="section" id="cierre">
+      <h2><span class="num">9</span> Cierre y Apertura de Periodo Contable</h2>
+      <p>El cierre mensual o anual bloquea las transacciones del periodo fiscal seleccionado para proteger las declaraciones presentadas ante la DNIT.</p>
+      
+      <h3>Reglas de Bloqueo</h3>
+      <ul>
+        <li><strong>Periodo Cerrado (Closed)</strong>: Bloquea todo registro, contra-asiento o cambio en los diarios de la empresa del mes/año indicado.</li>
+        <li><strong>Apertura Excepcional</strong>: Para abrir un periodo cerrado se requiere autorización con rol de administrador y el registro obligatorio de una justificación formal por escrito en el Audit Trail del sistema.</li>
+      </ul>
+    </div>
+
+    <!-- Section 10 -->
+    <div class="section" id="superadmin">
+      <h2><span class="num">10</span> Panel de Administración SaaS (Superadmin)</h2>
+      <p>El módulo `/superadmin` permite a los directores del sistema monitorear y gobernar la infraestructura SaaS global, controlando los planes de licenciamiento y las funciones del ecosistema contable.</p>
+
+      <h3>Funciones del Panel de Control</h3>
+      <ul>
+        <li><strong>Control de Tenants:</strong> Vista del listado de empresas y sus contadores activos en tiempo real.</li>
+        <li><strong>Degustación de Planes (Feature Toggling):</strong> Selector dinámico para activar/desactivar módulos avanzados de manera granular por cada tenant.</li>
+        <li><strong>Gestión de Periodos de Prueba (Trials):</strong> Activación de trials extendidos y promociones sin necesidad de cambiar los datos de facturación recurrentes del cliente.</li>
+      </ul>
+
+      <div class="note"><span class="icon">🔑</span>
+        <div>
+          <strong>Consistencia y Gates del Sistema:</strong><br>
+          Si se desactiva una función en el Panel SaaS (como la carga de SIFEN o la Conciliación Bancaria), el tenant correspondiente verá la pantalla de bloqueo con el **FeatureGate**, invitándole a subir de plan o solicitar asistencia.
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 11 -->
+    <div class="section" id="auditoria">
+      <h2><span class="num">11</span> Registro de Auditoría (Audit Trail)</h2>
+      <p>Todas las acciones críticas de seguridad (inicio de sesión, cambio de roles, aperturas excepcionales de periodo, reversión de asientos contables) se registran en una bitácora inmutable.</p>
+      
+      <h3>Campos del Audit Trail</h3>
+      <ul>
+        <li><strong>Actor</strong>: Nombre e ID del usuario que ejecutó la acción.</li>
+        <li><strong>Acción</strong>: Evento específico (ej: <code>close_period</code>, <code>reverse_journal</code>).</li>
+        <li><strong>Target ID</strong>: Identificador del documento o entidad modificada.</li>
+        <li><strong>Metadata (Diff)</strong>: Detalle JSON que contiene los valores anteriores y posteriores de los datos para un control estricto.</li>
+      </ul>
+    </div>
+
+    <!-- Section 12 -->
+    <div class="section" id="atajos">
+      <h2><span class="num">12</span> Atajos de Teclado Contables</h2>
+      <p>Maximiza la productividad operando el sistema sin tocar el mouse con los siguientes atajos globales:</p>
+      <table>
+        <thead>
+          <tr><th>Atajo de Teclado</th><th>Acción del Sistema</th><th>Área de Aplicación</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td><td>Buscador general de Empresas / Mapeo de rutas</td><td>Global</td></tr>
+          <tr><td><kbd>N</kbd></td><td>Abre el creador de un nuevo Asiento Diario manual</td><td>Libros / Asientos</td></tr>
+          <tr><td><kbd>Shift</kbd> + <kbd>U</kbd></td><td>Abre la carga de archivos XML en SIFEN</td><td>Bandeja SIFEN</td></tr>
+          <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Guarda el asiento diario en borrador</td><td>Creador de Asiento</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Cierra el modal, cajón de detalles o panel lateral activo</td><td>Global</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Simple page active navigation highlight
+  const links = document.querySelectorAll('.sidebar-nav a');
+  window.addEventListener('scroll', () => {
+    let fromTop = window.scrollY + 100;
+    links.forEach(link => {
+      const section = document.querySelector(link.getAttribute('href'));
+      if (
+        section &&
+        section.offsetTop <= fromTop &&
+        section.offsetTop + section.offsetHeight > fromTop
+      ) {
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

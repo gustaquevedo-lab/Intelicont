@@ -56,7 +56,10 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Configuración",
-    items: [{ path: "/configuracion", icon: Settings, label: "Mi Estudio", shortcut: ",", keywords: ["configuración", "settings", "tema", "preferencias"] }],
+    items: [
+      { path: "/configuracion", icon: Settings, label: "Mi Estudio", shortcut: ",", keywords: ["configuración", "settings", "tema", "preferencias"] },
+      { path: "/manual", icon: BookOpen, label: "Manual de Usuario", keywords: ["manual", "guía", "ayuda", "documentación", "tutorial"] },
+    ],
   },
 ];
 
