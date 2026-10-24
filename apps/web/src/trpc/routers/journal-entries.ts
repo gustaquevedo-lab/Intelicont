@@ -1,7 +1,7 @@
 import { router, protectedProcedure, z } from "../trpc";
 import { idempotentProcedure } from "../idempotent";
 import { TRPCError } from "@trpc/server";
-import { getJournalEntries, getJournalEntry, getJournalLines, type JournalEntryRow } from "@ledger/db/repository";
+import { getFiscalPeriods, getJournalEntries, getJournalEntry, getJournalLines, type JournalEntryRow } from "@ledger/db/repository";
 import { postEntry, reverseEntry } from "@ledger/src/usecases";
 import { isMockMode, tenantDb } from "@ledger/db/index";
 import * as schema from "@ledger/db/schema";
@@ -116,6 +116,13 @@ export const journalEntriesRouter = router({
 
       if (isMockMode()) {
         return { success: true, id: "mock-je-" + Math.random().toString(36).slice(2, 10) };
+      }
+
+      // Checked here, not in postEntry: reversals are dated today whatever the period of the original.
+      const period = (await getFiscalPeriods(input.entityId)).find((p) => p.id === input.periodId);
+      if (!period) throw new TRPCError({ code: "BAD_REQUEST", message: "Período no encontrado" });
+      if (input.date.slice(0, 7) !== `${period.year}-${String(period.month).padStart(2, "0")}`) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "La fecha no corresponde al período" });
       }
 
       const res = await postEntry({
