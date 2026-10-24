@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, httpLink, splitLink } from "@trpc/client";
 import { api } from "@/trpc/client";
+import { redirectIfTwoFactorRequired } from "@/lib/two-factor";
 
 function getBaseUrl() {
   if (typeof window !== "undefined") return "";
@@ -13,6 +14,9 @@ function getBaseUrl() {
 
 export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
+    // Any call rejected with "2FA requerido" sends the user to the 2FA setup page.
+    queryCache: new QueryCache({ onError: (e) => { redirectIfTwoFactorRequired(e); } }),
+    mutationCache: new MutationCache({ onError: (e) => { redirectIfTwoFactorRequired(e); } }),
     defaultOptions: {
       queries: {
         staleTime: 30_000,
