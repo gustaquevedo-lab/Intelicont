@@ -12,7 +12,16 @@ export type Context = {
   idempotencyKey?: string;
 };
 
-const t = initTRPC.context<Context>().create();
+const t = initTRPC.context<Context>().create({
+  /** Unexpected errors never reach the client with their original text (may hold SQL params); the ref matches the log line. */
+  errorFormatter({ shape, error, ctx }) {
+    const { stack: _stack, ...data } = shape.data as typeof shape.data & { stack?: string };
+    const stack = process.env.NODE_ENV === "production" ? {} : _stack ? { stack: _stack } : {};
+    if (error.code !== "INTERNAL_SERVER_ERROR") return { ...shape, data: { ...data, ...stack } };
+    // The stack starts with the original message, so it is dropped here even in development.
+    return { ...shape, message: "Error interno del servidor", data: { ...data, requestId: ctx?.requestId } };
+  },
+});
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const WARN_CODES = new Set([

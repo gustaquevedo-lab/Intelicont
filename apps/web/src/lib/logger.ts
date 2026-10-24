@@ -40,6 +40,11 @@ export function createLogger(dest?: NodeJS.WritableStream) {
 export const logger = createLogger();
 
 const MAX = 500;
+/** Driver messages may echo values (`invalid input syntax for type uuid: "x"`, `Key (ruc)=(x)`): keep the head only. */
+const scrubDriver = (m: string) => {
+  const cut = m.search(/:|Key \(|DETAIL|detail:/i);
+  return scrub((cut >= 0 ? m.slice(0, cut) : m).trim()).slice(0, 200);
+};
 const scrub = (m: string) => {
   const i = m.search(/\n?params:/);
   return (i >= 0 ? m.slice(0, i) : m).slice(0, MAX);
@@ -55,7 +60,7 @@ export function safeErrorInfo(err: unknown): { errName: string; errorMessage: st
   const e = err as Error & { query?: unknown; params?: unknown; cause?: unknown };
   if (typeof e.query === "string" && Array.isArray(e.params) && e.cause !== undefined) {
     const c = e.cause as { message?: unknown; code?: unknown; constraint?: unknown; constraint_name?: unknown };
-    const parts = [typeof c?.message === "string" ? scrub(c.message) : "query failed"];
+    const parts = [typeof c?.message === "string" ? scrubDriver(c.message) : "query failed"];
     if (c?.code) parts.push(`code=${String(c.code)}`);
     const constraint = c?.constraint ?? c?.constraint_name;
     if (constraint) parts.push(`constraint=${String(constraint)}`);

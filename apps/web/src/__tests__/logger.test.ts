@@ -10,6 +10,7 @@ vi.mock("@/lib/logger", async () => {
   return { ...actual, logger: actual.createLogger(dest) };
 });
 
+import { appRouter } from "@/trpc";
 import { createLogger, safeErrorInfo } from "@/lib/logger";
 import { getEmpresas } from "@/lib/actions";
 
@@ -154,5 +155,49 @@ describe("structured logs", () => {
     const out: string[] = [];
     createLogger(new Writable({ write(c, _e, cb) { out.push(String(c)); cb(); } })).info({ headers: { cookie: "sid=zzz", "set-cookie": "s=qqq" } }, "x");
     expect(out.join("")).not.toMatch(/zzz|qqq/);
+  });
+
+  it("pg invalid input syntax messages do not echo the value", () => {
+    const e = drizzleError();
+    e.cause = new Error('invalid input syntax for type uuid: "80014066-SECRET"');
+    const info = safeErrorInfo(e);
+    expect(info.errorMessage).toBe("invalid input syntax for type uuid");
+    expect(JSON.stringify(info)).not.toContain("SECRET");
+  });
+
+  it("driver messages with Key (...) details are cut", () => {
+    const e = drizzleError();
+    e.cause = Object.assign(new Error("duplicate key value Key (ruc)=(80014066) already exists"), { code: "23505" });
+    const info = safeErrorInfo(e);
+    expect(JSON.stringify(info)).not.toContain("80014066");
+    e.cause = new Error("x".repeat(500));
+    expect(safeErrorInfo(e).errorMessage.length).toBeLessThanOrEqual(200);
+  });
+});
+
+describe("client error shape", () => {
+  // The formatter runs in the fetch adapter, so go through it for the JSON the browser sees.
+  const call = async (path: string) => {
+    const { fetchRequestHandler } = await import("@trpc/server/adapters/fetch");
+    const res = await fetchRequestHandler({ endpoint: "/t", req: new Request(`http://x/t/${path}`), router: testRouter, createContext: () => ({ requestId: "abcd1234-0000" }) });
+    return (await res.json()) as { error: { message: string; data: Record<string, unknown> } };
+  };
+
+  it("internal errors are masked for the client and carry a requestId", async () => {
+    const { error } = await call("boom");
+    expect(error.message).toBe("Error interno del servidor");
+    expect(error.data.requestId).toBe("abcd1234-0000");
+    expect(error.data).not.toHaveProperty("stack");
+  });
+
+  it("non-internal errors keep their message", async () => {
+    const { error } = await call("guarded");
+    expect(error.message).toBe("UNAUTHORIZED");
+    expect(error.data).not.toHaveProperty("requestId");
+  });
+
+  it("a DrizzleQueryError never reaches the client message", async () => {
+    const { error } = await call("dbFail");
+    expect(JSON.stringify(error)).not.toMatch(/SECRET NAME|80014066|params:|Failed query/);
   });
 });

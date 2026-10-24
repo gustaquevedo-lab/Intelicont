@@ -27,7 +27,11 @@ const DOC_LABEL: Record<string, string> = {
   invoice: "Factura", credit_note: "Nota de crédito", debit_note: "Nota de débito", self_invoice: "Autofactura", remito: "Remito",
 };
 const gs = (n: number) => `₲ ${n.toLocaleString("es-PY")}`;
-const errMsg = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
+const errMsg = (e: unknown, fallback: string) => {
+  if (!(e instanceof Error)) return fallback;
+  const ref = (e as { data?: { requestId?: unknown } }).data?.requestId;
+  return typeof ref === "string" ? `${e.message} (ref ${ref.slice(0, 8)})` : e.message;
+};
 
 export default function SifenPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
