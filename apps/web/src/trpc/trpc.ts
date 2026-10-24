@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { withTenant } from "@ledger/db/index";
 import { loadGuardUser, needs2FA } from "@/lib/auth-guard";
-import { logger } from "@/lib/logger";
+import { logger, safeErrorInfo } from "@/lib/logger";
 
 /** Identity comes only from the verified session (see api/trpc route), never from input. */
 export type Context = {
@@ -38,19 +38,17 @@ const logging = t.middleware(async ({ ctx, path, type, getRawInput, next }) => {
   } else {
     const err = result.error;
     // Only unexpected errors (wrapped as INTERNAL_SERVER_ERROR) expose their cause; 4xx messages are ours.
-    const cause = err.code === "INTERNAL_SERVER_ERROR" && err.cause instanceof Error ? err.cause : undefined;
-    const origin = cause ?? err; // unexpected errors arrive wrapped in an INTERNAL_SERVER_ERROR TRPCError
-    logger[WARN_CODES.has(err.code) ? "warn" : "error"](
-      {
-        ...line,
-        ok: false,
-        code: err.code,
-        errorMessage: origin.message,
-        ...(cause && { errName: cause.name }),
-        ...(cause && process.env.NODE_ENV !== "production" && { stack: cause.stack }),
-      },
-      "trpc",
-    );
+    // Input-validation failures log only issue paths/codes (zod messages may echo received values).
+    const cause: unknown = err.cause;
+    const zod = cause instanceof Error && cause.name === "ZodError" && Array.isArray((cause as { issues?: unknown }).issues)
+      ? (cause as unknown as { issues: { path: PropertyKey[]; code: string }[] }).issues.map((i) => ({ path: i.path.map(String).join("."), code: i.code }))
+      : undefined;
+    const info = zod
+      ? { errorMessage: "input validation failed", issues: zod }
+      : err.code === "INTERNAL_SERVER_ERROR" && cause instanceof Error
+        ? safeErrorInfo(cause)
+        : { errorMessage: err.message.slice(0, 500) };
+    logger[WARN_CODES.has(err.code) ? "warn" : "error"]({ ...line, ok: false, code: err.code, ...info }, "trpc");
   }
   return result;
 });

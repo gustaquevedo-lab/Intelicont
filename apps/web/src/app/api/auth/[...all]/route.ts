@@ -1,6 +1,6 @@
 import { toNextJsHandler } from "better-auth/next-js";
 import { auth } from "@/lib/auth";
-import { logger } from "@/lib/logger";
+import { logger, safeErrorInfo } from "@/lib/logger";
 
 const handlers = toNextJsHandler(auth);
 
@@ -12,7 +12,7 @@ const guarded = (handler: (req: Request) => Promise<Response>) => async (req: Re
     return res;
   } catch (err) {
     const requestId = crypto.randomUUID();
-    logger.error({ requestId, path: new URL(req.url).pathname, errName: err instanceof Error ? err.name : "unknown", errorMessage: err instanceof Error ? err.message : String(err) }, "auth failed");
+    logger.error({ requestId, path: new URL(req.url).pathname, ...safeErrorInfo(err) }, "auth failed");
     return Response.json({ error: "Error interno", requestId }, { status: 500 });
   }
 };

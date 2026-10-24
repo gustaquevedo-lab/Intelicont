@@ -10,13 +10,35 @@ vi.mock("@/lib/logger", async () => {
   return { ...actual, logger: actual.createLogger(dest) };
 });
 
-import { createLogger } from "@/lib/logger";
+import { createLogger, safeErrorInfo } from "@/lib/logger";
+import { getEmpresas } from "@/lib/actions";
+
+const sessionMock = vi.hoisted(() => ({ error: undefined as unknown }));
+vi.mock("@/lib/session", () => ({ requireUser: async () => { throw sessionMock.error; } }));
+
+/** Shape of drizzle-orm 0.45 DrizzleQueryError: message embeds the bound params. */
+function drizzleError() {
+  const cause = Object.assign(new Error('duplicate key value violates unique constraint "entities_ruc_key"'), {
+    code: "23505", constraint: "entities_ruc_key", detail: "Key (ruc)=(80014066) already exists.",
+  });
+  class DrizzleQueryError extends Error {
+    query = "insert into entities (ruc, name) values ($1, $2)";
+    params = ["80014066", "SECRET NAME"];
+    constructor(public override cause: Error) {
+      super("Failed query: insert into entities (ruc, name) values ($1, $2)\nparams: 80014066,SECRET NAME");
+      this.name = "Error";
+    }
+  }
+  return new DrizzleQueryError(cause);
+}
 import { router, publicProcedure, protectedProcedure, z } from "@/trpc/trpc";
 
 const testRouter = router({
   ok: publicProcedure.input(z.object({ entityId: z.string().optional(), xml: z.string().optional() })).query(() => "done"),
   bad: publicProcedure.mutation(() => { throw new TRPCError({ code: "BAD_REQUEST", message: "entrada inválida" }); }),
   boom: publicProcedure.query(() => { throw new Error("db exploded"); }),
+  zod: publicProcedure.input(z.object({ ruc: z.string().regex(/^\\d+$/) })).query(() => 1),
+  dbFail: publicProcedure.query(() => { throw drizzleError(); }),
   guarded: protectedProcedure.query(() => "never"),
 });
 const lines = () => sink.lines.map((l) => JSON.parse(l) as Record<string, unknown>);
@@ -85,5 +107,52 @@ describe("structured logs", () => {
     const text = out.join("");
     for (const secret of ["abc123", "hunter2", "tok-9", "<x/>"]) expect(text).not.toContain(secret);
     expect(text).toContain("[redacted]");
+  });
+
+  it("a failing query never logs its SQL parameters", async () => {
+    await expect(caller().dbFail()).rejects.toBeDefined();
+    const text = sink.lines.join("");
+    for (const leak of ["SECRET NAME", "80014066", "params:"]) expect(text).not.toContain(leak);
+    expect(lines()[0]).toMatchObject({ level: 50, code: "INTERNAL_SERVER_ERROR" });
+    expect(text).toContain("23505");
+    expect(lines()[0]).not.toHaveProperty("stack");
+  });
+
+  it("safeErrorInfo scrubs params from plain errors", () => {
+    const info = safeErrorInfo(new Error("boom\nparams: 80014066,SECRET NAME"));
+    expect(info.errorMessage).toBe("boom");
+    expect(JSON.stringify(info)).not.toContain("SECRET");
+    expect(safeErrorInfo(new Error("x".repeat(900))).errorMessage).toHaveLength(500);
+    expect(safeErrorInfo("plain")).toMatchObject({ errName: "unknown", errorMessage: "plain" });
+  });
+
+  it("safeErrorInfo omits the stack for Drizzle errors and keeps it in development", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    expect(safeErrorInfo(drizzleError())).not.toHaveProperty("stack");
+    expect(safeErrorInfo(new Error("x"))).toHaveProperty("stack");
+    vi.stubEnv("NODE_ENV", "production");
+    expect(safeErrorInfo(new Error("x"))).not.toHaveProperty("stack");
+  });
+
+  it("a zod validation failure logs paths and codes but not values", async () => {
+    await expect(caller().zod({ ruc: "80014066-SECRETVALUE" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const text = sink.lines.join("");
+    expect(text).not.toContain("SECRETVALUE");
+    expect(lines()[0]).toMatchObject({ level: 40, code: "BAD_REQUEST", issues: [{ path: "ruc", code: "invalid_format" }] });
+  });
+
+  it("scoped skips Next redirect errors and logs other failures", async () => {
+    sessionMock.error = Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;replace;/login;307;" });
+    await expect(getEmpresas()).rejects.toBe(sessionMock.error);
+    expect(lines()).toHaveLength(0);
+    sessionMock.error = new Error("no session");
+    await expect(getEmpresas()).rejects.toThrow("no session");
+    expect(lines()[0]).toMatchObject({ level: 40, msg: "action failed", errorMessage: "no session" });
+  });
+
+  it("redact covers a top-level headers.cookie", () => {
+    const out: string[] = [];
+    createLogger(new Writable({ write(c, _e, cb) { out.push(String(c)); cb(); } })).info({ headers: { cookie: "sid=zzz", "set-cookie": "s=qqq" } }, "x");
+    expect(out.join("")).not.toMatch(/zzz|qqq/);
   });
 });

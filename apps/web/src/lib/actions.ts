@@ -8,7 +8,7 @@ import { postEntry } from "@ledger/src/usecases";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "./session";
 import { loadGuardUser, needs2FA } from "./auth-guard";
-import { logger } from "./logger";
+import { logger, safeErrorInfo } from "./logger";
 import { isCalendarDate, CALENDAR_DATE_ERROR } from "./calendar-date";
 
 /**
@@ -26,7 +26,11 @@ async function scoped<T>(fn: (db: Db, userId: string) => Promise<T>, action?: st
     });
   } catch (err) {
     // Server actions have no request context; log who/what failed (never the input) and rethrow.
-    logger.warn({ action, userId, errName: err instanceof Error ? err.name : "unknown", errorMessage: err instanceof Error ? err.message : String(err) }, "action failed");
+    // Next control-flow errors (redirect/notFound) are not failures.
+    const digest = (err as { digest?: unknown } | null)?.digest;
+    if (!(typeof digest === "string" && /^NEXT_(REDIRECT|NOT_FOUND)/.test(digest))) {
+      logger.warn({ action: action ?? (fn.name || "unknown"), userId, ...safeErrorInfo(err) }, "action failed");
+    }
     throw err;
   }
 }
