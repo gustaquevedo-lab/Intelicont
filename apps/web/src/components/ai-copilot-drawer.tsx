@@ -11,24 +11,16 @@ import {
   Building2,
   BookOpen,
   Calendar,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
   Trash2,
   Search,
+  Plus,
+  MessageSquare,
+  ChevronDown,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { usePathname } from "next/navigation";
 import { api } from "@/trpc/client";
 import { cn } from "@/lib/utils";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  toolsExecuted?: Array<{ toolName: string; success: boolean }>;
-  timestamp: string;
-}
 
 const QUICK_PROMPTS = [
   {
@@ -38,18 +30,18 @@ const QUICK_PROMPTS = [
   },
   {
     icon: BookOpen,
-    label: "Gastos no deducibles IRE",
-    text: "¿Qué gastos NO son deducibles en el IRE según el Art. 16 de la Ley 6380/2019?",
+    label: "Combustible IVA 50%",
+    text: "¿Cómo imputo un gasto de combustible con IVA 50% según la Ley 6380/2019?",
   },
   {
     icon: Search,
-    label: "Consultar saldos",
-    text: "Consultá el saldo contable actual de las cuentas de Caja y Bancos de la empresa.",
+    label: "Cuentas del Activo",
+    text: "Revisá las cuentas del activo corriente disponibles en el plan de cuentas.",
   },
   {
-    icon: HelpCircle,
-    label: "Desglose RG 90",
-    text: "¿Cómo se debe registrar y desglosar el IVA 10% y 5% según la RG 90/2021?",
+    icon: BookOpen,
+    label: "Gastos no deducibles IRE",
+    text: "¿Qué gastos NO son deducibles en el IRE según el Art. 16 de la Ley 6380/2019?",
   },
 ];
 
@@ -62,12 +54,40 @@ export function AiCopilotDrawer({
 }) {
   const { selectedEntity } = useAuthStore();
   const pathname = usePathname();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [activeConversacionId, setActiveConversacionId] = useState<string | null>(null);
+  const [showThreadSelector, setShowThreadSelector] = useState(false);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const chatMutation = api.agent.chat.useMutation();
+  const entityId = selectedEntity?.id || "00000000-0000-0000-0000-000000000001";
+  const entityName = selectedEntity ? (selectedEntity.tradeName || selectedEntity.legalName) : "Empresa Activa";
+  const entityRuc = selectedEntity?.ruc || "80000000-0";
+
+  const utils = api.useUtils();
+
+  // Queries persistentes
+  const { data: conversaciones = [] } = api.copilot.listConversations.useQuery(
+    { entityId },
+    { enabled: open && !!entityId }
+  );
+
+  const { data: messages = [], isLoading: loadingMessages } = api.copilot.getMessages.useQuery(
+    { conversacionId: activeConversacionId!, entityId },
+    { enabled: open && !!activeConversacionId }
+  );
+
+  // Auto-seleccionar la última conversación persistida al abrir
+  useEffect(() => {
+    if (open && !activeConversacionId && conversaciones.length > 0) {
+      setActiveConversacionId(conversaciones[0].id);
+    }
+  }, [open, conversaciones, activeConversacionId]);
+
+  // Reset al cambiar de empresa
+  useEffect(() => {
+    setActiveConversacionId(null);
+  }, [entityId]);
 
   // Enfocar input al abrir
   useEffect(() => {
@@ -76,10 +96,12 @@ export function AiCopilotDrawer({
     }
   }, [open]);
 
-  // Scroll automático hacia el último mensaje
+  // Scroll automático
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, chatMutation.isPending]);
+    if (open) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, open]);
 
   // Cerrar con Escape
   useEffect(() => {
@@ -92,68 +114,43 @@ export function AiCopilotDrawer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
-  const handleSend = async (textToSend?: string) => {
+  // Mutación de envío con memoria persistente
+  const sendMessageMutation = api.copilot.sendMessage.useMutation({
+    onSuccess: (res) => {
+      setInput("");
+      if (!activeConversacionId || activeConversacionId !== res.conversacionId) {
+        setActiveConversacionId(res.conversacionId);
+      }
+      utils.copilot.getMessages.invalidate({ conversacionId: res.conversacionId, entityId });
+      utils.copilot.listConversations.invalidate({ entityId });
+    },
+  });
+
+  const deleteConvMutation = api.copilot.deleteConversation.useMutation({
+    onSuccess: () => {
+      setActiveConversacionId(null);
+      utils.copilot.listConversations.invalidate({ entityId });
+    },
+  });
+
+  const handleSend = (textToSend?: string) => {
     const prompt = (textToSend || input).trim();
-    if (!prompt || !selectedEntity || chatMutation.isPending) return;
+    if (!prompt || !selectedEntity || sendMessageMutation.isPending) return;
 
-    const userMsg: Message = {
-      id: Math.random().toString(36).substring(7),
-      role: "user",
-      content: prompt,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    const newHistory = [...messages, userMsg];
-    setMessages(newHistory);
-    setInput("");
-
-    try {
-      const res = await chatMutation.mutateAsync({
-        entityId: selectedEntity.id,
-        contextPath: pathname,
-        messages: newHistory.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-      });
-
-      const assistantMsg: Message = {
-        id: Math.random().toString(36).substring(7),
-        role: "assistant",
-        content: res.reply || "Se procesó la solicitud.",
-        toolsExecuted: res.toolsExecuted,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : "Error al conectar con el motor de IA local.";
-      const errorAssistantMsg: Message = {
-        id: Math.random().toString(36).substring(7),
-        role: "assistant",
-        content: `⚠️ ${errorMsg}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-      setMessages((prev) => [...prev, errorAssistantMsg]);
-    }
+    sendMessageMutation.mutate({
+      entityId,
+      conversacionId: activeConversacionId || undefined,
+      mensaje: prompt,
+    });
   };
 
-  const getToolLabel = (name: string) => {
-    switch (name) {
-      case "consultar_normativa_legal":
-        return "RAG Normativo (Ley 6380 / RG 90)";
-      case "consultar_saldo_cuenta":
-        return "Mayor Contable (Saldos)";
-      case "buscar_comprobantes":
-        return "Comprobantes Tributarios";
-      case "consultar_vencimientos_fiscales":
-        return "Calendario Perpetuo DNIT";
-      case "proponer_asiento_contable":
-        return "Validación Partida Doble";
-      default:
-        return name;
-    }
+  const handleNewConversation = () => {
+    setActiveConversacionId(null);
+    setShowThreadSelector(false);
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
+
+  const activeThread = conversaciones.find((c) => c.id === activeConversacionId);
 
   if (!open) return null;
 
@@ -173,37 +170,38 @@ export function AiCopilotDrawer({
         aria-label="Copilot Contable AI"
       >
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-md">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/60 backdrop-blur-md">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="h-8 w-8 rounded-lg bg-purple-600 flex items-center justify-center text-white shadow-md shadow-purple-500/20 shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-purple-500/20 shrink-0">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                    Copilot Contable AI
+                    Copilot Contable InteliCont
                   </h3>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-mono font-medium">
-                    1.5B Local
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
+                    Memoria RAG
                   </span>
                 </div>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                  RAG Legal Paraguay • Multi-tenant
-                </p>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium truncate max-w-[280px]">
+                  <Building2 className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{entityName}</span>
+                  <span className="opacity-40">·</span>
+                  <span className="font-mono text-[11px]">{entityRuc}</span>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-1">
-              {messages.length > 0 && (
-                <button
-                  onClick={() => setMessages([])}
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                  title="Limpiar conversación"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                onClick={handleNewConversation}
+                className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-lg transition-colors"
+                title="Nueva Consulta (+)"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
               <button
                 onClick={onClose}
                 className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -214,30 +212,72 @@ export function AiCopilotDrawer({
             </div>
           </div>
 
-          {/* Context chips: active entity and active route */}
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
-            {selectedEntity ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 font-medium truncate max-w-[240px]">
-                <Building2 className="h-3 w-3 shrink-0" />
-                <span className="truncate">{selectedEntity.tradeName || selectedEntity.legalName}</span>
-                <span className="opacity-70 font-mono">({selectedEntity.ruc})</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
-                <AlertCircle className="h-3 w-3" />
-                Sin empresa activa
-              </span>
-            )}
+          {/* Selector de Hilos de Conversación */}
+          <div className="relative mt-2.5">
+            <button
+              onClick={() => setShowThreadSelector(!showThreadSelector)}
+              className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-300 shadow-xs hover:border-gray-300 transition"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <MessageSquare className="h-3.5 w-3.5 text-purple-600 flex-shrink-0" />
+                <span className="truncate font-medium">
+                  {activeThread ? activeThread.titulo : "Nueva Consulta Activa"}
+                </span>
+              </div>
+              <ChevronDown className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+            </button>
 
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono text-[10px]">
-              📍 {pathname}
-            </span>
+            {showThreadSelector && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-20 max-h-56 overflow-y-auto p-1.5 space-y-1">
+                <button
+                  onClick={handleNewConversation}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-left transition"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>+ Iniciar Nueva Consulta</span>
+                </button>
+                <div className="border-t border-gray-100 dark:border-gray-700/60 my-1" />
+                {conversaciones.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-gray-400">Sin conversaciones previas</div>
+                ) : (
+                  conversaciones.map((conv) => (
+                    <div
+                      key={conv.id}
+                      className={cn(
+                        "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer",
+                        conv.id === activeConversacionId
+                          ? "bg-purple-50 dark:bg-purple-950/40 font-semibold text-purple-700 dark:text-purple-300"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750"
+                      )}
+                      onClick={() => {
+                        setActiveConversacionId(conv.id);
+                        setShowThreadSelector(false);
+                      }}
+                    >
+                      <span className="truncate mr-2">{conv.titulo}</span>
+                      {conv.id === activeConversacionId && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteConvMutation.mutate({ conversacionId: conv.id, entityId });
+                          }}
+                          className="text-gray-400 hover:text-red-500 p-1"
+                          title="Eliminar este hilo"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Messages Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
+          {!activeConversacionId && messages.length === 0 ? (
             <div className="h-full flex flex-col justify-center items-center text-center px-4 py-8">
               <div className="h-12 w-12 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-3 shadow-inner">
                 <Bot className="h-6 w-6" />
@@ -246,7 +286,7 @@ export function AiCopilotDrawer({
                 ¿En qué puedo ayudarte hoy?
               </h4>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 max-w-xs">
-                Tengo acceso a la normativa paraguaya (Ley 6380, RG 90) y a las cuentas y comprobantes de esta empresa.
+                Tengo memoria persistente de tus consultas y acceso en tiempo real a las cuentas y comprobantes de <strong>{entityName}</strong>.
               </p>
 
               {/* Quick suggestions */}
@@ -272,11 +312,11 @@ export function AiCopilotDrawer({
                 key={m.id}
                 className={cn(
                   "flex flex-col gap-1 max-w-[88%]",
-                  m.role === "user" ? "ml-auto items-end" : "mr-auto items-start"
+                  m.rol === "user" ? "ml-auto items-end" : "mr-auto items-start"
                 )}
               >
                 <div className="flex items-center gap-1.5 px-1 text-[10px] text-gray-400">
-                  {m.role === "user" ? (
+                  {m.rol === "user" ? (
                     <>
                       <span>Vos</span>
                       <User className="h-3 w-3" />
@@ -284,59 +324,35 @@ export function AiCopilotDrawer({
                   ) : (
                     <>
                       <Bot className="h-3 w-3 text-purple-500" />
-                      <span className="font-semibold text-purple-600 dark:text-purple-400">Copilot</span>
+                      <span className="font-semibold text-purple-600 dark:text-purple-400">Copilot RAG</span>
                     </>
                   )}
-                  <span>• {m.timestamp}</span>
+                  <span>• {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
-
-                {/* Tool badges if executed */}
-                {m.toolsExecuted && m.toolsExecuted.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-1">
-                    {m.toolsExecuted.map((t, tidx) => (
-                      <span
-                        key={tidx}
-                        className={cn(
-                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border",
-                          t.success
-                            ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40"
-                            : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/40"
-                        )}
-                      >
-                        {t.success ? (
-                          <CheckCircle2 className="h-2.5 w-2.5" />
-                        ) : (
-                          <AlertCircle className="h-2.5 w-2.5" />
-                        )}
-                        {getToolLabel(t.toolName)}
-                      </span>
-                    ))}
-                  </div>
-                )}
 
                 <div
                   className={cn(
-                    "p-3 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words shadow-xs",
-                    m.role === "user"
-                      ? "bg-primary text-white rounded-br-xs"
+                    "p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words shadow-xs",
+                    m.rol === "user"
+                      ? "bg-purple-600 text-white rounded-br-xs"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-xs border border-gray-200/60 dark:border-gray-700/60"
                   )}
                 >
-                  {m.content}
+                  {m.contenido}
                 </div>
               </div>
             ))
           )}
 
-          {chatMutation.isPending && (
+          {sendMessageMutation.isPending && (
             <div className="mr-auto flex flex-col gap-1 max-w-[85%] animate-pulse">
               <div className="flex items-center gap-1.5 px-1 text-[10px] text-purple-600 dark:text-purple-400 font-semibold">
                 <Bot className="h-3 w-3" />
-                <span>Copilot pensando y consultando herramientas...</span>
+                <span>Copilot analizando libro mayor y normativas tributarias...</span>
               </div>
               <div className="p-3 rounded-2xl bg-gray-100 dark:bg-gray-800 rounded-bl-xs border border-gray-200/60 dark:border-gray-700/60 flex items-center gap-2 text-xs text-gray-500">
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-purple-600" />
-                <span>Analizando normativa y base contable de la empresa...</span>
+                <span>Consultando normativas paraguayas y cuentas de la empresa...</span>
               </div>
             </div>
           )}
@@ -360,28 +376,29 @@ export function AiCopilotDrawer({
               onChange={(e) => setInput(e.target.value)}
               placeholder={
                 selectedEntity
-                  ? `Preguntá a la IA sobre ${selectedEntity.tradeName || selectedEntity.legalName}...`
+                  ? `Preguntá sobre ${selectedEntity.tradeName || selectedEntity.legalName}...`
                   : "Seleccioná una empresa para chatear..."
               }
-              disabled={!selectedEntity || chatMutation.isPending}
+              disabled={!selectedEntity || sendMessageMutation.isPending}
               className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:text-white placeholder-gray-400 transition-all disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!input.trim() || !selectedEntity || chatMutation.isPending}
+              disabled={!input.trim() || !selectedEntity || sendMessageMutation.isPending}
               className="p-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-40 disabled:hover:bg-purple-600 shadow-md shadow-purple-600/20 cursor-pointer"
-              title="Enviar mensaje"
+              title="Enviar consulta (Enter)"
             >
-              {chatMutation.isPending ? (
+              {sendMessageMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
             </button>
           </form>
-          <p className="mt-1.5 text-[10px] text-center text-gray-400">
-            InteliCont Copilot 1.5B • Verificá siempre con un profesional contable matriculado.
-          </p>
+          <div className="flex items-center justify-between mt-1.5 text-[10px] text-gray-400 px-1">
+            <span>Enter para enviar</span>
+            <span>Memoria persistente por empresa</span>
+          </div>
         </div>
       </aside>
     </>

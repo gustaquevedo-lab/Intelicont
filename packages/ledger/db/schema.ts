@@ -507,6 +507,30 @@ export const aiDecisions = pgTable("ai_decisions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+// ─── Copilot: Conversaciones y Memoria RAG ──────────────────────────────────
+
+export const copilotConversaciones = pgTable("copilot_conversaciones", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  titulo: varchar("titulo", { length: 200 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("copilot_conversaciones_entity_id_idx").on(t.entityId),
+]);
+
+export const copilotMensajes = pgTable("copilot_mensajes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversacionId: uuid("conversacion_id").references(() => copilotConversaciones.id, { onDelete: "cascade" }).notNull(),
+  rol: varchar("rol", { length: 20 }).notNull(), // 'user' | 'assistant' | 'system'
+  contenido: text("contenido").notNull(),
+  contextoUsado: jsonb("contexto_usado"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("copilot_mensajes_conversacion_id_idx").on(t.conversacionId),
+]);
+
 // ─── Relations ────────────────────────────────────────────────────────────
 
 export const entitiesRelations = relations(entities, ({ many }) => ({
