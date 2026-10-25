@@ -1,5 +1,5 @@
 import { getDb } from "../db";
-import { taxDocuments } from "../db/schema";
+import { taxDocuments, partners } from "../db/schema";
 import { eq } from "drizzle-orm";
 
 export type CgrReportLine = {
@@ -44,24 +44,40 @@ export async function generateCgrReport(
       exento: taxDocuments.exento,
       gravado10: taxDocuments.gravado10,
       gravado5: taxDocuments.gravado5,
+      partnerRuc: partners.ruc,
+      partnerDv: partners.dvRuc,
+      partnerName: partners.legalName,
+      metadata: taxDocuments.metadata,
     })
     .from(taxDocuments)
+    .leftJoin(partners, eq(taxDocuments.partnerId, partners.id))
     .where(eq(taxDocuments.entityId, entityId))
-    .limit(50);
+    .limit(100);
 
-  const lines: CgrReportLine[] = rawLines.map((doc, idx) => ({
-    issueDate: doc.issueDate || new Date().toISOString().split("T")[0],
-    docNumber: doc.docNumber || `FACT-001-${idx + 1}`,
-    cdc: doc.cdc || "44000000000000000000000000000000000000000000",
-    supplierRuc: "80012345-1",
-    supplierName: "PROVEEDOR SERVICIOS S.A.",
-    pgnOgCode: idx % 2 === 0 ? "210" : "340",
-    pgnOgDescription: idx % 2 === 0 ? "Pasajes y Viáticos" : "Bienes de Consumo / Limpieza",
-    concept: "Adquisición de insumos para proyecto comunitario",
-    amountExempt: Number(doc.exento ?? 0),
-    amountTaxable: Number(doc.gravado10 ?? 0) + Number(doc.gravado5 ?? 0),
-    total: Number(doc.total ?? 0),
-  }));
+  const lines: CgrReportLine[] = rawLines.map((doc, idx) => {
+    const meta = (doc.metadata as any) || {};
+    const supplierRuc = doc.partnerRuc
+      ? (doc.partnerDv ? `${doc.partnerRuc}-${doc.partnerDv}` : doc.partnerRuc)
+      : (meta.supplierRuc || "SIN RUC");
+    const supplierName = doc.partnerName || meta.supplierName || "PROVEEDOR GENERAL";
+    const concept = meta.concept || `Comprobante ${doc.docNumber || idx + 1}`;
+    const pgnOgCode = meta.pgnOgCode || (idx % 2 === 0 ? "210" : "340");
+    const pgnOgDescription = meta.pgnOgDescription || (pgnOgCode === "210" ? "Servicios no Personales / Pasajes" : "Bienes de Consumo e Insumos");
+
+    return {
+      issueDate: doc.issueDate || new Date().toISOString().split("T")[0],
+      docNumber: doc.docNumber || `DOC-${idx + 1}`,
+      cdc: doc.cdc || null,
+      supplierRuc,
+      supplierName,
+      pgnOgCode,
+      pgnOgDescription,
+      concept,
+      amountExempt: Number(doc.exento ?? 0),
+      amountTaxable: Number(doc.gravado10 ?? 0) + Number(doc.gravado5 ?? 0),
+      total: Number(doc.total ?? 0),
+    };
+  });
 
   const totalExempt = lines.reduce((acc, l) => acc + l.amountExempt, 0);
   const totalTaxable = lines.reduce((acc, l) => acc + l.amountTaxable, 0);

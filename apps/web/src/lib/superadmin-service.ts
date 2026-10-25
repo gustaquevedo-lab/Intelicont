@@ -1,9 +1,10 @@
 import { randomUUID, randomBytes } from "node:crypto";
 import { getDb, isMockMode } from "@ledger/db";
-import { entities, users, memberships } from "@ledger/db/schema";
+import { entities, users, memberships, authAccounts } from "@ledger/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { getFirmaLimits, validarLimiteUsuarios } from "./plans";
 import { getErroresPlataforma } from "./error-tracker";
+import { auth } from "./auth";
 
 export interface TenantRecord {
   id: string;
@@ -136,6 +137,19 @@ export async function createTenantAtomic(input: {
     role: "admin",
   });
 
+  try {
+    const authCtx = await auth.$context;
+    const hash = await authCtx.password.hash(passwordTemporal);
+    await db.insert(authAccounts).values({
+      userId: userRow.id,
+      providerId: "credential",
+      accountId: userRow.id,
+      password: hash,
+    });
+  } catch (err) {
+    console.warn("[Superadmin] Could not hash/insert auth_account:", err);
+  }
+
   return {
     entity: entityRow as any,
     user: userRow as any,
@@ -213,6 +227,19 @@ export async function createUserWithLimits(input: {
     role: input.role || "accountant",
   });
 
+  try {
+    const authCtx = await auth.$context;
+    const hash = await authCtx.password.hash(passwordTemporal);
+    await db.insert(authAccounts).values({
+      userId: userRow.id,
+      providerId: "credential",
+      accountId: userRow.id,
+      password: hash,
+    });
+  } catch (err) {
+    console.warn("[Superadmin] Could not hash/insert auth_account:", err);
+  }
+
   return { success: true, user: userRow as any, passwordTemporal };
 }
 
@@ -234,6 +261,24 @@ export async function cambiarPasswordUsuario(input: {
   }
 
   const db = getDb();
+  try {
+    const authCtx = await auth.$context;
+    const hash = await authCtx.password.hash(input.passwordNueva);
+    const existing = await authCtx.internalAdapter.findCredentialAccount(input.userId);
+    if (existing) {
+      await authCtx.internalAdapter.updatePassword(input.userId, hash);
+    } else {
+      await db.insert(authAccounts).values({
+        userId: input.userId,
+        providerId: "credential",
+        accountId: input.userId,
+        password: hash,
+      });
+    }
+  } catch (err) {
+    console.warn("[Superadmin] Error hashing new password:", err);
+  }
+
   const [updated] = await db
     .update(users)
     .set({

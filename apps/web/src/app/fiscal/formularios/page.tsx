@@ -1,192 +1,203 @@
 "use client";
 
 import { useState } from "react";
-import { Calculator, TrendingUp, TrendingDown, Download, Printer, Receipt, Building2, DollarSign, ChevronDown, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Calculator, TrendingUp, TrendingDown, Download, Printer, Receipt, Building2, DollarSign, ChevronDown, FileText, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/trpc/client";
+import { useAuthStore } from "@/lib/auth-store";
 
-type FormType = "500" | "120";
+type FormType = "120" | "500";
 
-const FORM_500 = {
-  periodo: "Mayo 2026",
-  entity: "Importadora del Este S.A.",
-  ruc: "80012345-0",
-  ventas: { gravado10: 5500000, gravado5: 0, exento: 0, ivaDebito10: 550000, ivaDebito5: 0, totalIvaDebito: 550000 },
-  compras: { gravado10: 13500000, gravado5: -500000, exento: 0, ivaCredito10: 1350000, ivaCredito5: -25000, totalIvaCredito: 1325000 },
-  retencionesRecibidas: 12500,
-  saldoAFavorAnterior: 0,
-  totalAPagar: 0,
-  saldoAFavor: 775000,
-};
-
-const FORM_120 = {
-  periodo: "Ejercicio 2025",
-  entity: "Importadora del Este S.A.",
-  ruc: "80012345-0",
-  regimen: "General",
-  ingresosBrutos: 520000000,
-  costos: 280000000,
-  gastosOperativos: 95000000,
-  gastosFinancieros: 3500000,
-  utilidadAntesIRE: 141500000,
-  ajustes: { mas: 2500000, menos: 1200000 },
-  baseImponible: 142800000,
-  tasa: 0.30,
-  ireDeterminado: 42840000,
-  anticipos: 15000000,
-  retencionesSufridas: 3200000,
-  saldoAPagar: 24640000,
-};
+const gs = (v: number) => `₲ ${Math.round(v).toLocaleString("es-PY")}`;
 
 export default function FormulariosPage() {
-  const [form, setForm] = useState<FormType>("500");
+  const entity = useAuthStore((s) => s.selectedEntity);
+  const [form, setForm] = useState<FormType>("120");
+
+  const now = new Date();
+  const [periodo, setPeriodo] = useState(() => {
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  const [year, month] = periodo.split("-").map(Number);
+  const isEntityValid = !!entity?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entity.id);
+
+  const ventasQuery = api.reports.libroIva.useQuery(
+    { entityId: entity?.id || "", year, month, side: "ventas" },
+    { enabled: isEntityValid && !isNaN(year) && !isNaN(month) }
+  );
+
+  const comprasQuery = api.reports.libroIva.useQuery(
+    { entityId: entity?.id || "", year, month, side: "compras" },
+    { enabled: isEntityValid && !isNaN(year) && !isNaN(month) }
+  );
+
+  const entityName = entity?.tradeName || entity?.legalName || "Empresa Seleccionada";
+  const entityRuc = entity?.ruc || "Sin RUC";
+
+  const vTotals = ventasQuery.data?.totals || { gravado10: 0, gravado5: 0, exento: 0, iva10: 0, iva5: 0, total: 0 };
+  const cTotals = comprasQuery.data?.totals || { gravado10: 0, gravado5: 0, exento: 0, iva10: 0, iva5: 0, total: 0 };
+
+  const totalDebito = vTotals.iva10 + vTotals.iva5;
+  const totalCredito = cTotals.iva10 + cTotals.iva5;
+  const saldoImpuesto = totalDebito - totalCredito;
+  const aPagar = Math.max(0, saldoImpuesto);
+  const aFavor = Math.max(0, -saldoImpuesto);
 
   return (
     <div className="p-3 sm:p-4 lg:p-8 max-w-5xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Formularios DNIT</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Formulario 500 (IVA) y Formulario 120 (IRE)</p>
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Formularios Oficiales DNIT</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
+            Formulario 120 (IVA General) y Formulario 500 (IRE General) — {entityName} ({entityRuc})
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium no-tap-highlight">
-            <Download className="h-4 w-4" /> Exportar
+          <input
+            type="month"
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            className="px-2.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-700 no-tap-highlight"
+          >
+            <Printer className="h-4 w-4" /> Imprimir
           </button>
         </div>
       </div>
 
       {/* Selector */}
       <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 w-fit">
-        <button onClick={() => setForm("500")} className={cn("px-4 py-2 rounded-lg text-sm font-medium no-tap-highlight", form === "500" ? "bg-white dark:bg-gray-700 shadow-sm" : "text-gray-500")}>
-          <Receipt className="h-3.5 w-3.5 inline mr-1.5" />Formulario 500 — IVA
+        <button
+          onClick={() => setForm("120")}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-medium no-tap-highlight transition-all",
+            form === "120" ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-500"
+          )}
+        >
+          <Receipt className="h-3.5 w-3.5 inline mr-1.5" />
+          Formulario 120 — IVA General
         </button>
-        <button onClick={() => setForm("120")} className={cn("px-4 py-2 rounded-lg text-sm font-medium no-tap-highlight", form === "120" ? "bg-white dark:bg-gray-700 shadow-sm" : "text-gray-500")}>
-          <Building2 className="h-3.5 w-3.5 inline mr-1.5" />Formulario 120 — IRE
+        <button
+          onClick={() => setForm("500")}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-medium no-tap-highlight transition-all",
+            form === "500" ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-500"
+          )}
+        >
+          <Building2 className="h-3.5 w-3.5 inline mr-1.5" />
+          Formulario 500 — IRE General
         </button>
       </div>
 
-      {form === "500" && <Form500 data={FORM_500} />}
-      {form === "120" && <Form120 data={FORM_120} />}
-    </div>
-  );
-}
-
-function Form500({ data }: { data: typeof FORM_500 }) {
-  return (
-    <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-      <div className="p-4 sm:p-6 text-center border-b border-gray-200 dark:border-gray-800">
-        <h2 className="text-base font-bold text-gray-900 dark:text-white">Formulario 500 — Declaración Jurada del IVA</h2>
-        <p className="text-xs text-gray-400 mt-1">{data.entity} — RUC {data.ruc}</p>
-        <p className="text-xs text-gray-500">Período: {data.periodo}</p>
-      </div>
-
-      <div className="p-3 sm:p-4 space-y-4">
-        <Section500 title="VENTAS — IVA DÉBITO FISCAL" icon={TrendingUp} color="text-green-500">
-          <Line500 label="Gravado 10%" value={data.ventas.gravado10} />
-          <Line500 label="Gravado 5%" value={data.ventas.gravado5} />
-          <Line500 label="Exento" value={data.ventas.exento} />
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <Line500 label="IVA Débito 10%" value={data.ventas.ivaDebito10} indent />
-          <Line500 label="IVA Débito 5%" value={data.ventas.ivaDebito5} indent />
-          <Line500 label="Total IVA Débito Fiscal" value={data.ventas.totalIvaDebito} bold />
-        </Section500>
-
-        <Section500 title="COMPRAS — IVA CRÉDITO FISCAL" icon={TrendingDown} color="text-red-500">
-          <Line500 label="Gravado 10%" value={data.compras.gravado10} />
-          <Line500 label="Gravado 5%" value={data.compras.gravado5} />
-          <Line500 label="Exento" value={data.compras.exento} />
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <Line500 label="IVA Crédito 10%" value={data.compras.ivaCredito10} indent />
-          <Line500 label="IVA Crédito 5%" value={data.compras.ivaCredito5} indent />
-          <Line500 label="Total IVA Crédito Fiscal" value={data.compras.totalIvaCredito} bold />
-        </Section500>
-
-        <Section500 title="LIQUIDACIÓN DEL IMPUESTO" icon={Calculator} color="text-blue-500">
-          <Line500 label="IVA Débito Fiscal" value={data.ventas.totalIvaDebito} />
-          <Line500 label="(-) IVA Crédito Fiscal" value={data.compras.totalIvaCredito} negative />
-          <Line500 label="(+) Retenciones Recibidas" value={data.retencionesRecibidas} />
-          <Line500 label="(+) Saldo a Favor Anterior" value={data.saldoAFavorAnterior} />
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <Line500 label="Saldo a Favor del Contribuyente" value={data.saldoAFavor} bold color="text-green-600" />
-          <Line500 label="Total a Pagar" value={data.totalAPagar} bold color="text-red-600" />
-        </Section500>
-
-        <div className={cn("text-center text-sm font-bold py-2 rounded-lg", data.saldoAFavor > 0 ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600")}>
-          {data.saldoAFavor > 0
-            ? `Saldo a Favor: Gs. ${data.saldoAFavor.toLocaleString("es-PY")}`
-            : `IVA a Pagar: Gs. ${data.totalAPagar.toLocaleString("es-PY")}`}
+      {!entity ? (
+        <div className="text-center py-16 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-8">
+          <Building2 className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Seleccione una Empresa</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Elija una empresa para calcular las liquidaciones de impuestos DNIT.
+          </p>
         </div>
-      </div>
-    </div>
-  );
-}
+      ) : form === "120" ? (
+        <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+          <div className="p-4 sm:p-6 text-center border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">Formulario 120 v4 — Declaración Jurada del IVA</h2>
+            <p className="text-xs text-gray-400 mt-1">{entityName} — RUC {entityRuc}</p>
+            <p className="text-xs text-gray-500">Período Fiscal: {periodo}</p>
+          </div>
 
-function Form120({ data }: { data: typeof FORM_120 }) {
-  return (
-    <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-      <div className="p-4 sm:p-6 text-center border-b border-gray-200 dark:border-gray-800">
-        <h2 className="text-base font-bold text-gray-900 dark:text-white">Formulario 120 — Impuesto a la Renta Empresarial</h2>
-        <p className="text-xs text-gray-400 mt-1">{data.entity} — RUC {data.ruc} — Régimen {data.regimen}</p>
-        <p className="text-xs text-gray-500">Período: {data.periodo}</p>
-      </div>
+          {ventasQuery.isLoading || comprasQuery.isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-500 mb-2" />
+              <p className="text-xs text-gray-400">Consultando registros del Libro IVA...</p>
+            </div>
+          ) : (
+            <div className="p-3 sm:p-4 space-y-4">
+              <SectionBox title="RUBRO 1: VENTAS / OPERACIONES (DÉBITO FISCAL)" icon={TrendingUp} color="text-green-500">
+                <LineItem label="Gravadas 10% (Base imponible)" value={vTotals.gravado10} />
+                <LineItem label="Gravadas 5% (Base imponible)" value={vTotals.gravado5} />
+                <LineItem label="Exentas del IVA" value={vTotals.exento} />
+                <hr className="border-gray-100 dark:border-gray-800" />
+                <LineItem label="Débito Fiscal IVA 10%" value={vTotals.iva10} indent />
+                <LineItem label="Débito Fiscal IVA 5%" value={vTotals.iva5} indent />
+                <LineItem label="Total Débito Fiscal del Mes" value={totalDebito} bold />
+              </SectionBox>
 
-      <div className="p-3 sm:p-4 space-y-4">
-        <Section500 title="DETERMINACIÓN DE LA RENTA NETA" icon={TrendingUp} color="text-green-500">
-          <Line500 label="Ingresos Brutos" value={data.ingresosBrutos} />
-          <Line500 label="(-) Costos" value={data.costos} negative />
-          <Line500 label="(-) Gastos Operativos" value={data.gastosOperativos} negative />
-          <Line500 label="(-) Gastos Financieros" value={data.gastosFinancieros} negative />
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <Line500 label="Utilidad antes del IRE" value={data.utilidadAntesIRE} bold />
-        </Section500>
+              <SectionBox title="RUBRO 2: COMPRAS / ADQUISICIONES (CRÉDITO FISCAL)" icon={TrendingDown} color="text-red-500">
+                <LineItem label="Gravadas 10% (Base imponible)" value={cTotals.gravado10} />
+                <LineItem label="Gravadas 5% (Base imponible)" value={cTotals.gravado5} />
+                <LineItem label="Exentas del IVA" value={cTotals.exento} />
+                <hr className="border-gray-100 dark:border-gray-800" />
+                <LineItem label="Crédito Fiscal IVA 10%" value={cTotals.iva10} indent />
+                <LineItem label="Crédito Fiscal IVA 5%" value={cTotals.iva5} indent />
+                <LineItem label="Total Crédito Fiscal del Mes" value={totalCredito} bold />
+              </SectionBox>
 
-        <Section500 title="AJUSTES Y BASE IMPONIBLE" icon={Calculator} color="text-amber-500">
-          <Line500 label="(+) Ajustes (gastos no deducibles)" value={data.ajustes.mas} />
-          <Line500 label="(-) Ajustes (rentas exentas)" value={data.ajustes.menos} negative />
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <Line500 label="Base Imponible" value={data.baseImponible} bold />
-        </Section500>
-
-        <Section500 title="LIQUIDACIÓN DEL IMPUESTO" icon={DollarSign} color="text-blue-500">
-          <Line500 label={`IRE Determinado (${(data.tasa * 100).toFixed(0)}%)`} value={data.ireDeterminado} />
-          <Line500 label="(-) Anticipos" value={data.anticipos} negative />
-          <Line500 label="(-) Retenciones Sufridas" value={data.retencionesSufridas} negative />
-          <hr className="border-gray-100 dark:border-gray-800" />
-          <Line500 label="Saldo a Pagar" value={data.saldoAPagar} bold color={data.saldoAPagar > 0 ? "text-red-600" : "text-green-600"} />
-        </Section500>
-
-        <div className={cn("text-center text-sm font-bold py-2 rounded-lg", data.saldoAPagar > 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600")}>
-          {data.saldoAPagar > 0
-            ? `IRE a Pagar: Gs. ${data.saldoAPagar.toLocaleString("es-PY")}`
-            : `Saldo a Favor: Gs. ${Math.abs(data.saldoAPagar).toLocaleString("es-PY")}`}
+              <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-4 space-y-2 border border-gray-200 dark:border-gray-700">
+                <h4 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">RUBRO 3: DETERMINACIÓN DEL IMPUESTO</h4>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Saldo a favor del Fisco (a Pagar)</span>
+                  <span className={cn("font-mono font-bold", aPagar > 0 ? "text-red-600" : "text-gray-600 dark:text-gray-400")}>
+                    {gs(aPagar)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Saldo a favor del Contribuyente (Crédito para prox. período)</span>
+                  <span className={cn("font-mono font-bold", aFavor > 0 ? "text-green-600" : "text-gray-600 dark:text-gray-400")}>
+                    {gs(aFavor)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+          <div className="p-4 sm:p-6 text-center border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">Formulario 500 — IRE Régimen General</h2>
+            <p className="text-xs text-gray-400 mt-1">{entityName} — RUC {entityRuc}</p>
+            <p className="text-xs text-gray-500">Ejercicio Fiscal Anual: {year}</p>
+          </div>
+
+          <div className="p-4 sm:p-6 text-center space-y-3">
+            <Building2 className="h-10 w-10 text-gray-400 mx-auto" />
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Liquidación Anual IRE (Formulario 500)</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              La liquidación del Formulario 500 se consolida con el Cierre del Ejercicio y los Estados Financieros anuales aprobados.
+            </p>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Tasa General IRE: 10% sobre la Renta Neta
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function Section500({ title, icon: Icon, color, children }: { title: string; icon: any; color: string; children: any }) {
+function SectionBox({ title, icon: Icon, color, children }: { title: string; icon: any; color: string; children: any }) {
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
         <Icon className={cn("h-4 w-4", color)} />
-        <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">{title}</h3>
+        <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">{title}</h3>
       </div>
-      <div className="space-y-1 pl-6">{children}</div>
+      <div className="bg-gray-50 dark:bg-gray-800/20 rounded-lg p-3 space-y-1.5">
+        {children}
+      </div>
     </div>
   );
 }
 
-function Line500({ label, value, indent, bold, negative, color }: {
-  label: string; value: number; indent?: boolean; bold?: boolean; negative?: boolean; color?: string;
-}) {
+function LineItem({ label, value, indent, bold }: { label: string; value: number; indent?: boolean; bold?: boolean }) {
   return (
-    <div className={cn("flex items-center justify-between py-0.5 text-xs", indent && "pl-4 border-l-2 border-gray-100 dark:border-gray-800")}>
-      <span className={cn("text-gray-600 dark:text-gray-400", bold && "font-bold text-gray-800 dark:text-gray-200")}>{label}</span>
-      <span className={cn("font-mono tabular-nums", bold ? "font-bold text-sm" : "text-xs",
-        negative ? "text-red-600 dark:text-red-400" : color || "text-gray-700 dark:text-gray-300"
-      )}>
-        {negative ? `(Gs. ${Math.abs(value).toLocaleString("es-PY")})` : `Gs. ${value.toLocaleString("es-PY")}`}
-      </span>
+    <div className={cn("flex justify-between text-xs", indent && "pl-4", bold && "font-bold text-gray-900 dark:text-white")}>
+      <span className={cn(bold ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400")}>{label}</span>
+      <span className={cn("font-mono tabular-nums", bold && "text-blue-600 dark:text-blue-400")}>{gs(value)}</span>
     </div>
   );
 }

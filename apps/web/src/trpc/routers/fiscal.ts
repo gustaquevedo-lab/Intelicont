@@ -19,14 +19,16 @@ const period = {
 
 export const fiscalRouter = router({
   periods: protectedProcedure
-    .input(z.object({ entityId: z.string() }))
+    .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ input }) => {
+      await assertVisible(input.entityId);
       return getFiscalPeriods(input.entityId);
     }),
 
   currentPeriod: protectedProcedure
-    .input(z.object({ entityId: z.string() }))
+    .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ input }) => {
+      await assertVisible(input.entityId);
       return getOpenPeriod(input.entityId);
     }),
 

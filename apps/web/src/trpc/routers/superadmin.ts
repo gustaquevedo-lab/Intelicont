@@ -1,4 +1,4 @@
-import { router, protectedProcedure, z } from "../trpc";
+import { router, superadminProcedure, z } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import {
   createTenantAtomic,
@@ -14,15 +14,15 @@ import { entities, users } from "@ledger/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const superadminRouter = router({
-  stats: protectedProcedure.query(async () => {
+  stats: superadminProcedure.query(async () => {
     return getSuperadminStats();
   }),
 
-  vitals: protectedProcedure.query(async () => {
+  vitals: superadminProcedure.query(async () => {
     return getSystemVitals();
   }),
 
-  tenants: protectedProcedure.query(async () => {
+  tenants: superadminProcedure.query(async () => {
     if (isMockMode() || process.env.NODE_ENV === "test") {
       return [
         {
@@ -51,7 +51,7 @@ export const superadminRouter = router({
     }));
   }),
 
-  users: protectedProcedure.query(async () => {
+  users: superadminProcedure.query(async () => {
     if (isMockMode() || process.env.NODE_ENV === "test") {
       return [
         {
@@ -74,7 +74,7 @@ export const superadminRouter = router({
     }));
   }),
 
-  createTenantAtomic: protectedProcedure
+  createTenantAtomic: superadminProcedure
     .input(
       z.object({
         ruc: z.string().min(5),
@@ -90,7 +90,7 @@ export const superadminRouter = router({
       return createTenantAtomic(input);
     }),
 
-  createUser: protectedProcedure
+  createUser: superadminProcedure
     .input(
       z.object({
         entityId: z.string().uuid(),
@@ -107,7 +107,7 @@ export const superadminRouter = router({
       return res;
     }),
 
-  updateTenantOverrides: protectedProcedure
+  updateTenantOverrides: superadminProcedure
     .input(
       z.object({
         entityId: z.string().uuid(),
@@ -133,7 +133,7 @@ export const superadminRouter = router({
       return { success: true };
     }),
 
-  impersonate: protectedProcedure
+  impersonate: superadminProcedure
     .input(
       z.object({
         entityId: z.string().uuid(),
@@ -151,7 +151,7 @@ export const superadminRouter = router({
       return res;
     }),
 
-  errores: protectedProcedure
+  errores: superadminProcedure
     .input(
       z
         .object({
@@ -164,7 +164,7 @@ export const superadminRouter = router({
       return getErroresPlataforma(input);
     }),
 
-  resolverError: protectedProcedure
+  resolverError: superadminProcedure
     .input(
       z.object({
         errorId: z.string().uuid(),
@@ -179,7 +179,7 @@ export const superadminRouter = router({
       return res;
     }),
 
-  changePassword: protectedProcedure
+  changePassword: superadminProcedure
     .input(
       z.object({
         userId: z.string().uuid(),

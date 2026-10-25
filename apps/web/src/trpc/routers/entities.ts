@@ -41,10 +41,10 @@ export const entitiesRouter = router({
   }),
 
   get: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
       const entity = await getEntity(input.id);
-      if (!entity) throw new Error("Entity not found");
+      if (!entity) throw new TRPCError({ code: "NOT_FOUND", message: "Empresa no encontrada" });
       return entity;
     }),
 

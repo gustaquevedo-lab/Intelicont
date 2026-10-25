@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { generateInvoiceData, generateQRData } from "@/lib/cdc-generator";
 import { validateRuc } from "@intelicont/ledger/fiscal-py";
 import { api } from "@/trpc/client";
+import { useAuthStore } from "@/lib/auth-store";
 
 interface InvoiceLine {
   id: string;
@@ -106,10 +107,19 @@ export default function EmitirFacturaPage() {
 
   const rucValidation = rucCliente ? validateRuc(rucCliente) : null;
 
-  const handleEmitir = () => {
+  const entity = useAuthStore((s) => s.selectedEntity);
+  const emisorRucFull = entity?.ruc || "80012345-0";
+  const emisorParts = emisorRucFull.split("-");
+  const rucEmisor = emisorParts[0] || "80012345";
+  const dvEmisor = emisorParts[1] || "0";
+  const emisorNombre = entity?.legalName || entity?.tradeName || "Empresa";
+
+  const createManualMutation = api["tax-documents"].createManual.useMutation();
+
+  const handleEmitir = async () => {
     const data = generateInvoiceData({
-      rucEmisor: "80012345",
-      dvEmisor: "0",
+      rucEmisor,
+      dvEmisor,
       tipoDocumento: 1,
       establecimiento: "001",
       puntoEmision: "001",
@@ -117,8 +127,35 @@ export default function EmitirFacturaPage() {
       fecha,
     });
 
-    const qrData = generateQRData(data.cdc, "80012345-0", total, fecha);
+    const qrData = generateQRData(data.cdc, emisorRucFull, total, fecha);
     setEmitida({ ...data, qrData });
+
+    if (entity?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entity.id)) {
+      try {
+        await createManualMutation.mutateAsync({
+          entityId: entity.id,
+          direction: "issued",
+          docCode: 109,
+          timbrado: "12345678",
+          number: data.numero,
+          issueDate: fecha,
+          condition: condicion === "contado" ? "cash" : "credit",
+          gravado10: subtotalGravado10,
+          gravado5: subtotalGravado5,
+          exento: subtotalExento,
+          total,
+          imputaIva: true,
+          imputaIre: true,
+          imputaIrp: false,
+          partner: {
+            ruc: rucCliente || "44444401-7",
+            legalName: nombreCliente || "Consumidor Final",
+          },
+        });
+      } catch (err) {
+        console.error("Error al persistir comprobante emitido:", err);
+      }
+    }
   };
 
   if (emitida) {
@@ -142,8 +179,8 @@ export default function EmitirFacturaPage() {
           <hr className="border-gray-100 dark:border-gray-800" />
 
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-gray-400 text-[10px]">Emisor</span><p className="text-gray-900 dark:text-white">Importadora del Este S.A.</p></div>
-            <div><span className="text-gray-400 text-[10px]">RUC Emisor</span><p className="font-mono text-gray-900 dark:text-white">80012345-0</p></div>
+            <div><span className="text-gray-400 text-[10px]">Emisor</span><p className="text-gray-900 dark:text-white">{emisorNombre}</p></div>
+            <div><span className="text-gray-400 text-[10px]">RUC Emisor</span><p className="font-mono text-gray-900 dark:text-white">{emisorRucFull}</p></div>
             <div><span className="text-gray-400 text-[10px]">Cliente</span><p className="text-gray-900 dark:text-white">{nombreCliente}</p></div>
             <div><span className="text-gray-400 text-[10px]">RUC Cliente</span><p className="font-mono text-gray-900 dark:text-white">{rucCliente}</p></div>
           </div>

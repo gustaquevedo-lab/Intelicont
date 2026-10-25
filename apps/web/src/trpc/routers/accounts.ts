@@ -1,10 +1,12 @@
 import { router, protectedProcedure, z } from "../trpc";
 import { getAllAccounts } from "@ledger/db/repository";
+import { assertVisible } from "./reports";
 
 export const accountsRouter = router({
   list: protectedProcedure
-    .input(z.object({ entityId: z.string() }))
+    .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ input }) => {
+      await assertVisible(input.entityId);
       const accounts = await getAllAccounts(input.entityId);
       return accounts.map((a) => ({
         id: a.id,
@@ -19,8 +21,9 @@ export const accountsRouter = router({
     }),
 
   tree: protectedProcedure
-    .input(z.object({ entityId: z.string() }))
+    .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ input }) => {
+      await assertVisible(input.entityId);
       const accounts = await getAllAccounts(input.entityId);
       return buildTree(accounts);
     }),
