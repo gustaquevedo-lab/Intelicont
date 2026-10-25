@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useTheme, Theme } from "@/lib/theme-context";
 import { useAuthStore, useCurrentUser } from "@/lib/auth-store";
 import { useNotificationStore } from "@/lib/notification-store";
+import { DEFAULT_SUPERADMIN_EMAILS } from "@/lib/superadmin-constants";
 import { api } from "@/trpc/client";
 import { OBLIGATION_HREF, OBLIGATION_NAME, noticeLabel } from "@/lib/fiscal-calendar";
 import { Logo } from "./logo";
@@ -69,7 +70,10 @@ export function TopBar({
   });
   const isSuperadmin =
     superadminAccess.data?.isSuperadmin ??
-    (user?.email?.toLowerCase() === "intellihousepy@gmail.com");
+    Boolean(
+      user?.email &&
+      DEFAULT_SUPERADMIN_EMAILS.includes(user.email.toLowerCase().trim())
+    );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const [showNotifications, setShowNotifications] = useState(false);
@@ -392,8 +396,14 @@ export function TopBar({
                     </div>
                     <div className="p-1 border-t border-gray-200 dark:border-gray-800">
                       <button
-                        onClick={() => { logout(); setShowUserMenu(false); }}
-                        className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+                        type="button"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          setShowUserMenu(false);
+                          await logout();
+                        }}
+                        className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                      >
                         <LogOut className="h-4 w-4" />
                         Cerrar Sesión
                       </button>

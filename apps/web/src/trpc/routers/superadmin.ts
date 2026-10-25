@@ -9,6 +9,7 @@ import {
   getSuperadminStats,
 } from "@/lib/superadmin-service";
 import { getErroresPlataforma, resolverErrorPlataforma } from "@/lib/error-tracker";
+import { getSuperadminEmails } from "@/lib/superadmin-guard";
 import { getDb, isMockMode, withTenant } from "@ledger/db";
 import { entities, users } from "@ledger/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -17,9 +18,7 @@ export const superadminRouter = router({
   checkAccess: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.userId) return { isSuperadmin: false };
     if (isMockMode() || process.env.NODE_ENV === "test") return { isSuperadmin: true };
-    const allowedRaw = process.env.SUPERADMIN_EMAILS ?? "";
-    const allowed = allowedRaw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-    if (allowed.length === 0) return { isSuperadmin: false };
+    const allowed = getSuperadminEmails();
     return withTenant(ctx.userId, async (db) => {
       const rows = await db.execute<{ email: string }>(sql`select email from users where id = ${ctx.userId}`);
       const email = rows[0]?.email?.toLowerCase() ?? "";

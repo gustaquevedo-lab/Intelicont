@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { visibleNavGroups } from "@/lib/nav-config";
 import { usePreviewStore } from "@/lib/preview-store";
 import { useCurrentUser } from "@/lib/auth-store";
+import { DEFAULT_SUPERADMIN_EMAILS } from "@/lib/superadmin-constants";
 import { api } from "@/trpc/client";
 import { Logo } from "./logo";
 
@@ -33,7 +34,10 @@ export function Sidebar({
 
   const isSuperadmin =
     checkAccessQuery.data?.isSuperadmin ??
-    (user?.email?.toLowerCase() === "intellihousepy@gmail.com");
+    Boolean(
+      user?.email &&
+      DEFAULT_SUPERADMIN_EMAILS.includes(user.email.toLowerCase().trim())
+    );
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -164,8 +168,14 @@ export function Sidebar({
           </div>
         )}
         <button
-          onClick={() => logout()}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest text-blue-200/50 hover:text-white hover:bg-white/10 transition-all border border-white/5"
+          type="button"
+          title="Cerrar Sesión"
+          onClick={async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await logout();
+          }}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest text-blue-200/50 hover:text-white hover:bg-white/10 active:scale-95 transition-all border border-white/5 cursor-pointer"
         >
           <LogOut size={14} />
           {!collapsed && "Cerrar Sesión"}

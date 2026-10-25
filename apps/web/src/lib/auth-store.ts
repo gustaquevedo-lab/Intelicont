@@ -23,8 +23,19 @@ export function useCurrentUser(): { user: User | null; logout: () => Promise<voi
   const { data } = authClient.useSession();
   const user = data?.user ? { id: data.user.id, email: data.user.email, name: data.user.name } : null;
   const logout = async () => {
-    await authClient.signOut();
-    window.location.href = "/login";
+    try {
+      await authClient.signOut();
+    } catch (e) {
+      console.warn("Sign out call failed, forcing client logout:", e);
+    } finally {
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        document.cookie = "better-auth.session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "better-auth.session_token=; path=/; domain=" + window.location.hostname + "; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      } catch {}
+      window.location.href = "/login";
+    }
   };
   return { user, logout };
 }
