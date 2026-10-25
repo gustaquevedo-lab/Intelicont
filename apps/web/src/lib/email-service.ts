@@ -97,12 +97,12 @@ export function getEmailLayout(title: string, contentHtml: string): string {
                     <table role="presentation" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="vertical-align: middle; padding-right: 14px;">
-                          <!-- Isotipo Oficial InteliCont (Ledger Squircle + Green Dot) -->
-                          <img src="https://raw.githubusercontent.com/gustaquevedo-lab/Intelicont/main/apps/web/public/logo.png" alt="InteliCont" width="42" height="42" style="display: block; width: 42px; height: 42px; border-radius: 10px; border: 0; outline: none; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.25);" />
+                          <!-- Isotipo aprobado: bucle doble azul→verde -->
+                          <img src="https://raw.githubusercontent.com/gustaquevedo-lab/Intelicont/main/apps/web/public/logo.png" alt="InteliCont" width="72" height="36" style="display: block; width: 72px; height: 36px; border: 0; outline: none; text-decoration: none;" />
                         </td>
                         <td style="vertical-align: middle;">
                           <div style="font-size: 24px; font-weight: 900; line-height: 1; letter-spacing: -0.5px;">
-                            <span style="color: #ffffff;">Inteli</span><span style="color: #00a651;">Cont</span>
+                            <span style="color: #60a5fa;">Inteli</span><span style="color: #34d399;">Cont</span>
                           </div>
                           <div style="font-size: 9px; color: #93c5fd; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px;">
                             Contabilidad Inteligente
