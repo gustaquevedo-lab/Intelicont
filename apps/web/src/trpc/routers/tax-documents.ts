@@ -3,7 +3,8 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { SifenDocument } from "@intelicont/ledger/sifen";
 import { router, protectedProcedure, authedProcedure, z } from "../trpc";
 import { idempotentProcedure } from "../idempotent";
-import { createManual, ingestDocument, postEntry, previewManual } from "@ledger/src/usecases";
+import { createManual, ingestDocument, postEntry, previewManual, syncMarangatuDocuments } from "@ledger/src/usecases";
+import { MarangatuHttpClient, parsearRegistrosMarangatu, type MarangatuDocumentoRaw } from "@intelicont/ledger/marangatu-rea";
 import { getTaxDocuments, getTaxDocument, getPendingTaxDocuments, getTaxDocumentLines } from "@ledger/db/repository";
 import { tenantDb, withTenant, type Db } from "@ledger/db/index";
 import { audited } from "@ledger/db/audit";
@@ -357,4 +358,48 @@ export const taxDocumentsRouter = router({
       );
       return { ok: true as const };
     })),
+
+  /** Verifica si una cookie/token corresponde a una sesión activa en Marangatú. */
+  verificarMarangatu: protectedProcedure
+    .input(z.object({ cookie: z.string().trim().min(1) }))
+    .mutation(async ({ input }) => {
+      const client = new MarangatuHttpClient();
+      return client.verificarSesion(input.cookie);
+    }),
+
+  /** Sincroniza comprobantes de compras y ventas desde la sesión tributaria de Marangatú. */
+  syncMarangatu: idempotentProcedure
+    .input(z.object({
+      entityId: z.string().uuid(),
+      cookie: z.string().trim().min(1),
+      periodo: z.string().trim().regex(/^\d{4}-\d{2}$/, "El período debe ser AAAA-MM"),
+      tipo: z.enum(["compras", "ventas", "ambos"]).default("ambos"),
+      directPayload: z.array(z.any()).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      let docs: MarangatuDocumentoRaw[] = [];
+      if (input.directPayload && input.directPayload.length > 0) {
+        docs = parsearRegistrosMarangatu(input.directPayload);
+      } else {
+        const client = new MarangatuHttpClient();
+        const session = await client.verificarSesion(input.cookie);
+        if (!session.valido || !session.ruc) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: session.error || "Sesión de Marangatú inválida" });
+        }
+        const talones = await client.listarTalones(input.cookie, session.ruc, input.periodo);
+        for (const talon of talones) {
+          const talonDocs = await client.descargarComprobantes(input.cookie, talon.idTalon || talon.id);
+          docs.push(...talonDocs);
+        }
+      }
+
+      if (input.tipo !== "ambos") {
+        const expectedTipo = input.tipo === "compras" ? "compra" : "venta";
+        docs = docs.filter((d) => d.tipo === expectedTipo);
+      }
+
+      const res = await syncMarangatuDocuments(input.entityId, docs);
+      if (!res.ok) throw new TRPCError({ code: "BAD_REQUEST", message: res.error });
+      return res.value;
+    }),
 });
