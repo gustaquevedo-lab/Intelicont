@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Mail, Lock, ArrowRight, Sparkles, Shield } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
@@ -95,9 +96,17 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Contraseña
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="password" className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Contraseña
+                  </label>
+                  <Link
+                    href="/olvide-password"
+                    className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
@@ -118,6 +127,15 @@ export default function LoginPage() {
                 {loading ? "Ingresando..." : "Ingresar"}
                 <ArrowRight className="h-4 w-4" />
               </button>
+
+              <div className="text-center pt-3 border-t border-gray-100 dark:border-gray-800">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  ¿No tenés cuenta todavía?{" "}
+                  <Link href="/registro" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+                    Empezá 14 días gratis
+                  </Link>
+                </p>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleTotp} className="space-y-4">
