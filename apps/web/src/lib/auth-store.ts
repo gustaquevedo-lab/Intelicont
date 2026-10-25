@@ -15,6 +15,7 @@ export interface Entity {
   legalName: string;
   tradeName: string | null;
   baseCurrency?: string | null;
+  plan?: string | null;
 }
 
 /** Current user from the real Better Auth session; logout ends it server-side. */
