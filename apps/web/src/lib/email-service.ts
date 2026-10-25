@@ -135,10 +135,10 @@ export function getEmailLayout(title: string, contentHtml: string): string {
                 Desarrollado por <span style="color: #1e40af;">IntelliHouse Soluciones E.A.S.</span>
               </p>
               <p style="margin: 0 0 6px 0; color: #64748b;">
-                RUC 80144114-5 · Asunción, Paraguay
+                RUC 80144114-5 · Pedro Juan Caballero, Paraguay
               </p>
               <p style="margin: 0 0 10px 0;">
-                Soporte WhatsApp: <a href="https://wa.me/595994516360" style="color: #2563eb; text-decoration: none; font-weight: 600;">+595 994 516360</a> · Email: <a href="mailto:soporte@intelicont.com.py" style="color: #2563eb; text-decoration: none;">soporte@intelicont.com.py</a>
+                Soporte WhatsApp: <a href="https://wa.me/595994516360" style="color: #2563eb; text-decoration: none; font-weight: 600;">+595 994 516360</a> · <a href="mailto:soporte@intellihouse.lat" style="color: #2563eb; text-decoration: none; font-weight: 600;">soporte@intellihouse.lat</a>
               </p>
               <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 10px; font-size: 10px; color: #94a3b8;">
                 © 2026 InteliCont. Todos los derechos reservados.
@@ -272,36 +272,9 @@ export async function sendWelcomeEmail(input: {
   const days = input.trialDays ?? 14;
   const name = input.name || "Colega";
   const subject = `¡Bienvenido a InteliCont, ${input.entityName}! (Prueba de ${days} días activa)`;
-  const bodyText = `Hola ${name},\n\nTe damos la bienvenida a InteliCont. Tu estudio/empresa "${input.entityName}" ha sido dada de alta exitosamente con un período de prueba gratuito de ${days} días.\n\nPodés ingresar en cualquier momento en:\nhttps://app.intelicont.com.py/login\n\n¿Qué podés hacer ahora?\n1. Importar tus comprobantes electrónicos SIFEN en formato XML.\n2. Cargar tu extracto bancario en CSV/Excel para conciliación automática.\n3. Consultar a tu Copilot Contable Inteligente con memoria RAG normativa.\n\nSi necesitás asistencia técnica o una demostración guiada, podés escribirnos por WhatsApp al +595 994 516360.\n\nAtentamente,\nEl equipo de InteliCont Paraguay`;
+  const bodyText = `Hola ${name},\n\nTe damos la bienvenida a InteliCont. Tu estudio/empresa "${input.entityName}" ha sido dada de alta exitosamente con un período de prueba gratuito de ${days} días.\n\nPodés ingresar en cualquier momento en:\nhttps://app.intelicont.com.py/login\n\n¿Qué podés hacer ahora?\n1. Importar tus comprobantes electrónicos SIFEN en formato XML.\n2. Cargar tu extracto bancario en CSV/Excel para conciliación automática.\n3. Consultar a tu Copilot Contable Inteligente con memoria RAG normativa.\n\nSi necesitás asistencia técnica o una demostración guiada, podés escribirnos por WhatsApp al +595 994 516360.\n\nDesarrollado por IntelliHouse Soluciones E.A.S.\nRUC 80144114-5 · Pedro Juan Caballero, Paraguay\nSoporte WhatsApp: +595 994 516360 · soporte@intellihouse.lat\n\n© 2026 InteliCont. Todos los derechos reservados.`;
 
-  const html = getEmailLayout(
-    "Bienvenido a InteliCont",
-    `<h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">¡Hola, ${name}! 👋</h2>
-    <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 20px;">
-      Te damos la bienvenida oficial a <strong>InteliCont</strong>. La cuenta de tu estudio/empresa <strong>${input.entityName}</strong> ha sido activada con <strong>${days} días de prueba gratuita</strong> en el Plan Starter.
-    </p>
-
-    <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 18px; margin-bottom: 24px;">
-      <h3 style="margin-top: 0; font-size: 13px; font-weight: 700; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
-        🚀 ¿Por dónde empezar hoy?
-      </h3>
-      <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #1e3a8a; line-height: 1.7;">
-        <li><strong>Importación SIFEN:</strong> Subí tus XML de compras y ventas para contabilización automática.</li>
-        <li><strong>Conciliación Bancaria:</strong> Importá extractos de Itaú, Continental o GNB en segundos.</li>
-        <li><strong>Copilot Fiscal IA:</strong> Presioná <code>⌘J</code> en la app para consultar cualquier norma DNIT.</li>
-      </ul>
-    </div>
-
-    <div style="text-align: center; margin-bottom: 28px;">
-      <a href="https://app.intelicont.com.py/login" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
-        Ingresar al Panel de Control →
-      </a>
-    </div>
-
-    <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin: 0;">
-      ¿Preferís una demostración personalizada? Contactanos directamente por <a href="https://wa.me/595994516360" style="color: #2563eb; text-decoration: none; font-weight: 600;">WhatsApp al +595 994 516360</a>.
-    </p>`
-  );
+  const html = renderWelcomeEmailHtml(input);
 
   return dispatchEmail({
     to: input.to,
@@ -319,32 +292,9 @@ export async function sendPasswordResetEmail(input: {
   resetUrl: string;
 }): Promise<{ success: boolean; id: string; simulated: boolean }> {
   const subject = "Recuperación de Contraseña — InteliCont";
-  const bodyText = `Hola,\n\nRecibimos una solicitud para restablecer la contraseña de tu cuenta en InteliCont.\n\nPara definir una nueva contraseña, hacé clic en el siguiente enlace seguro (válido por 1 hora):\n${input.resetUrl}\n\nSi no solicitaste este cambio, podés ignorar este correo de forma segura.\n\nAtentamente,\nSeguridad InteliCont`;
+  const bodyText = `Hola,\n\nRecibimos una solicitud para restablecer la contraseña de tu cuenta en InteliCont.\n\nPara definir una nueva contraseña, hacé clic en el siguiente enlace seguro (válido por 1 hora):\n${input.resetUrl}\n\nSi no solicitaste este cambio, podés ignorar este correo de forma segura.\n\nDesarrollado por IntelliHouse Soluciones E.A.S.\nRUC 80144114-5 · Pedro Juan Caballero, Paraguay\nSoporte WhatsApp: +595 994 516360 · soporte@intellihouse.lat\n\n© 2026 InteliCont. Todos los derechos reservados.`;
 
-  const html = getEmailLayout(
-    "Recuperación de Contraseña",
-    `<h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">Restablecer Contraseña 🔒</h2>
-    <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
-      Recibimos una solicitud para restablecer el acceso a tu cuenta de InteliCont. Hacé clic en el siguiente botón seguro para crear una nueva contraseña:
-    </p>
-
-    <div style="text-align: center; margin-bottom: 24px;">
-      <a href="${input.resetUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
-        Crear Nueva Contraseña →
-      </a>
-    </div>
-
-    <div style="background-color: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
-      <p style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.4;">
-        Este enlace es de uso único y tiene una validez de <strong>1 hora</strong> por motivos de seguridad. Si el botón no funciona, copiá este link en tu navegador:<br/>
-        <span style="color: #2563eb; word-break: break-all;">${input.resetUrl}</span>
-      </p>
-    </div>
-
-    <p style="font-size: 12px; color: #94a3b8; line-height: 1.4; margin: 0;">
-      Si vos no solicitaste este cambio, no es necesario hacer nada. Tu contraseña actual sigue siendo segura.
-    </p>`
-  );
+  const html = renderPasswordResetEmailHtml(input);
 
   return dispatchEmail({
     to: input.to,
@@ -364,43 +314,9 @@ export async function sendFiscalAlertEmail(input: {
   dueDate: string;
 }): Promise<{ success: boolean; id: string; simulated: boolean }> {
   const subject = `⚠️ Vencimiento Fiscal Próximo: ${input.obligation} (${input.entityName})`;
-  const bodyText = `Estimado/a,\n\nTe recordamos que la obligación tributaria "${input.obligation}" para el contribuyente "${input.entityName}" tiene fecha límite de presentación el ${input.dueDate}.\n\nTe recomendamos verificar en InteliCont que todos los comprobantes del período estén registrados y balanceados:\nhttps://app.intelicont.com.py/calendario\n\nAtentamente,\nAlertas Fiscales InteliCont`;
+  const bodyText = `Estimado/a,\n\nTe recordamos que la obligación tributaria "${input.obligation}" para el contribuyente "${input.entityName}" tiene fecha límite de presentación el ${input.dueDate}.\n\nTe recomendamos verificar en InteliCont que todos los comprobantes del período estén registrados y balanceados:\nhttps://app.intelicont.com.py/calendario\n\nDesarrollado por IntelliHouse Soluciones E.A.S.\nRUC 80144114-5 · Pedro Juan Caballero, Paraguay\nSoporte WhatsApp: +595 994 516360 · soporte@intellihouse.lat\n\n© 2026 InteliCont. Todos los derechos reservados.`;
 
-  const html = getEmailLayout(
-    "Alerta de Vencimiento Fiscal",
-    `<div style="display: inline-block; background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; margin-bottom: 12px;">
-      ⚠️ VENCIMIENTO TRIBUTARIO DNIT
-    </div>
-    <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">
-      Próximo Vencimiento: ${input.obligation}
-    </h2>
-    <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 20px;">
-      Te recordamos que la obligación <strong>${input.obligation}</strong> para el contribuyente <strong>${input.entityName}</strong> vence indefectiblemente el <strong>${input.dueDate}</strong>.
-    </p>
-
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
-      <table style="width: 100%; font-size: 13px;">
-        <tr>
-          <td style="color: #64748b; padding: 4px 0;">Contribuyente:</td>
-          <td style="font-weight: 700; color: #0f172a; text-align: right;">${input.entityName}</td>
-        </tr>
-        <tr>
-          <td style="color: #64748b; padding: 4px 0;">Obligación:</td>
-          <td style="font-weight: 700; color: #0f172a; text-align: right;">${input.obligation}</td>
-        </tr>
-        <tr>
-          <td style="color: #64748b; padding: 4px 0;">Fecha Límite:</td>
-          <td style="font-weight: 800; color: #dc2626; text-align: right;">${input.dueDate}</td>
-        </tr>
-      </table>
-    </div>
-
-    <div style="text-align: center; margin-bottom: 20px;">
-      <a href="https://app.intelicont.com.py/calendario" style="display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 10px;">
-        Revisar en Calendario Fiscal →
-      </a>
-    </div>`
-  );
+  const html = renderFiscalAlertEmailHtml(input);
 
   return dispatchEmail({
     to: input.to,
@@ -409,4 +325,5 @@ export async function sendFiscalAlertEmail(input: {
     html,
   });
 }
+
 
