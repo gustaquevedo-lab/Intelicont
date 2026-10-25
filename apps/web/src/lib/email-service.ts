@@ -96,18 +96,16 @@ export function getEmailLayout(title: string, contentHtml: string): string {
                   <td style="vertical-align: middle;">
                     <table role="presentation" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="vertical-align: middle; padding-right: 12px;">
-                          <!-- Isotipo InteliCont -->
-                          <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #256ebf 0%, #104c91 100%); border: 1px solid rgba(255,255,255,0.25); text-align: center; line-height: 38px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-                            <span style="font-size: 20px; font-weight: 900; color: #ffffff;">IC</span>
-                          </div>
+                        <td style="vertical-align: middle; padding-right: 14px;">
+                          <!-- Isotipo Oficial InteliCont (Ledger Squircle + Green Dot) -->
+                          <img src="https://raw.githubusercontent.com/gustaquevedo-lab/Intelicont/main/apps/web/public/logo.png" alt="InteliCont" width="42" height="42" style="display: block; width: 42px; height: 42px; border-radius: 10px; border: 0; outline: none; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.25);" />
                         </td>
                         <td style="vertical-align: middle;">
                           <div style="font-size: 24px; font-weight: 900; line-height: 1; letter-spacing: -0.5px;">
-                            <span style="color: #ffffff;">Inteli</span><span style="color: #22c55e;">Cont</span>
+                            <span style="color: #ffffff;">Inteli</span><span style="color: #00a651;">Cont</span>
                           </div>
-                          <div style="font-size: 10px; color: #93c5fd; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;">
-                            Contabilidad Inteligente & Fiscalidad DNIT
+                          <div style="font-size: 9px; color: #93c5fd; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px;">
+                            Contabilidad Inteligente
                           </div>
                         </td>
                       </tr>
