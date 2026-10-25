@@ -8,6 +8,7 @@ import {
   renderPasswordResetEmailHtml,
   renderFiscalAlertEmailHtml,
 } from "@/lib/email-service";
+import { requireSuperadmin } from "@/lib/superadmin-guard";
 
 export async function getEmailHtmlTemplatesAction() {
   const welcome = renderWelcomeEmailHtml({
@@ -33,6 +34,7 @@ export async function sendLiveTestEmailAction(data: {
   to: string;
   template: "welcome" | "reset" | "alert";
 }) {
+  await requireSuperadmin();
   try {
     const to = data.to.trim().toLowerCase();
     if (!to || !to.includes("@")) {

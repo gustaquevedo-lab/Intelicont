@@ -7,8 +7,8 @@ import { getSessionCookie } from "better-auth/cookies";
  * - Visiting root "/" or "/landing" renders the commercial landing page.
  * - Any other private route redirects to "/login".
  */
-const PUBLIC_PAGES = ["/login", "/registro", "/olvide-password", "/landing", "/manual", "/email-preview"];
-const PUBLIC_API = ["/api/auth/", "/api/health", "/api/trpc/", "/api/brand/", "/api/esfl/"];
+const PUBLIC_PAGES = ["/login", "/registro", "/olvide-password", "/landing", "/manual"];
+const PUBLIC_API = ["/api/auth/", "/api/health", "/api/trpc/", "/api/brand/"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

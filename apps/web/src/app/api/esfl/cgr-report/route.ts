@@ -1,6 +1,12 @@
 import { generateCgrReport } from "@intelicont/ledger/cgr-report";
+import { getSession } from "@/lib/auth";
 
 export async function GET(request: Request) {
+  const session = await getSession(request.headers);
+  if (!session?.userId) {
+    return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const entityId = searchParams.get("entityId") || "demo-esfl-entity";
   const projectId = searchParams.get("projectId") || undefined;
