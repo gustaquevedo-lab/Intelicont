@@ -6,7 +6,8 @@ import {
   Lock, BarChart3, Calendar, FileSearch, Settings, Shield, Keyboard,
   AlertTriangle, HelpCircle, Building2, Sparkles, ArrowRight,
   CheckCircle2, CreditCard, Globe, DollarSign, Search, Bell, User,
-  ChevronDown, FileUp, X, Zap
+  ChevronDown, FileUp, X, Zap, Smartphone, RefreshCw, Key, Bookmark,
+  ExternalLink, ShieldCheck
 } from "lucide-react";
 
 export interface ManualSection {
@@ -586,6 +587,72 @@ export const MANUAL_SECTIONS: ManualSection[] = [
     ),
   },
 
+  {
+    id: "pwa-movil",
+    group: "Acceso y Navegación",
+    groupIcon: icon(Smartphone),
+    title: "8b. Aplicación Móvil / PWA (/m)",
+    icon: icon(Smartphone),
+    content: (
+      <div className="space-y-5">
+        <p className="text-gray-300 text-sm leading-relaxed">
+          InteliCont cuenta con una experiencia táctil ultra-rápida en <AppLink href="/m" label="/m" />,
+          diseñada como Progressive Web App (PWA) para que contadores y directores puedan operar desde
+          cualquier teléfono inteligente o tablet con fluidez nativa.
+        </p>
+
+        <MockCard title="Vista Móvil Rápida — /m">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-primary" />
+                <span className="text-xs text-white font-semibold">InteliCont Mobile</span>
+              </div>
+              <MockBadge variant="green">Online • PWA Activa</MockBadge>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <p className="text-[10px] text-gray-500 uppercase">Sugerencias IA</p>
+                <p className="text-sm font-bold text-emerald-400">12 pendientes</p>
+              </div>
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <p className="text-[10px] text-gray-500 uppercase">Vencimiento Fiscal</p>
+                <p className="text-sm font-bold text-amber-400">En 3 días</p>
+              </div>
+            </div>
+            <div className="bg-gray-900/60 p-2.5 rounded-lg border border-gray-800 flex items-center justify-between">
+              <span className="text-xs text-gray-300">Aprobar Asientos con 1 Toque</span>
+              <button className="bg-primary/20 text-primary border border-primary/30 px-2 py-1 rounded text-[10px] font-semibold">
+                Revisar Ahora
+              </button>
+            </div>
+          </div>
+        </MockCard>
+
+        <StepList
+          steps={[
+            {
+              title: "Instalación en iOS (iPhone / iPad)",
+              body: <>Abra Safari, navegue a <strong className="text-white">intelicont.com/m</strong>, presione el botón de <strong className="text-white">Compartir</strong> (ícono de cuadro con flecha arriba) y seleccione <strong className="text-white">"Agregar a pantalla de inicio"</strong>.</>,
+            },
+            {
+              title: "Instalación en Android (Chrome)",
+              body: <>Abra Chrome, ingrese a <strong className="text-white">intelicont.com/m</strong>, toque los 3 puntos superiores y elija <strong className="text-white">"Instalar aplicación"</strong> o "Agregar a la pantalla principal".</>,
+            },
+            {
+              title: "Sincronización en tiempo real",
+              body: <>Cualquier comprobante aprobado o asiento revisado desde el móvil se refleja inmediatamente en la consola web de su estudio contable.</>,
+            },
+          ]}
+        />
+
+        <Tip>
+          La PWA móvil almacena en caché la interfaz para cargar instantáneamente incluso con conexiones 3G/4G inestables durante visitas a clientes.
+        </Tip>
+      </div>
+    ),
+  },
+
   // ──────────────────────────────────────────────────────────────────────────
   // GRUPO 3: GESTIÓN PRINCIPAL
   // ──────────────────────────────────────────────────────────────────────────
@@ -761,6 +828,85 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         </div>
         <Tip>
           La sincronización automática vía API SIFEN está disponible. Configure las credenciales en <AppLink href="/configuracion" label="Configuración → Integraciones" />.
+        </Tip>
+      </div>
+    ),
+  },
+
+  {
+    id: "sifen-marangatu-rea",
+    group: "SIFEN",
+    groupIcon: icon(Upload),
+    title: "11b. Sincronización Directa Marangatú (1-Clic REA)",
+    icon: icon(Zap),
+    content: (
+      <div className="space-y-5">
+        <p className="text-gray-300 text-sm leading-relaxed">
+          El protocolo <strong className="text-white">REA (Reverse Engineering API)</strong> permite sincronizar todos los
+          comprobantes de compras y ventas de la <strong className="text-white">RG 90</strong> directamente desde la sesión
+          activa del contribuyente en el portal <strong className="text-white">Marangatú (DNIT)</strong> en menos de 1 segundo,
+          sin necesidad de descargar planillas ni subir archivos manualmente.
+        </p>
+
+        <MockCard title="Conector 1-Clic Marangatú">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-400" />
+                <span className="text-xs text-white font-semibold">Sesión DNIT Detectada</span>
+              </div>
+              <MockBadge variant="green">RUC 80012345-6 • Sesión Válida</MockBadge>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="bg-gray-900 p-2 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Período</span>
+                <p className="font-bold text-white mt-0.5">2026-10</p>
+              </div>
+              <div className="bg-gray-900 p-2 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Comprobantes</span>
+                <p className="font-bold text-primary mt-0.5">142 registros</p>
+              </div>
+              <div className="bg-gray-900 p-2 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Tiempo</span>
+                <p className="font-bold text-emerald-400 mt-0.5">&lt; 850 ms</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5">
+              <span className="text-xs text-amber-200">Bookmarklet disponible en barra de marcadores</span>
+              <button className="bg-amber-500 text-black text-[10px] font-bold px-2.5 py-1 rounded">
+                ⚡ Sincronizar Ahora
+              </button>
+            </div>
+          </div>
+        </MockCard>
+
+        <StepList
+          steps={[
+            {
+              title: "1. Instalar el Bookmarklet 1-Clic",
+              body: <>En <AppLink href="/sifen" label="SIFEN" /> o <AppLink href="/importar" label="Importar" />, haga clic en <strong className="text-white">"⚡ Sincronizar Marangatú (1-Clic REA)"</strong>. Arrastre el botón azul <strong className="text-white">"⚡ Sync InteliCont"</strong> a su barra de marcadores del navegador (Chrome, Edge, Safari, Brave).</>,
+            },
+            {
+              title: "2. Iniciar sesión en Marangatú",
+              body: <>Abra una pestaña en <strong className="text-white">marangatu.dnit.gov.py</strong> e ingrese con el RUC y clave del contribuyente.</>,
+            },
+            {
+              title: "3. Ejecutar la sincronización",
+              body: <>Estando en cualquier pantalla de Marangatú, haga un solo clic en su marcador <strong className="text-white">"⚡ Sync InteliCont"</strong>. El marcador captura de forma segura el identificador de sesión y lo redirige a InteliCont con el modal de sincronización pre-abierto.</>,
+            },
+            {
+              title: "4. Seleccionar período y tipo de registro",
+              body: <>Elija el mes/año a procesar y el tipo de comprobantes (<strong className="text-white">Compras, Ventas o Ambos</strong>). Presione <strong className="text-white">"Iniciar Sincronización"</strong>.</>,
+            },
+            {
+              title: "5. Ingesta automática e inteligencia contable",
+              body: <>El sistema consulta los talones oficiales de la DNIT, descarga los comprobantes, valida los CDCs electrónicos, evita duplicados y genera las sugerencias contables del Copilot IA listas para postear.</>,
+            },
+          ]}
+        />
+
+        <Tip>
+          La sincronización es 100% idempotente: si corre la sincronización varias veces sobre el mismo período, InteliCont detecta los documentos ya existentes y no duplica ningún comprobante.
         </Tip>
       </div>
     ),
@@ -1579,6 +1725,148 @@ export const MANUAL_SECTIONS: ManualSection[] = [
   },
 
   {
+    id: "cuentas-corrientes",
+    group: "Tesorería y Finanzas",
+    groupIcon: icon(DollarSign),
+    title: "21b. Cuentas Corrientes y Cobros / Pagos",
+    icon: icon(CreditCard),
+    content: (
+      <div className="space-y-5">
+        <p className="text-gray-300 text-sm leading-relaxed">
+          Los módulos de <AppLink href="/cuentas-corrientes" label="Cuentas Corrientes" /> y <AppLink href="/cobros-pagos" label="Cobros y Pagos" /> permiten
+          gestionar de forma integral la cartera de deudores y acreedores, monitoreando la antigüedad de los saldos pendientes y registrando cobranzas y pagos con imputación directa a facturas crédito.
+        </p>
+
+        <MockCard title="Estado de Cuenta Corriente — Clientes">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-primary" />
+                <span className="text-xs text-white font-semibold">Comercial del Este S.A. (RUC 80098765-4)</span>
+              </div>
+              <span className="text-xs font-mono font-bold text-amber-400">Saldo Pendiente: Gs. 14.500.000</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center text-xs">
+              <div className="bg-gray-900 p-2 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Al Día</span>
+                <p className="font-bold text-emerald-400 mt-0.5">Gs. 8.000.000</p>
+              </div>
+              <div className="bg-gray-900 p-2 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">1 - 30 días</span>
+                <p className="font-bold text-blue-400 mt-0.5">Gs. 4.500.000</p>
+              </div>
+              <div className="bg-gray-900 p-2 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">31 - 60 días</span>
+                <p className="font-bold text-amber-400 mt-0.5">Gs. 2.000.000</p>
+              </div>
+              <div className="bg-gray-900 p-2 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">&gt; 60 días</span>
+                <p className="font-bold text-gray-500 mt-0.5">Gs. 0</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between bg-gray-900/60 p-2.5 rounded-lg border border-gray-800">
+              <span className="text-xs text-gray-400">Factura #001-002-0004589 (Vence en 5 días)</span>
+              <button className="bg-primary/20 text-primary border border-primary/30 text-[10px] font-semibold px-2 py-1 rounded">
+                Registrar Cobro
+              </button>
+            </div>
+          </div>
+        </MockCard>
+
+        <StepList
+          steps={[
+            {
+              title: "Monitoreo de Cartera (Aging)",
+              body: <>Visualice los saldos clasificados por rangos de vencimiento (Corriente, 30, 60 y 90+ días) para priorizar gestiones de cobranza o programación de pagos a proveedores.</>,
+            },
+            {
+              title: "Registro de Recibo o Pago",
+              body: <>Desde <AppLink href="/cobros-pagos" label="/cobros-pagos" />, seleccione al tercero (cliente o proveedor), la cuenta de fondos (Caja o Banco de salida/entrada) y el importe.</>,
+            },
+            {
+              title: "Imputación inteligente a Facturas",
+              body: <>El sistema muestra las facturas a crédito pendientes del tercero. Puede marcar cancelación total o aplicar un pago parcial a una o más facturas.</>,
+            },
+            {
+              title: "Generación automática del asiento contable",
+              body: <>Al confirmar el recibo u orden de pago, InteliCont crea y postea de forma inmediata el asiento de tesorería (por ejemplo, Débito a Banco y Crédito a Clientes por Cobrar).</>,
+            },
+          ]}
+        />
+      </div>
+    ),
+  },
+
+  {
+    id: "multimoneda",
+    group: "Tesorería y Finanzas",
+    groupIcon: icon(DollarSign),
+    title: "21c. Multimoneda y Revaluación Cambiaria",
+    icon: icon(Globe),
+    content: (
+      <div className="space-y-5">
+        <p className="text-gray-300 text-sm leading-relaxed">
+          En el módulo <AppLink href="/multimoneda" label="/multimoneda" />, InteliCont permite llevar la contabilidad en
+          múltiples divisas extranjeras (<strong className="text-white">USD, BRL, EUR</strong>) manteniendo el balance oficial
+          estrictamente en Guaraníes (PYG) conforme a la legislación paraguaya, con cotizaciones oficiales automáticas del BCP.
+        </p>
+
+        <MockCard title="Cotizaciones BCP y Posición en Moneda Extranjera">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-emerald-400" />
+                <span className="text-xs text-white font-semibold">Tipo de Cambio BCP (Dólar USA)</span>
+              </div>
+              <MockBadge variant="green">Actualizado Hoy</MockBadge>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Compra BCP</span>
+                <p className="font-bold text-white mt-1">Gs. 7.780</p>
+              </div>
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Venta BCP</span>
+                <p className="font-bold text-white mt-1">Gs. 7.820</p>
+              </div>
+            </div>
+            <div className="bg-gray-900/60 p-2.5 rounded-lg border border-gray-800 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-white font-medium">Revaluación al Cierre Mensual</p>
+                <p className="text-[10px] text-gray-500">Ajuste de saldo en cuentas de banco en USD</p>
+              </div>
+              <button className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold px-2.5 py-1 rounded">
+                Calcular Diferencia
+              </button>
+            </div>
+          </div>
+        </MockCard>
+
+        <StepList
+          steps={[
+            {
+              title: "Carga de comprobantes en moneda extranjera",
+              body: <>Al registrar facturas de exportación, importación o servicios del exterior, seleccione la moneda de origen y el importe. El sistema aplica automáticamente el tipo de cambio del BCP correspondiente a la fecha de emisión.</>,
+            },
+            {
+              title: "Cuentas bancarias en divisa",
+              body: <>Permite mantener libros auxiliares en USD o BRL para cajas y cuentas corrientes bancarias.</>,
+            },
+            {
+              title: "Revaluación periódica por Diferencia de Cambio",
+              body: <>Al cierre de cada mes, ejecute el asistente de revaluación. El sistema compara el saldo contable histórico en Guaraníes con el saldo revaluado al tipo de cambio de cierre y genera automáticamente el asiento de ganancia o pérdida por diferencia de cambio.</>,
+            },
+          ]}
+        />
+
+        <Tip>
+          InteliCont guarda en cada asiento el monto en moneda extranjera y el contravalor en Guaraníes, garantizando auditoría total y cumplimiento con la Resolución General 49/2014 y Ley 6380/19.
+        </Tip>
+      </div>
+    ),
+  },
+
+  {
     id: "caja-chica",
     group: "Tesorería y Finanzas",
     groupIcon: icon(DollarSign),
@@ -1827,6 +2115,85 @@ export const MANUAL_SECTIONS: ManualSection[] = [
             { title: "Revise valores", body: <>El sistema precarga los datos del Libro IVA o del balance. Verifique cada línea del formulario.</> },
             { title: "Presente", body: <>Haga clic en <strong className="text-white">"Presentar declaración"</strong>. Si hay monto a pagar, el sistema redirige al pago. Si es cero o saldo a favor, queda presentado.</> },
             { title: "Descargue comprobante", body: <>El sistema genera un comprobante de presentación. Puede descargar el PDF para presentar físicamente si es necesario.</> },
+          ]}
+        />
+      </div>
+    ),
+  },
+
+  {
+    id: "formulario-104",
+    group: "Gestión Fiscal",
+    groupIcon: icon(Calculator),
+    title: "25b. Formulario 104 — Liquidación IRP",
+    icon: icon(FileText),
+    content: (
+      <div className="space-y-5">
+        <p className="text-gray-300 text-sm leading-relaxed">
+          En <AppLink href="/fiscal/formulario-104" label="/fiscal/formulario-104" />, InteliCont liquida de forma automática
+          el <strong className="text-white">Impuesto a la Renta Personal (IRP)</strong> conforme a la Ley 6380/19, tanto para
+          <strong className="text-white"> Rentas derivadas de la Prestación de Servicios Personales (RSP)</strong> como para
+          <strong className="text-white"> Rentas y Ganancias del Capital (RGC)</strong>.
+        </p>
+
+        <MockCard title="Borrador de Liquidación IRP — Formulario 104">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <span className="text-xs text-white font-semibold">Ejercicio Fiscal 2026 — RUC 1234567-8</span>
+              </div>
+              <MockBadge variant="blue">Régimen RSP / RGC</MockBadge>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Ingresos Brutos</span>
+                <p className="font-bold text-white mt-1">Gs. 185.000.000</p>
+              </div>
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Gastos e Inversiones</span>
+                <p className="font-bold text-emerald-400 mt-1">Gs. 112.400.000</p>
+              </div>
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Impuesto Determinado</span>
+                <p className="font-bold text-primary mt-1">Gs. 5.808.000</p>
+              </div>
+            </div>
+            <div className="bg-gray-900/60 p-2.5 rounded-lg border border-gray-800 text-[11px] space-y-1.5">
+              <div className="flex justify-between text-gray-300">
+                <span>Renta Neta Imponible (Tasa progresiva 8% / 9% / 10%):</span>
+                <span className="font-mono font-bold text-white">Gs. 72.600.000</span>
+              </div>
+              <div className="flex justify-between text-gray-400 text-[10px]">
+                <span>Retenciones IRP soportadas en el año:</span>
+                <span className="font-mono text-emerald-400">- Gs. 1.200.000</span>
+              </div>
+              <div className="flex justify-between border-t border-gray-800 pt-1 text-white font-semibold">
+                <span>Saldo Definitivo a Pagar:</span>
+                <span className="font-mono text-amber-400">Gs. 4.608.000</span>
+              </div>
+            </div>
+          </div>
+        </MockCard>
+
+        <StepList
+          steps={[
+            {
+              title: "Clasificación de Egresos Deducibles",
+              body: <>El sistema filtra y consolida facturas de compras imputadas a salud, educación, vivienda, alimentación y vestimenta tanto del titular como de sus familiares a cargo declarados.</>,
+            },
+            {
+              title: "Deducción de Inversiones y Gastos Personales",
+              body: <>Aplica los límites porcentuales legales vigentes en Paraguay para inversiones financieras o colocaciones en capital, asegurando que no se sobrepasen los topes de deducción.</>,
+            },
+            {
+              title: "Cálculo de Tasa Progresiva Automática",
+              body: <>Aplica las escalas oficiales (hasta 50 millones al 8%, excedente hasta 150 millones al 9%, y exceso al 10%) sin necesidad de cálculos manuales en Excel.</>,
+            },
+            {
+              title: "Exportación a Marangatú",
+              body: <>Genera la planilla borrador y los totales casilla por casilla para transcribir o subir directamente a la declaración jurada en el sistema Marangatú de la DNIT.</>,
+            },
           ]}
         />
       </div>
@@ -2248,6 +2615,183 @@ export const MANUAL_SECTIONS: ManualSection[] = [
             { field: "Detalle", type: "JSON expandible", desc: "Metadatos: estado anterior, nuevo, IP, user-agent" },
             { field: "Exportación", type: "CSV", desc: "Descargue para análisis externo" },
             { field: "Retención", type: "5 años", desc: "Obligatorio por normas fiscales PY" },
+          ]}
+        />
+      </div>
+    ),
+  },
+
+  {
+    id: "seguridad-2fa",
+    group: "Configuración y Soporte",
+    groupIcon: icon(Settings),
+    title: "33b. Seguridad y Autenticación de Dos Factores (2FA)",
+    icon: icon(ShieldCheck),
+    content: (
+      <div className="space-y-5">
+        <p className="text-gray-300 text-sm leading-relaxed">
+          En <AppLink href="/seguridad/2fa" label="/seguridad/2fa" />, los usuarios pueden activar la autenticación de dos factores (2FA / TOTP)
+          para blindar el acceso a los datos contables y fiscales de las empresas clientes, requiriendo un código de 6 dígitos al iniciar sesión.
+        </p>
+
+        <MockCard title="Seguridad de la Cuenta — 2FA TOTP">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span className="text-xs text-white font-semibold">Autenticación en Dos Pasos</span>
+              </div>
+              <MockBadge variant="green">2FA Habilitado</MockBadge>
+            </div>
+            <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-800 space-y-2 text-xs">
+              <div className="flex justify-between text-gray-300">
+                <span>Método principal:</span>
+                <span className="font-semibold text-white">App de Autenticación (TOTP)</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Códigos de recuperación:</span>
+                <span className="text-emerald-400">8 códigos guardados</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Sesiones activas:</span>
+                <span className="text-primary">1 navegador actual</span>
+              </div>
+            </div>
+          </div>
+        </MockCard>
+
+        <StepList
+          steps={[
+            {
+              title: "1. Iniciar activación de 2FA",
+              body: <>Acceda a <AppLink href="/seguridad/2fa" label="/seguridad/2fa" /> y presione <strong className="text-white">"Activar 2FA"</strong>.</>,
+            },
+            {
+              title: "2. Escanear el código QR",
+              body: <>Abra su aplicación de autenticación preferida (Google Authenticator, Microsoft Authenticator, 1Password, Authy) y escanee el código QR presentado en pantalla.</>,
+            },
+            {
+              title: "3. Verificar código",
+              body: <>Ingrese el código de 6 dígitos que muestra su teléfono y presione <strong className="text-white">"Confirmar y Activar"</strong>.</>,
+            },
+            {
+              title: "4. Guardar códigos de respaldo",
+              body: <>El sistema le entregará una lista de códigos de un solo uso. Guárdelos en un lugar seguro para ingresar a su cuenta si extravía o daña su teléfono móvil.</>,
+            },
+          ]}
+        />
+      </div>
+    ),
+  },
+
+  {
+    id: "superadmin",
+    group: "Configuración y Soporte",
+    groupIcon: icon(Settings),
+    title: "33c. Panel Superadmin y Suscripción",
+    icon: icon(Lock),
+    content: (
+      <div className="space-y-5">
+        <p className="text-gray-300 text-sm leading-relaxed">
+          La consola <AppLink href="/superadmin" label="/superadmin" /> y el panel de <AppLink href="/suscripcion" label="/suscripcion" /> permiten
+          a los directores de estudios contables y administradores globales supervisar el consumo de recursos, empresas asociadas, cuotas de comprobantes y límites de almacenamiento.
+        </p>
+
+        <MockCard title="Consola de Administración y Suscripción">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-purple-400" />
+                <span className="text-xs text-white font-semibold">Plan Actual: Estudio Profesional</span>
+              </div>
+              <MockBadge variant="blue">Plan Activo</MockBadge>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Empresas</span>
+                <p className="font-bold text-white mt-1">24 / 50</p>
+              </div>
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Comprobantes Mes</span>
+                <p className="font-bold text-emerald-400 mt-1">1.840 / 5.000</p>
+              </div>
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <span className="text-[10px] text-gray-500 uppercase">Copilot IA</span>
+                <p className="font-bold text-primary mt-1">Ilimitado</p>
+              </div>
+            </div>
+          </div>
+        </MockCard>
+
+        <StepList
+          steps={[
+            {
+              title: "Gestión de Planes y Facturación",
+              body: <>Consulte el estado del abono mensual de su estudio, fecha de renovación y descargue las facturas electrónicas de su suscripción de InteliCont.</>,
+            },
+            {
+              title: "Monitoreo de Límites por Empresa",
+              body: <>Visualice qué empresas clientes consumen mayor volumen de facturas electrónicas o procesamiento de la RG 90 para optimizar costos y tarifas de honorarios.</>,
+            },
+            {
+              title: "Seguridad RLS y Aislamiento",
+              body: <>El panel garantiza que cada base de datos tenant se mantenga 100% aislada con Row-Level Security, cumpliendo con la confidencialidad estricta requerida por la profesión contable.</>,
+            },
+          ]}
+        />
+      </div>
+    ),
+  },
+
+  {
+    id: "portal-terceros",
+    group: "Configuración y Soporte",
+    groupIcon: icon(Settings),
+    title: "33d. Portal de Clientes y Terceros",
+    icon: icon(Users),
+    content: (
+      <div className="space-y-5">
+        <p className="text-gray-300 text-sm leading-relaxed">
+          En <AppLink href="/portal" label="/portal" />, InteliCont provee un portal seguro y de marca blanca para que los clientes
+          del estudio contable o proveedores de la empresa puedan ingresar con accesos restringidos para consultar y descargar sus comprobantes.
+        </p>
+
+        <MockCard title="Vista del Portal de Clientes">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-xs text-white font-semibold">Autoservicio para Clientes</span>
+              </div>
+              <MockBadge variant="green">Portal Seguro</MockBadge>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <p className="text-white font-semibold">Descarga de KuDEs y XMLs</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Acceso a facturas electrónicas emitidas y recibidas</p>
+              </div>
+              <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
+                <p className="text-white font-semibold">Certificados Tesaka</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Comprobantes de retención de IVA e IRE en PDF</p>
+              </div>
+            </div>
+          </div>
+        </MockCard>
+
+        <StepList
+          steps={[
+            {
+              title: "Generación de Invitación al Portal",
+              body: <>Desde el módulo de <AppLink href="/terceros" label="Terceros" />, active la casilla "Habilitar acceso al portal" para el cliente o proveedor.</>,
+            },
+            {
+              title: "Acceso seguro y filtrado",
+              body: <>El cliente accede únicamente a sus propios comprobantes, sin visibilidad sobre otros clientes ni sobre la contabilidad interna de la empresa.</>,
+            },
+            {
+              title: "Ahorro de tiempo para el estudio contable",
+              body: <>Evita el envío manual por correo o WhatsApp de facturas, extractos de cuenta o retenciones: el cliente descarga directamente lo que necesita en cualquier momento.</>,
+            },
           ]}
         />
       </div>

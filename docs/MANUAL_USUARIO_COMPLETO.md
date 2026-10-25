@@ -44,9 +44,17 @@
 33. [Módulo RG90](#33-módulo-rg90)
 34. [Módulo Configuración](#34-módulo-configuración)
 35. [Módulo Auditoría](#35-módulo-auditoría)
-36. [Apéndice: Glosario de términos PY](#36-apéndice-glosario-de-términos-py)
-37. [Apéndice: Solución de problemas](#37-apéndice-solución-de-problemas)
-38. [Apéndice: Atajos de teclado](#38-apéndice-atajos-de-teclado)
+36. [Módulo Sincronización Directa DNIT Marangatú (Protocolo REA)](#36-módulo-sincronización-directa-dnit-marangatú-protocolo-rea)
+37. [Módulo Aplicación Móvil PWA (/m)](#37-módulo-aplicación-móvil-pwa-m)
+38. [Módulo Cuentas Corrientes y Cobros / Pagos](#38-módulo-cuentas-corrientes-y-cobros--pagos)
+39. [Módulo Multimoneda y Revaluación Cambiaria BCP](#39-módulo-multimoneda-y-revaluación-cambiaria-bcp)
+40. [Módulo Formulario 104 — Liquidación IRP](#40-módulo-formulario-104--liquidación-irp)
+41. [Módulo Seguridad y Autenticación de Dos Factores (2FA)](#41-módulo-seguridad-y-autenticación-de-dos-factores-2fa)
+42. [Módulo Consola Superadmin y Control de Suscripción](#42-módulo-consola-superadmin-y-control-de-suscripción)
+43. [Módulo Portal de Clientes y Terceros](#43-módulo-portal-de-clientes-y-terceros)
+44. [Apéndice: Glosario de términos PY](#44-apéndice-glosario-de-términos-py)
+45. [Apéndice: Solución de problemas](#45-apéndice-solución-de-problemas)
+46. [Apéndice: Atajos de teclado](#46-apéndice-atajos-de-teclado)
 
 ---
 
@@ -3012,7 +3020,308 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 
 ---
 
-## 36. Apéndice: Glosario de términos PY
+## 36. Módulo Sincronización Directa DNIT Marangatú (Protocolo REA)
+
+### 36.1 ¿Qué es el Protocolo REA de InteliCont?
+
+El protocolo **REA (Reverse Engineering API)** es un subsistema de sincronización directa de alta velocidad que conecta a InteliCont con el portal **Marangatú de la DNIT**. 
+
+Tradicionalmente, para cargar compras y ventas de la Resolución General 90 (RG 90) un contador debía:
+1. Iniciar sesión en Marangatú.
+2. Ingresar a la consulta de comprobantes emitidos o recibidos.
+3. Descargar planillas en formato ZIP o CSV.
+4. Descomprimir los archivos y formatear columnas en Excel.
+5. Subir los archivos manualmente a su sistema contable.
+
+Con el **Conector 1-Clic REA de InteliCont**, todo este proceso se reduce a **un solo clic**, sincronizando cientos de facturas en menos de 1 segundo directamente desde la sesión activa del contribuyente.
+
+### 36.2 Cómo funciona el Bookmarklet 1-Clic
+
+El Bookmarklet es un script seguro en JavaScript que se instala arrastrándolo a la barra de marcadores del navegador.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ⚡ Sincronización Directa Marangatú (1-Clic REA)                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  [⚡ Sync InteliCont]  ← Arrastre este botón a su barra de favoritos        │
+│                                                                              │
+│  Paso 1: Abra marangatu.dnit.gov.py e inicie sesión normalmente              │
+│  Paso 2: Haga clic en su marcador "⚡ Sync InteliCont"                       │
+│  Paso 3: Confirme el período y sincronice compras y ventas en < 1 segundo     │
+│                                                                              │
+│  ┌─ Estado de Sesión DNIT ────────────────────────────────────────────────┐  │
+│  │  RUC: 80012345-6  |  Contribuyente: COMERCIAL GUARANÍ S.A.             │  │
+│  │  Estado: Conectado • Cookie JSESSIONID Válida                          │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  Período: [2026-10 ▼]   Tipo: [● Ambos (Compras y Ventas)  ○ Compras  ○ Ventas]│
+│                                                                              │
+│  [ Iniciar Sincronización Directa ]                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Flujo de Operación Paso a Paso:
+1. **Instalación Inicial (Solo una vez):**
+   - Vaya a `/sifen` o `/importar` en InteliCont y presione el botón **"⚡ Sincronizar Marangatú (1-Clic REA)"**.
+   - Arrastre el botón azul **"⚡ Sync InteliCont"** hacia la barra de marcadores de su navegador (Chrome, Edge, Brave, Firefox o Safari).
+2. **Acceso al Portal Tributario:**
+   - En una pestaña nueva, abra **marangatu.dnit.gov.py** e ingrese con el RUC y clave del contribuyente o cliente del estudio.
+3. **Disparo en 1-Clic:**
+   - Estando dentro de Marangatú, haga clic en el marcador **"⚡ Sync InteliCont"**.
+   - El script captura de forma segura el token de sesión y abre InteliCont con el modal de sincronización pre-abierto y la sesión validada.
+4. **Ejecución y Procesamiento:**
+   - Seleccione el período tributario y presione **"Iniciar Sincronización Directa"**.
+   - En milisegundos, el backend de InteliCont consulta los talones oficiales de la DNIT (`/eset/rg90/talones`), descarga los registros (`/eset/rg90/descargar`), valida los Códigos de Control (CDC) de 44 dígitos y almacena los comprobantes en `tax_documents`.
+5. **Garantía de Idempotencia:**
+   - La sincronización puede ejecutarse las veces que sea necesario: si una factura ya fue importada previamente (mismo CDC o misma terna timbrado/número/contraparte), el sistema la detecta y no genera duplicados.
+6. **Sugerencias Contables Automáticas:**
+   - De inmediato, el motor Copilot IA analiza las facturas importadas y sugiere los asientos de imputación contable con su cuenta de gasto/ingreso e IVA correspondiente.
+
+---
+
+## 37. Módulo Aplicación Móvil PWA (/m)
+
+### 37.1 Arquitectura y Propósito
+
+El módulo `/m` es la versión optimizada para dispositivos móviles de InteliCont. Diseñada bajo la tecnología **Progressive Web App (PWA)**, permite a los contadores y administradores acceder desde cualquier teléfono inteligente o tablet con la velocidad y fluidez de una aplicación nativa.
+
+```
+┌──────────────────────────────────────┐
+│  📱 InteliCont Mobile        [🔔] [⚙]│
+├──────────────────────────────────────┤
+│  Empresa: Agroganadera del Norte     │
+│  RUC: 80045678-2                     │
+│                                      │
+│  ┌─ Estado Financiero Rápido ─────┐  │
+│  │  Saldo Bancos: Gs. 128.450.000 │  │
+│  │  Ventas del Mes: Gs. 84.200.000│  │
+│  │  IVA a Pagar: Gs. 3.410.000    │  │
+│  └────────────────────────────────┘  │
+│                                      │
+│  ⚡ Sugerencias Copilot IA (8 pendientes)│
+│  ┌────────────────────────────────┐  │
+│  │ Factura Superseis Gs. 450.000  │  │
+│  │ Imputar a: Gastos de Oficina   │  │
+│  │ [✓ Aprobar]   [✎ Modificar]    │  │
+│  └────────────────────────────────┘  │
+│                                      │
+│  📅 Próximos Vencimientos Fiscales   │
+│  • Formulario 120 (IVA): en 4 días   │
+│  • Hechauka RG90: en 6 días          │
+└──────────────────────────────────────┘
+```
+
+### 37.2 Funcionalidades Clave en el Móvil
+- **Aprobación de Asientos con 1 Toque:** Revise las compras importadas del día y apruebe las sugerencias del Copilot IA mientras viaja o está fuera de la oficina.
+- **Alertas de Vencimientos Fiscales:** Notificaciones sobre fechas límite de presentación de declaraciones según el último dígito del RUC.
+- **Saldos y Posición Financiera:** Monitoreo instantáneo de liquidez en bancos y cajas.
+- **Instalación:**
+  - **En iPhone (Safari):** Presione el botón *Compartir* y seleccione *"Agregar a pantalla de inicio"*.
+  - **En Android (Chrome):** Presione el menú de 3 puntos y seleccione *"Instalar aplicación"*.
+
+---
+
+## 38. Módulo Cuentas Corrientes y Cobros / Pagos
+
+### 38.1 Gestión Integral de Cartera de Clientes y Proveedores
+
+El módulo `/cuentas-corrientes` y `/cobros-pagos` centraliza el control de créditos comerciales y obligaciones con proveedores en moneda nacional y extranjera.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  💼 Cuentas Corrientes — Antigüedad de Saldos (Aging)                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Tercero: [Comercial del Este S.A.      ▼]  Tipo: [● Clientes  ○ Proveedores]│
+│  Total Deuda: Gs. 45.000.000  |  Vencido: Gs. 12.000.000                     │
+│                                                                              │
+│  ┌─ Distribución por Vencimiento ─────────────────────────────────────────┐  │
+│  │  Al Día: Gs. 33.000.000                                                │  │
+│  │  1 a 30 días: Gs. 8.000.000                                            │  │
+│  │  31 a 60 días: Gs. 4.000.000                                           │  │
+│  │  Más de 60 días: Gs. 0                                                 │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  Facturas Pendientes:                                                        │
+│  • FAC 001-002-004589 | Fecha: 01/10/2026 | Saldo: Gs. 20.000.000 [Cobrar]   │
+│  • FAC 001-002-004612 | Fecha: 15/10/2026 | Saldo: Gs. 25.000.000 [Cobrar]   │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 38.2 Flujo de Cobranzas y Pagos
+1. **Emisión de Recibo de Dinero u Orden de Pago:**
+   - Ingrese a `/cobros-pagos` y presione **"+ Nuevo Cobro / Pago"**.
+   - Seleccione la entidad (Cliente o Proveedor) y la cuenta de fondos (Caja Chica, Banco Itaú, Banco Continental, etc.).
+2. **Imputación de Comprobantes:**
+   - El sistema lista automáticamente todas las facturas a crédito pendientes con sus respectivos saldos.
+   - Puede aplicar una cancelación total o indicar montos parciales por comprobante.
+3. **Contabilización Inmediata:**
+   - Al confirmar el cobro o pago, InteliCont genera y postea automáticamente el asiento contable balanceado (Débito a Banco/Caja contra Crédito a Cuentas a Cobrar Clientes, o Débito a Proveedores contra Crédito a Banco).
+
+---
+
+## 39. Módulo Multimoneda y Revaluación Cambiaria BCP
+
+### 39.1 Operaciones en Divisas (USD, BRL, EUR)
+
+InteliCont está preparado para empresas con operaciones de comercio exterior, importaciones o contratos en moneda extranjera, manteniendo siempre la contabilidad legal en Guaraníes (PYG) según la normativa paraguaya.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  💱 Multimoneda — Cotizaciones y Revaluación BCP                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Monedas activas: USD (Dólar USA), BRL (Real Brasileño), EUR (Euro)           │
+│  Cotización Oficial BCP Hoy (USD): Compra Gs. 7.780  |  Venta Gs. 7.820       │
+│                                                                              │
+│  ┌─ Cuentas en Moneda Extranjera ─────────────────────────────────────────┐  │
+│  │  • Banco Continental USD: US$ 25.400,00  (Saldo Libros: Gs. 195.580.000)│  │
+│  │  • Caja Dólares:          US$  3.150,00  (Saldo Libros: Gs.  24.255.000)│  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  [ ⚡ Asistente de Revaluación al Cierre Mensual ]                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 39.2 Proceso de Revaluación por Diferencia de Cambio
+1. Al cierre de cada mes, seleccione el período y haga clic en **"Calcular Revaluación Cambiaria"**.
+2. El sistema toma el saldo en divisa al último día del mes y lo multiplica por la cotización oficial de cierre del Banco Central del Paraguay (BCP).
+3. Compara dicho valor con el saldo contable histórico en Guaraníes.
+4. Si la cotización aumentó y se trata de un activo, calcula la **Ganancia por Diferencia de Cambio**; si disminuyó, calcula la **Pérdida por Diferencia de Cambio**.
+5. Con un solo clic se genera el asiento de ajuste mensual sin errores de redondeo.
+
+---
+
+## 40. Módulo Formulario 104 — Liquidación IRP
+
+### 40.1 Alcance Tributario (RSP y RGC)
+
+El **Formulario 104** de InteliCont automatiza la determinación del **Impuesto a la Renta Personal (IRP)** para personas físicas y profesionales independientes bajo dos regímenes:
+- **Rentas por Servicios Personales (RSP):** Honorarios profesionales, salarios, comisiones y servicios no dependientes.
+- **Rentas y Ganancias del Capital (RGC):** Arrendamientos de inmuebles, regalías, dividendos no alcanzados por IDU y venta de activos.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  📑 Formulario 104 — Liquidación Anual IRP                                   │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Ejercicio Fiscal: [2026 ▼]  Contribuyente: LIC. MARCOS BENÍTEZ (RUC 1234567-8)│
+│                                                                              │
+│  1. Total Ingresos Brutos Gravados:                  Gs. 185.000.000         │
+│  2. Total Egresos Deducibles (Salud, Educación, etc.):Gs.  82.400.000         │
+│  3. Inversiones Deducibles Permitidas:               Gs.  30.000.000         │
+│  ───────────────────────────────────────────────────────────────────         │
+│  4. Renta Neta Imponible:                            Gs.  72.600.000         │
+│                                                                              │
+│  Cálculo de Impuesto por Escalas Progresivas:                                │
+│  • Tramo 1 (hasta Gs. 50.000.000 al 8%):             Gs.   4.000.000         │
+│  • Tramo 2 (excedente Gs. 22.600.000 al 9%):         Gs.   2.034.000         │
+│  Total Impuesto Determinado:                         Gs.   6.034.000         │
+│  (-) Retenciones soportadas:                         Gs.   1.500.000         │
+│  Saldo a Pagar al Fisco:                             Gs.   4.534.000         │
+│                                                                              │
+│  [ Descargar Planilla Borrador Marangatú ]   [ Ver Detalle de Facturas ]     │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 40.2 Categorización de Gastos e Inversiones
+- **Familiares a Cargo:** Permite vincular cónyuge, hijos menores o padres dependientes para validar comprobantes de salud y educación emitidos a su nombre.
+- **Topes de Deducción:** Controla los límites legales vigentes para inversiones mobiliarias e inmobiliarias.
+- **Exportación Directa:** Produce la planilla con los números de casillas idénticos al formulario oficial de la DNIT para facilitar la transcripción o carga electrónica.
+
+---
+
+## 41. Módulo Seguridad y Autenticación de Dos Factores (2FA)
+
+### 41.1 Blindaje de Cuentas con TOTP
+
+Para proteger la información contable sensible de las empresas, InteliCont incorpora soporte de **Autenticación en Dos Fases (2FA / Two-Factor Authentication)** basado en el estándar industrial RFC 6238 (TOTP).
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  🛡️ Seguridad de la Cuenta — 2FA                                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Estado actual: [● 2FA Habilitado con App de Autenticación]                 │
+│                                                                              │
+│  ┌─ Aplicaciones Compatibles ─────────────────────────────────────────────┐  │
+│  │  • Google Authenticator (Android / iOS)                                │  │
+│  │  • Microsoft Authenticator                                             │  │
+│  │  • 1Password, Bitwarden, Apple Passwords                               │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  Códigos de Recuperación: [8 códigos de emergencia disponibles]              │
+│  [ Ver / Regenerar Códigos de Respaldo ]    [ Cerrar Sesiones Remotas ]      │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 41.2 Activación y Recuperación
+1. Ingrese a `/seguridad/2fa` y haga clic en **"Activar 2FA"**.
+2. Escanee el código QR presentado en pantalla con su teléfono inteligente.
+3. Introduzca el código temporal de 6 dígitos para confirmar la sincronización horaria.
+4. Guarde de forma segura los **códigos de recuperación de emergencia** de un solo uso. Si extravía su dispositivo móvil, podrá iniciar sesión con cualquiera de ellos.
+
+---
+
+## 42. Módulo Consola Superadmin y Control de Suscripción
+
+### 42.1 Gestión Multicliente y Límites de Servicio
+
+La consola de `/superadmin` y el módulo `/suscripcion` permiten a los administradores del estudio contable monitorear la salud operativa del sistema.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  👑 Superadmin & Suscripción — Monitoreo General                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Plan Activo: Estudio Profesional  |  Renovación: Mensual                     │
+│                                                                              │
+│  ┌─ Métricas de Consumo ──────────────────────────────────────────────────┐  │
+│  │  • Empresas creadas:       24 de 50 empresas permitidas                │  │
+│  │  • Comprobantes del mes:   1.840 de 5.000 facturas electrónicas        │  │
+│  │  • Usuarios del equipo:    6 contadores y asistentes activos           │  │
+│  │  • Almacenamiento seguro:  2.1 GB de 20 GB                             │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  [ Mejorar Plan (Upgrade) ]   [ Ver Facturas de InteliCont ]                  │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 42.2 Funciones Principales
+- **Aislamiento Multi-Tenant (RLS):** Garantía criptográfica y a nivel de base de datos de que ningún usuario o empresa cliente pueda acceder a datos contables ajenos.
+- **Auditoría de Acceso:** Historial de accesos, intentos fallidos y cambios de configuración de los miembros del equipo contable.
+- **Facturación Electrónica del Servicio:** Descarga directa de las facturas electrónicas legales por el abono de InteliCont emitidas automáticamente vía SIFEN.
+
+---
+
+## 43. Módulo Portal de Clientes y Terceros
+
+### 43.1 Autoservicio para Clientes del Estudio y Proveedores
+
+El portal `/portal` ofrece un canal web moderno y seguro para que los clientes de la empresa o sus proveedores consulten su información fiscal sin necesidad de contactar al contador.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  🌐 Portal de Clientes y Proveedores                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Bienvenido, METALÚRGICA DEL SUR S.R.L.                                      │
+│                                                                              │
+│  ┌─ Accesos Rápidos ──────────────────────────────────────────────────────┐  │
+│  │  • Descarga de Facturas Electrónicas emitidas (PDF / KuDE y XML SIFEN) │  │
+│  │  • Descarga de Certificados de Retención Tesaka recibidos              │  │
+│  │  • Consulta de Saldo en Cuenta Corriente y Facturas Pendientes         │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+│  Últimos Comprobantes Disponibles:                                           │
+│  • KuDE 001-002-0004589 | Monto: Gs. 15.000.000 | [Descargar PDF] [XML]     │
+│  • Retención Tesaka #045 | Monto: Gs.    450.000 | [Descargar Certificado]    │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 43.2 Ventajas para el Estudio Contable
+- **Cero tiempo perdido enviando PDFs:** El cliente ingresa con su usuario y descarga sus facturas o retenciones en cualquier momento.
+- **Transparencia total:** Estados de cuenta actualizados en tiempo real tras cada cobranza registrada.
+- **Acceso Restringido y Protegido:** El cliente sólo ve sus propios documentos y no tiene acceso a los libros diarios, mayores ni balances internos del estudio.
+
+---
+
+## 44. Apéndice: Glosario de términos PY
 
 | Término | Significado |
 |---|---|
@@ -3027,16 +3336,14 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 | **Aranduka** | Aplicativo de la SET para presentación de libros (en guaraní: "libro") |
 | **Tesaka** | Sistema de retenciones (en guaraní: "retención") |
 | **IVA** | Impuesto al Valor Agregado. Tasas: 10% (general), 5% (diferenciado), exento |
-| **IRE** | Impuesto a la Renta Empresarial. Regímenes: General (IRE), Simple (IRES), Resimple |
-| **IRP** | Impuesto a la Renta Personal |
+| **IRP** | Impuesto a la Renta Personal (RSP y RGC) |
 | **INR** | Impuesto a la Renta de No Residentes |
 | **IDU** | Impuesto a los Dividendos y Utilidades |
-| **Formulario 104** | Declaración de IVA |
-| **Formulario 120** | Declaración de Retenciones |
-| **Formulario 501** | Declaración de IRE |
-| **Formulario 400** | Declaración de IRP |
+| **Formulario 120** | Declaración Jurada de IVA (Mensual) |
+| **Formulario 104** | Declaración Jurada de IRP (Rentas de Servicios Personales y Capital) |
+| **Formulario 500 / 501** | Declaración Jurada de IRE (General y Simple) |
 | **Formulario 250** | Declaración de IDU |
-| **RG90** | Resolución General 90: conciliación de comprobantes electrónicos |
+| **RG90** | Resolución General 90: Registro Electrónico de Comprobantes |
 | **Doble partida** | Principio contable: todo débito tiene un crédito de igual monto |
 | **Libro diario** | Registro cronológico de todos los asientos contables |
 | **Plan de cuentas** | Catálogo jerarquizado de cuentas contables |
@@ -3048,11 +3355,11 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 | **Contra-asiento** | Asiento que invierte otro. Mecanismo de corrección en libro inmutable |
 | **Estudio contable** | Empresa que brinda servicios de contabilidad a terceros |
 | **PYME** | Pequeña y Mediana Empresa |
-| **InteliAsistente** | Motor de IA de InteliCont que sugiere asientos automáticamente |
+| **Copilot IA** | Motor de inteligencia artificial de InteliCont que sugiere asientos automáticamente |
 
 ---
 
-## 37. Apéndice: Solución de problemas
+## 45. Apéndice: Solución de problemas
 
 ### 37.1 Problemas de login
 
@@ -3112,9 +3419,9 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 
 ---
 
-## 38. Apéndice: Atajos de teclado
+## 46. Apéndice: Atajos de teclado
 
-### 38.1 Atajos globales
+### 46.1 Atajos globales
 
 | Atajo | Acción |
 |---|---|
@@ -3127,7 +3434,7 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 | **⌘/** / **Ctrl+/** | Mostrar este panel de atajos |
 | **⌘1-9** / **Ctrl+1-9** | Ir al módulo N de la Sidebar (ordenados) |
 
-### 38.2 Atajos de navegación
+### 46.2 Atajos de navegación
 
 | Atajo | Acción |
 |---|---|
@@ -3146,13 +3453,13 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 | **G + G** | Ir a Configuración |
 | **G + U** | Ir a Auditoría |
 | **G + O** | Ir a Activos Fijos |
-| **G + B** | Ir a Bancos |
+| **G + B** | Ir a Bancos y Conciliación |
 | **G + H** | Ir a Caja Chica |
 | **G + M** | Ir a Terceros |
 | **G + N** | Ir a Timbrados |
 | **G + 9** | Ir a RG90 |
 
-### 38.3 Atajos del módulo Asientos
+### 46.3 Atajos del módulo Asientos
 
 | Atajo | Acción |
 |---|---|
@@ -3166,7 +3473,7 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 | **→** (desde listado) | Abrir detalle del asiento |
 | **R** (desde detalle) | Reversar asiento |
 
-### 38.4 Atajos del formulario de asiento
+### 46.4 Atajos del formulario de asiento
 
 | Tecla | Acción |
 |---|---|
@@ -3178,19 +3485,20 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 | **Delete** (en línea vacía) | Eliminar línea |
 | **⌘Backspace** / **Ctrl+Backspace** | Eliminar línea actual |
 
-### 38.5 Atajos del módulo SIFEN
+### 46.5 Atajos de SIFEN y Marangatú REA
 
 | Atajo | Acción |
 |---|---|
 | **U** | Ir a carga (upload) |
 | **H** | Ir a historial |
 | **E** | Ir a emitir |
+| **M** | Abrir modal Sincronización Marangatú REA |
 | **⌘I** / **Ctrl+I** | Importar archivos |
 | **⌘⇧I** / **Ctrl+Shift+I** | Sincronizar SIFEN |
 | **A** (en pendiente) | Aprobar y contabilizar |
 | **X** (en pendiente) | Rechazar/descartar |
 
-### 38.6 Atajos de búsqueda y filtros
+### 46.6 Atajos de búsqueda y filtros
 
 | Atajo | Acción |
 |---|---|
@@ -3200,5 +3508,5 @@ El módulo de auditoría registra todos los cambios realizados en el sistema. Es
 
 ---
 
-> **Fin del Manual de Usuario — InteliCont v1.0.0**  
+> **Fin del Manual de Usuario — InteliCont v1.1.0**  
 > *Este manual cubre todas las funcionalidades del sistema. Para consultas adicionales, contacte a soporte@intelicont.com.py*
