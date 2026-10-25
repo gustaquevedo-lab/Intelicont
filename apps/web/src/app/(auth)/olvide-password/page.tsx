@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Mail, ArrowRight, ArrowLeft, CheckCircle2, Shield, Sparkles } from "lucide-react";
 import { solicitarRecuperacionAction } from "./actions";
 
+import { Logo } from "@/components/logo";
+
 export default function OlvidePasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,23 +29,21 @@ export default function OlvidePasswordPage() {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#081528] text-slate-100 p-4">
+      <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-1.5">
-          <div className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-emerald-500 shadow-md text-white mb-2">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-            Inteli<span className="text-blue-600">Cont</span>
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+        <div className="flex flex-col items-center justify-center text-center space-y-2">
+          <Link href="/login" className="inline-block transition-transform hover:scale-105">
+            <Logo size="lg" showSlogan dark />
+          </Link>
+          <p className="text-xs text-slate-400 font-medium">
             Recuperá el acceso a tu estudio contable
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-7 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#1b63c4] via-[#33c1cc] to-[#08a14b]" />
           {submitted ? (
             <div className="text-center space-y-4 py-2">
               <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto border border-emerald-200 dark:border-emerald-800">
