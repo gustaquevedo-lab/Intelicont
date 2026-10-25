@@ -10,4 +10,4 @@ export { reverseEntry, todayInAsuncion } from "./reverse-entry";
 export { syncMarangatuDocuments, type SyncMarangatuResult } from "./sync-marangatu";
 
 /** Every use case that mutates ledger state. Each must emit an audit event (enforced by usecases.test.ts). */
-export const MUTATING_USECASES = { postEntry, reverseEntry, ingestDocument, createManual, syncMarangatuDocuments } as const;
+export const MUTATING_USECASES = { postEntry, reverseEntry, ingestDocument, createManual } as const;
