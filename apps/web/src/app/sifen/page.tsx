@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   FileCode,
@@ -12,10 +12,12 @@ import {
   AlertTriangle,
   Copy,
   XCircle,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth-store";
 import { api } from "@/trpc/client";
+import MarangatuReaModal from "@/components/marangatu-rea-modal";
 import type { Suggestion } from "@intelicont/ledger/ai";
 
 type IngestOutcome = { fileName: string; status: "saved" | "duplicate" | "error"; warnings: string[]; message?: string };
@@ -82,6 +84,19 @@ export default function SifenPage() {
   }, [utils]);
 
   const docs = pending.data ?? [];
+  const [reaOpen, setReaOpen] = useState(false);
+  const [syncCookie, setSyncCookie] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const cookieParam = params.get("sync_cookie");
+      if (cookieParam) {
+        setSyncCookie(cookieParam);
+        setReaOpen(true);
+      }
+    }
+  }, []);
 
   return (
     <div className="p-3 sm:p-4 lg:p-8 max-w-5xl mx-auto space-y-4 sm:space-y-6">
@@ -89,16 +104,26 @@ export default function SifenPage() {
         <div>
           <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Carga de Facturas SIFEN</h1>
           <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
-            Cargá los XML de comprobantes electrónicos. La IA sugiere el asiento y vos lo aprobás antes de postear.
+            Cargá los XML de comprobantes electrónicos o sincronizá directo desde la DNIT. La IA sugiere el asiento contable.
           </p>
         </div>
-        <Link
-          href="/libros?tab=iva_compras"
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs sm:text-sm transition-colors border border-gray-200 dark:border-gray-700 no-tap-highlight self-start"
-        >
-          <Clock className="h-4 w-4" />
-          <span className="hidden sm:inline">Ver Libro IVA</span>
-        </Link>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setReaOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md transition-all no-tap-highlight"
+          >
+            <Zap className="h-4 w-4 text-amber-300 fill-amber-300" />
+            <span>Sincronizar Marangatú</span>
+          </button>
+          <Link
+            href="/libros?tab=iva_compras"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs sm:text-sm transition-colors border border-gray-200 dark:border-gray-700 no-tap-highlight"
+          >
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Ver Libro IVA</span>
+          </Link>
+        </div>
       </div>
 
       <div
@@ -167,6 +192,17 @@ export default function SifenPage() {
           />
         ))}
       </section>
+
+      <MarangatuReaModal
+        entityId={entityId}
+        entityRuc={entity?.ruc}
+        open={reaOpen}
+        onOpenChange={setReaOpen}
+        initialCookie={syncCookie}
+        onSyncSuccess={() => {
+          void utils["tax-documents"].pending.invalidate();
+        }}
+      />
     </div>
   );
 }

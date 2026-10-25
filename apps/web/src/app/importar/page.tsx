@@ -4,9 +4,11 @@ import { useState } from "react";
 import {
   Upload, FileText, CheckCircle2, AlertCircle, Download,
   Eye, Table, FileSpreadsheet, X, Plus, Sparkles,
-  ArrowRight, Search,
+  ArrowRight, Search, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/lib/auth-store";
+import MarangatuReaModal from "@/components/marangatu-rea-modal";
 
 type ImportType = "cuentas" | "terceros" | "asientos" | "facturas";
 
@@ -37,6 +39,8 @@ const SAMPLE_DATA: Record<ImportType, { headers: string[]; rows: string[][] }> =
 };
 
 export default function ImportWizardPage() {
+  const entity = useAuthStore((s) => s.selectedEntity);
+  const [reaOpen, setReaOpen] = useState(false);
   const [type, setType] = useState<ImportType>("cuentas");
   const [step, setStep] = useState<"select" | "preview" | "done">("select");
   const [preview, setPreview] = useState<PreviewRow[]>([]);
@@ -78,6 +82,34 @@ export default function ImportWizardPage() {
           <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Importar Datos</h1>
           <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">Importación masiva desde Excel/CSV con validación</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setReaOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-md transition-all self-start"
+        >
+          <Zap className="h-4 w-4 text-amber-300 fill-amber-300" />
+          <span>Sincronizar Marangatú (REA)</span>
+        </button>
+      </div>
+
+      {/* Banner REA Marangatu */}
+      <div className="p-4 rounded-2xl border border-blue-200 dark:border-blue-900/40 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-blue-600 text-white shadow-md">
+            <Zap className="h-5 w-5 text-amber-300 fill-amber-300" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">¿Tenés sesión abierta en Marangatú?</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Descargá tus compras y ventas de la DNIT en 1 segundo con el protocolo REA sin subir archivos a mano.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setReaOpen(true)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors shadow-sm whitespace-nowrap self-start sm:self-auto"
+        >
+          Conectar en 1-Clic →
+        </button>
       </div>
 
       {/* Steps */}
@@ -188,6 +220,15 @@ export default function ImportWizardPage() {
             Nueva Importación
           </button>
         </div>
+      )}
+
+      {entity && (
+        <MarangatuReaModal
+          entityId={entity.id}
+          entityRuc={entity.ruc}
+          open={reaOpen}
+          onOpenChange={setReaOpen}
+        />
       )}
     </div>
   );
