@@ -31,6 +31,7 @@ export async function loadGuardUser(db: Db, userId: string): Promise<GuardUser> 
 
 /** True when the policy blocks the user: admin somewhere without TOTP enabled. */
 export function needs2FA(user: GuardUser): boolean {
+  if (process.env.DISABLE_MANDATORY_2FA === "true") return false;
   return !!user && user.isAdmin && !user.twoFactorEnabled;
 }
 
