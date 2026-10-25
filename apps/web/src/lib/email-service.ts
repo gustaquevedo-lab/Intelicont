@@ -75,7 +75,7 @@ async function dispatchEmail(params: {
   return { success: true, id: emailId, simulated: true };
 }
 
-function getEmailLayout(title: string, contentHtml: string): string {
+export function getEmailLayout(title: string, contentHtml: string): string {
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -83,24 +83,40 @@ function getEmailLayout(title: string, contentHtml: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 32px 16px;">
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 36px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);">
           <!-- Header Branding -->
           <tr>
-            <td style="padding: 28px 32px; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); text-align: left;">
-              <table role="presentation" width="100%">
+            <td style="padding: 26px 32px; background: linear-gradient(135deg, #0b2545 0%, #134074 50%, #1d4ed8 100%); text-align: left;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td>
-                    <span style="font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;">Inteli<span style="color: #60a5fa;">Cont</span></span>
-                    <span style="display: block; font-size: 11px; color: #bfdbfe; font-weight: 500; margin-top: 2px;">Contabilidad Inteligente & Fiscalidad DNIT</span>
+                  <td style="vertical-align: middle;">
+                    <table role="presentation" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="vertical-align: middle; padding-right: 12px;">
+                          <!-- Isotipo InteliCont -->
+                          <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #256ebf 0%, #104c91 100%); border: 1px solid rgba(255,255,255,0.25); text-align: center; line-height: 38px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                            <span style="font-size: 20px; font-weight: 900; color: #ffffff;">IC</span>
+                          </div>
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <div style="font-size: 24px; font-weight: 900; line-height: 1; letter-spacing: -0.5px;">
+                            <span style="color: #ffffff;">Inteli</span><span style="color: #22c55e;">Cont</span>
+                          </div>
+                          <div style="font-size: 10px; color: #93c5fd; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;">
+                            Contabilidad Inteligente & Fiscalidad DNIT
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
-                  <td align="right">
-                    <span style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 9999px;">
+                  <td align="right" style="vertical-align: middle;">
+                    <div style="display: inline-block; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 9999px;">
                       🇵🇾 Paraguay
-                    </span>
+                    </div>
                   </td>
                 </tr>
               </table>
@@ -108,16 +124,25 @@ function getEmailLayout(title: string, contentHtml: string): string {
           </tr>
           <!-- Body Content -->
           <tr>
-            <td style="padding: 32px;">
+            <td style="padding: 34px 32px 28px 32px;">
               ${contentHtml}
             </td>
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #64748b; line-height: 1.5;">
-              <p style="margin: 0 0 6px 0; font-weight: 600; color: #475569;">InteliCont S.A.S. — Sistema Contable y Fiscal Paraguayo</p>
-              <p style="margin: 0 0 6px 0;">Soporte WhatsApp: +595 994 516360 · Asunción, Paraguay</p>
-              <p style="margin: 0; color: #94a3b8;">Si no reconocés este correo o necesitás ayuda, podés escribir a soporte@intelicont.com.py</p>
+            <td style="padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #64748b; line-height: 1.6;">
+              <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 700; color: #334155;">
+                Desarrollado por <span style="color: #1e40af;">IntelliHouse Soluciones E.A.S.</span>
+              </p>
+              <p style="margin: 0 0 6px 0; color: #64748b;">
+                RUC 80144114-5 · Asunción, Paraguay
+              </p>
+              <p style="margin: 0 0 10px 0;">
+                Soporte WhatsApp: <a href="https://wa.me/595994516360" style="color: #2563eb; text-decoration: none; font-weight: 600;">+595 994 516360</a> · Email: <a href="mailto:soporte@intelicont.com.py" style="color: #2563eb; text-decoration: none;">soporte@intelicont.com.py</a>
+              </p>
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 10px; font-size: 10px; color: #94a3b8;">
+                © 2026 InteliCont. Todos los derechos reservados.
+              </div>
             </td>
           </tr>
         </table>
@@ -127,6 +152,113 @@ function getEmailLayout(title: string, contentHtml: string): string {
 </body>
 </html>`;
 }
+
+export function renderWelcomeEmailHtml(input: {
+  name?: string | null;
+  entityName: string;
+  trialDays?: number;
+}): string {
+  const days = input.trialDays ?? 14;
+  const name = input.name || "Colega";
+  return getEmailLayout(
+    "Bienvenido a InteliCont",
+    `<h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">¡Hola, ${name}! 👋</h2>
+    <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 20px;">
+      Te damos la bienvenida oficial a <strong>InteliCont</strong>. La cuenta de tu estudio/empresa <strong>${input.entityName}</strong> ha sido activada con <strong>${days} días de prueba gratuita</strong> en el Plan Starter.
+    </p>
+
+    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 18px; margin-bottom: 24px;">
+      <h3 style="margin-top: 0; font-size: 12px; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+        🚀 ¿Por dónde empezar hoy?
+      </h3>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #14532d; line-height: 1.7;">
+        <li><strong>Importación SIFEN:</strong> Subí tus XML de compras y ventas para contabilización automática.</li>
+        <li><strong>Conciliación Bancaria:</strong> Importá extractos de Itaú, Continental o GNB en segundos.</li>
+        <li><strong>Copilot Fiscal IA:</strong> Presioná <code>⌘J</code> en la app para consultar cualquier norma DNIT.</li>
+      </ul>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 28px;">
+      <a href="https://app.intelicont.com.py/login" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
+        Ingresar al Panel de Control →
+      </a>
+    </div>
+
+    <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin: 0;">
+      ¿Preferís una demostración personalizada? Contactanos directamente por <a href="https://wa.me/595994516360" style="color: #2563eb; text-decoration: none; font-weight: 600;">WhatsApp al +595 994 516360</a>.
+    </p>`
+  );
+}
+
+export function renderPasswordResetEmailHtml(input: { resetUrl: string }): string {
+  return getEmailLayout(
+    "Recuperación de Contraseña",
+    `<h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">Restablecer Contraseña 🔒</h2>
+    <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
+      Recibimos una solicitud para restablecer el acceso a tu cuenta de InteliCont. Hacé clic en el siguiente botón seguro para crear una nueva contraseña:
+    </p>
+
+    <div style="text-align: center; margin-bottom: 24px;">
+      <a href="${input.resetUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);">
+        Crear Nueva Contraseña →
+      </a>
+    </div>
+
+    <div style="background-color: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+      <p style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.4;">
+        Este enlace es de uso único y tiene una validez de <strong>1 hora</strong> por motivos de seguridad. Si el botón no funciona, copiá este link en tu navegador:<br/>
+        <span style="color: #2563eb; word-break: break-all;">${input.resetUrl}</span>
+      </p>
+    </div>
+
+    <p style="font-size: 12px; color: #94a3b8; line-height: 1.4; margin: 0;">
+      Si vos no solicitaste este cambio, no es necesario hacer nada. Tu contraseña actual sigue siendo segura.
+    </p>`
+  );
+}
+
+export function renderFiscalAlertEmailHtml(input: {
+  entityName: string;
+  obligation: string;
+  dueDate: string;
+}): string {
+  return getEmailLayout(
+    "Alerta de Vencimiento Fiscal",
+    `<div style="display: inline-block; background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; margin-bottom: 12px;">
+      ⚠️ VENCIMIENTO TRIBUTARIO DNIT
+    </div>
+    <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">
+      Próximo Vencimiento: ${input.obligation}
+    </h2>
+    <p style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 20px;">
+      Te recordamos que la obligación <strong>${input.obligation}</strong> para el contribuyente <strong>${input.entityName}</strong> vence indefectiblemente el <strong>${input.dueDate}</strong>.
+    </p>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+      <table style="width: 100%; font-size: 13px;">
+        <tr>
+          <td style="color: #64748b; padding: 4px 0;">Contribuyente:</td>
+          <td style="font-weight: 700; color: #0f172a; text-align: right;">${input.entityName}</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b; padding: 4px 0;">Obligación:</td>
+          <td style="font-weight: 700; color: #0f172a; text-align: right;">${input.obligation}</td>
+        </tr>
+        <tr>
+          <td style="color: #64748b; padding: 4px 0;">Fecha Límite:</td>
+          <td style="font-weight: 800; color: #dc2626; text-align: right;">${input.dueDate}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+      <a href="https://app.intelicont.com.py/calendario" style="display: inline-block; background-color: #0f172a; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 12px 28px; border-radius: 10px;">
+        Revisar en Calendario Fiscal →
+      </a>
+    </div>`
+  );
+}
+
 
 /**
  * Envía el correo de bienvenida al registrarse en el período de prueba.
