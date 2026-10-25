@@ -1,7 +1,7 @@
 import { err, ok, type Result } from "@intelicont/core";
 import { and, eq, sql } from "drizzle-orm";
 import { audited } from "../../db/audit";
-import { tenantDb, isMockMode } from "../../db/index";
+import { tenantDb, isMockMode, type Db } from "../../db/index";
 import * as schema from "../../db/schema";
 import { docCodeFromType } from "../registro-codes";
 import type { MarangatuDocumentoRaw } from "../marangatu-rea";
@@ -68,7 +68,7 @@ export async function syncMarangatuDocuments(
             currencyCode: "PYG",
             condition: doc.condicion === "credito" ? "credit" : "cash",
             status: "pending",
-            sifenStatus: doc.cdc ? "validated" : "none",
+            sifenStatus: doc.cdc ? "validated" : null,
             gravado10: doc.gravada10,
             gravado5: doc.gravada5,
             exento: doc.exenta,
