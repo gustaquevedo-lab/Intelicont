@@ -13,16 +13,20 @@ import {
   getSuperadminStats,
 } from "@/lib/superadmin-service";
 import { getErroresPlataforma, resolverErrorPlataforma } from "@/lib/error-tracker";
+import { requireSuperadmin } from "@/lib/superadmin-guard";
 
 export async function getSuperadminStatsAction() {
+  await requireSuperadmin();
   return getSuperadminStats();
 }
 
 export async function getSystemVitalsAction() {
+  await requireSuperadmin();
   return getSystemVitals();
 }
 
 export async function getSuperadminTenantsAction() {
+  await requireSuperadmin();
   try {
     if (isMockMode()) {
       return [
@@ -68,6 +72,7 @@ export async function getSuperadminTenantsAction() {
 }
 
 export async function getSuperadminUsersAction() {
+  await requireSuperadmin();
   try {
     if (isMockMode()) {
       return [
@@ -105,6 +110,7 @@ export async function createTenantAtomicAction(data: {
   plan?: string;
   featuresOverride?: Record<string, any>;
 }) {
+  await requireSuperadmin();
   try {
     const res = await createTenantAtomic(data);
     revalidatePath("/superadmin");
@@ -120,6 +126,7 @@ export async function createUserInTenantAction(data: {
   name?: string;
   role?: string;
 }) {
+  await requireSuperadmin();
   try {
     const res = await createUserWithLimits(data);
     revalidatePath("/superadmin");
@@ -137,6 +144,7 @@ export async function updateTenantCommercialsAction(
     status?: "active" | "inactive" | "closed";
   }
 ) {
+  await requireSuperadmin();
   try {
     if (!isMockMode()) {
       const db = getDb();
@@ -158,20 +166,24 @@ export async function updateTenantCommercialsAction(
 }
 
 export async function impersonateTenantAction(entityId: string, superAdminEmail: string = "superadmin@intelicont.com.py") {
+  await requireSuperadmin();
   return impersonateTenant({ entityId, superAdminEmail });
 }
 
 export async function getErroresPlataformaAction(options?: { resuelto?: boolean }) {
+  await requireSuperadmin();
   return getErroresPlataforma(options);
 }
 
 export async function resolverErrorAction(errorId: string, notas?: string) {
+  await requireSuperadmin();
   const res = await resolverErrorPlataforma(errorId, notas);
   revalidatePath("/superadmin");
   return { success: !!res, data: res };
 }
 
 export async function resetUserPasswordAction(userId: string, newPass: string) {
+  await requireSuperadmin();
   const res = await cambiarPasswordUsuario({
     userId,
     passwordActual: "",
@@ -182,11 +194,13 @@ export async function resetUserPasswordAction(userId: string, newPass: string) {
 }
 
 export async function getPaymentOrdersAction(filter?: { status?: string }) {
+  await requireSuperadmin();
   const { listPaymentOrders } = await import("@/lib/subscription-service");
   return listPaymentOrders(filter);
 }
 
 export async function approvePaymentOrderAction(orderId: string, approvedBy: string = "superadmin@intelicont.com.py") {
+  await requireSuperadmin();
   const { approvePaymentOrder } = await import("@/lib/subscription-service");
   const res = await approvePaymentOrder(orderId, approvedBy);
   revalidatePath("/superadmin");
@@ -195,6 +209,7 @@ export async function approvePaymentOrderAction(orderId: string, approvedBy: str
 }
 
 export async function rejectPaymentOrderAction(orderId: string, reason: string) {
+  await requireSuperadmin();
   const { rejectPaymentOrder } = await import("@/lib/subscription-service");
   const res = await rejectPaymentOrder(orderId, reason);
   revalidatePath("/superadmin");
