@@ -1,9 +1,9 @@
 # InteliCont — Manual de Usuario Completo
 
-> **Versión:** 1.0.0  
-> **Última actualización:** Julio 2026  
+> **Versión:** 1.2.0  
+> **Última actualización:** Octubre 2026  
 > **Sistema:** Contabilidad Inteligente para Paraguay  
-> **Propósito:** Este manual está diseñado para que cualquier persona pueda aprender a usar InteliCont en su totalidad solo leyéndolo. Cada pantalla, botón, campo y flujo está explicado con detalle absoluto.
+> **Propósito:** Este manual está diseñado para que cualquier persona pueda aprender a usar InteliCont en su totalidad solo leyéndolo. Cada pantalla, botón, campo, flujo operativo y fundamento legal tributario paraguayo está explicado con detalle absoluto.
 
 ---
 
@@ -169,140 +169,90 @@ Login (/login)
 ### 3.3 Tipos de cuenta
 
 | Tipo | Descripción |
-|---|---|
-| **Estudio contable** | Gestiona múltiples empresas cliente. Tiene usuarios internos (contadores, asistentes) + clientes con acceso al portal |
-| **Empresa individual** | Una sola empresa. Usuarios internos |
-
----
-
 ## 4. Pantalla de Login — Acceso al sistema
 
-### 4.1 Mock completo de la pantalla
+InteliCont cuenta con un portal de bienvenida unificado con la identidad visual corporativa del sistema: colores institucionales azul marino profundo (`#104c91`) y verde esmeralda (`#00a651`), diseño split-screen en pantallas de escritorio, logotipo oficial y acceso directo y seguro mediante **Email y Contraseña**.
+
+### 4.1 Mock de la pantalla de acceso oficial
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                              │
-│  ┌────────────────────────────────────────────┐  ┌──────────────────────────────────────┐    │
-│  │  [Logo InteliCont]                         │  │                                      │    │
-│  │  "Contabilidad Inteligente"                │  │     [Logo InteliCont]                 │    │
-│  │  Ecosistema Inteli*                        │  │     (versión móvil)                   │    │
-│  │                                            │  │                                      │    │
-│  │  La contabilidad de tu estudio,            │  │     Accedé a tu estudio               │    │
-│  │  automatizada de verdad.                   │  │     Recibí un enlace mágico en tu     │    │
-│  │                                            │  │     email — sin contraseña.           │    │
-│  │  ✅ Plan de cuentas DNIT estándar          │  │                                      │    │
-│  │  ✅ Importación automática SIFEN           │  │  ┌──────────────────────────────┐    │    │
-│  │  ✅ Hechauka y RG90 en un clic             │  │  │ [Magic Link] [Contraseña]   │    │    │
-│  │  ✅ IA que sugiere asientos                │  │  └──────────────────────────────┘    │    │
-│  │                                            │  │                                      │    │
-│  │  © 2026 IntelliHouse · RUC 80144114-5      │  │  Email                               │    │
-│  └────────────────────────────────────────────┘  │  ┌──────────────────────────────┐    │    │
-│                                                  │  │ ✉️ [contador@estudio.com.py] │    │    │
-│                                                  │  └──────────────────────────────┘    │    │
-│                                                  │                                      │    │
-│                                                  │  [✨ Enviar enlace mágico  →]        │    │
-│                                                  │                                      │    │
-│                                                  │  Te enviamos un enlace seguro por    │    │
-│                                                  │  email. No necesitás recordar        │    │
-│                                                  │  ninguna contraseña.                 │    │
-│                                                  │                                      │    │
-│                                                  │  ──────── o ────────                 │    │
-│                                                  │                                      │    │
-│                                                  │  ¿Todavía no tenés cuenta?           │    │
-│                                                  │  [Contactá al estudio]              │    │
-│                                                  │                                      │    │
-│                                                  └──────────────────────────────────────┘    │
+│  ┌─ PANEL IZQUIERDO: IDENTIDAD INSTITUCIONAL ─┐  ┌─ PANEL DERECHO: FORMULARIO DE ACCESO ───┐ │
+│  │                                            │  │                                         │ │
+│  │  [ Logo InteliCont: Infinito Verde y Azul ]│  │     Iniciar Sesión                      │ │
+│  │  InteliCont                                │  │     Ingresá tus credenciales            │ │
+│  │  Contabilidad Inteligente PY               │  │                                         │ │
+│  │                                            │  │  Correo Electrónico                     │ │
+│  │  La plataforma contable y tributaria       │  │  ┌────────────────────────────────────┐ │ │
+│  │  definitiva para estudios y empresas       │  │  │ ✉️  contador@estudio.com.py        │ │ │
+│  │  de la República del Paraguay.             │  │  └────────────────────────────────────┘ │ │
+│  │                                            │  │                                         │ │
+│  │  ✅ Cumplimiento SIFEN & DNIT Marangatú    │  │  Contraseña         ¿Olvidaste tu clave?│ │
+│  │  ✅ Copilot Contable (Ley N° 6380/19)      │  │  ┌──────────────────────────────────┬─┐│ │
+│  │  ✅ RG 90, Hechauka y Formularios 104/500  │  │  │ •••••••••••••••••••••            │👁││ │
+│  │  ✅ Encriptación bancaria y RLS por tenant │  │  └──────────────────────────────────┴─┘│ │
+│  │                                            │  │                                         │ │
+│  │  "Automatizá la imputación contable de     │  │  [ 🚀 Ingresar al Sistema            →] │ │
+│  │   tus facturas electrónicas en minutos"    │  │                                         │ │
+│  │                                            │  │  ─────────────────────────────────────  │ │
+│  │                                            │  │  ¿No tenés una cuenta todavía?          │ │
+│  │  © 2026 IntelliHouse Soluciones E.A.S.     │  │  [ Empezá 14 días de prueba gratis ]    │ │
+│  │  RUC 80144114-5 · Asunción, Paraguay       │  │                                         │ │
+│  └────────────────────────────────────────────┘  └─────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 4.2 Elementos de la pantalla
 
-#### Panel izquierdo (solo desktop ≥ 1024px)
+#### Panel izquierdo (Showcase Institucional — Desktop ≥ 1024px)
 
 | Elemento | Tipo | Descripción |
 |---|---|---|
-| Logo | SVG | Logo de InteliCont con el infinito verde y azul |
-| Título | Texto | "La contabilidad de tu estudio, automatizada de verdad." |
-| Feature list | Lista con checks | 4 características principales del sistema |
-| Footer | Texto | © 2026 IntelliHouse Soluciones E.A.S. · RUC 80144114-5 |
+| **Logo Oficial** | SVG / Brand | Logotipo institucional InteliCont con el isotipo de infinito entrelazado en gradiente corporativo (`#104c91` a `#00a651`). |
+| **Slogan** | Tipografía Bold | "Contabilidad Inteligente PY". |
+| **Credenciales de Confianza** | Badges y Lista | Certificaciones de compatibilidad: Facturación SIFEN, integración DNIT Marangatú, cumplimiento estricto de la Ley 6380/19, RG 90 y encriptación de datos en reposo y en tránsito. |
+| **Footer Legal** | Texto | © 2026 IntelliHouse Soluciones E.A.S. · RUC 80144114-5. |
 
-#### Panel derecho (formulario)
+#### Panel derecho (Formulario de Acceso Directo)
 
 | Elemento | Tipo | Descripción |
 |---|---|---|
-| Mobile Logo | SVG | Solo visible en móvil (< 1024px) |
-| Título | H1 | "Accedé a tu estudio" |
-| Subtítulo | P | "Recibí un enlace mágico..." o "Ingresá con tu email y contraseña." |
-| Mode Switcher | Toggle | Dos botones: "✨ Magic Link" y "🔒 Contraseña" |
-| Campo Email | Input type="email" | Placeholder: "contador@estudio.com.py". Requerido. Autocomplete="email" |
-| Campo Contraseña | Input type="password" | Solo visible en modo "Contraseña". Placeholder: "••••••••". Tiene botón 👁 para mostrar/ocultar |
-| Link "Olvidaste tu contraseña" | Link | Solo visible en modo contraseña. Lleva a `/auth/forgot-password` |
-| Botón Submit | Button | Texto dinámico según modo: "Enviar enlace mágico" o "Ingresar". Muestra spinner mientras carga |
-| Mensaje de error | Alert | Fondo rojo, ícono ⚠️, texto del error. Se muestra cuando hay error |
-| Mensaje de éxito | Alert | Fondo verde, ícono ✅, texto del éxito. Se muestra cuando se envió el magic link |
-| Divider | Línea horizontal | "o" |
-| Link de contacto | Link | "Contactá al estudio" → WhatsApp |
+| **Título y Subtítulo** | H1 + P | "Iniciar Sesión" / "Ingresá tus credenciales para acceder al sistema". |
+| **Campo Email** | Input type="email" | Dirección de correo del usuario (ej. `contador@estudio.com.py`). Validación RFC automática. |
+| **Campo Contraseña** | Input type="password" | Campo cifrado con soporte de autocompletado seguro. |
+| **Alternar Visibilidad (Eye)** | Botón de icono | Permite mostrar u ocultar la clave tipeada para evitar errores sin comprometer la seguridad. |
+| **Link Olvidé mi Contraseña** | Enlace | Redirige a `/olvide-password` para solicitar un enlace de restablecimiento seguro por correo electrónico. |
+| **Botón de Ingreso** | Button (Gradiente) | Botón principal con animación hover y spinner de carga mientras se valida la sesión con el backend. |
+| **Link Auto-Registro** | Enlace / Botón | Enlace a `/registro` con oferta de 14 días de prueba gratuita sin tarjeta de crédito para nuevos estudios. |
 
-### 4.3 Paso a paso: Iniciar sesión con Magic Link
+### 4.3 Flujo de Inicio de Sesión Directo
 
-**Paso 1:** Abra el navegador y vaya a la URL de InteliCont
+1. **Ingrese a la URL del sistema:** Abra su navegador y diríjase a `https://intelicont.intellihouse.lat/login` (o la URL de su dominio corporativo).
+2. **Complete Email y Contraseña:** Escriba su dirección de correo y su contraseña asignada.
+3. **Verifique la clave con el botón de ojo (opcional):** Puede presionar el ícono de ojo para asegurarse de que no haya ingresado caracteres erróneos.
+4. **Presione "Ingresar al Sistema":** El sistema valida las credenciales contra la base de datos segura y crea una cookie de sesión HTTP-only.
+5. **Acceso directo:** Si no tiene habilitado un segundo factor manual, el sistema lo ingresa de inmediato a su Dashboard o al último estudio contable activo.
+6. **2FA Opcional:** Si usted activó voluntariamente la autenticación en dos factores en `/seguridad/2fa`, el sistema le presentará un segundo paso solicitando el código de 6 dígitos generado por Google Authenticator o Authy.
 
-**Paso 2:** Verá la pantalla de login. Por defecto está seleccionado el modo **"Magic Link"** (el botón izquierdo del toggle aparece resaltado).
+### 4.4 Estados de la pantalla
 
-**Paso 3:** En el campo "Email", escriba su dirección de correo electrónico. Debe ser el mismo email con el que fue invitado al sistema.
-- Formato válido: `nombre@dominio.com`
-- El campo tiene validación de formato email (debe contener @ y dominio)
-- Si el email no es válido, el navegador muestra un mensaje de error nativo
-
-**Paso 4:** Haga clic en el botón **"Enviar enlace mágico"** (o presione Enter).
-
-**Paso 5:** El botón cambia a mostrar un spinner giratorio y el texto "Enviando enlace...".
-
-**Paso 6:** Una vez enviado, aparecerá un mensaje verde de éxito: "¡Listo! Revisá tu bandeja de entrada en [email]. El enlace expira en 1 hora."
-
-**Paso 7:** Abra su bandeja de correo electrónico. Busque el email de InteliCont (asunto: "Tu enlace para acceder a InteliCont").
-
-**Paso 8:** Haga clic en el enlace del email. Esto abrirá una nueva pestaña del navegador.
-
-**Paso 9:** El sistema verificará el token. Si es válido, creará su sesión y lo redirigirá al Dashboard.
-
-**Paso 10:** Si el enlace expiró (más de 1 hora), verá un mensaje de error: "El enlace expiró o es inválido. Solicitá uno nuevo." Vuelva al paso 3.
-
-### 4.4 Paso a paso: Iniciar sesión con Contraseña
-
-**Paso 1:** En la pantalla de login, haga clic en el botón **"Contraseña"** en el toggle superior.
-
-**Paso 2:** El campo de contraseña aparece debajo del campo de email.
-
-**Paso 3:** Ingrese su email.
-
-**Paso 4:** Ingrese su contraseña.
-- Si no la recuerda, haga clic en **"¿Olvidaste tu contraseña?"** (enlace debajo del campo)
-
-**Paso 5:** Haga clic en **"Ingresar"**.
-
-**Paso 6:** El sistema verifica las credenciales. Si son correctas, crea la sesión y redirige al Dashboard.
-
-**Paso 7:** Si la contraseña es incorrecta, verá un mensaje de error rojo.
-
-### 4.5 Estados de la pantalla
-
-| Estado | Qué se ve | Qué hacer |
+| Estado | Indicador Visual | Acción del Usuario |
 |---|---|---|
-| **Idle** | Formulario vacío, botón activo | Ingresar email y enviar |
-| **Loading** | Spinner en botón, "Enviando enlace..." | Esperar |
-| **Success** | Mensaje verde "Enlace enviado" | Revisar email |
-| **Error** | Mensaje rojo con descripción | Corregir el error y reintentar |
-| **Callback error** | Mensaje rojo "Enlace expiró" al cargar | Solicitar nuevo magic link |
+| **Reposo (Idle)** | Formulario limpio con campos habilitados. | Ingresar email y contraseña. |
+| **Procesando (Loading)** | Botón con spinner de carga y texto "Iniciando sesión...". | Aguardar validación (1-2 segundos). |
+| **Error de Credenciales** | Alerta roja en cabecera: "Credenciales inválidas o correo no registrado". | Revisar correo/contraseña o presionar "¿Olvidaste tu clave?". |
+| **Sesión Iniciada** | Redirección suave al Dashboard principal (`/`). | Comenzar operaciones contables. |
 
-### 4.6 Validaciones
+### 4.5 Validaciones y Seguridad
 
-| Campo | Validación | Mensaje de error |
+| Campo | Validación | Comportamiento del Sistema |
 |---|---|---|
-| Email | Formato email válido | El navegador muestra "Please include an @" |
-| Email | No vacío | No se envía si está vacío |
-| Contraseña | No vacía | No se envía si está vacía |
-| Token magic link | Validez temporal (1 hora) | "El enlace expiró o es inválido" |
+| **Email** | Formato RFC 5322 válido | Validación en cliente y servidor; no permite envío vacío o mal estructurado. |
+| **Contraseña** | Verificación hash Argon2id | Comprobación criptográfica contra la base de datos PostgreSQL. |
+| **Visibilidad** | Alternancia segura | El botón de ojo solo altera el atributo `type="text"` localmente en el DOM sin exponer la clave en red. |
+| **Recuperación** | Token firmado temporal | Genera un enlace criptográfico seguro enviado al correo registrado para cambio de clave. |
+| **Sesiones Concurrentes** | Token HTTP-only | Cookie cifrada inviolable con protección contra ataques CSRF y XSS. |
 
 ---
 
@@ -2623,69 +2573,74 @@ Solo usuarios con rol **Administrador** pueden reabrir un período. Al hacerlo:
 
 ---
 
-## 31. Módulo Estados Financieros
+## 31. Módulo Estados Financieros y Cumplimiento Legal Paraguayo
 
-Genera los estados contables obligatorios: Balance de Sumas y Saldos, Balance General, Estado de Resultados.
+InteliCont genera en tiempo real los estados financieros y reportes patrimoniales de conformidad estricta con la legislación de la República del Paraguay, los reglamentos de la Dirección Nacional de Ingresos Tributarios (**DNIT**), el aplicativo **Marangatú** y las Normas Internacionales de Información Financiera (NIIF para PYMES).
 
-### 31.1 Mock de la pantalla
+### 31.1 Marco Normativo y Legal Paraguayo
+
+| Ley / Resolución | Ámbito de Aplicación | Exigencia Legal en InteliCont |
+|---|---|---|
+| **Ley N° 1034/83 del Comerciante** | Régimen mercantil (Arts. 74 a 88) | Obligatoriedad de llevar Libro Diario y Libro de Inventario. Registro cronológico inmutable en Guaraníes (PYG). Prohibición de enmiendas, tachaduras o eliminación física de asientos posteados. |
+| **Ley N° 6380/2019 de Modernización Fiscal** | Impuesto a la Renta Empresarial (IRE) | Principio de lo devengado. Deducción estricta de gastos causalmente vinculados a la actividad gravada (Arts. 15 y 16). Revalúo cambiario obligatorio (Art. 38) con cotización oficial BCP al cierre. Cómputo del 50% del IVA crédito fiscal no compensado como costo/gasto deducible en IRE (Art. 19). |
+| **Decreto N° 3182/2019** | Reglamentario del IRE (Bienes de Uso) | Aplicación obligatoria de la tabla de depreciación lineal: Rodados (5 años / 20%), Muebles, Útiles y Maquinarias (10 años / 10%), Equipos de computación (4 años / 25%) y Edificaciones (40 años / 2.5%). |
+| **Resoluciones Generales SET N° 49/14 & 110/21** | Estados Financieros para Marangatú | Estructura clasificatoria normalizada para Balance General y Estado de Resultados divididos en Activo y Pasivo Corriente y No Corriente, requeridos para la carga anual de los Formularios 500 y 501. |
+| **Ley N° 1183/85 Código Civil (Art. 91)** | Reserva Legal Obligatoria | Las Sociedades Anónimas (S.A.) y Sociedades de Responsabilidad Limitada (S.R.L.) deben destinar obligatoriamente un mínimo del 5% de las utilidades líquidas del ejercicio a la Reserva Legal, hasta integrar al menos el 20% del Capital Social. |
+| **RG N° 90/2021** | Registro Electrónico de Comprobantes | Conciliación automatizada entre los comprobantes registrados en Marangatú y las cuentas de ingresos y egresos de los estados financieros. |
+
+### 31.2 Mock de la pantalla
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│  📊 Estados Financieros                       Período: [Julio 2026 ▼]       │
+│  📊 Estados Financieros y Cumplimiento Legal          Período: [Julio 2026 ▼]│
 ├──────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
+│  Marco Legal Activo: Ley 1034/83 · Ley 6380/19 (IRE) · RG 49/14 Marangatú     │
+│                                                                              │
 │  ┌──────────────────────────────────────────────────────────────────────────┐│
-│  │  Seleccionar estado:                                                     ││
-│  │                                                                          ││
+│  │  Seleccionar Estado Financiero:                                          ││
 │  │  [● Balance de Sumas y Saldos]  [○ Balance General]  [○ Resultados]     ││
-│  │  [○ Flujo de Efectivo]          [○ Evolución Patrimonial]               ││
+│  │  [○ Flujo de Efectivo (NIIF)]   [○ Evolución Patrimonial]                ││
 │  └──────────────────────────────────────────────────────────────────────────┘│
-│                                                                               │
-│  ┌──────────────────────────────────────────────────────────────────────────┐│
-│  │  Balance de Sumas y Saldos                                                ││
-│  │  Empresa: Estudio ABC S.A.      Fecha: 31/07/2026                       ││
-│  │  Moneda: PYG (Guaraníes)                                                 ││
+│                                                                              │
+│  ┌─ Balance de Sumas y Saldos (8 Columnas Oficial) ─────────────────────────┐│
+│  │  Contribuyente: ESTUDIO ABC S.A.       RUC: 80012345-6                    ││
+│  │  Moneda Legal: PYG (Guaraníes)         Cierre: 31/07/2026                 ││
 │  │                                                                          ││
-│  │  Cuenta          │ Nombre                   │ Saldo Debe│ Saldo Haber  ││
-│  │ ────────────────┼──────────────────────────┼──────────┼─────────────││
-│  │  1.01.001       │ Caja                     │ 2.500.000 │              ││
-│  │  1.01.002       │ Bancos                   │ 32.800.000│              ││
-│  │  1.01.003       │ Clientes                 │ 12.400.000│              ││
-│  │  2.01.001       │ Proveedores              │           │ 8.200.000   ││
-│  │  3.01.001       │ Capital                  │           │ 30.000.000  ││
-│  │  4.01.001       │ Ventas                   │           │ 15.300.000  ││
-│  │  5.01.001       │ Compras                  │ 6.105.000 │              ││
-│  │                 │                          │           │              ││
-│  │                 │ TOTAL                    │ 53.805.000│ 53.805.000   ││
+│  │  Código       │ Cuenta                   │ Saldo Deudor │ Saldo Acreedor ││
+│  │ ──────────────┼──────────────────────────┼──────────────┼────────────────││
+│  │  1.01.01.001  │ Caja Moneda Nacional     │    2.500.000 │                ││
+│  │  1.01.01.002  │ Banco Continental C/C    │   32.800.000 │                ││
+│  │  1.01.02.001  │ Clientes en Gestión      │   12.400.000 │                ││
+│  │  2.01.01.001  │ Proveedores Locales      │              │      8.200.000 ││
+│  │  3.01.01.001  │ Capital Integrado        │              │     30.000.000 ││
+│  │  3.02.01.001  │ Reserva Legal (Art. 91)  │              │      1.500.000 ││
+│  │  4.01.01.001  │ Ventas de Bienes Gravadas│              │     15.300.000 ││
+│  │  5.01.01.001  │ Costo de Mercaderías     │    7.300.000 │                ││
+│  │                                          │              │                ││
+│  │               │ TOTALES CUADRADOS (PYG)  │   55.000.000 │     55.000.000 ││
 │  └──────────────────────────────────────────────────────────────────────────┘│
-│                                                                               │
-│  [📤 Exportar Excel]  [📤 Exportar PDF]  [📤 Exportar CSV]  [🖨 Imprimir]   │
+│                                                                              │
+│  [📥 Exportar Excel con Fórmulas]  [📄 Descargar PDF Oficial]  [🖨 Imprimir]  │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 31.2 Tipos de estados financieros
+### 31.3 Tipos de estados financieros disponibles
 
-| Estado | Descripción |
-|---|---|
-| **Balance de Sumas y Saldos** | Lista todas las cuentas con sus saldos deudores y acreedores. Debe = Haber |
-| **Balance General** | Activo = Pasivo + Patrimonio Neto. Muestra la situación patrimonial |
-| **Estado de Resultados** | Ingresos - Egresos = Resultado del período |
-| **Flujo de Efectivo** | Movimiento de efectivo: operativo, inversión, financiación |
-| **Evolución Patrimonial** | Cambios en el patrimonio neto del período |
+| Estado | Normativa de Respaldo | Contenido y Utilidad |
+|---|---|---|
+| **Balance de Sumas y Saldos** | Ley 1034/83 Art. 80 | Presenta el balance de comprobación de 8 columnas. Verifica en tiempo real que la sumatoria de débitos sea estrictamente igual a la de créditos y que los saldos deudores coincidan con los acreedores. |
+| **Balance General Clasificado** | RG SET N° 49/2014 | Agrupa las cuentas en Activo Corriente (disponibilidades, créditos, existencias) y No Corriente (bienes de uso, intangibles), y Pasivo Corriente y No Corriente, determinando el Patrimonio Neto exacto. Formato idéntico al requerido por auditores impositivos. |
+| **Estado de Resultados** | Ley 6380/19 (IRE Art. 15) | Refleja ingresos operativos y no operativos, costo de ventas y gastos de administración deducibles, calculando el Resultado del Ejercicio antes y después del IRE y la retención IDU estimada. |
+| **Estado de Flujo de Efectivo** | Normas NIIF / DNIT | Clasifica los cobros y pagos según actividades operativas, de inversión en bienes de uso y de financiación. |
+| **Estado de Evolución del Patrimonio Neto** | Ley 1183/85 Código Civil | Expone las variaciones en el Capital, aportes por capitalizar, cómputo obligatorio de la Reserva Legal (5% de utilidades líquidas) y distribución de resultados acumulados. |
 
-### 31.3 Paso a paso: Generar estado financiero
+### 31.4 Paso a paso: Generación y Validación de Estados Financieros
 
-**Paso 1:** Seleccione el **período** en el selector superior.
-
-**Paso 2:** Seleccione el **tipo de estado** con los radios.
-
-**Paso 3:** El sistema genera automáticamente el estado en base a los asientos contables posteados.
-
-**Paso 4:** Revise los saldos. Cada cuenta muestra su código, nombre, y saldo.
-
-**Paso 5:** Verifique que el **total debe = total haber** (o activo = pasivo + patrimonio).
-
-**Paso 6:** Exporte en el formato deseado (Excel, PDF, CSV) o imprima.
+1. **Seleccione el período contable:** En la parte superior, elija el mes calendario o el ejercicio fiscal anual completo.
+2. **Seleccione el estado a emitir:** Haga clic sobre el estado contable que desea visualizar (Balance General, Sumas y Saldos, etc.).
+3. **Validación automática de balance:** InteliCont corrobora que la ecuación fundamental `Activo = Pasivo + Patrimonio Neto` cierre con diferencia cero en Guaraníes.
+4. **Verificación de asientos posteados:** Únicamente los asientos con estado **"Posteado"** (inmutables) son procesados para los reportes oficiales. Los borradores pendientes de revisión quedan excluidos para no distorsionar las cifras impositivas.
+5. **Exportación y Presentación:** Presione **"Exportar Excel"** para obtener una planilla estructurada con fórmulas activas, o **"Descargar PDF"** con membrete, firma de contador y espacio para certificación de auditoría externa.
 
 ---
 
@@ -3229,64 +3184,72 @@ El **Formulario 104** de InteliCont automatiza la determinación del **Impuesto 
 
 ---
 
-## 41. Módulo Seguridad y Autenticación de Dos Factores (2FA)
+## 41. Módulo Seguridad y Autenticación de Dos Factores (2FA Opcional)
 
-### 41.1 Blindaje de Cuentas con TOTP
+### 41.1 Acceso Directo y Blindaje Voluntario con TOTP
 
-Para proteger la información contable sensible de las empresas, InteliCont incorpora soporte de **Autenticación en Dos Fases (2FA / Two-Factor Authentication)** basado en el estándar industrial RFC 6238 (TOTP).
+Para brindar la máxima agilidad operativa diaria a los contadores y auxiliares, **InteliCont permite por defecto el inicio de sesión directo con correo y contraseña**.
+
+Sin embargo, para usuarios que manejan información fiscal confidencial o directores que deseen cumplir con estándares internacionales de seguridad (ISO 27001), InteliCont incorpora soporte completo de **Autenticación en Dos Fases (2FA / Two-Factor Authentication)** basado en el estándar industrial RFC 6238 (TOTP).
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│  🛡️ Seguridad de la Cuenta — 2FA                                             │
+│  🛡️ Seguridad de la Cuenta — 2FA (TOTP)                                      │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│  Estado actual: [● 2FA Habilitado con App de Autenticación]                 │
+│  Modo Predeterminado: [ Acceso Directo con Contraseña Habilitado ]          │
+│  Estado 2FA Voluntario: [● Disponible para Activar en Cualquier Momento]    │
 │                                                                              │
-│  ┌─ Aplicaciones Compatibles ─────────────────────────────────────────────┐  │
+│  ┌─ Aplicaciones Móviles Compatibles ─────────────────────────────────────┐  │
 │  │  • Google Authenticator (Android / iOS)                                │  │
 │  │  • Microsoft Authenticator                                             │  │
-│  │  • 1Password, Bitwarden, Apple Passwords                               │  │
+│  │  • 1Password, Bitwarden, Apple Passwords, Authy                        │  │
 │  └────────────────────────────────────────────────────────────────────────┘  │
 │                                                                              │
-│  Códigos de Recuperación: [8 códigos de emergencia disponibles]              │
-│  [ Ver / Regenerar Códigos de Respaldo ]    [ Cerrar Sesiones Remotas ]      │
+│  Códigos de Recuperación: [8 códigos de emergencia descargables]             │
+│  [ Activar / Configurar 2FA ]               [ Cerrar Sesiones Remotas ]      │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 41.2 Activación y Recuperación
-1. Ingrese a `/seguridad/2fa` y haga clic en **"Activar 2FA"**.
-2. Escanee el código QR presentado en pantalla con su teléfono inteligente.
-3. Introduzca el código temporal de 6 dígitos para confirmar la sincronización horaria.
-4. Guarde de forma segura los **códigos de recuperación de emergencia** de un solo uso. Si extravía su dispositivo móvil, podrá iniciar sesión con cualquiera de ellos.
+
+1. **Ingreso Directo Predeterminado:** Inicie sesión directamente con su email y clave. No existe bloqueo ni redirección forzada a 2FA.
+2. **Activación Opcional en `/seguridad/2fa`:** Si desea blindar su cuenta personal, diríjase a `/seguridad/2fa` y presione **"Activar 2FA"**.
+3. **Escaneo del Código QR:** Abra su app de autenticación (Google Authenticator, Authy, etc.) y escanee el código QR provisto en pantalla.
+4. **Verificación de Código:** Introduzca el código temporal de 6 dígitos para sincronizar el algoritmo criptográfico.
+5. **Descarga de Códigos de Respaldo:** Guarde los 8 códigos de emergencia de un solo uso en un gestor seguro para no perder el acceso en caso de extravío de su dispositivo celular.
 
 ---
 
-## 42. Módulo Consola Superadmin y Control de Suscripción
+## 42. Módulo Consola Global Superadmin y Control de Suscripción
 
-### 42.1 Gestión Multicliente y Límites de Servicio
+### 42.1 Gestión Multicliente y Administración Global
 
-La consola de `/superadmin` y el módulo `/suscripcion` permiten a los administradores del estudio contable monitorear la salud operativa del sistema.
+La plataforma incluye una consola de administración global en `/superadmin` reservada exclusivamente para los Superadministradores autorizados en la variable de entorno `SUPERADMIN_EMAILS` (por ejemplo, `intellihousepy@gmail.com`). Adicionalmente, el módulo `/suscripcion` permite a los directores de cada estudio monitorear sus planes y cuotas.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│  👑 Superadmin & Suscripción — Monitoreo General                              │
+│  👑 Consola Global Superadmin & Suscripción                                  │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│  Plan Activo: Estudio Profesional  |  Renovación: Mensual                     │
+│  Superadmin Autorizado: intellihousepy@gmail.com  |  Modo: Global Multi-Tenant│
 │                                                                              │
-│  ┌─ Métricas de Consumo ──────────────────────────────────────────────────┐  │
-│  │  • Empresas creadas:       24 de 50 empresas permitidas                │  │
-│  │  • Comprobantes del mes:   1.840 de 5.000 facturas electrónicas        │  │
-│  │  • Usuarios del equipo:    6 contadores y asistentes activos           │  │
-│  │  • Almacenamiento seguro:  2.1 GB de 20 GB                             │  │
+│  ┌─ Métricas de Infraestructura y Consumo ────────────────────────────────┐  │
+│  │  • Estudios y Tenants activos:   18 organizaciones registradas         │  │
+│  │  • Empresas creadas en total:    142 empresas contribuyentes           │  │
+│  │  • Comprobantes procesados mes:  45.890 facturas electrónicas SIFEN     │  │
+│  │  • Base de datos PostgreSQL:     Operativa con RLS estricto            │  │
+│  │  • Copilot Contable IA:          Activo (Modelo optimizado Ley 6380/19)│  │
 │  └────────────────────────────────────────────────────────────────────────┘  │
 │                                                                              │
-│  [ Mejorar Plan (Upgrade) ]   [ Ver Facturas de InteliCont ]                  │
+│  [ Gestión de Estudios y Tenants ]   [ Auditoría Global ]   [ Licencias ]     │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 42.2 Funciones Principales
-- **Aislamiento Multi-Tenant (RLS):** Garantía criptográfica y a nivel de base de datos de que ningún usuario o empresa cliente pueda acceder a datos contables ajenos.
-- **Auditoría de Acceso:** Historial de accesos, intentos fallidos y cambios de configuración de los miembros del equipo contable.
-- **Facturación Electrónica del Servicio:** Descarga directa de las facturas electrónicas legales por el abono de InteliCont emitidas automáticamente vía SIFEN.
+### 42.2 Capacidades de la Consola Superadmin
+
+- **Gestión Cruzada de Estudios (Tenants):** Los superadministradores pueden consultar el estado operativo de cualquier estudio contable registrado, resolver incidencias de facturación y restablecer accesos bloqueados.
+- **Aislamiento Criptográfico RLS (Row-Level Security):** Cada estudio y empresa mantiene su base de datos lógicamente aislada, de modo que los contadores de un estudio jamás pueden acceder ni visualizar información de clientes de otro estudio.
+- **Monitoreo de Telemetría SIFEN y DNIT:** Verificación del estado de comunicación con los servidores gubernamentales de la DNIT y control de colas de procesamiento de comprobantes.
+- **Facturación Electrónica Automática:** Generación y envío mensual de la factura legal en guaraníes emitida por IntelliHouse Soluciones E.A.S. a los clientes del SaaS.
 
 ---
 

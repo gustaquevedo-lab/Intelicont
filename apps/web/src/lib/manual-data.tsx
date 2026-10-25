@@ -7,7 +7,7 @@ import {
   AlertTriangle, HelpCircle, Building2, Sparkles, ArrowRight,
   CheckCircle2, CreditCard, Globe, DollarSign, Search, Bell, User,
   ChevronDown, FileUp, X, Zap, Smartphone, RefreshCw, Key, Bookmark,
-  ExternalLink, ShieldCheck
+  ExternalLink, ShieldCheck, Scale
 } from "lucide-react";
 
 export interface ManualSection {
@@ -257,61 +257,106 @@ export const MANUAL_SECTIONS: ManualSection[] = [
     id: "login",
     group: "Acceso y Navegación",
     groupIcon: icon(LayoutDashboard),
-    title: "3. Inicio de Sesión",
+    title: "3. Inicio de Sesión y Autenticación",
     icon: icon(Lock),
     content: (
       <div className="space-y-5">
         <p className="text-gray-300 text-sm leading-relaxed">
-          El acceso a InteliCont se realiza mediante <strong className="text-white">Email + Contraseña</strong> y
-          cuenta con autenticación reforzada <strong className="text-white">2FA (TOTP)</strong> para administradores.
-          Los nuevos usuarios pueden crear su cuenta con 14 días de prueba instantáneos desde <strong className="text-white">/registro</strong>.
+          El acceso a InteliCont cuenta con una experiencia de bienvenida rediseñada con la identidad visual corporativa
+          del sistema (azul marino <strong className="text-white">#104c91</strong> y verde esmeralda <strong className="text-white">#00a651</strong>),
+          diseño split-screen institucional, ingreso directo con <strong className="text-white">Email + Contraseña</strong>,
+          visibilidad de clave con botón de ojo y capa opcional de <strong className="text-white">2FA (TOTP)</strong>.
         </p>
 
-        <MockCard title="Pantalla de Login">
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-6 max-w-sm mx-auto space-y-5">
-            <div className="text-center space-y-1">
-              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-primary font-bold text-sm">InteliCont</span>
-              </div>
-              <p className="text-gray-400 text-xs">Contabilidad Inteligente para Paraguay</p>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] text-gray-500 mb-1 block">Email</label>
-                <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300">contador@estudio.com.py</div>
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-[10px] text-gray-500 block">Contraseña</label>
-                  <span className="text-[10px] text-primary">¿Olvidaste tu contraseña?</span>
+        <MockCard title="Pantalla de Acceso Oficial (Split-Screen)">
+          <div className="bg-gradient-to-br from-gray-950 via-gray-900 to-[#104c91]/20 rounded-2xl border border-gray-800 p-6 max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            {/* Panel Izquierdo Institucional */}
+            <div className="space-y-4 border-b md:border-b-0 md:border-r border-gray-800 pb-4 md:pb-0 md:pr-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#104c91] to-[#00a651] flex items-center justify-center shadow-lg shadow-[#00a651]/20">
+                  <Sparkles className="h-5 w-5 text-white" />
                 </div>
-                <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300">••••••••</div>
+                <div>
+                  <div className="font-extrabold text-white text-base tracking-tight">Inteli<span className="text-[#00a651]">Cont</span></div>
+                  <div className="text-[9px] text-gray-400 font-semibold tracking-wider uppercase">Contabilidad Inteligente PY</div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                Plataforma contable y fiscal para estudios y empresas del Paraguay. Automatización de SIFEN y DNIT.
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[11px] text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>Validación SIFEN & DNIT Marangatú</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>Copilot Contable (Ley 6380/19)</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>Encriptación de Grado Bancario</span>
+                </div>
               </div>
             </div>
-            <button className="w-full bg-gradient-to-r from-primary to-primary/80 text-white text-xs font-semibold py-2.5 rounded-lg shadow-lg shadow-primary/20">
-              Ingresar →
-            </button>
-            <p className="text-center text-[10px] text-gray-500">¿No tenés cuenta todavía? <span className="text-primary font-bold">Empezá 14 días gratis</span></p>
+
+            {/* Panel Derecho Formulario */}
+            <div className="space-y-4">
+              <div className="text-center md:text-left">
+                <h4 className="text-sm font-bold text-white">Ingresar a su cuenta</h4>
+                <p className="text-[11px] text-gray-400">Introduzca sus credenciales registradas</p>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-gray-400 mb-1 block font-medium">Correo Electrónico</label>
+                  <div className="bg-gray-900 border border-gray-700/80 rounded-lg px-3 py-2 text-xs text-gray-200">
+                    contador@estudio.com.py
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] text-gray-400 block font-medium">Contraseña</label>
+                    <span className="text-[10px] text-primary hover:underline cursor-pointer">¿Olvidó su clave?</span>
+                  </div>
+                  <div className="bg-gray-900 border border-gray-700/80 rounded-lg px-3 py-2 text-xs text-gray-200 flex justify-between items-center">
+                    <span>••••••••••••</span>
+                    <Eye className="h-3.5 w-3.5 text-gray-500 cursor-pointer" />
+                  </div>
+                </div>
+              </div>
+              <button className="w-full bg-gradient-to-r from-[#104c91] to-[#00a651] hover:opacity-95 text-white text-xs font-semibold py-2.5 rounded-lg shadow-lg shadow-[#00a651]/20 flex items-center justify-center gap-2">
+                <span>Ingresar al Sistema</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+              <div className="text-center pt-1 border-t border-gray-800">
+                <p className="text-[10px] text-gray-400">
+                  ¿No tiene cuenta aún? <span className="text-emerald-400 font-semibold cursor-pointer">Pruebe 14 días gratis</span>
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-center text-[10px] text-gray-600 mt-4">© 2026 IntelliHouse · RUC 80144114-5</p>
+          <p className="text-center text-[10px] text-gray-500 mt-4">© 2026 IntelliHouse Soluciones E.A.S. · RUC 80144114-5 · Asunción, Paraguay</p>
         </MockCard>
 
         <div>
-          <h4 className="font-semibold text-white text-sm mb-3">Acceso al Sistema</h4>
+          <h4 className="font-semibold text-white text-sm mb-3">Flujo de Acceso al Sistema</h4>
           <StepList
             steps={[
               {
-                title: "Ingrese sus credenciales",
-                body: <>Complete su correo y contraseña. Si olvidó su clave, use <strong className="text-white">"¿Olvidaste tu contraseña?"</strong> para recibir un enlace de restablecimiento seguro por correo vía Resend.</>
+                title: "1. Ingreso Directo de Credenciales",
+                body: <>Complete su correo y contraseña. Por defecto, el sistema valida directamente su usuario y abre su espacio de trabajo sin exigir pasos intermediarios molestos.</>
               },
               {
-                title: "Verificación en dos pasos (2FA / TOTP)",
-                body: <>Si su rol es administrador o tiene 2FA habilitado, ingrese el código de 6 dígitos generado por Google Authenticator u otra app TOTP.</>
+                title: "2. Visibilidad y Recuperación de Contraseña",
+                body: <>Utilice el botón de visualización (ícono de ojo) para verificar su clave sin errores de tipeo. Si olvidó su clave, el enlace <strong className="text-white">"¿Olvidaste tu contraseña?"</strong> le enviará un correo seguro para restablecerla al instante.</>
               },
               {
-                title: "Auto-Registro para nuevos clientes",
-                body: <>Si aún no tiene cuenta, haga clic en <strong className="text-white">"Empezá 14 días gratis"</strong> o acceda a <strong className="text-white">/registro</strong> para dar de alta su estudio o empresa en 1 minuto.</>
+                title: "3. Capa de Seguridad 2FA (Opcional / Corporativa)",
+                body: <>Para estudios contables que exigen máxima protección, los usuarios pueden habilitar la verificación en dos pasos (TOTP) con Google Authenticator o Authy desde <strong className="text-white">/seguridad/2fa</strong>. Si está habilitado, el sistema solicitará el código temporal de 6 dígitos.</>
+              },
+              {
+                title: "4. Auto-Registro con Prueba Gratuita",
+                body: <>Nuevos estudios contables o empresas pueden crear su cuenta inmediatamente desde <strong className="text-white">/registro</strong>, disfrutando de 14 días de prueba completa con todas las herramientas fiscales activas.</>
               },
             ]}
           />
@@ -319,10 +364,11 @@ export const MANUAL_SECTIONS: ManualSection[] = [
 
         <FieldTable
           fields={[
-            { field: "Idle", type: "Formulario", desc: "Campos disponibles para email y contraseña." },
-            { field: "Loading", type: "Spinner en botón", desc: "Verificando credenciales con Better Auth." },
-            { field: "2FA Required", type: "Paso adicional", desc: "Solicita código TOTP de 6 dígitos o código de respaldo." },
-            { field: "Error", type: "Mensaje rojo", desc: "Email o contraseña incorrectos." },
+            { field: "Email", type: "Texto (Email)", desc: "Correo electrónico del usuario registrado en el estudio o empresa." },
+            { field: "Contraseña", type: "Password + Toggle", desc: "Clave cifrada con opción de alternar visualización (ícono de ojo)." },
+            { field: "Acceso Directo", type: "Autenticación estándar", desc: "Inicio de sesión inmediato con sesión persistente y segura vía cookies HTTP-only." },
+            { field: "2FA (TOTP)", type: "Opcional / Perfil", desc: "Código de 6 dígitos o códigos de rescate si el usuario configuró segundo factor en /seguridad/2fa." },
+            { field: "Recuperación", type: "Flujo autoservicio", desc: "Envío de token temporal de recuperación por correo electrónico." },
           ]}
         />
       </div>
@@ -2489,29 +2535,128 @@ export const MANUAL_SECTIONS: ManualSection[] = [
     id: "estados-financieros",
     group: "Cierre y Estados",
     groupIcon: icon(BarChart3),
-    title: "31. Estados Financieros",
+    title: "31. Estados Financieros y Cumplimiento Legal Paraguayo",
     icon: icon(BarChart3),
     content: (
       <div className="space-y-5">
         <p className="text-gray-300 text-sm leading-relaxed">
-          Genera los estados contables obligatorios: Balance de Sumas y Saldos, Balance General,
-          Estado de Resultados, Flujo de Efectivo y Evolución Patrimonial.
+          InteliCont genera en tiempo real los estados contables fundamentales requeridos por las leyes de la República del Paraguay,
+          la Dirección Nacional de Ingresos Tributarios (<strong className="text-white">DNIT</strong>) y las Normas Internacionales de Información Financiera (NIIF para PYMES).
+          Todos los reportes están expresados en <strong className="text-white">Guaraníes (PYG)</strong> bajo partida doble estricta.
         </p>
+
+        {/* Marco Legal Paraguayo */}
+        <div className="bg-gradient-to-r from-blue-950/40 via-gray-900/60 to-emerald-950/30 border border-blue-900/40 rounded-xl p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Scale className="h-5 w-5 text-emerald-400" />
+            <h4 className="text-sm font-bold text-white">Marco Normativo y Legal Vigente en Paraguay</h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="bg-gray-900/70 border border-gray-800 rounded-lg p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-white font-semibold">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span>Ley N° 1034/83 Del Comerciante</span>
+              </div>
+              <p className="text-gray-300 text-[11px] leading-relaxed">
+                Artículos 74 a 88: Exige Libro Diario y Libro de Inventario inmutables, cronológicos y en idioma oficial.
+                InteliCont impide alteración o eliminación de asientos posteados, garantizando validez probatoria ante la justicia paraguaya.
+              </p>
+            </div>
+
+            <div className="bg-gray-900/70 border border-gray-800 rounded-lg p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-white font-semibold">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span>Ley N° 6380/2019 (Modernización Fiscal)</span>
+              </div>
+              <p className="text-gray-300 text-[11px] leading-relaxed">
+                IRE Régimen General: Principio de lo devengado. Deducción de gastos causales y necesarios (Arts. 15-16),
+                revalúo cambiario obligatorio (Art. 38) con cotización oficial BCP, y cómputo del 50% de IVA crédito como costo (Art. 19).
+              </p>
+            </div>
+
+            <div className="bg-gray-900/70 border border-gray-800 rounded-lg p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-white font-semibold">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span>Decreto N° 3182/2019 (Depreciación)</span>
+              </div>
+              <p className="text-gray-300 text-[11px] leading-relaxed">
+                Aplica la tabla oficial de vida útil y depreciación lineal de Bienes de Uso: Rodados (5 años / 20%),
+                Muebles y Máquinas (10 años / 10%), Informática (4 años / 25%) y Edificaciones (40 años / 2.5%).
+              </p>
+            </div>
+
+            <div className="bg-gray-900/70 border border-gray-800 rounded-lg p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-white font-semibold">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span>RG SET N° 49/2014 & RG 110/2021 (Marangatú)</span>
+              </div>
+              <p className="text-gray-300 text-[11px] leading-relaxed">
+                Estructura normalizada para presentación de EEFF y dictámenes de auditoría externa impositiva en el Sistema Marangatú
+                con clasificación formal en Activo y Pasivo Corriente y No Corriente.
+              </p>
+            </div>
+          </div>
+          <div className="bg-gray-900/90 border border-gray-800 rounded-lg p-3 text-[11px] text-gray-300 flex items-start gap-2">
+            <Landmark className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <span>
+              <strong className="text-white">Reserva Legal Obligatoria (Código Civil Art. 91 / Ley 1183/85):</strong> Las Sociedades Anónimas y SRL deben destinar no menos del <strong className="text-white">5% de las ganancias netas</strong> del ejercicio a la cuenta de Reserva Legal, hasta alcanzar el <strong className="text-white">20% del Capital Social</strong>. InteliCont refleja este cómputo en el Estado de Resultados y Evolución Patrimonial.
+            </span>
+          </div>
+        </div>
+
+        {/* Tipos de Estados Disponibles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
-            { name: "Balance Sumas y Saldos", desc: "Lista cuentas con saldos deudores y acreedores. Debe = Haber" },
-            { name: "Balance General", desc: "Activo = Pasivo + Patrimonio Neto. Situación patrimonial" },
-            { name: "Estado de Resultados", desc: "Ingresos - Egresos = Resultado del período" },
-            { name: "Flujo de Efectivo", desc: "Movimiento de efectivo: operativo, inversión, financiación" },
+            {
+              name: "Balance de Sumas y Saldos (8 Columnas)",
+              desc: "Verificación de partida doble: Sumas Debe/Haber y Saldos Deudor/Acreedor de todas las cuentas imputables.",
+              norma: "Ley 1034/83 Art. 80",
+            },
+            {
+              name: "Balance General Clasificado",
+              desc: "Activo = Pasivo + Patrimonio Neto. Agrupación en Corriente y No Corriente según exigencia RG 49/14.",
+              norma: "RG SET 49/14 / Marangatú",
+            },
+            {
+              name: "Estado de Resultados (Económico)",
+              desc: "Ingresos operativos menos Costo de Ventas y Gastos deducibles IRE. Resultado antes y después de impuestos.",
+              norma: "Ley 6380/19 IRE Art. 15",
+            },
+            {
+              name: "Estado de Flujo de Efectivo",
+              desc: "Flujos de fondos por actividades de operación, inversión y financiamiento en moneda nacional.",
+              norma: "NIIF / DNIT Auditoría",
+            },
           ].map((item, i) => (
-            <div key={i} className="bg-gray-900/60 border border-gray-800 rounded-xl p-3">
-              <p className="font-semibold text-white text-sm">{item.name}</p>
-              <p className="text-gray-400 text-xs mt-1">{item.desc}</p>
+            <div key={i} className="bg-gray-900/60 border border-gray-800 rounded-xl p-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-white text-sm">{item.name}</p>
+                <MockBadge variant="blue">{item.norma}</MockBadge>
+              </div>
+              <p className="text-gray-400 text-xs">{item.desc}</p>
             </div>
           ))}
         </div>
+
+        <StepList
+          steps={[
+            {
+              title: "1. Selección de Período y Moneda",
+              body: <>Elija el ejercicio fiscal o mes calendario. El sistema genera los saldos consolidados en <strong className="text-white">Guaraníes (PYG)</strong> y permite vista bimonetaria si existen cuentas en USD con revalúo BCP.</>,
+            },
+            {
+              title: "2. Verificación de Asientos e Inmutabilidad",
+              body: <>Todos los cálculos se basan exclusivamente en asientos con estado <strong className="text-white">"Posteado"</strong>. Los borradores no afectan los balances oficiales.</>,
+            },
+            {
+              title: "3. Exportación Multiformato",
+              body: <>Descargue con un solo clic en formato <strong className="text-white">Excel (.xlsx)</strong> con fórmulas activas, <strong className="text-white">PDF imprimible</strong> con membrete oficial del estudio, o <strong className="text-white">CSV</strong> para software de auditoría externa.</>,
+            },
+          ]}
+        />
+
         <Tip>
-          Los estados se generan automáticamente con los asientos posteados. Exporte en Excel, PDF o CSV. Use la función de impresión para copias físicas.
+          Los balances generados por InteliCont cumplen con el formato de casillas requeridas por el aplicativo Marangatú de la DNIT para la carga anual del Formulario 500 (IRE General) y Formulario 501 (IRE Simple).
         </Tip>
       </div>
     ),
@@ -2630,31 +2775,32 @@ export const MANUAL_SECTIONS: ManualSection[] = [
     content: (
       <div className="space-y-5">
         <p className="text-gray-300 text-sm leading-relaxed">
-          En <AppLink href="/seguridad/2fa" label="/seguridad/2fa" />, los usuarios pueden activar la autenticación de dos factores (2FA / TOTP)
-          para blindar el acceso a los datos contables y fiscales de las empresas clientes, requiriendo un código de 6 dígitos al iniciar sesión.
+          Para garantizar agilidad operativa, InteliCont permite el <strong className="text-white">acceso directo con usuario y contraseña</strong>.
+          Sin embargo, para los usuarios y directores que deseen una capa adicional de protección o cumplir con normativas de seguridad corporativa,
+          en <AppLink href="/seguridad/2fa" label="/seguridad/2fa" /> es posible activar la <strong className="text-white">Autenticación en Dos Factores (2FA / TOTP)</strong>.
         </p>
 
-        <MockCard title="Seguridad de la Cuenta — 2FA TOTP">
+        <MockCard title="Seguridad de la Cuenta — 2FA TOTP (Opcional / Activación)">
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-gray-800 pb-2">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
                 <span className="text-xs text-white font-semibold">Autenticación en Dos Pasos</span>
               </div>
-              <MockBadge variant="green">2FA Habilitado</MockBadge>
+              <MockBadge variant="green">Protección Disponible</MockBadge>
             </div>
             <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-800 space-y-2 text-xs">
               <div className="flex justify-between text-gray-300">
-                <span>Método principal:</span>
-                <span className="font-semibold text-white">App de Autenticación (TOTP)</span>
+                <span>Modo de acceso predeterminado:</span>
+                <span className="font-semibold text-emerald-400">Directo (Email + Contraseña)</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Aplicaciones compatibles:</span>
+                <span className="text-white">Google Authenticator, Authy, 1Password</span>
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>Códigos de recuperación:</span>
-                <span className="text-emerald-400">8 códigos guardados</span>
-              </div>
-              <div className="flex justify-between text-gray-300">
-                <span>Sesiones activas:</span>
-                <span className="text-primary">1 navegador actual</span>
+                <span className="text-emerald-400">8 códigos de emergencia descargables</span>
               </div>
             </div>
           </div>
@@ -2663,20 +2809,20 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         <StepList
           steps={[
             {
-              title: "1. Iniciar activación de 2FA",
-              body: <>Acceda a <AppLink href="/seguridad/2fa" label="/seguridad/2fa" /> y presione <strong className="text-white">"Activar 2FA"</strong>.</>,
+              title: "1. Acceso sin fricciones por defecto",
+              body: <>Inicie sesión directamente con su correo y contraseña registrada. No está obligado a configurar 2FA a menos que su empresa lo requiera explícitamente.</>,
             },
             {
-              title: "2. Escanear el código QR",
-              body: <>Abra su aplicación de autenticación preferida (Google Authenticator, Microsoft Authenticator, 1Password, Authy) y escanee el código QR presentado en pantalla.</>,
+              title: "2. Activación voluntaria en /seguridad/2fa",
+              body: <>Si desea blindar su cuenta personal, diríjase a <AppLink href="/seguridad/2fa" label="/seguridad/2fa" /> y presione <strong className="text-white">"Activar 2FA"</strong>.</>,
             },
             {
-              title: "3. Verificar código",
-              body: <>Ingrese el código de 6 dígitos que muestra su teléfono y presione <strong className="text-white">"Confirmar y Activar"</strong>.</>,
+              title: "3. Escaneo de QR con App Móvil",
+              body: <>Abra Google Authenticator, Microsoft Authenticator o Authy en su celular y apunte la cámara al código QR generado en pantalla.</>,
             },
             {
-              title: "4. Guardar códigos de respaldo",
-              body: <>El sistema le entregará una lista de códigos de un solo uso. Guárdelos en un lugar seguro para ingresar a su cuenta si extravía o daña su teléfono móvil.</>,
+              title: "4. Confirmación y Códigos de Respaldo",
+              body: <>Ingrese el código de 6 dígitos que muestra su teléfono y descargue los códigos de respaldo de emergencia para no perder acceso en caso de pérdida del móvil.</>,
             },
           ]}
         />
@@ -2688,27 +2834,27 @@ export const MANUAL_SECTIONS: ManualSection[] = [
     id: "superadmin",
     group: "Configuración y Soporte",
     groupIcon: icon(Settings),
-    title: "33c. Panel Superadmin y Suscripción",
+    title: "33c. Consola Global Superadmin y Suscripción",
     icon: icon(Lock),
     content: (
       <div className="space-y-5">
         <p className="text-gray-300 text-sm leading-relaxed">
           La consola <AppLink href="/superadmin" label="/superadmin" /> y el panel de <AppLink href="/suscripcion" label="/suscripcion" /> permiten
-          a los directores de estudios contables y administradores globales supervisar el consumo de recursos, empresas asociadas, cuotas de comprobantes y límites de almacenamiento.
+          a los directores de estudios contables y a los administradores globales (habilitados vía <code className="text-primary font-mono text-xs">SUPERADMIN_EMAILS</code> como <strong className="text-white">intellihousepy@gmail.com</strong>) supervisar toda la plataforma, consumo de recursos, empresas asociadas, cuotas de comprobantes y límites de almacenamiento.
         </p>
 
-        <MockCard title="Consola de Administración y Suscripción">
+        <MockCard title="Consola de Administración y Suscripción Global">
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-gray-800 pb-2">
               <div className="flex items-center gap-2">
                 <Lock className="h-4 w-4 text-purple-400" />
-                <span className="text-xs text-white font-semibold">Plan Actual: Estudio Profesional</span>
+                <span className="text-xs text-white font-semibold">Panel de Control Global SuperAdmin</span>
               </div>
-              <MockBadge variant="blue">Plan Activo</MockBadge>
+              <MockBadge variant="blue">Acceso Ilimitado</MockBadge>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
-                <span className="text-[10px] text-gray-500 uppercase">Empresas</span>
+                <span className="text-[10px] text-gray-500 uppercase">Empresas Activas</span>
                 <p className="font-bold text-white mt-1">24 / 50</p>
               </div>
               <div className="bg-gray-900 p-2.5 rounded-lg border border-gray-800">
@@ -2726,8 +2872,12 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         <StepList
           steps={[
             {
+              title: "Administración Global de Tenants",
+              body: <>Los superadministradores pueden consultar y gestionar cualquier estudio o empresa cliente del sistema, verificar el estado de conexión con SIFEN y auditar logs de seguridad.</>,
+            },
+            {
               title: "Gestión de Planes y Facturación",
-              body: <>Consulte el estado del abono mensual de su estudio, fecha de renovación y descargue las facturas electrónicas de su suscripción de InteliCont.</>,
+              body: <>Consulte el estado del abono mensual de su estudio, fecha de renovación y descargue las facturas electrónicas de su suscripción de InteliCont emitidas automáticamente.</>,
             },
             {
               title: "Monitoreo de Límites por Empresa",
