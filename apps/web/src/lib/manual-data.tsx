@@ -261,8 +261,9 @@ export const MANUAL_SECTIONS: ManualSection[] = [
     content: (
       <div className="space-y-5">
         <p className="text-gray-300 text-sm leading-relaxed">
-          El acceso a InteliCont es mediante <strong className="text-white">Magic Link</strong> (sin contraseña)
-          o <strong className="text-white">Email + Contraseña</strong>. La pantalla de login se adapta a desktop y móvil.
+          El acceso a InteliCont se realiza mediante <strong className="text-white">Email + Contraseña</strong> y
+          cuenta con autenticación reforzada <strong className="text-white">2FA (TOTP)</strong> para administradores.
+          Los nuevos usuarios pueden crear su cuenta con 14 días de prueba instantáneos desde <strong className="text-white">/registro</strong>.
         </p>
 
         <MockCard title="Pantalla de Login">
@@ -272,69 +273,44 @@ export const MANUAL_SECTIONS: ManualSection[] = [
                 <Sparkles className="h-4 w-4 text-primary" />
                 <span className="text-primary font-bold text-sm">InteliCont</span>
               </div>
-              <p className="text-gray-400 text-xs">Contabilidad Inteligente</p>
-            </div>
-            <div className="flex bg-gray-800 rounded-lg p-0.5">
-              <button className="flex-1 text-[10px] py-1.5 rounded-md bg-primary text-white font-semibold">Magic Link</button>
-              <button className="flex-1 text-[10px] py-1.5 rounded-md text-gray-500">Contraseña</button>
+              <p className="text-gray-400 text-xs">Contabilidad Inteligente para Paraguay</p>
             </div>
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-500 mb-1 block">Email</label>
-                <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300">admin@estudio.com.py</div>
+                <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300">contador@estudio.com.py</div>
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 mb-1 block">Contraseña</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] text-gray-500 block">Contraseña</label>
+                  <span className="text-[10px] text-primary">¿Olvidaste tu contraseña?</span>
+                </div>
                 <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300">••••••••</div>
               </div>
             </div>
             <button className="w-full bg-gradient-to-r from-primary to-primary/80 text-white text-xs font-semibold py-2.5 rounded-lg shadow-lg shadow-primary/20">
               Ingresar →
             </button>
-            <p className="text-center text-[10px] text-gray-600">¿Olvidaste tu contraseña?</p>
+            <p className="text-center text-[10px] text-gray-500">¿No tenés cuenta todavía? <span className="text-primary font-bold">Empezá 14 días gratis</span></p>
           </div>
           <p className="text-center text-[10px] text-gray-600 mt-4">© 2026 IntelliHouse · RUC 80144114-5</p>
         </MockCard>
 
         <div>
-          <h4 className="font-semibold text-white text-sm mb-3">Modo Magic Link (recomendado)</h4>
+          <h4 className="font-semibold text-white text-sm mb-3">Acceso al Sistema</h4>
           <StepList
             steps={[
               {
-                title: "Ingrese su email",
-                body: <>Escriba su correo electrónico (debe ser con el que fue invitado). El navegador valida el formato automáticamente.</>
+                title: "Ingrese sus credenciales",
+                body: <>Complete su correo y contraseña. Si olvidó su clave, use <strong className="text-white">"¿Olvidaste tu contraseña?"</strong> para recibir un enlace de restablecimiento seguro por correo vía Resend.</>
               },
               {
-                title: "Enviar enlace",
-                body: <>Haga clic en <strong className="text-white">"Enviar enlace mágico"</strong> o presione Enter. El botón muestra un spinner mientras procesa.</>
+                title: "Verificación en dos pasos (2FA / TOTP)",
+                body: <>Si su rol es administrador o tiene 2FA habilitado, ingrese el código de 6 dígitos generado por Google Authenticator u otra app TOTP.</>
               },
               {
-                title: "Revise su email",
-                body: <>Busque el correo de InteliCont (asunto: "Tu enlace para acceder a InteliCont"). Si no lo ve, revise la bandeja de spam. El enlace expira en 1 hora.</>
-              },
-              {
-                title: "Haga clic en el enlace",
-                body: <>Al hacer clic, se abre una nueva pestaña. El sistema verifica el token y lo redirige al Dashboard automáticamente.</>
-              },
-            ]}
-          />
-        </div>
-
-        <div>
-          <h4 className="font-semibold text-white text-sm mb-3">Modo Contraseña</h4>
-          <StepList
-            steps={[
-              {
-                title: "Cambie al modo contraseña",
-                body: <>Haga clic en <strong className="text-white">"Contraseña"</strong> en el toggle superior.</>
-              },
-              {
-                title: "Ingrese credenciales",
-                body: <>Complete email y contraseña. Use <strong className="text-white">"¿Olvidaste tu contraseña?"</strong> si no la recuerda.</>
-              },
-              {
-                title: "Ingresar",
-                body: <>Haga clic en <strong className="text-white">"Ingresar"</strong>. Si las credenciales son incorrectas, verá un mensaje de error rojo.</>
+                title: "Auto-Registro para nuevos clientes",
+                body: <>Si aún no tiene cuenta, haga clic en <strong className="text-white">"Empezá 14 días gratis"</strong> o acceda a <strong className="text-white">/registro</strong> para dar de alta su estudio o empresa en 1 minuto.</>
               },
             ]}
           />
@@ -342,10 +318,10 @@ export const MANUAL_SECTIONS: ManualSection[] = [
 
         <FieldTable
           fields={[
-            { field: "Idle", type: "Formulario vacío", desc: "Botón activo. Ingrese email y envíe." },
-            { field: "Loading", type: "Spinner en botón", desc: "Espere mientras se envía el enlace." },
-            { field: "Success", type: "Mensaje verde", desc: "Enlace enviado. Revise su email." },
-            { field: "Error", type: "Mensaje rojo", desc: "Corrija el error y reintente." },
+            { field: "Idle", type: "Formulario", desc: "Campos disponibles para email y contraseña." },
+            { field: "Loading", type: "Spinner en botón", desc: "Verificando credenciales con Better Auth." },
+            { field: "2FA Required", type: "Paso adicional", desc: "Solicita código TOTP de 6 dígitos o código de respaldo." },
+            { field: "Error", type: "Mensaje rojo", desc: "Email o contraseña incorrectos." },
           ]}
         />
       </div>
@@ -2204,7 +2180,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
         </div>
         <StepList
           steps={[
-            { title: "Invitar miembro", body: <>Vaya a "Miembros del equipo", haga clic en <strong className="text-white">"+ Invitar miembro"</strong>. Ingrese email y seleccione rol. El invitado recibe un magic link por email.</> },
+            { title: "Invitar miembro", body: <>Vaya a "Miembros del equipo", haga clic en <strong className="text-white">"+ Invitar miembro"</strong>. Ingrese email y seleccione rol. El invitado recibe su invitación por email para configurar su acceso.</> },
             { title: "Cambiar configuración", body: <>Modifique los datos necesarios y haga clic en <strong className="text-white">"Guardar cambios"</strong>. Los cambios se aplican inmediatamente.</> },
           ]}
         />
@@ -2341,9 +2317,9 @@ export const MANUAL_SECTIONS: ManualSection[] = [
             {
               title: "Login",
       items: [
-              ["No recibo el magic link", "Verifique bandeja de spam. Si pasaron 5 min, solicite otro."],
-              ["El enlace expiró", "Solicite un nuevo enlace desde la pantalla de login."],
-              ["Email no registrado", "Contacte al administrador para verificar el email correcto."],
+              ["No recibo el email de restablecimiento", "Verifique su bandeja de spam. Si pasaron 5 min, solicite otro desde /olvide-password."],
+              ["El enlace de restablecimiento expiró", "Solicite un nuevo enlace seguro desde la pantalla de ¿Olvidaste tu contraseña?."],
+              ["Email no registrado", "Si es un nuevo usuario, cree su cuenta en /registro o contacte a su administrador."],
               ],
             },
             {
