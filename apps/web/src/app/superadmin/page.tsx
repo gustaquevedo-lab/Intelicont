@@ -5,1051 +5,1118 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getSuperadminTenantsAction,
   getSuperadminUsersAction,
-  createTenantAction,
+  getSuperadminStatsAction,
+  getSystemVitalsAction,
+  getErroresPlataformaAction,
+  createTenantAtomicAction,
+  createUserInTenantAction,
   updateTenantCommercialsAction,
-  resetUserPasswordAction
+  impersonateTenantAction,
+  resolverErrorAction,
+  resetUserPasswordAction,
 } from "./actions";
 import {
   Building2, Users, Search, ToggleLeft, ToggleRight, Check,
   Plus, DollarSign, Key, RefreshCw, Info, AlertCircle, Sparkles,
-  Shield, UserCheck, CheckCircle2, X, Briefcase, User, Zap, Globe, FileText
+  Shield, UserCheck, CheckCircle2, X, Briefcase, User, Zap, Globe, FileText,
+  Activity, Server, Database, Cpu, HardDrive, Copy, ExternalLink, Lock, CheckSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { generarReporteMarkdown } from "@/lib/error-report";
 
-type Tenant = {
-  id: string;
-  ruc: string;
-  legalName: string;
-  tradeName: string | null;
-  entityType: string | null;
-  plan: string;
-  features: any; // Record<string, boolean>
-  mrr: number;
-  status: string | null;
-  tenantType: "STUDIO" | "TAXPAYER";
-  studioId: string | null;
-  contactEmail: string | null;
-  contactPhone: string | null;
-  createdAt: any;
-};
-
-type UserRecord = {
-  id: string;
-  email: string;
-  name: string | null;
-  emailVerified: boolean;
-  createdAt: any;
-};
-
-const PLAN_DEFAULTS: Record<string, { mrr: number; features: Record<string, boolean> }> = {
-  starter: {
-    mrr: 180000,
-    features: { sifenSync: false, aiTripleImputation: false, cgrReports: false, bankApi: false, multiUser: false }
-  },
-  pro: {
-    mrr: 385000,
-    features: { sifenSync: true, aiTripleImputation: true, cgrReports: false, bankApi: true, multiUser: true }
-  },
-  inhouse: {
-    mrr: 440000,
-    features: { sifenSync: true, aiTripleImputation: true, cgrReports: true, bankApi: true, multiUser: true }
-  },
-  enterprise: {
-    mrr: 650000,
-    features: { sifenSync: true, aiTripleImputation: true, cgrReports: true, bankApi: true, multiUser: true }
-  }
-};
-
-export default function SuperadminPage() {
+export default function SuperAdminConsolePage() {
   const queryClient = useQueryClient();
-  
-  // Tab states
-  const [activeTab, setActiveTab] = useState<"studios" | "taxpayers" | "users">("studios");
+  const { addToast } = useToast();
 
-  // Search states
+  const [activeTab, setActiveTab] = useState<"firmas" | "usuarios" | "errores" | "vitals">("firmas");
   const [tenantSearch, setTenantSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
 
-  // Selected entities for editing
-  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  // Modals
+  const [showCreateTenantModal, setShowCreateTenantModal] = useState(false);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [selectedTenantForEdit, setSelectedTenantForEdit] = useState<any | null>(null);
+  const [selectedErrorForDetail, setSelectedErrorForDetail] = useState<any | null>(null);
+  const [resolvingNotes, setResolvingNotes] = useState("");
 
-  // Password reset state
-  const [resettingUser, setResettingUser] = useState<UserRecord | null>(null);
-  const [newPassword, setNewPassword] = useState("");
-  const [resetSuccess, setResetSuccess] = useState(false);
+  // Revealed Credential Card
+  const [revealedCredential, setRevealedCredential] = useState<{
+    email: string;
+    passwordTemporal: string;
+    entityName: string;
+  } | null>(null);
 
-  // New Studio / Taxpayer Modal states
-  const [showCreateStudioModal, setShowCreateStudioModal] = useState(false);
-  const [showCreateTaxpayerModal, setShowCreateTaxpayerModal] = useState(false);
-
-  const [newStudio, setNewStudio] = useState({
+  // Form State: New Tenant
+  const [newTenant, setNewTenant] = useState({
     ruc: "",
     legalName: "",
     tradeName: "",
+    adminEmail: "",
+    adminName: "",
     plan: "pro",
-    mrr: 385000,
-    contactEmail: "",
-    contactPhone: "",
-    features: {
-      sifenSync: true,
-      aiTripleImputation: true,
-      cgrReports: false,
-      bankApi: true,
-      multiUser: true
-    } as Record<string, boolean>
+    maxUsuarios: 5,
+    maxClientes: 50,
+    tieneIa: true,
   });
 
-  const [newTaxpayer, setNewTaxpayer] = useState({
-    ruc: "",
-    legalName: "",
-    tradeName: "",
-    entityType: "COMMERCIAL" as "COMMERCIAL" | "NON_PROFIT_NGO" | "NON_PROFIT_PUBLIC" | "ASSOCIATION",
-    studioId: ""
+  // Form State: New User
+  const [newUser, setNewUser] = useState({
+    entityId: "",
+    email: "",
+    name: "",
+    role: "collaborator",
   });
 
   // Queries
-  const { data: tenants = [], isLoading: loadingTenants } = useQuery<Tenant[]>({
-    queryKey: ["superadmin-tenants"],
-    queryFn: getSuperadminTenantsAction
+  const { data: stats, refetch: refetchStats } = useQuery({
+    queryKey: ["superadmin-stats"],
+    queryFn: () => getSuperadminStatsAction(),
   });
 
-  const { data: users = [], isLoading: loadingUsers } = useQuery<UserRecord[]>({
+  const { data: vitals, refetch: refetchVitals, isLoading: loadingVitals } = useQuery({
+    queryKey: ["superadmin-vitals"],
+    queryFn: () => getSystemVitalsAction(),
+  });
+
+  const { data: tenants = [], refetch: refetchTenants } = useQuery({
+    queryKey: ["superadmin-tenants"],
+    queryFn: () => getSuperadminTenantsAction(),
+  });
+
+  const { data: usersList = [], refetch: refetchUsers } = useQuery({
     queryKey: ["superadmin-users"],
-    queryFn: getSuperadminUsersAction
+    queryFn: () => getSuperadminUsersAction(),
+  });
+
+  const { data: errores = [], refetch: refetchErrores } = useQuery({
+    queryKey: ["superadmin-errores"],
+    queryFn: () => getErroresPlataformaAction(),
   });
 
   // Mutations
-  const updateCommercialsMutation = useMutation({
-    mutationFn: (args: { entityId: string; data: any }) =>
-      updateTenantCommercialsAction(args.entityId, args.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["superadmin-tenants"] });
-    }
-  });
-
   const createTenantMutation = useMutation({
-    mutationFn: (data: any) => createTenantAction(data),
+    mutationFn: createTenantAtomicAction,
+    onSuccess: (res: any) => {
+      if (res.success && res.user && res.passwordTemporal && res.entity) {
+        setRevealedCredential({
+          email: res.user.email,
+          passwordTemporal: res.passwordTemporal,
+          entityName: res.entity.legalName,
+        });
+        setShowCreateTenantModal(false);
+        queryClient.invalidateQueries({ queryKey: ["superadmin-tenants"] });
+        queryClient.invalidateQueries({ queryKey: ["superadmin-stats"] });
+        addToast({
+          type: "success",
+          title: "Tenant Creado Exitosamente",
+          message: `Firma ${res.entity.legalName} dada de alta con administrador inicial.`,
+        });
+      } else {
+        addToast({
+          type: "error",
+          title: "Error al crear tenant",
+          message: res.error || "Ocurrió un error inesperado",
+        });
+      }
+    },
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: createUserInTenantAction,
+    onSuccess: (res: any) => {
+      if (res.success && res.user && res.passwordTemporal) {
+        setRevealedCredential({
+          email: res.user.email,
+          passwordTemporal: res.passwordTemporal,
+          entityName: "Usuario Directo",
+        });
+        setShowCreateUserModal(false);
+        queryClient.invalidateQueries({ queryKey: ["superadmin-users"] });
+        queryClient.invalidateQueries({ queryKey: ["superadmin-stats"] });
+        addToast({
+          type: "success",
+          title: "Usuario Creado",
+          message: `Usuario ${res.user.email} creado con contraseña temporal.`,
+        });
+      } else {
+        addToast({
+          type: "error",
+          title: "Error de Límites de Plan",
+          message: res.error || "No se pudo crear el usuario",
+        });
+      }
+    },
+  });
+
+  const impersonateMutation = useMutation({
+    mutationFn: (entityId: string) => impersonateTenantAction(entityId),
+    onSuccess: (res: any) => {
+      if (res.success && res.token) {
+        localStorage.setItem("impersonation_token", res.token);
+        localStorage.setItem("impersonated_tenant_id", res.targetEntity?.id || "");
+        addToast({
+          type: "info",
+          title: "Impersonación Activada",
+          message: `Iniciando sesión como ${res.targetUser?.email || "Admin"} en ${res.targetEntity?.legalName}`,
+        });
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1200);
+      }
+    },
+  });
+
+  const resolverErrorMutation = useMutation({
+    mutationFn: ({ id, notas }: { id: string; notas: string }) => resolverErrorAction(id, notas),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["superadmin-errores"] });
+      queryClient.invalidateQueries({ queryKey: ["superadmin-stats"] });
+      setSelectedErrorForDetail(null);
+      setResolvingNotes("");
+      addToast({
+        type: "success",
+        title: "Incidente Resuelto",
+        message: "El error ha sido marcado como solucionado.",
+      });
+    },
+  });
+
+  const updateOverridesMutation = useMutation({
+    mutationFn: (data: { entityId: string; plan?: string; featuresOverrideJson?: string }) =>
+      updateTenantCommercialsAction(data.entityId, { plan: data.plan, featuresOverrideJson: data.featuresOverrideJson }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["superadmin-tenants"] });
-      setShowCreateStudioModal(false);
-      setShowCreateTaxpayerModal(false);
-      // Reset forms
-      setNewStudio({
-        ruc: "",
-        legalName: "",
-        tradeName: "",
-        plan: "pro",
-        mrr: 385000,
-        contactEmail: "",
-        contactPhone: "",
-        features: {
-          sifenSync: true,
-          aiTripleImputation: true,
-          cgrReports: false,
-          bankApi: true,
-          multiUser: true
-        }
+      setSelectedTenantForEdit(null);
+      addToast({
+        type: "success",
+        title: "Límites y Plan Actualizados",
+        message: "Los cambios se aplicaron inmediatamente.",
       });
-      setNewTaxpayer({
-        ruc: "",
-        legalName: "",
-        tradeName: "",
-        entityType: "COMMERCIAL",
-        studioId: ""
-      });
-    }
+    },
   });
 
-  const resetPasswordMutation = useMutation({
-    mutationFn: (args: { userId: string; pass: string }) =>
-      resetUserPasswordAction(args.userId, args.pass),
-    onSuccess: () => {
-      setResetSuccess(true);
-      setNewPassword("");
-      setTimeout(() => {
-        setResetSuccess(false);
-        setResettingUser(null);
-      }, 2000);
-    }
-  });
-
-  // Computed lists
-  const studios = tenants.filter(t => t.tenantType === "STUDIO");
-  const taxpayers = tenants.filter(t => t.tenantType === "TAXPAYER");
-
-  const filteredStudios = studios.filter(s => {
-    const q = tenantSearch.toLowerCase();
-    return (
-      s.legalName.toLowerCase().includes(q) ||
-      s.ruc.includes(q) ||
-      (s.tradeName && s.tradeName.toLowerCase().includes(q))
-    );
-  });
-
-  const filteredTaxpayers = taxpayers.filter(t => {
-    const q = tenantSearch.toLowerCase();
-    return (
-      t.legalName.toLowerCase().includes(q) ||
-      t.ruc.includes(q) ||
-      (t.tradeName && t.tradeName.toLowerCase().includes(q))
-    );
-  });
-
-  const filteredUsers = users.filter(u => {
-    const q = userSearch.toLowerCase();
-    return (
-      u.email.toLowerCase().includes(q) ||
-      (u.name && u.name.toLowerCase().includes(q))
-    );
-  });
-
-  const selectedTenant = tenants.find(t => t.id === selectedTenantId) || null;
-
-  // Toggle feature for tenant
-  function handleToggleFeature(featureKey: string) {
-    if (!selectedTenant) return;
-    const currentFeatures = selectedTenant.features || {};
-    const updatedFeatures = {
-      ...currentFeatures,
-      [featureKey]: !currentFeatures[featureKey]
-    };
-    updateCommercialsMutation.mutate({
-      entityId: selectedTenant.id,
-      data: { features: updatedFeatures }
+  const copyToClipboard = (text: string, label: string = "Copiado al portapapeles") => {
+    navigator.clipboard.writeText(text);
+    addToast({
+      type: "info",
+      title: label,
+      message: "Listo para usar.",
     });
-  }
+  };
 
-  // Change plan for tenant
-  function handlePlanChange(newPlan: string) {
-    if (!selectedTenant) return;
-    const planPrices: Record<string, number> = {
-      starter: 180000,
-      pro: 385000,
-      inhouse: 440000,
-      enterprise: 650000
-    };
-    updateCommercialsMutation.mutate({
-      entityId: selectedTenant.id,
-      data: {
-        plan: newPlan,
-        mrr: planPrices[newPlan] || 0
-      }
-    });
-  }
+  const filteredTenants = tenants.filter(
+    (t: any) =>
+      t.legalName.toLowerCase().includes(tenantSearch.toLowerCase()) ||
+      t.ruc.toLowerCase().includes(tenantSearch.toLowerCase())
+  );
 
-  // Change tenant status
-  function handleStatusChange(newStatus: "active" | "inactive" | "closed") {
-    if (!selectedTenant) return;
-    updateCommercialsMutation.mutate({
-      entityId: selectedTenant.id,
-      data: { status: newStatus }
-    });
-  }
+  const filteredUsers = usersList.filter(
+    (u: any) =>
+      u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+      (u.name && u.name.toLowerCase().includes(userSearch.toLowerCase()))
+  );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in no-theme-transition">
-      {/* Title Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4 border-b border-gray-200/50 dark:border-gray-800/50">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px]">
-            <Shield className="h-3.5 w-3.5" />
-            <span>SaaS Control Center</span>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Shield className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+              Consola de Operaciones SuperAdmin
+            </h1>
           </div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Superadmin Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            Gestión global de base de datos de Estudios Contables, Contribuyentes Asociados y Planes de Suscripción.
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Gobernanza global multi-tenant, telemetría Sentry-Lite, límites de planes e infraestructura
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowCreateStudioModal(true)}
-            className="flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white hover:bg-primary-dark transition-all rounded-xl text-sm font-black shadow-xl shadow-primary/20"
+            onClick={() => {
+              refetchStats();
+              refetchVitals();
+              refetchTenants();
+              refetchUsers();
+              refetchErrores();
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors"
           >
-            <Plus className="h-4 w-4" />
-            Crear Estudio Contable
-          </button>
-          <button
-            onClick={() => setShowCreateTaxpayerModal(true)}
-            className="flex items-center justify-center gap-2 px-5 py-3 bg-gray-800 text-white hover:bg-gray-700 transition-all border border-gray-700/50 rounded-xl text-sm font-black"
-          >
-            <Plus className="h-4 w-4" />
-            Registrar Contribuyente
+            <RefreshCw className={cn("h-4 w-4", loadingVitals && "animate-spin")} />
+            Sincronizar
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6">
-        <div className="card rounded-2xl p-6 bg-gradient-to-br from-primary/5 to-transparent border-primary/10">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase text-gray-500">Estudios Contables</span>
-            <Briefcase className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400 uppercase font-medium">Tenants Totales</span>
+            <Building2 className="h-4 w-4 text-indigo-500" />
           </div>
-          <h4 className="text-3xl font-black text-gray-900 dark:text-white">{studios.length}</h4>
-          <p className="text-xs font-semibold text-gray-400 mt-1">Clientes de la plataforma</p>
+          <p className="text-2xl font-bold font-mono text-gray-900 dark:text-white mt-2">
+            {stats?.totalTenants ?? tenants.length}
+          </p>
+          <span className="text-[11px] text-green-500 font-medium">
+            {stats?.activeTenants ?? tenants.length} activos
+          </span>
         </div>
 
-        <div className="card rounded-2xl p-6 bg-gradient-to-br from-blue-500/5 to-transparent border-blue-500/10">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase text-gray-500">Contribuyentes</span>
-            <Building2 className="h-5 w-5 text-blue-500" />
+        <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400 uppercase font-medium">Directorio Usuarios</span>
+            <Users className="h-4 w-4 text-blue-500" />
           </div>
-          <h4 className="text-3xl font-black text-gray-900 dark:text-white">{taxpayers.length}</h4>
-          <p className="text-xs font-semibold text-gray-400 mt-1">Empresas contables activas</p>
+          <p className="text-2xl font-bold font-mono text-gray-900 dark:text-white mt-2">
+            {stats?.totalUsers ?? usersList.length}
+          </p>
+          <span className="text-[11px] text-gray-400 font-medium">Cuentas habilitadas</span>
         </div>
 
-        <div className="card rounded-2xl p-6 bg-gradient-to-br from-emerald-500/5 to-transparent border-emerald-500/10">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase text-gray-500">Usuarios Registrados</span>
-            <Users className="h-5 w-5 text-emerald-500" />
+        <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400 uppercase font-medium">Errores 5xx Pendientes</span>
+            <AlertCircle className="h-4 w-4 text-red-500" />
           </div>
-          <h4 className="text-3xl font-black text-gray-900 dark:text-white">{users.length}</h4>
-          <p className="text-xs font-semibold text-gray-400 mt-1">Cuentas creadas</p>
+          <p className="text-2xl font-bold font-mono text-red-600 dark:text-red-400 mt-2">
+            {stats?.pendingErrorsCount ?? errores.filter((e) => !e.resuelto).length}
+          </p>
+          <span className="text-[11px] text-red-500 font-medium">Sentry-Lite Telemetría</span>
         </div>
 
-        <div className="card rounded-2xl p-6 bg-gradient-to-br from-amber-500/5 to-transparent border-amber-500/10">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black uppercase text-gray-500">MRR Consolidado</span>
-            <DollarSign className="h-5 w-5 text-amber-500" />
+        <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-400 uppercase font-medium">Salud Infraestructura</span>
+            <Activity className="h-4 w-4 text-emerald-500" />
           </div>
-          <h4 className="text-3xl font-black text-gray-900 dark:text-white">
-            Gs. {studios.reduce((sum, t) => sum + (t.mrr || 0), 0).toLocaleString("es-PY")}
-          </h4>
-          <p className="text-xs font-semibold text-gray-400 mt-1">Facturación de Estudios</p>
+          <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-2">
+            {vitals?.database.status === "healthy" ? "100%" : "Degradado"}
+          </p>
+          <span className="text-[11px] text-gray-400 font-medium">Postgres {vitals?.database.latencyMs}ms</span>
         </div>
       </div>
 
-      {/* Tabs Selector */}
-      <div className="flex items-center gap-2 border-b border-gray-200/50 dark:border-gray-800/50">
-        <button
-          onClick={() => { setActiveTab("studios"); setSelectedTenantId(null); }}
-          className={cn(
-            "px-6 py-3 text-sm font-black border-b-2 transition-all uppercase tracking-wider",
-            activeTab === "studios"
-              ? "border-primary text-primary"
-              : "border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          )}
-        >
-          Estudios Contables ({studios.length})
-        </button>
-        <button
-          onClick={() => { setActiveTab("taxpayers"); setSelectedTenantId(null); }}
-          className={cn(
-            "px-6 py-3 text-sm font-black border-b-2 transition-all uppercase tracking-wider",
-            activeTab === "taxpayers"
-              ? "border-primary text-primary"
-              : "border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          )}
-        >
-          Contribuyentes ({taxpayers.length})
-        </button>
-        <button
-          onClick={() => { setActiveTab("users"); setSelectedTenantId(null); }}
-          className={cn(
-            "px-6 py-3 text-sm font-black border-b-2 transition-all uppercase tracking-wider",
-            activeTab === "users"
-              ? "border-primary text-primary"
-              : "border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          )}
-        >
-          Usuarios ({users.length})
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === "studios" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-4 top-3.5 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar estudios por RUC, Razón Social..."
-                value={tenantSearch}
-                onChange={e => setTenantSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm font-semibold outline-none focus:border-primary transition-all"
-              />
-            </div>
-
-            <div className="card rounded-2xl overflow-hidden divide-y divide-gray-200/30 dark:divide-gray-800/30">
-              {filteredStudios.length === 0 ? (
-                <div className="p-8 text-center text-gray-400 font-semibold">
-                  No se encontraron estudios contables.
-                </div>
-              ) : (
-                filteredStudios.map(s => {
-                  const contribuyentesAsociados = taxpayers.filter(t => t.studioId === s.id);
-                  return (
-                    <div
-                      key={s.id}
-                      onClick={() => setSelectedTenantId(s.id)}
-                      className={cn(
-                        "p-4 flex items-center justify-between cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-white/5",
-                        selectedTenantId === s.id && "bg-primary/5 dark:bg-primary/10 border-l-4 border-primary"
-                      )}
-                    >
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                          {s.legalName}
-                        </h4>
-                        <p className="text-xs text-gray-500 font-semibold">
-                          RUC: {s.ruc} | Contribuyentes: <span className="text-blue-500 font-bold">{contribuyentesAsociados.length}</span>
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                          {s.plan}
-                        </span>
-                        <span className={cn(
-                          "text-[10px] font-black uppercase px-2 py-0.5 rounded-full",
-                          s.status === "active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
-                        )}>
-                          {s.status || "active"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Edit Studio Panel */}
-          <div className="lg:col-span-4">
-            {selectedTenant && selectedTenant.tenantType === "STUDIO" ? (
-              <div className="card rounded-2xl p-6 space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-white">
-                    <Briefcase className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-gray-900 dark:text-white truncate">
-                      {selectedTenant.legalName}
-                    </h3>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                      RUC: {selectedTenant.ruc}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Plan Selector */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Plan de Suscripción</label>
-                  <select
-                    value={selectedTenant.plan}
-                    onChange={e => handlePlanChange(e.target.value)}
-                    className="w-full py-2.5 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                  >
-                    <option value="starter">Starter (Gs. 180.000)</option>
-                    <option value="pro">Pro (Gs. 385.000)</option>
-                    <option value="inhouse">InHouse / ESFL (Gs. 440.000)</option>
-                    <option value="enterprise">Enterprise (Gs. 650.000)</option>
-                  </select>
-                </div>
-
-                {/* Contact email/phone */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Email Administrativo</label>
-                  <input
-                    type="email"
-                    value={selectedTenant.contactEmail || ""}
-                    onChange={e => updateCommercialsMutation.mutate({ entityId: selectedTenant.id, data: { contactEmail: e.target.value } })}
-                    className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Teléfono</label>
-                  <input
-                    type="text"
-                    value={selectedTenant.contactPhone || ""}
-                    onChange={e => updateCommercialsMutation.mutate({ entityId: selectedTenant.id, data: { contactPhone: e.target.value } })}
-                    className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold"
-                  />
-                </div>
-
-                {/* Status Selector */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Estado de Cuenta</label>
-                  <select
-                    value={selectedTenant.status || "active"}
-                    onChange={e => handleStatusChange(e.target.value as any)}
-                    className="w-full py-2.5 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                  >
-                    <option value="active">Activo</option>
-                    <option value="inactive">Inactivo</option>
-                    <option value="closed">Suspendido</option>
-                  </select>
-                </div>
-
-                {/* Contribuyentes list */}
-                <div className="pt-4 border-t border-gray-200/50 dark:border-gray-800/50">
-                  <label className="text-[10px] font-black uppercase text-gray-400 block mb-2">Contribuyentes Vinculados</label>
-                  <div className="space-y-1 max-h-[160px] overflow-y-auto">
-                    {taxpayers.filter(t => t.studioId === selectedTenant.id).map(ct => (
-                      <div key={ct.id} className="p-2 bg-gray-50 dark:bg-gray-800/40 rounded-lg text-xs font-bold text-gray-700 dark:text-gray-300">
-                        {ct.legalName} <span className="text-[9px] text-gray-500 font-mono block">RUC: {ct.ruc}</span>
-                      </div>
-                    ))}
-                    {taxpayers.filter(t => t.studioId === selectedTenant.id).length === 0 && (
-                      <p className="text-xs text-gray-500 italic">Ningún contribuyente asignado.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="card rounded-2xl p-8 text-center text-gray-400 font-semibold border-dashed border-2">
-                Seleccioná un estudio contable de la lista para gestionar datos comerciales o ver sus contribuyentes.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === "taxpayers" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-4 top-3.5 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar contribuyentes por RUC, Razón Social..."
-                value={tenantSearch}
-                onChange={e => setTenantSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm font-semibold outline-none focus:border-primary transition-all"
-              />
-            </div>
-
-            <div className="card rounded-2xl overflow-hidden divide-y divide-gray-200/30 dark:divide-gray-800/30">
-              {filteredTaxpayers.length === 0 ? (
-                <div className="p-8 text-center text-gray-400 font-semibold">
-                  No se encontraron contribuyentes registrados.
-                </div>
-              ) : (
-                filteredTaxpayers.map(t => {
-                  const estudio = studios.find(s => s.id === t.studioId);
-                  return (
-                    <div
-                      key={t.id}
-                      onClick={() => setSelectedTenantId(t.id)}
-                      className={cn(
-                        "p-4 flex items-center justify-between cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-white/5",
-                        selectedTenantId === t.id && "bg-primary/5 dark:bg-primary/10 border-l-4 border-primary"
-                      )}
-                    >
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                          {t.legalName}
-                        </h4>
-                        <p className="text-xs text-gray-500 font-semibold">
-                          RUC: {t.ruc} | Tipo: {t.entityType || "COMMERCIAL"}
-                        </p>
-                        {estudio && (
-                          <p className="text-[10px] text-gray-400 font-bold">
-                            Gestionado por: <span className="text-primary">{estudio.legalName}</span>
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className={cn(
-                          "text-[10px] font-black uppercase px-2 py-0.5 rounded-full",
-                          t.status === "active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
-                        )}>
-                          {t.status || "active"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Edit Taxpayer Panel */}
-          <div className="lg:col-span-4">
-            {selectedTenant && selectedTenant.tenantType === "TAXPAYER" ? (
-              <div className="card rounded-2xl p-6 space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white">
-                    <Building2 className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-gray-900 dark:text-white truncate">
-                      {selectedTenant.legalName}
-                    </h3>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                      RUC: {selectedTenant.ruc}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Features Toggles */}
-                <div className="space-y-4 pt-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Características de Módulo</label>
-                  
-                  <div className="space-y-3">
-                    <FeatureToggleRow
-                      label="Sincronización SIFEN"
-                      desc="Ingesta directa desde servidores SET"
-                      active={!!selectedTenant.features?.sifenSync}
-                      onToggle={() => handleToggleFeature("sifenSync")}
-                    />
-                    <FeatureToggleRow
-                      label="Triple Imputación IA"
-                      desc="Autoclasificación con Gemini"
-                      active={!!selectedTenant.features?.aiTripleImputation}
-                      onToggle={() => handleToggleFeature("aiTripleImputation")}
-                    />
-                    <FeatureToggleRow
-                      label="Reportes CGR"
-                      desc="Módulo ESFL Contraloría"
-                      active={!!selectedTenant.features?.cgrReports}
-                      onToggle={() => handleToggleFeature("cgrReports")}
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="card rounded-2xl p-8 text-center text-gray-400 font-semibold border-dashed border-2">
-                Seleccioná un contribuyente del listado para modificar sus toggles de features.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Tab: Users */}
-      {activeTab === "users" && (
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-3.5 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar usuarios por email o nombre..."
-              value={userSearch}
-              onChange={e => setUserSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm font-semibold outline-none focus:border-primary transition-all"
-            />
-          </div>
-
-          <div className="card rounded-2xl overflow-hidden divide-y divide-gray-200/30 dark:divide-gray-800/30">
-            {filteredUsers.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 font-semibold">
-                No se encontraron usuarios.
-              </div>
-            ) : (
-              filteredUsers.map(u => (
-                <div key={u.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-white/5 transition-all">
-                  <div className="space-y-0.5">
-                    <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                      {u.name || "Usuario Sin Nombre"}
-                    </h4>
-                    <p className="text-xs text-gray-500 font-semibold">{u.email}</p>
-                  </div>
-
-                  <button
-                    onClick={() => setResettingUser(u)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10 text-xs font-bold transition-all"
-                  >
-                    <Key className="h-3 w-3" />
-                    Resetear Contraseña
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Password Reset Modal */}
-      {resettingUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="card max-w-md w-full rounded-2xl p-6 space-y-6 animate-in zoom-in-95">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-gray-900 dark:text-white">Resetear Contraseña</h3>
-              <button onClick={() => setResettingUser(null)} className="text-gray-400 hover:text-gray-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-gray-500">
-              Vas a cambiar la contraseña para el usuario <span className="font-bold text-gray-700 dark:text-gray-300">{resettingUser.email}</span>.
-            </p>
-
-            {resetSuccess ? (
-              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl text-xs font-black flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Contraseña modificada exitosamente.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <input
-                  type="password"
-                  placeholder="Nueva Contraseña..."
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  className="w-full py-2.5 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none focus:border-primary"
-                />
-                <button
-                  onClick={() => resetPasswordMutation.mutate({ userId: resettingUser.id, pass: newPassword })}
-                  disabled={!newPassword}
-                  className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-black uppercase tracking-wider"
-                >
-                  Confirmar Reinicio
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Create Studio Modal */}
-      {showCreateStudioModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 max-w-4xl w-full rounded-2xl shadow-2xl p-6 lg:p-8 space-y-6 animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <Building2 className="h-5 w-5" />
+      {/* Revealed Credential Card (Alert Modal / Card) */}
+      {revealedCredential && (
+        <div className="bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-blue-900/40 border border-indigo-500/30 rounded-xl p-4 sm:p-5 shadow-lg relative">
+          <button
+            onClick={() => setRevealedCredential(null)}
+            className="absolute top-3 right-3 text-gray-400 hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex items-start gap-3">
+            <Key className="h-5 w-5 text-indigo-400 shrink-0 mt-1" />
+            <div className="flex-1 space-y-2">
+              <h3 className="text-sm font-semibold text-white">
+                Credencial Generada para: {revealedCredential.entityName}
+              </h3>
+              <p className="text-xs text-gray-300">
+                El usuario tiene marcado <span className="font-semibold text-amber-300">primer login obligatorio</span> y deberá cambiar su clave al ingresar.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-950/80 p-3 rounded-lg border border-gray-800 font-mono text-xs">
+                <div>
+                  <span className="text-gray-400 text-[10px] block">Email:</span>
+                  <span className="text-white font-medium">{revealedCredential.email}</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white">Crear Nuevo Estudio Contable</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Configurá la suscripción, información fiscal y habilitá los módulos correspondientes.</p>
+                  <span className="text-gray-400 text-[10px] block">Contraseña Temporal:</span>
+                  <span className="text-emerald-400 font-bold">{revealedCredential.passwordTemporal}</span>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowCreateStudioModal(false)} 
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
+              <button
+                onClick={() =>
+                  copyToClipboard(
+                    `Acceso a InteliCont:\nURL: https://app.intelicont.com.py/login\nEmail: ${revealedCredential.email}\nContraseña temporal: ${revealedCredential.passwordTemporal}`,
+                    "Credenciales copiadas para enviar al cliente"
+                  )
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
               >
+                <Copy className="h-3.5 w-3.5" /> Copiar Credenciales
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs Navigation */}
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800/80 rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setActiveTab("firmas")}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            activeTab === "firmas"
+              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+              : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+          )}
+        >
+          Tenants (Firmas) ({tenants.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("usuarios")}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            activeTab === "usuarios"
+              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+              : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+          )}
+        >
+          Directorio Global ({usersList.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("errores")}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5",
+            activeTab === "errores"
+              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+              : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+          )}
+        >
+          Sentry-Lite (5xx)
+          {errores.filter((e) => !e.resuelto).length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-red-500 text-white font-bold">
+              {errores.filter((e) => !e.resuelto).length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("vitals")}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            activeTab === "vitals"
+              ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+              : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+          )}
+        >
+          System Vitals
+        </button>
+      </div>
+
+      {/* TAB 1: TENANTS (FIRMAS) */}
+      {activeTab === "firmas" && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="relative w-full sm:w-72">
+              <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por RUC o Razón Social..."
+                value={tenantSearch}
+                onChange={(e) => setTenantSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs outline-none"
+              />
+            </div>
+            <button
+              onClick={() => setShowCreateTenantModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium shadow-sm transition-colors w-full sm:w-auto justify-center"
+            >
+              <Plus className="h-4 w-4" /> Alta de Nueva Firma
+            </button>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80">
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Razón Social / RUC</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Plan</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Overrides Cuotas</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Estado</th>
+                  <th className="text-right px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Acciones Operativas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                {filteredTenants.map((t: any) => (
+                  <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-gray-900 dark:text-white">{t.legalName}</p>
+                      <span className="font-mono text-gray-400 text-[11px]">{t.ruc}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider",
+                        t.plan === "enterprise" ? "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300" :
+                        t.plan === "inhouse" ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300" :
+                        t.plan === "pro" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" :
+                        "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                      )}>
+                        {t.plan}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-gray-500 text-[11px]">
+                      {t.featuresOverrideJson ? (
+                        <span className="text-indigo-600 dark:text-indigo-400">Custom ({t.featuresOverrideJson})</span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right space-x-2">
+                      <button
+                        onClick={() => impersonateMutation.mutate(t.id)}
+                        disabled={impersonateMutation.isPending}
+                        className="px-2.5 py-1 text-xs rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/40 hover:bg-indigo-100 transition-colors inline-flex items-center gap-1"
+                        title="Impersonar este tenant con vista completa de cliente"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Impersonar
+                      </button>
+                      <button
+                        onClick={() => setSelectedTenantForEdit(t)}
+                        className="px-2.5 py-1 text-xs rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 transition-colors"
+                      >
+                        Editar Plan
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: DIRECTORIO GLOBAL DE USUARIOS */}
+      {activeTab === "usuarios" && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="relative w-full sm:w-72">
+              <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar usuario por email o nombre..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs outline-none"
+              />
+            </div>
+            <button
+              onClick={() => setShowCreateUserModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium shadow-sm transition-colors w-full sm:w-auto justify-center"
+            >
+              <Plus className="h-4 w-4" /> Agregar Usuario a Firma
+            </button>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80">
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Email / Usuario</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Nombre</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Primer Login</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Fecha Alta</th>
+                  <th className="text-right px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                {filteredUsers.map((u: any) => (
+                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20">
+                    <td className="px-4 py-3 font-mono font-medium text-gray-900 dark:text-white">
+                      {u.email}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
+                      {u.name || "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {u.debeCambiarPassword ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                          Debe Cambiar Clave
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300">
+                          Clave Activa
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400">
+                      {new Date(u.createdAt).toLocaleDateString("es-PY")}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={async () => {
+                          const newPass = "Tmp-" + Math.random().toString(36).slice(2, 8) + "!";
+                          await resetUserPasswordAction(u.id, newPass);
+                          setRevealedCredential({
+                            email: u.email,
+                            passwordTemporal: newPass,
+                            entityName: "Reset Password",
+                          });
+                        }}
+                        className="px-2.5 py-1 text-xs rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 transition-colors inline-flex items-center gap-1"
+                      >
+                        <Key className="h-3 w-3" /> Resetear Clave
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: SENTRY-LITE (ERRORES 5XX) */}
+      {activeTab === "errores" && (
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  Incidentes de Plataforma No Controlados (Deduplicados SHA-256)
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Agrupación determinista por tipo de error y línea de código. Haz clic para inspeccionar o copiar para el Agente AI.
+                </p>
+              </div>
+            </div>
+
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80">
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Tipo de Error & Mensaje</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Endpoint</th>
+                  <th className="text-center px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Ocurrencias</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Última Vez</th>
+                  <th className="text-left px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Estado</th>
+                  <th className="text-right px-4 py-3 text-[10px] text-gray-500 uppercase font-medium">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                {errores.length > 0 ? (
+                  errores.map((err) => (
+                    <tr
+                      key={err.id}
+                      onClick={() => setSelectedErrorForDetail(err)}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800/30 cursor-pointer transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-red-600 dark:text-red-400">
+                            {err.tipoError}
+                          </span>
+                          <span className="text-gray-400 text-[10px] font-mono truncate max-w-[100px]">
+                            #{err.fingerprint.slice(0, 8)}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 truncate max-w-sm mt-0.5">
+                          {err.mensaje}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-gray-500">
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">{err.metodo}</span> {err.path}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="px-2 py-0.5 rounded-full font-mono font-bold text-[11px] bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400">
+                          x{err.ocurrencias}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 font-mono text-[11px]">
+                        {new Date(err.ultimaVez).toLocaleTimeString("es-PY")}
+                      </td>
+                      <td className="px-4 py-3">
+                        {err.resuelto ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Resuelto
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-red-500 font-semibold">
+                            <AlertCircle className="h-3.5 w-3.5" /> Abierto
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(generarReporteMarkdown(err), "Reporte copiado para Agente AI");
+                          }}
+                          className="px-2.5 py-1 text-xs rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/40 hover:bg-indigo-100 transition-colors inline-flex items-center gap-1 font-medium"
+                        >
+                          <Copy className="h-3 w-3" /> Reporte AI
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-xs">
+                      No hay incidentes 5xx registrados en la plataforma.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: SYSTEM VITALS */}
+      {activeTab === "vitals" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Database */}
+            <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Database className="h-5 w-5 text-indigo-500" />
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Base de Datos PostgreSQL</h3>
+                </div>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                  {vitals?.database.status.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs text-gray-400 font-mono">
+                <span>Latencia Round-Trip:</span>
+                <span className="text-gray-900 dark:text-white font-bold">{vitals?.database.latencyMs} ms</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-2">
+                {vitals?.database.details}
+              </p>
+            </div>
+
+            {/* AI Ollama */}
+            <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Cpu className="h-5 w-5 text-purple-500" />
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Motor de Inferencia AI Local</h3>
+                </div>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                  {vitals?.ai.status.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs text-gray-400 font-mono">
+                <span>Modelo Primario:</span>
+                <span className="text-gray-900 dark:text-white font-bold">{vitals?.ai.model}</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-2">
+                {vitals?.ai.details} ({vitals?.ai.latencyMs}ms)
+              </p>
+            </div>
+
+            {/* Cache Fiscal */}
+            <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-500" />
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Caché Fiscal & Cotizaciones</h3>
+                </div>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                  {vitals?.cacheFiscal.status.toUpperCase()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {vitals?.cacheFiscal.details}
+              </p>
+            </div>
+
+            {/* Storage */}
+            <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="h-5 w-5 text-blue-500" />
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Almacenamiento Standalone</h3>
+                </div>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                  {vitals?.storage.status.toUpperCase()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {vitals?.storage.details}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ALTA ATÓMICA DE NUEVA FIRMA */}
+      {showCreateTenantModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-indigo-600" /> Alta Atómica de Firma (Tenant)
+              </h3>
+              <button onClick={() => setShowCreateTenantModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
-              {/* Left Column: Basic Information */}
-              <div className="space-y-5">
-                <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider">Información Básica</h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">RUC del Estudio *</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: 80012345-1"
-                      value={newStudio.ruc}
-                      onChange={e => setNewStudio(prev => ({ ...prev, ruc: e.target.value }))}
-                      className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Nombre Comercial</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Estudio Contable G&A"
-                      value={newStudio.tradeName}
-                      onChange={e => setNewStudio(prev => ({ ...prev, tradeName: e.target.value }))}
-                      className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Nombre / Razón Social *</label>
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-gray-500 block mb-1">RUC:</label>
                   <input
                     type="text"
-                    placeholder="Ej: Estudio García & Asociados Sociedad Simple"
-                    value={newStudio.legalName}
-                    onChange={e => setNewStudio(prev => ({ ...prev, legalName: e.target.value }))}
-                    className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
+                    placeholder="80012345-6"
+                    value={newTenant.ruc}
+                    onChange={(e) => setNewTenant({ ...newTenant, ruc: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none font-mono"
                   />
                 </div>
+                <div>
+                  <label className="text-gray-500 block mb-1">Plan de Licencia:</label>
+                  <select
+                    value={newTenant.plan}
+                    onChange={(e) => setNewTenant({ ...newTenant, plan: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none cursor-pointer"
+                  >
+                    <option value="starter">Starter PyME (Gs. 180.000)</option>
+                    <option value="pro">Pro Estudio (Gs. 385.000)</option>
+                    <option value="inhouse">In-House Corp (Gs. 440.000)</option>
+                    <option value="enterprise">Enterprise Holding (Gs. 650.000)</option>
+                  </select>
+                </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Email de Contacto</label>
+              <div>
+                <label className="text-gray-500 block mb-1">Razón Social:</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Estudio Contable Asunción S.A."
+                  value={newTenant.legalName}
+                  onChange={(e) => setNewTenant({ ...newTenant, legalName: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none"
+                />
+              </div>
+
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
+                <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Administrador Inicial:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-gray-500 block mb-1">Email Administrador:</label>
                     <input
                       type="email"
-                      placeholder="ejemplo@estudio.com"
-                      value={newStudio.contactEmail}
-                      onChange={e => setNewStudio(prev => ({ ...prev, contactEmail: e.target.value }))}
-                      className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
+                      placeholder="admin@estudio.com.py"
+                      value={newTenant.adminEmail}
+                      onChange={(e) => setNewTenant({ ...newTenant, adminEmail: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Teléfono</label>
+                  <div>
+                    <label className="text-gray-500 block mb-1">Nombre Completo:</label>
                     <input
                       type="text"
-                      placeholder="0981 123456"
-                      value={newStudio.contactPhone}
-                      onChange={e => setNewStudio(prev => ({ ...prev, contactPhone: e.target.value }))}
-                      className="w-full py-2.5 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900 dark:text-white"
+                      placeholder="Lic. Mario González"
+                      value={newTenant.adminName}
+                      onChange={(e) => setNewTenant({ ...newTenant, adminName: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none"
                     />
-                  </div>
-                </div>
-
-                {/* Plan Selection Cards */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider">Plan del Cliente</h4>
-                    <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">
-                      Gs. {(newStudio.mrr).toLocaleString("es-PY")} / mes
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { key: "starter", name: "Starter", price: "Gs. 180.000", desc: "Microestudios" },
-                      { key: "pro", name: "Pro", price: "Gs. 385.000", desc: "Estudios Activos" },
-                      { key: "inhouse", name: "InHouse / ESFL", price: "Gs. 440.000", desc: "Organizaciones" },
-                      { key: "enterprise", name: "Enterprise", price: "Gs. 650.000", desc: "Grandes Firmas" },
-                    ].map(p => (
-                      <button
-                        key={p.key}
-                        type="button"
-                        onClick={() => {
-                          const config = PLAN_DEFAULTS[p.key];
-                          setNewStudio(prev => ({
-                            ...prev,
-                            plan: p.key,
-                            mrr: config.mrr,
-                            features: { ...config.features }
-                          }));
-                        }}
-                        className={cn(
-                          "flex flex-col text-left p-3 rounded-xl border transition-all hover:scale-[1.01]",
-                          newStudio.plan === p.key
-                            ? "border-primary bg-primary/5 dark:bg-primary/10 dark:border-primary/60"
-                            : "border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 hover:bg-gray-100/50 dark:hover:bg-slate-800/50"
-                        )}
-                      >
-                        <span className="text-xs font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5">
-                          {p.name}
-                          {p.key === "pro" && (
-                            <span className="text-[9px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded font-black uppercase">
-                              Popular
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-[10px] text-primary font-bold mt-1">{p.price}</span>
-                        <span className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 font-medium">{p.desc}</span>
-                      </button>
-                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Feature Toggles */}
-              <div className="space-y-5">
-                <h4 className="text-xs font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider">Features del Tenant (Control de Módulos)</h4>
-
-                <div className="space-y-3.5">
-                  {[
-                    {
-                      key: "sifenSync",
-                      name: "Facturación Electrónica SIFEN",
-                      desc: "Integración directa de comprobantes (Kuatia/SIFEN) para importación de compras y ventas.",
-                      icon: Zap,
-                      color: "text-amber-500 bg-amber-500/10"
-                    },
-                    {
-                      key: "aiTripleImputation",
-                      name: "Cerebro Contable IA (Gemini)",
-                      desc: "Imputación inteligente automática en Libro IVA, Cuenta de Resultados y Balance General.",
-                      icon: Sparkles,
-                      color: "text-indigo-500 bg-indigo-500/10"
-                    },
-                    {
-                      key: "cgrReports",
-                      name: "Convenios & Proyectos (ESFL)",
-                      desc: "Módulo presupuestario con clasificadores PGN/CGR para ONGs y Asociaciones del Paraguay.",
-                      icon: FileText,
-                      color: "text-emerald-500 bg-emerald-500/10"
-                    },
-                    {
-                      key: "bankApi",
-                      name: "API de Conciliación Bancaria",
-                      desc: "Conexión automática de extractos y emparejamiento inteligente de movimientos con facturas.",
-                      icon: Globe,
-                      color: "text-blue-500 bg-blue-500/10"
-                    },
-                    {
-                      key: "multiUser",
-                      name: "Acceso Multiusuario y Roles",
-                      desc: "Roles jerárquicos de auxiliares y auditores con trazabilidad y logs de seguridad.",
-                      icon: Users,
-                      color: "text-rose-500 bg-rose-500/10"
-                    }
-                  ].map(feat => {
-                    const IconComp = feat.icon;
-                    const isEnabled = !!newStudio.features[feat.key];
-                    return (
-                      <div 
-                        key={feat.key} 
-                        onClick={() => setNewStudio(prev => ({
-                          ...prev,
-                          features: {
-                            ...prev.features,
-                            [feat.key]: !prev.features[feat.key]
-                          }
-                        }))}
-                        className={cn(
-                          "flex items-start justify-between p-3.5 rounded-xl border cursor-pointer select-none transition-all hover:bg-gray-50/50 dark:hover:bg-slate-800/40",
-                          isEnabled 
-                            ? "border-primary/20 bg-primary/[0.01] dark:bg-primary/[0.02]" 
-                            : "border-gray-150 dark:border-slate-800 bg-transparent opacity-85"
-                        )}
-                      >
-                        <div className="flex gap-3 pr-2">
-                          <div className={cn("h-8 w-8 rounded-lg shrink-0 flex items-center justify-center", feat.color)}>
-                            <IconComp className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-gray-950 dark:text-white">{feat.name}</p>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed font-medium">{feat.desc}</p>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          className={cn(
-                            "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-1",
-                            isEnabled ? "bg-primary" : "bg-gray-200 dark:bg-slate-700"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                              isEnabled ? "translate-x-4" : "translate-x-0"
-                            )}
-                          />
-                        </button>
-                      </div>
-                    );
-                  })}
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
+                <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Overrides de Cuota (Opcional):</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-gray-500 block mb-1">Límite Usuarios:</label>
+                    <input
+                      type="number"
+                      value={newTenant.maxUsuarios}
+                      onChange={(e) => setNewTenant({ ...newTenant, maxUsuarios: Number(e.target.value) })}
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-gray-500 block mb-1">Límite Clientes:</label>
+                    <input
+                      type="number"
+                      value={newTenant.maxClientes}
+                      onChange={(e) => setNewTenant({ ...newTenant, maxClientes: Number(e.target.value) })}
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none font-mono"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Actions Footer */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
               <button
-                onClick={() => setShowCreateStudioModal(false)}
-                className="px-5 py-2.5 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 transition-colors"
+                onClick={() => setShowCreateTenantModal(false)}
+                className="px-4 py-2 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => createTenantMutation.mutate({ ...newStudio, tenantType: "STUDIO" })}
-                disabled={!newStudio.ruc || !newStudio.legalName || createTenantMutation.isPending}
-                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-primary text-white hover:bg-primary-dark transition-all rounded-xl text-xs font-black shadow-lg shadow-primary/25 disabled:opacity-50 disabled:pointer-events-none"
+                onClick={() =>
+                  createTenantMutation.mutate({
+                    ruc: newTenant.ruc,
+                    legalName: newTenant.legalName,
+                    tradeName: newTenant.tradeName,
+                    adminEmail: newTenant.adminEmail,
+                    adminName: newTenant.adminName,
+                    plan: newTenant.plan,
+                    featuresOverride: {
+                      max_usuarios: newTenant.maxUsuarios,
+                      max_clientes: newTenant.maxClientes,
+                      tiene_ia: newTenant.tieneIa,
+                    },
+                  })
+                }
+                disabled={!newTenant.ruc || !newTenant.legalName || !newTenant.adminEmail || createTenantMutation.isPending}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold disabled:opacity-40 transition-colors shadow-sm"
               >
-                {createTenantMutation.isPending ? "Creando..." : "Crear Estudio Contable"}
+                {createTenantMutation.isPending ? "Generando Alta..." : "Crear Firma y Administrador"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Create Taxpayer Modal */}
-      {showCreateTaxpayerModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="card max-w-lg w-full rounded-2xl p-6 space-y-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-gray-900 dark:text-white">Registrar Empresa Contribuyente</h3>
-              <button onClick={() => setShowCreateTaxpayerModal(false)} className="text-gray-400 hover:text-gray-600">
+      {/* MODAL: AGREGAR USUARIO A FIRMA */}
+      {showCreateUserModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <User className="h-5 w-5 text-blue-600" /> Nuevo Usuario en Firma
+              </h3>
+              <button onClick={() => setShowCreateUserModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400">RUC *</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: 80012345-1"
-                    value={newTaxpayer.ruc}
-                    onChange={e => setNewTaxpayer(prev => ({ ...prev, ruc: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400">Tipo de Entidad</label>
-                  <select
-                    value={newTaxpayer.entityType}
-                    onChange={e => setNewTaxpayer(prev => ({ ...prev, entityType: e.target.value as any }))}
-                    className="w-full py-2.5 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                  >
-                    <option value="COMMERCIAL">Comercial (IRE Gral/Simple)</option>
-                    <option value="NON_PROFIT_NGO">ONG / Sin Fines de Lucro</option>
-                    <option value="ASSOCIATION">Asociación</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400">Razón Social *</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Importadora del Este S.A."
-                  value={newTaxpayer.legalName}
-                  onChange={e => setNewTaxpayer(prev => ({ ...prev, legalName: e.target.value }))}
-                  className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400">Estudio Contable Encargado *</label>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-gray-500 block mb-1">Firma / Tenant:</label>
                 <select
-                  value={newTaxpayer.studioId}
-                  onChange={e => setNewTaxpayer(prev => ({ ...prev, studioId: e.target.value }))}
-                  className="w-full py-2.5 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold outline-none"
+                  value={newUser.entityId}
+                  onChange={(e) => setNewUser({ ...newUser, entityId: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none cursor-pointer"
                 >
-                  <option value="">-- Seleccionar Estudio Contable --</option>
-                  {studios.map(s => (
-                    <option key={s.id} value={s.id}>{s.legalName} ({s.ruc})</option>
+                  <option value="">Seleccione Firma...</option>
+                  {tenants.map((t: any) => (
+                    <option key={t.id} value={t.id}>
+                      {t.legalName} ({t.ruc}) - Plan {t.plan}
+                    </option>
                   ))}
                 </select>
               </div>
 
+              <div>
+                <label className="text-gray-500 block mb-1">Email del Colaborador:</label>
+                <input
+                  type="email"
+                  placeholder="colaborador@estudio.com.py"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-gray-500 block mb-1">Nombre Completo:</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Lic. Ana Duarte"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
               <button
-                onClick={() => createTenantMutation.mutate({ ...newTaxpayer, tenantType: "TAXPAYER", plan: "starter", mrr: 0 })}
-                disabled={!newTaxpayer.ruc || !newTaxpayer.legalName || !newTaxpayer.studioId}
-                className="w-full py-3 bg-primary text-white rounded-lg text-xs font-black uppercase tracking-wider shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                onClick={() => setShowCreateUserModal(false)}
+                className="px-4 py-2 text-xs text-gray-500 hover:text-gray-700"
               >
-                Registrar Contribuyente
+                Cancelar
+              </button>
+              <button
+                onClick={() => createUserMutation.mutate(newUser)}
+                disabled={!newUser.entityId || !newUser.email || createUserMutation.isPending}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold disabled:opacity-40 transition-colors shadow-sm"
+              >
+                {createUserMutation.isPending ? "Validando Límites..." : "Crear Usuario"}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
-function FeatureToggleRow({ label, desc, active, onToggle }: {
-  label: string; desc: string; active: boolean; onToggle: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between p-3 rounded-xl border border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-white/5 transition-all">
-      <div>
-        <h5 className="text-xs font-black text-gray-900 dark:text-white">{label}</h5>
-        <p className="text-[10px] text-gray-400 font-semibold">{desc}</p>
-      </div>
+      {/* MODAL: DETALLE DE ERROR SENTRY-LITE */}
+      {selectedErrorForDetail && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="font-mono text-red-500 text-xs font-bold uppercase tracking-wider block">
+                  Incidente 5xx • #{selectedErrorForDetail.fingerprint.slice(0, 12)}
+                </span>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {selectedErrorForDetail.tipoError}: {selectedErrorForDetail.mensaje}
+                </h3>
+              </div>
+              <button onClick={() => setSelectedErrorForDetail(null)} className="text-gray-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-      <button onClick={onToggle} className="text-gray-400 hover:text-primary transition-all">
-        {active ? (
-          <ToggleRight className="h-7 w-7 text-primary" />
-        ) : (
-          <ToggleLeft className="h-7 w-7 text-gray-300 dark:text-gray-700" />
-        )}
-      </button>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-50 dark:bg-gray-800/40 p-3 rounded-lg text-xs font-mono">
+              <div>
+                <span className="text-gray-400 block text-[10px]">Endpoint:</span>
+                <span className="text-gray-900 dark:text-white font-semibold">
+                  {selectedErrorForDetail.metodo} {selectedErrorForDetail.path}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-400 block text-[10px]">Ocurrencias:</span>
+                <span className="text-red-500 font-bold">{selectedErrorForDetail.ocurrencias} veces</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block text-[10px]">Usuario:</span>
+                <span className="text-gray-300 truncate block">{selectedErrorForDetail.usuarioEmail || "N/A"}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block text-[10px]">Estado:</span>
+                <span className={cn("font-bold", selectedErrorForDetail.resuelto ? "text-green-500" : "text-red-500")}>
+                  {selectedErrorForDetail.resuelto ? "Resuelto" : "Pendiente"}
+                </span>
+              </div>
+            </div>
+
+            {/* Stacktrace */}
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Stacktrace de Error:</span>
+              <pre className="p-3 bg-gray-950 text-gray-300 rounded-lg text-[11px] font-mono overflow-x-auto max-h-48 border border-gray-800">
+                {selectedErrorForDetail.stacktrace}
+              </pre>
+            </div>
+
+            {/* Context */}
+            {selectedErrorForDetail.contextoJson && (
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Contexto Sanitizado:</span>
+                <pre className="p-3 bg-gray-950 text-gray-400 rounded-lg text-[11px] font-mono overflow-x-auto max-h-32 border border-gray-800">
+                  {JSON.stringify(JSON.parse(selectedErrorForDetail.contextoJson), null, 2)}
+                </pre>
+              </div>
+            )}
+
+            {/* Action Bar */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <button
+                onClick={() =>
+                  copyToClipboard(
+                    generarReporteMarkdown(selectedErrorForDetail),
+                    "Reporte Markdown copiado para el Agente AI"
+                  )
+                }
+                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm w-full sm:w-auto justify-center"
+              >
+                <Copy className="h-4 w-4" /> 📋 Copiar Reporte para Agente AI
+              </button>
+
+              {!selectedErrorForDetail.resuelto && (
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <input
+                    type="text"
+                    placeholder="Nota de solución..."
+                    value={resolvingNotes}
+                    onChange={(e) => setResolvingNotes(e.target.value)}
+                    className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs outline-none w-full sm:w-48"
+                  />
+                  <button
+                    onClick={() =>
+                      resolverErrorMutation.mutate({
+                        id: selectedErrorForDetail.id,
+                        notas: resolvingNotes || "Resuelto por SuperAdmin",
+                      })
+                    }
+                    disabled={resolverErrorMutation.isPending}
+                    className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-semibold transition-colors shrink-0"
+                  >
+                    Marcar Resuelto
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDITAR PLAN / OVERRIDES */}
+      {selectedTenantForEdit && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                Editar Licencia: {selectedTenantForEdit.legalName}
+              </h3>
+              <button onClick={() => setSelectedTenantForEdit(null)} className="text-gray-400 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-gray-500 block mb-1">Plan Base:</label>
+                <select
+                  value={selectedTenantForEdit.plan}
+                  onChange={(e) => setSelectedTenantForEdit({ ...selectedTenantForEdit, plan: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none cursor-pointer"
+                >
+                  <option value="starter">Starter PyME</option>
+                  <option value="pro">Pro Estudio</option>
+                  <option value="inhouse">In-House Corp</option>
+                  <option value="enterprise">Enterprise Holding</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-gray-500 block mb-1">Overrides JSON (Cuotas Personalizadas):</label>
+                <textarea
+                  rows={4}
+                  value={selectedTenantForEdit.featuresOverrideJson || ""}
+                  onChange={(e) =>
+                    setSelectedTenantForEdit({ ...selectedTenantForEdit, featuresOverrideJson: e.target.value })
+                  }
+                  placeholder='{"max_usuarios": 20, "max_clientes": 100, "tiene_ia": true}'
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-[11px] outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <button
+                onClick={() => setSelectedTenantForEdit(null)}
+                className="px-4 py-2 text-xs text-gray-500 hover:text-gray-700"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() =>
+                  updateOverridesMutation.mutate({
+                    entityId: selectedTenantForEdit.id,
+                    plan: selectedTenantForEdit.plan,
+                    featuresOverrideJson: selectedTenantForEdit.featuresOverrideJson || null,
+                  })
+                }
+                disabled={updateOverridesMutation.isPending}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

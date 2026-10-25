@@ -12,6 +12,7 @@ import { timbradosRouter } from "./routers/timbrados";
 import { agentRouter } from "./routers/agent";
 import { cierreRouter } from "./routers/cierre";
 import { multimonedaRouter } from "./routers/multimoneda";
+import { superadminRouter } from "./routers/superadmin";
 
 export const appRouter = router({
   health: publicProcedure.query(() => ({
@@ -32,6 +33,7 @@ export const appRouter = router({
   agent: agentRouter,
   cierre: cierreRouter,
   multimoneda: multimonedaRouter,
+  superadmin: superadminRouter,
 });
 
 export type AppRouter = typeof appRouter;

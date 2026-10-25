@@ -60,6 +60,8 @@ export const entities = pgTable("entities", {
   taxRegimes: text("tax_regimes").array(),
   baseCurrency: varchar("base_currency", { length: 3 }).notNull().default("PYG"),
   status: entityStatusEnum("status").default("active"),
+  plan: varchar("plan", { length: 50 }).default("starter"),
+  featuresOverrideJson: text("features_override_json"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
@@ -75,9 +77,35 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  debeCambiarPassword: boolean("debe_cambiar_password").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ─── SuperAdmin: Errores de Plataforma (Sentry-Lite) ──────────────────────
+
+export const erroresPlataforma = pgTable("errores_plataforma", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fingerprint: varchar("fingerprint", { length: 64 }).notNull(),
+  tipoError: varchar("tipo_error", { length: 100 }).notNull(),
+  mensaje: text("mensaje").notNull(),
+  path: varchar("path", { length: 500 }).notNull(),
+  metodo: varchar("metodo", { length: 10 }).notNull(),
+  statusCode: integer("status_code").default(500).notNull(),
+  stacktrace: text("stacktrace").notNull(),
+  contextoJson: text("contexto_json"),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "set null" }),
+  usuarioEmail: varchar("usuario_email", { length: 200 }),
+  ocurrencias: integer("ocurrencias").default(1).notNull(),
+  primeraVez: timestamp("primera_vez", { withTimezone: true }).defaultNow().notNull(),
+  ultimaVez: timestamp("ultima_vez", { withTimezone: true }).defaultNow().notNull(),
+  resuelto: boolean("resuelto").default(false).notNull(),
+  resueltoEn: timestamp("resuelto_en", { withTimezone: true }),
+  notasResolucion: text("notas_resolucion"),
+}, (t) => [
+  index("errores_plataforma_fingerprint_idx").on(t.fingerprint),
+  index("errores_plataforma_resuelto_idx").on(t.resuelto),
+]);
 
 export const sessions = pgTable("sessions", {
   id: uuid("id").primaryKey().defaultRandom(),

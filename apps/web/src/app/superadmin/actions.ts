@@ -1,12 +1,49 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getDb } from "@ledger/db";
+import { getDb, isMockMode } from "@ledger/db";
 import { entities, users } from "@ledger/db/schema";
 import { eq, desc } from "drizzle-orm";
+import {
+  createTenantAtomic,
+  createUserWithLimits,
+  cambiarPasswordUsuario,
+  impersonateTenant,
+  getSystemVitals,
+  getSuperadminStats,
+} from "@/lib/superadmin-service";
+import { getErroresPlataforma, resolverErrorPlataforma } from "@/lib/error-tracker";
+
+export async function getSuperadminStatsAction() {
+  return getSuperadminStats();
+}
+
+export async function getSystemVitalsAction() {
+  return getSystemVitals();
+}
 
 export async function getSuperadminTenantsAction() {
   try {
+    if (isMockMode()) {
+      return [
+        {
+          id: "00000000-0000-0000-0000-000000000001",
+          ruc: "80012345-6",
+          legalName: "Importadora del Este S.A.",
+          tradeName: "Este Importaciones",
+          entityType: "JURIDICA",
+          plan: "pro",
+          featuresOverrideJson: null,
+          features: { sifenSync: true, aiTripleImputation: true, cgrReports: true, bankApi: true, multiUser: true },
+          mrr: 385000,
+          status: "active",
+          tenantType: "STUDIO" as const,
+          contactEmail: "admin@este.com.py",
+          contactPhone: "0981-111-222",
+          createdAt: new Date(),
+        },
+      ];
+    }
     const db = getDb();
     const rows = await db.select().from(entities).orderBy(desc(entities.createdAt));
     return rows.map((e) => ({
@@ -15,12 +52,12 @@ export async function getSuperadminTenantsAction() {
       legalName: e.legalName,
       tradeName: e.tradeName,
       entityType: "JURIDICA",
-      plan: "pro",
+      plan: e.plan || "starter",
+      featuresOverrideJson: e.featuresOverrideJson,
       features: { sifenSync: true, aiTripleImputation: true, cgrReports: true, bankApi: true, multiUser: true },
-      mrr: 385000,
-      status: e.status,
+      mrr: e.plan === "enterprise" ? 650000 : e.plan === "inhouse" ? 440000 : e.plan === "pro" ? 385000 : 180000,
+      status: e.status || "active",
       tenantType: "STUDIO" as const,
-      studioId: null,
       contactEmail: null,
       contactPhone: null,
       createdAt: e.createdAt,
@@ -32,12 +69,25 @@ export async function getSuperadminTenantsAction() {
 
 export async function getSuperadminUsersAction() {
   try {
+    if (isMockMode()) {
+      return [
+        {
+          id: "usr-1",
+          email: "admin@intelicont.com.py",
+          name: "SuperAdmin InteliCont",
+          debeCambiarPassword: false,
+          emailVerified: true,
+          createdAt: new Date(),
+        },
+      ];
+    }
     const db = getDb();
     const rows = await db.select().from(users).orderBy(desc(users.createdAt));
     return rows.map((u) => ({
       id: u.id,
       email: u.email,
       name: u.name,
+      debeCambiarPassword: u.debeCambiarPassword ?? false,
       emailVerified: u.emailVerified ?? true,
       createdAt: u.createdAt,
     }));
@@ -46,34 +96,36 @@ export async function getSuperadminUsersAction() {
   }
 }
 
-export async function createTenantAction(data: {
+export async function createTenantAtomicAction(data: {
   ruc: string;
   legalName: string;
   tradeName?: string;
+  adminEmail: string;
+  adminName?: string;
   plan?: string;
-  tenantType?: "STUDIO" | "TAXPAYER";
-  studioId?: string;
-  contactEmail?: string;
-  contactPhone?: string;
+  featuresOverride?: Record<string, any>;
 }) {
   try {
-    const db = getDb();
-    const [row] = await db
-      .insert(entities)
-      .values({
-        ruc: data.ruc,
-        legalName: data.legalName,
-        tradeName: data.tradeName || null,
-        taxRegimes: ["IVA_GRAL"],
-        baseCurrency: "PYG",
-        status: "active",
-      })
-      .returning();
-
+    const res = await createTenantAtomic(data);
     revalidatePath("/superadmin");
-    return { success: true, data: row };
+    return { success: true, ...res };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Error al crear empresa" };
+    return { success: false, error: err instanceof Error ? err.message : "Error al crear firma" };
+  }
+}
+
+export async function createUserInTenantAction(data: {
+  entityId: string;
+  email: string;
+  name?: string;
+  role?: string;
+}) {
+  try {
+    const res = await createUserWithLimits(data);
+    revalidatePath("/superadmin");
+    return res;
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "Error al crear usuario" };
   }
 }
 
@@ -81,17 +133,22 @@ export async function updateTenantCommercialsAction(
   entityId: string,
   data: {
     plan?: string;
-    features?: Record<string, boolean>;
-    mrr?: number;
+    featuresOverrideJson?: string | null;
     status?: "active" | "inactive" | "closed";
-    contactEmail?: string;
-    contactPhone?: string;
   }
 ) {
   try {
-    const db = getDb();
-    if (data.status) {
-      await db.update(entities).set({ status: data.status }).where(eq(entities.id, entityId));
+    if (!isMockMode()) {
+      const db = getDb();
+      await db
+        .update(entities)
+        .set({
+          ...(data.plan && { plan: data.plan }),
+          ...(data.featuresOverrideJson !== undefined && { featuresOverrideJson: data.featuresOverrideJson }),
+          ...(data.status && { status: data.status }),
+          updatedAt: new Date(),
+        })
+        .where(eq(entities.id, entityId));
     }
     revalidatePath("/superadmin");
     return { success: true };
@@ -100,6 +157,26 @@ export async function updateTenantCommercialsAction(
   }
 }
 
-export async function resetUserPasswordAction(_userId: string, _newPass: string) {
-  return { success: true, message: "Contraseña actualizada exitosamente" };
+export async function impersonateTenantAction(entityId: string, superAdminEmail: string = "superadmin@intelicont.com.py") {
+  return impersonateTenant({ entityId, superAdminEmail });
+}
+
+export async function getErroresPlataformaAction(options?: { resuelto?: boolean }) {
+  return getErroresPlataforma(options);
+}
+
+export async function resolverErrorAction(errorId: string, notas?: string) {
+  const res = await resolverErrorPlataforma(errorId, notas);
+  revalidatePath("/superadmin");
+  return { success: !!res, data: res };
+}
+
+export async function resetUserPasswordAction(userId: string, newPass: string) {
+  const res = await cambiarPasswordUsuario({
+    userId,
+    passwordActual: "",
+    passwordNueva: newPass,
+  });
+  revalidatePath("/superadmin");
+  return res;
 }
