@@ -1,4 +1,4 @@
-import { router, superadminProcedure, z } from "../trpc";
+import { router, superadminProcedure, protectedProcedure, z } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import {
   createTenantAtomic,
@@ -9,11 +9,24 @@ import {
   getSuperadminStats,
 } from "@/lib/superadmin-service";
 import { getErroresPlataforma, resolverErrorPlataforma } from "@/lib/error-tracker";
-import { getDb, isMockMode } from "@ledger/db";
+import { getDb, isMockMode, withTenant } from "@ledger/db";
 import { entities, users } from "@ledger/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export const superadminRouter = router({
+  checkAccess: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.userId) return { isSuperadmin: false };
+    if (isMockMode() || process.env.NODE_ENV === "test") return { isSuperadmin: true };
+    const allowedRaw = process.env.SUPERADMIN_EMAILS ?? "";
+    const allowed = allowedRaw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+    if (allowed.length === 0) return { isSuperadmin: false };
+    return withTenant(ctx.userId, async (db) => {
+      const rows = await db.execute<{ email: string }>(sql`select email from users where id = ${ctx.userId}`);
+      const email = rows[0]?.email?.toLowerCase() ?? "";
+      return { isSuperadmin: allowed.includes(email) };
+    });
+  }),
+
   stats: superadminProcedure.query(async () => {
     return getSuperadminStats();
   }),

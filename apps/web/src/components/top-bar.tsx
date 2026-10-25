@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Search,
   Bell,
@@ -17,6 +18,7 @@ import {
   HelpCircle,
   Building2,
   Check,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme, Theme } from "@/lib/theme-context";
@@ -60,6 +62,15 @@ export function TopBar({
       href: OBLIGATION_HREF[i.obligation],
       read: readIds.includes(`${selectedEntity?.id}:${i.obligation}:${i.period}:${i.level}`),
     }));
+  const superadminAccess = api.superadmin.checkAccess.useQuery(undefined, {
+    enabled: !!user,
+    retry: false,
+    staleTime: 60_000,
+  });
+  const isSuperadmin =
+    superadminAccess.data?.isSuperadmin ??
+    (user?.email?.toLowerCase() === "intellihousepy@gmail.com");
+
   const unreadCount = notifications.filter((n) => !n.read).length;
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -348,6 +359,21 @@ export function TopBar({
                       <p className="text-gray-900 dark:text-white text-sm font-medium">{user?.name || "Usuario"}</p>
                       <p className="text-gray-500 dark:text-gray-400 text-xs">{user?.email || ""}</p>
                     </div>
+                    {isSuperadmin && (
+                      <div className="p-1 border-b border-gray-200 dark:border-gray-800 bg-amber-500/5">
+                        <Link
+                          href="/superadmin"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                        >
+                          <Shield className="h-4 w-4 text-amber-500" />
+                          Consola Superadmin
+                          <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-600 dark:text-amber-300 font-black">
+                            ROOT
+                          </span>
+                        </Link>
+                      </div>
+                    )}
                     <div className="p-1">
                       {[
                         { icon: User, label: "Mi Perfil" },
