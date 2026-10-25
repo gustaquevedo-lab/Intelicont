@@ -13,6 +13,7 @@ const fecha = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "");
 export default function RegistroComprobantesPage() {
   const entity = useAuthStore((s) => s.selectedEntity);
   const [periodo, setPeriodo] = useState(currentMonth);
+  const [format, setFormat] = useState<"csv" | "txt">("csv");
   const valid = /^\d{4}-(0[1-9]|1[0-2])$/.test(periodo);
   const [year, month] = valid ? periodo.split("-").map(Number) : [0, 0];
   const q = api.fiscal.registroPreview.useQuery({ entityId: entity?.id ?? "", year, month }, { enabled: !!entity && valid });
@@ -23,19 +24,30 @@ export default function RegistroComprobantesPage() {
     <div className="p-3 sm:p-4 lg:p-8 max-w-5xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Registro de Comprobantes (955)</h1>
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">Registro de Comprobantes (RG 90)</h1>
           <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
-            Archivo mensual de comprobantes de ventas y compras para importar en Marangatu
+            Archivo oficial de comprobantes de ventas, compras, ingresos y egresos para Marangatú (DNIT)
             {entity && <> · {entity.tradeName || entity.legalName}</>}
           </p>
         </div>
-        <input
-          type="month"
-          aria-label="Período"
-          value={periodo}
-          onChange={(e) => setPeriodo(e.target.value)}
-          className="px-2.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
-        />
+        <div className="flex items-center gap-2">
+          <select
+            value={format}
+            onChange={(e) => setFormat(e.target.value as "csv" | "txt")}
+            aria-label="Formato de exportación"
+            className="px-2.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          >
+            <option value="csv">.CSV (delimitado por ;)</option>
+            <option value="txt">.TXT (tabulaciones)</option>
+          </select>
+          <input
+            type="month"
+            aria-label="Período"
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            className="px-2.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
+          />
+        </div>
       </div>
 
       {!entity ? (
@@ -50,9 +62,10 @@ export default function RegistroComprobantesPage() {
         <>
           <p className="text-xs text-gray-500 dark:text-gray-400">{MESES[month - 1]} {year} · RUC <span className="font-mono">{entity.ruc}</span></p>
 
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Ventas" value={r.counts.ventas} />
-            <Stat label="Compras" value={r.counts.compras} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Stat label="Ventas (Tipo 1)" value={r.counts.ventas} />
+            <Stat label="Compras (Tipo 2)" value={r.counts.compras} />
+            <Stat label="Ingresos/Egresos (3/4)" value={(r.counts as Record<string, number>).ingresos ?? 0 + ((r.counts as Record<string, number>).egresos ?? 0)} />
             <Stat label="Con errores" value={r.errors.length} />
           </div>
 
@@ -115,7 +128,7 @@ export default function RegistroComprobantesPage() {
                       <p className="text-[11px] text-gray-500 dark:text-gray-400">{f.rows.toLocaleString("es-PY")} {f.rows === 1 ? "comprobante" : "comprobantes"}</p>
                     </div>
                     <a
-                      href={`/api/registro/${entity.id}/${mmaaaa}?part=${f.part}`}
+                      href={`/api/registro/${entity.id}/${mmaaaa}?part=${f.part}&format=${format}`}
                       download
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium shrink-0 no-tap-highlight"
                     >

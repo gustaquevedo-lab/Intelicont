@@ -84,6 +84,36 @@ const BANK_TEMPLATES: Record<string, ColumnMap> = {
       column: "Operación",
     },
   },
+  ueno: {
+    date: ["Fecha", "Date", "Fecha de Movimiento"],
+    description: ["Concepto", "Descripción", "Detalle"],
+    ref: ["ID Transacción", "Referencia", "Nro"],
+    amount: ["Monto", "Importe"],
+    direction: {
+      credit: ["Crédito", "Entrada", "Ingreso"],
+      debit: ["Débito", "Salida", "Egreso"],
+    },
+  },
+  familiar: {
+    date: ["Fecha", "Fecha Operación"],
+    description: ["Concepto", "Movimiento"],
+    ref: ["Documento", "Nro. Comprobante"],
+    amount: ["Importe", "Monto"],
+    direction: {
+      credit: ["Depósitos", "Crédito"],
+      debit: ["Extracciones", "Débito"],
+    },
+  },
+  sudameris: {
+    date: ["Fecha", "Fecha Valor"],
+    description: ["Descripción", "Concepto"],
+    ref: ["Referencia", "Nro Transacción"],
+    amount: ["Importe"],
+    direction: {
+      credit: ["Créditos", "Crédito"],
+      debit: ["Débitos", "Débito"],
+    },
+  },
 };
 
 function detectBank(headers: string[]): string {
@@ -92,6 +122,9 @@ function detectBank(headers: string[]): string {
   if (headerStr.includes("itau") || headerStr.includes("itaú")) return "itau";
   if (headerStr.includes("continental")) return "continental";
   if (headerStr.includes("bnf") || headerStr.includes("fomento")) return "bnf";
+  if (headerStr.includes("ueno")) return "ueno";
+  if (headerStr.includes("familiar")) return "familiar";
+  if (headerStr.includes("sudameris")) return "sudameris";
   return "generic";
 }
 

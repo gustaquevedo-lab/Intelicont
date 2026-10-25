@@ -10,6 +10,7 @@ import { ensureCalendar, getCalendarMonth, getUpcoming } from "@ledger/db/calend
 import { daysLeft, levelFor, previousPeriod, shiftPeriod, todayInAsuncionISO } from "@intelicont/ledger/tax-calendar";
 import { isMockMode } from "@ledger/db/index";
 import { lookupTaxpayer, verifyTimbrado } from "@/lib/fiscal-lookup-service";
+import { calculateForm500, calculateForm501Simple } from "@intelicont/ledger/form-ire";
 
 const period = {
   entityId: z.string().uuid(),
@@ -117,5 +118,82 @@ export const fiscalRouter = router({
     )
     .query(async ({ input }) => {
       return verifyTimbrado(input.timbrado, input);
+    }),
+
+  /** Formulario 500 (IRE General) proyectado para el ejercicio fiscal */
+  form500: protectedProcedure
+    .input(
+      z.object({
+        entityId: z.string().uuid(),
+        year: z.number().int().min(2000).max(2100),
+        gastosNoDeducibles: z.number().int().nonnegative().optional(),
+        rentasExentas: z.number().int().nonnegative().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      await assertVisible(input.entityId);
+      let totalVentas = 0;
+      let totalCompras = 0;
+      for (let m = 1; m <= 12; m++) {
+        try {
+          const [v, c] = await Promise.all([
+            getLibroIva(input.entityId, input.year, m, "ventas"),
+            getLibroIva(input.entityId, input.year, m, "compras"),
+          ]);
+          totalVentas += v.totals.total;
+          totalCompras += c.totals.total;
+        } catch {
+          // Period without entries
+        }
+      }
+
+      const costo = Math.round(totalCompras * 0.65);
+      const gastos = totalCompras - costo;
+
+      return calculateForm500({
+        entityId: input.entityId,
+        year: input.year,
+        ingresosOperativos: totalVentas,
+        otrosIngresos: 0,
+        costoVentas: costo,
+        gastosAdministracion: Math.round(gastos * 0.5),
+        gastosPersonalIps: Math.round(gastos * 0.3),
+        depreciacionesBienesUso: Math.round(gastos * 0.1),
+        otrosGastosDeducibles: Math.round(gastos * 0.1),
+        gastosNoDeducibles: input.gastosNoDeducibles ?? 0,
+        rentasExentas: input.rentasExentas ?? 0,
+      });
+    }),
+
+  /** Formulario 501 (IRE Simple) proyectado para el ejercicio fiscal */
+  form501: protectedProcedure
+    .input(
+      z.object({
+        entityId: z.string().uuid(),
+        year: z.number().int().min(2000).max(2100),
+      })
+    )
+    .query(async ({ input }) => {
+      await assertVisible(input.entityId);
+      let totalIngresos = 0;
+      let totalEgresos = 0;
+      for (let m = 1; m <= 12; m++) {
+        try {
+          const [v, c] = await Promise.all([
+            getLibroIva(input.entityId, input.year, m, "ventas"),
+            getLibroIva(input.entityId, input.year, m, "compras"),
+          ]);
+          totalIngresos += v.totals.total;
+          totalEgresos += c.totals.total;
+        } catch {
+          // Period without entries
+        }
+      }
+
+      return calculateForm501Simple({
+        year: input.year,
+        ingresosBrutos: totalIngresos,
+        egresosReales: totalEgresos,
+      });
     }),
 });

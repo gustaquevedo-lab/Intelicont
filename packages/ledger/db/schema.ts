@@ -531,6 +531,38 @@ export const copilotMensajes = pgTable("copilot_mensajes", {
   index("copilot_mensajes_conversacion_id_idx").on(t.conversacionId),
 ]);
 
+// ─── Fixed Assets / Bienes de Uso (RG 77/2020) ──────────────────────────
+
+export const fixedAssetCategoryEnum = pgEnum("fixed_asset_category", [
+  "furniture", "vehicles", "machinery", "computers", "buildings", "tools", "installations", "other",
+]);
+
+export const fixedAssetStatusEnum = pgEnum("fixed_asset_status", [
+  "active", "depreciated", "disposed",
+]);
+
+export const fixedAssets = pgTable("fixed_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id").references(() => entities.id, { onDelete: "cascade" }).notNull(),
+  code: varchar("code", { length: 50 }).notNull(),
+  name: text("name").notNull(),
+  category: fixedAssetCategoryEnum("category").notNull().default("other"),
+  purchaseDate: date("purchase_date").notNull(),
+  initialCost: bigint("initial_cost", { mode: "number" }).notNull(),
+  residualValue: bigint("residual_value", { mode: "number" }).notNull().default(0),
+  usefulLifeMonths: integer("useful_life_months").notNull(),
+  depreciationMethod: varchar("depreciation_method", { length: 20 }).notNull().default("linear"),
+  assetAccountId: uuid("asset_account_id").references(() => accounts.id),
+  depreciationAccountId: uuid("depreciation_account_id").references(() => accounts.id),
+  accumulatedAccountId: uuid("accumulated_account_id").references(() => accounts.id),
+  status: fixedAssetStatusEnum("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (t) => [
+  index("fixed_assets_entity_idx").on(t.entityId),
+  uniqueIndex("fixed_assets_entity_code_idx").on(t.entityId, t.code),
+]);
+
 // ─── Relations ────────────────────────────────────────────────────────────
 
 export const entitiesRelations = relations(entities, ({ many }) => ({
@@ -645,4 +677,11 @@ export const auditEventsRelations = relations(auditEvents, ({ one }) => ({
 
 export const aiDecisionsRelations = relations(aiDecisions, ({ one }) => ({
   entity: one(entities, { fields: [aiDecisions.entityId], references: [entities.id] }),
+}));
+
+export const fixedAssetsRelations = relations(fixedAssets, ({ one }) => ({
+  entity: one(entities, { fields: [fixedAssets.entityId], references: [entities.id] }),
+  assetAccount: one(accounts, { fields: [fixedAssets.assetAccountId], references: [accounts.id] }),
+  depreciationAccount: one(accounts, { fields: [fixedAssets.depreciationAccountId], references: [accounts.id] }),
+  accumulatedAccount: one(accounts, { fields: [fixedAssets.accumulatedAccountId], references: [accounts.id] }),
 }));

@@ -1,8 +1,8 @@
 // Registro de Comprobantes (DNIT): Tabla 3 (counterparty id types) and Tabla 4 (document codes).
 // The SQL CHECKs in migration 0005 are verified against TABLA_4 by documents-schema.test.ts.
 
-export type RegistroSide = "ventas" | "compras";
-export type RegistroKind = RegistroSide | "ingresos" | "egresos";
+export type RegistroSide = "ventas" | "compras" | "ingresos" | "egresos";
+export type RegistroKind = RegistroSide;
 
 export const TABLA_3 = {
   11: "RUC",

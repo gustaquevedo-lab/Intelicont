@@ -13,7 +13,9 @@
     "./form104": "./src/form104.ts",
     "./tax-calendar": "./src/tax-calendar.ts",
     "./cgr-report": "./src/cgr-report.ts",
-    "./marangatu-rea": "./src/marangatu-rea.ts"
+    "./marangatu-rea": "./src/marangatu-rea.ts",
+    "./fixed-assets": "./src/fixed-assets.ts",
+    "./form-ire": "./src/form-ire.ts"
   },
   "scripts": {
     "db:seed": "tsx db/seed.ts"

@@ -19,7 +19,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ entityId
   if (!session) return text("No autenticado", 401);
   const { entityId, period } = await params;
   const m = /^(0[1-9]|1[0-2])(\d{4})$/.exec(period);
-  const partParam = new URL(req.url).searchParams.get("part") ?? "1";
+  const url = new URL(req.url);
+  const partParam = url.searchParams.get("part") ?? "1";
+  const formatParam = (url.searchParams.get("format") ?? "csv").toLowerCase() === "txt" ? ("txt" as const) : ("csv" as const);
   if (!UUID.test(entityId) || !m || !/^[1-9]\d{0,3}$/.test(partParam)) return text("Solicitud inválida", 400);
   const [month, year] = [Number(m[1]), Number(m[2])];
 
@@ -37,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ entityId
   }
   if (data === "forbidden") return text("Empresa no accesible", 403);
 
-  const file = buildRegistro({ ruc: data.entityRuc, year, month, docs: data.docs }).files[Number(partParam) - 1];
+  const file = buildRegistro({ ruc: data.entityRuc, year, month, docs: data.docs, format: formatParam }).files[Number(partParam) - 1];
   if (!file) return text("No hay comprobantes para exportar", 404);
   // fflate allocates a plain ArrayBuffer (never shared), so the narrower type is accurate.
   return new Response(zipRegistro(file) as Uint8Array<ArrayBuffer>, {

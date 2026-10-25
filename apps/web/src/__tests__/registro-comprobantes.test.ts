@@ -152,7 +152,7 @@ describe("registro de comprobantes (obligación 955)", () => {
     expect(c.split(";")).toHaveLength(20);
     expect(v.startsWith("1;") && c.startsWith("2;")).toBe(true); // ventas first, regardless of date
     expect(v.split(";").slice(13, 17)).toEqual(["S", "S", "N", "S"]);
-    expect(r.counts).toEqual({ ventas: 1, compras: 1 });
+    expect(r.counts).toEqual({ ventas: 1, compras: 1, ingresos: 0, egresos: 0 });
   });
 
   it("name may be empty only for RUC and cédula (and sin nombre on ventas)", () => {
@@ -202,5 +202,85 @@ describe("registro de comprobantes (obligación 955)", () => {
     expect(z.entries).toBe(1);
     expect(z.name).toBe("80000000_REG_052021_V0001.csv");
     expect(z.content).toBe(`${VENTAS_EXAMPLE}\n${COMPRAS_EXAMPLE}\n`);
+  });
+
+  it("supports Tipo 3 (Ingresos) with 15 columns per official SET spec", () => {
+    const ingresoDoc: RegistroDoc = {
+      documentId: "ing1",
+      side: "ingresos",
+      docCode: 208, // Liquidación de salario
+      counterpartyIdType: 11,
+      counterpartyId: "80024627",
+      counterpartyName: "MINISTERIO DE HACIENDA",
+      issueDate: "2021-05-15",
+      total: 5_000_000,
+      montoGravado: 5_000_000,
+      montoNoGravado: 0,
+      imputaIre: true,
+      imputaIrp: false,
+    };
+    const r = build([ingresoDoc]);
+    expect(r.errors).toEqual([]);
+    expect(r.counts.ingresos).toBe(1);
+    const row = r.files[0].csv.trim();
+    const cols = row.split(";");
+    expect(cols).toHaveLength(15);
+    expect(cols[0]).toBe("3");
+    expect(cols[1]).toBe("208");
+    expect(cols[4]).toBe("11");
+    expect(cols[5]).toBe("80024627");
+    expect(cols[9]).toBe("5000000");
+    expect(cols[10]).toBe("S");
+  });
+
+  it("supports Tipo 4 (Egresos) with 18 columns and banking details", () => {
+    const egresoDoc: RegistroDoc = {
+      documentId: "egr1",
+      side: "egresos",
+      docCode: 207, // Extracto TC/TD
+      issueDate: "2021-05-20",
+      total: 1_250_000,
+      imputaIva: true,
+      imputaIre: true,
+      imputaIrp: false,
+      noImputa: false,
+      numeroCuentaTarjeta: "1234-5678-9012",
+      bancoFinanciera: "BANCO ITAU PARAGUAY",
+    };
+    const r = build([egresoDoc]);
+    expect(r.errors).toEqual([]);
+    expect(r.counts.egresos).toBe(1);
+    const cols = r.files[0].csv.trim().split(";");
+    expect(cols).toHaveLength(18);
+    expect(cols[0]).toBe("4");
+    expect(cols[1]).toBe("207");
+    expect(cols[7]).toBe("1250000");
+    expect(cols[8]).toBe("S"); // Imputa al IVA permitido para 207
+    expect(cols[12]).toBe("1234-5678-9012");
+    expect(cols[13]).toBe("BANCO ITAU PARAGUAY");
+  });
+
+  it("generates TXT tab-delimited files when format is txt", () => {
+    const r = buildRegistro({
+      ruc: "80000000",
+      year: 2021,
+      month: 5,
+      docs: [doc()],
+      format: "txt",
+    });
+    expect(r.files[0].format).toBe("txt");
+    expect(r.files[0].csv).toContain("\t");
+    const zip = readZip(zipRegistro(r.files[0]));
+    expect(zip.name).toBe("80000000_REG_052021_V0001.txt");
+  });
+
+  it("generates annual 956 file naming RUC_REG_AAAA_XXXXX", () => {
+    const r = buildRegistro({
+      ruc: "80000000",
+      year: 2021,
+      docs: [doc({ issueDate: "2021-08-10" })],
+      obligation: "956",
+    });
+    expect(r.files[0].name).toBe("80000000_REG_2021_V0001");
   });
 });

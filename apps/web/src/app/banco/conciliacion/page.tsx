@@ -233,6 +233,9 @@ export default function ConciliacionBancariaPage() {
               <option value="itau">Banco Itaú</option>
               <option value="continental">Banco Continental</option>
               <option value="bnf">Banco BNF</option>
+              <option value="ueno">Ueno Bank</option>
+              <option value="familiar">Banco Familiar</option>
+              <option value="sudameris">Banco Sudameris</option>
               <option value="generic">Otro / Genérico</option>
             </select>
             <div className="flex items-center gap-2 text-xs text-gray-400">
