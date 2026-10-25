@@ -56,11 +56,11 @@ graph TD
   - `descargarComprobantes(cookie: string, idTalon: string): Promise<MarangatuDocumento[]>`
 - Produces: `parsearRegistrosMarangatu(payload: any): MarangatuDocumento[]`
 
-- [ ] **Step 1: Escribir tests unitarios para marangatu-rea**
-- [ ] **Step 2: Ejecutar test y verificar que falla (Red)**
-- [ ] **Step 3: Implementar marangatu-rea.ts con fetch nativo y normalización**
-- [ ] **Step 4: Ejecutar test y verificar que pasa (Green)**
-- [ ] **Step 5: Commit de Task 1**
+- [x] **Step 1: Escribir tests unitarios para marangatu-rea**
+- [x] **Step 2: Ejecutar test y verificar que falla (Red)**
+- [x] **Step 3: Implementar marangatu-rea.ts con fetch nativo y normalización**
+- [x] **Step 4: Ejecutar test y verificar que pasa (Green)**
+- [x] **Step 5: Commit de Task 1**
 
 ---
 
@@ -77,11 +77,11 @@ graph TD
 - Produces: `taxDocuments.verificarMarangatu` en tRPC
 - Produces: `taxDocuments.syncMarangatu` en tRPC
 
-- [ ] **Step 1: Escribir test de integración para syncMarangatu**
-- [ ] **Step 2: Ejecutar test y verificar que falla (Red)**
-- [ ] **Step 3: Implementar sync-marangatu.ts e integrarlo en tax-documents router**
-- [ ] **Step 4: Ejecutar test y verificar que pasa (Green)**
-- [ ] **Step 5: Commit de Task 2**
+- [x] **Step 1: Escribir test de integración para syncMarangatu**
+- [x] **Step 2: Ejecutar test y verificar que falla (Red)**
+- [x] **Step 3: Implementar sync-marangatu.ts e integrarlo en tax-documents router**
+- [x] **Step 4: Ejecutar test y verificar que pasa (Green)**
+- [x] **Step 5: Commit de Task 2**
 
 ---
 
@@ -96,10 +96,10 @@ graph TD
 - Produces: `<MarangatuReaModal entityId={entityId} entityRuc={entityRuc} open={open} onOpenChange={setOpen} onSyncSuccess={refresh} />`
 - Modifies: Botón "⚡ Sincronizar Marangatú (1-Clic REA)" y manejo de `sync_cookie` en query param.
 
-- [ ] **Step 1: Crear componente MarangatuReaModal con Bookmarklet interactivo y verificador de sesión**
-- [ ] **Step 2: Integrar el botón y detector de sync_cookie en /sifen y /importar**
-- [ ] **Step 3: Verificar visual y funcionalmente en la app**
-- [ ] **Step 4: Commit de Task 3**
+- [x] **Step 1: Crear componente MarangatuReaModal con Bookmarklet interactivo y verificador de sesión**
+- [x] **Step 2: Integrar el botón y detector de sync_cookie en /sifen y /importar**
+- [x] **Step 3: Verificar visual y funcionalmente en la app**
+- [x] **Step 4: Commit de Task 3**
 
 ---
 
@@ -110,7 +110,7 @@ graph TD
 - Build: Compilación de producción `pnpm build`
 - Git: Push a `origin/main`
 
-- [ ] **Step 1: Ejecutar la suite completa de tests de InteliCont (260+ tests)**
-- [ ] **Step 2: Ejecutar build de producción Next.js**
-- [ ] **Step 3: Commit final y sincronización con origin/main**
-- [ ] **Step 4: Resumen final con <!-- GOAL_COMPLETE -->**
+- [x] **Step 1: Ejecutar la suite completa de tests de InteliCont (260+ tests)**
+- [x] **Step 2: Ejecutar build de producción Next.js**
+- [x] **Step 3: Commit final y sincronización con origin/main**
+- [x] **Step 4: Resumen final con <!-- GOAL_COMPLETE -->**
