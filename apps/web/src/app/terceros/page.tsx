@@ -168,8 +168,12 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
       ? { kind: editing.kind, ruc: editing.rucDisplay, legalName: editing.legalName, tradeName: editing.tradeName ?? "", country: editing.country ?? "PRY", terms: String(editing.defaultPaymentTerms ?? 30), email: editing.contacts?.email ?? "", phone: editing.contacts?.phone ?? "", address: editing.contacts?.address ?? "" }
       : emptyForm,
   );
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [taxpayerBadge, setTaxpayerBadge] = useState<{ text: string; color: string; source: string } | null>(null);
+
   // The modal is one user action: its key lives as long as the modal (closed on success).
   const idem = useIdempotencyKey();
+  const trpcUtils = api.useUtils();
   const create = api.partners.create.useMutation({ trpc: idem.trpc, onSuccess: onSaved });
   const update = api.partners.update.useMutation({ trpc: idem.trpc, onSuccess: onSaved });
   const mutation = editing ? update : create;
@@ -186,17 +190,86 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
   const profile = profileOf(ret);
   const profileError = retDirty && typeof profile === "string" ? profile : undefined;
 
+  const handleLookup = async (docToSearch?: string) => {
+    const doc = (docToSearch ?? form.ruc).trim();
+    if (!doc || doc.length < 4 || form.country !== "PRY") return;
+    setIsLookingUp(true);
+    try {
+      const res = await trpcUtils.client.fiscal.lookupTaxpayer.query({ document: doc });
+      if (res && res.legalName) {
+        setForm((f) => ({
+          ...f,
+          legalName: res.legalName,
+          tradeName: f.tradeName || (res.source === "dnit_oficial" ? res.legalName : f.tradeName),
+          ruc: res.ruc,
+          ...(res.city ? { address: f.address || (res.department ? `${res.city}, ${res.department}` : res.city) } : {}),
+        }));
+        if (res.source === "dnit_oficial") {
+          const isActivo = res.status === "ACTIVO";
+          setTaxpayerBadge({
+            text: `DNIT Oficial: ${res.status}`,
+            color: isActivo ? "text-emerald-400 bg-emerald-950/60 border-emerald-800" : "text-amber-400 bg-amber-950/60 border-amber-800",
+            source: "dnit",
+          });
+        } else if (res.source === "padron_nacional") {
+          setTaxpayerBadge({
+            text: `Padrón Nacional: C.I. Verificada (DV: ${res.dv})`,
+            color: "text-blue-400 bg-blue-950/60 border-blue-800",
+            source: "padron",
+          });
+        }
+      } else {
+        setTaxpayerBadge({
+          text: "Sin registro en DNIT / Padrón",
+          color: "text-gray-400 bg-gray-800 border-gray-700",
+          source: "none",
+        });
+      }
+    } catch (e) {
+      console.warn("Lookup error:", e);
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      const formEl = e.currentTarget;
+      formEl.requestSubmit();
+      return;
+    }
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+      const target = e.target as HTMLInputElement;
+      if (target.name === "ruc" && !editing) {
+        handleLookup(target.value);
+      }
+      e.preventDefault();
+      const inputs = Array.from(e.currentTarget.querySelectorAll("input:not([disabled]), select:not([disabled])")) as HTMLElement[];
+      const currentIndex = inputs.indexOf(target);
+      if (currentIndex > -1 && currentIndex + 1 < inputs.length) {
+        inputs[currentIndex + 1].focus();
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div role="dialog" aria-label={editing ? "Editar tercero" : "Nuevo tercero"} className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border border-gray-800 rounded-xl p-4 lg:p-6">
+      <div role="dialog" aria-label={editing ? "Editar tercero" : "Nuevo tercero"} className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border border-gray-800 rounded-xl p-4 lg:p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-white">{editing ? "Editar tercero" : "Nuevo tercero"}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-medium text-white">{editing ? "Editar tercero" : "Nuevo tercero"}</h2>
+            <span className="text-[11px] text-gray-500 bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/60">
+              DNIT 2.02M + Padrón 5.06M
+            </span>
+          </div>
           <button aria-label="Cerrar" onClick={onClose} className="p-1.5 hover:bg-gray-800 rounded-lg transition-colors">
             <X className="h-4 w-4 text-gray-400" />
           </button>
         </div>
         <form
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          onKeyDown={handleFormKeyDown}
           onSubmit={(e) => {
             e.preventDefault();
             const terms = Number(form.terms);
@@ -219,15 +292,51 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
           </label>
           <Field label="País (ISO-3)" value={form.country} disabled={!!editing} onChange={(v) => set({ country: v.toUpperCase().slice(0, 3) })} />
           <div>
-            <Field label="RUC" placeholder="80000000-0" required value={form.ruc} disabled={!!editing} onChange={(v) => set({ ruc: v })} />
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-300">
+                RUC o Cédula <span className="text-red-400">*</span>
+              </label>
+              {isLookingUp && <span className="text-xs text-blue-400 animate-pulse">Consultando DNIT...</span>}
+            </div>
+            <div className="relative mt-1">
+              <input
+                name="ruc"
+                type="text"
+                placeholder="80000000-0 o C.I."
+                required
+                disabled={!!editing}
+                value={form.ruc}
+                autoFocus={!editing}
+                onChange={(e) => set({ ruc: e.target.value })}
+                onBlur={() => handleLookup()}
+                className={inputCls}
+              />
+              {!editing && (
+                <button
+                  type="button"
+                  onClick={() => handleLookup()}
+                  disabled={isLookingUp}
+                  className="absolute right-1.5 top-1.5 px-2 py-1 text-[11px] font-medium bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 rounded border border-blue-500/30 transition-colors"
+                >
+                  Verificar
+                </button>
+              )}
+            </div>
+            {taxpayerBadge && (
+              <div className="mt-1.5">
+                <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border font-medium", taxpayerBadge.color)}>
+                  {taxpayerBadge.text}
+                </span>
+              </div>
+            )}
             {rucError && <p role="alert" className="mt-1 text-xs text-red-400">{rucError}</p>}
           </div>
-          <Field label="Razón social" required value={form.legalName} onChange={(v) => set({ legalName: v })} />
-          <Field label="Nombre comercial" value={form.tradeName} onChange={(v) => set({ tradeName: v })} />
+          <Field label="Razón social (o Nombre completo)" required value={form.legalName} onChange={(v) => set({ legalName: v })} />
+          <Field label="Nombre comercial / Fantasía" value={form.tradeName} onChange={(v) => set({ tradeName: v })} />
           <Field label="Plazo de pago (días)" type="number" value={form.terms} onChange={(v) => set({ terms: v })} />
           <Field label="Email" type="email" value={form.email} onChange={(v) => set({ email: v })} />
           <Field label="Teléfono" value={form.phone} onChange={(v) => set({ phone: v })} />
-          <div className="md:col-span-2"><Field label="Dirección" value={form.address} onChange={(v) => set({ address: v })} /></div>
+          <div className="md:col-span-2"><Field label="Dirección / Ciudad" value={form.address} onChange={(v) => set({ address: v })} /></div>
           {editing && (
             <fieldset className="md:col-span-2 border border-gray-800 rounded-lg p-3 grid grid-cols-1 md:grid-cols-2 gap-3">
               <legend className="px-1 text-sm font-medium text-gray-300">Perfil de retención</legend>
@@ -251,11 +360,16 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
             </fieldset>
           )}
           {mutation.error && <p role="alert" className="md:col-span-2 text-sm text-red-400">{mutation.error.message}</p>}
-          <div className="md:col-span-2 flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm border border-gray-700">Cancelar</button>
-            <button type="submit" disabled={mutation.isPending || !!rucError || (!!editing && !!profileError)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium">
-              {editing ? "Guardar cambios" : "Crear tercero"}
-            </button>
+          <div className="md:col-span-2 flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-gray-800">
+            <span className="text-[11px] text-gray-500 hidden sm:inline">
+              ⌨️ <kbd className="px-1 py-0.5 bg-gray-800 border border-gray-700 rounded text-gray-400">Enter</kbd> siguiente campo · <kbd className="px-1 py-0.5 bg-gray-800 border border-gray-700 rounded text-gray-400">Ctrl+Enter</kbd> guardar
+            </span>
+            <div className="flex gap-2 w-full sm:w-auto justify-end">
+              <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm border border-gray-700">Cancelar</button>
+              <button type="submit" disabled={mutation.isPending || !!rucError || (!!editing && !!profileError)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium">
+                {editing ? "Guardar cambios" : "Crear tercero"}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -265,11 +379,11 @@ function PartnerModal({ entityId, editing, onClose, onSaved }: { entityId: strin
 
 const inputCls = "mt-1 w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50";
 
-function Field({ label, placeholder, type = "text", required = false, disabled = false, value, onChange }: { label: string; placeholder?: string; type?: string; required?: boolean; disabled?: boolean; value: string; onChange: (v: string) => void }) {
+function Field({ label, placeholder, type = "text", required = false, disabled = false, autoFocus = false, value, onChange }: { label: string; placeholder?: string; type?: string; required?: boolean; disabled?: boolean; autoFocus?: boolean; value: string; onChange: (v: string) => void }) {
   return (
     <label className="block text-sm font-medium text-gray-300">
       {label} {required && <span className="text-red-400">*</span>}
-      <input type={type} placeholder={placeholder} required={required} disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} />
+      <input type={type} placeholder={placeholder} required={required} disabled={disabled} autoFocus={autoFocus} value={value} onChange={(e) => onChange(e.target.value)} className={inputCls} />
     </label>
   );
 }

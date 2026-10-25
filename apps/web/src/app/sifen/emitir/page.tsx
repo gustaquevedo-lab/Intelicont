@@ -10,6 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { generateInvoiceData, generateQRData } from "@/lib/cdc-generator";
 import { validateRuc } from "@intelicont/ledger/fiscal-py";
+import { api } from "@/trpc/client";
 
 interface InvoiceLine {
   id: string;
@@ -38,6 +39,44 @@ export default function EmitirFacturaPage() {
   const [emitida, setEmitida] = useState<{
     cdc: string; numero: string; qrData: string;
   } | null>(null);
+
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [taxpayerBadge, setTaxpayerBadge] = useState<{ text: string; color: string } | null>(null);
+  const trpcUtils = api.useUtils();
+
+  const handleLookupCliente = async (rawDoc?: string) => {
+    const doc = (rawDoc ?? rucCliente).trim();
+    if (!doc || doc.length < 4) return;
+    setIsLookingUp(true);
+    try {
+      const res = await trpcUtils.client.fiscal.lookupTaxpayer.query({ document: doc });
+      if (res && res.legalName) {
+        setNombreCliente(res.legalName);
+        setRucCliente(res.ruc);
+        if (res.source === "dnit_oficial") {
+          const isActivo = res.status === "ACTIVO";
+          setTaxpayerBadge({
+            text: `DNIT Oficial: ${res.status}`,
+            color: isActivo ? "text-emerald-400 bg-emerald-950/60 border-emerald-800" : "text-amber-400 bg-amber-950/60 border-amber-800",
+          });
+        } else if (res.source === "padron_nacional") {
+          setTaxpayerBadge({
+            text: `Padrón Nacional: C.I. Verificada (DV: ${res.dv})`,
+            color: "text-blue-400 bg-blue-950/60 border-blue-800",
+          });
+        }
+      } else {
+        setTaxpayerBadge({
+          text: "Sin registro en DNIT / Padrón",
+          color: "text-gray-400 bg-gray-800 border-gray-700",
+        });
+      }
+    } catch (e) {
+      console.warn("Lookup error:", e);
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
 
   const updateLine = (id: string, field: keyof InvoiceLine, value: any) => {
     setLines((prev) =>
@@ -167,32 +206,64 @@ export default function EmitirFacturaPage() {
 
       {/* Client Data */}
       <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl p-3 sm:p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Building2 className="h-4 w-4 text-blue-500" />
-          <h2 className="text-sm font-medium text-gray-900 dark:text-white">Datos del Cliente</h2>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-blue-500" />
+            <h2 className="text-sm font-medium text-gray-900 dark:text-white">Datos del Cliente</h2>
+          </div>
+          <span className="text-[11px] text-gray-500">
+            Base DNIT + Padrón Electoral
+          </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">RUC</label>
-            <input
-              value={rucCliente}
-              onChange={(e) => setRucCliente(e.target.value)}
-              placeholder="80012345-0"
-              className={cn(
-                "w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight",
-                rucCliente && rucValidation && !rucValidation.valid ? "border-red-300 dark:border-red-800" : "border-gray-200 dark:border-gray-700"
-              )}
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-500">RUC o Cédula de Identidad</label>
+              {isLookingUp && <span className="text-[11px] text-blue-400 animate-pulse">Consultando DNIT...</span>}
+            </div>
+            <div className="relative">
+              <input
+                value={rucCliente}
+                onChange={(e) => setRucCliente(e.target.value)}
+                onBlur={() => handleLookupCliente()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleLookupCliente();
+                  }
+                }}
+                placeholder="80012345-0 o C.I."
+                className={cn(
+                  "w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight",
+                  rucCliente && rucValidation && !rucValidation.valid ? "border-red-300 dark:border-red-800" : "border-gray-200 dark:border-gray-700"
+                )}
+              />
+              <button
+                type="button"
+                onClick={() => handleLookupCliente()}
+                disabled={isLookingUp}
+                className="absolute right-1.5 top-1.5 px-2 py-1 text-[11px] font-medium bg-blue-600/20 hover:bg-blue-600/40 text-blue-600 dark:text-blue-300 rounded border border-blue-500/30 transition-colors"
+              >
+                Buscar
+              </button>
+            </div>
+            {taxpayerBadge && (
+              <div className="mt-1.5">
+                <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border font-medium", taxpayerBadge.color)}>
+                  {taxpayerBadge.text}
+                </span>
+              </div>
+            )}
             {rucCliente && rucValidation && !rucValidation.valid && (
               <p className="text-[10px] text-red-500 mt-0.5">{rucValidation.errors[0]}</p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Razón Social</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Razón Social / Nombre Completo</label>
             <input
               value={nombreCliente}
               onChange={(e) => setNombreCliente(e.target.value)}
-              placeholder="Nombre del cliente"
+              placeholder="Nombre del cliente autocompletado"
               className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 no-tap-highlight"
             />
           </div>

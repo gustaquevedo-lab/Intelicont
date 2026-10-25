@@ -339,7 +339,7 @@ export default function LoginPage() {
 
           {/* System Footer Info */}
           <div className="text-center text-[11px] text-slate-500 space-y-1">
-            <p>InteliCont ERP & Fiscal · Asunción, Paraguay</p>
+            <p>InteliCont ERP & Fiscal · Pedro Juan Caballero, Paraguay</p>
             <p>Conforme a la Ley N° 6380/19 y RG N° 90/21 de la DNIT</p>
           </div>
         </div>

@@ -79,6 +79,62 @@ export default function ManualDocumentPage() {
   const [form, setForm] = useState<Form>(emptyForm);
   const set = (patch: Partial<Form>) => setForm((f) => ({ ...f, ...patch }));
   const [saved, setSaved] = useState<{ documentId: string; entryId: string; warnings: string[] } | null>(null);
+  const [taxpayerBadge, setTaxpayerBadge] = useState<{ text: string; color: string } | null>(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const trpcUtils = api.useUtils();
+
+  const handleLookupTaxpayer = async (rawDoc?: string) => {
+    const doc = (rawDoc ?? form.ruc).trim();
+    if (!doc || doc.length < 4) return;
+    setIsLookingUp(true);
+    try {
+      const res = await trpcUtils.client.fiscal.lookupTaxpayer.query({ document: doc });
+      if (res && res.legalName) {
+        set({ legalName: res.legalName, ruc: res.ruc });
+        if (res.source === "dnit_oficial") {
+          const isActivo = res.status === "ACTIVO";
+          setTaxpayerBadge({
+            text: `DNIT Oficial: ${res.status}`,
+            color: isActivo ? "text-emerald-400 bg-emerald-950/60 border-emerald-800" : "text-amber-400 bg-amber-950/60 border-amber-800",
+          });
+        } else if (res.source === "padron_nacional") {
+          setTaxpayerBadge({
+            text: `Padrón Nacional: C.I. Verificada (DV: ${res.dv})`,
+            color: "text-blue-400 bg-blue-950/60 border-blue-800",
+          });
+        }
+      } else {
+        setTaxpayerBadge({
+          text: "Sin registro en DNIT / Padrón",
+          color: "text-gray-400 bg-gray-800 border-gray-700",
+        });
+      }
+    } catch (e) {
+      console.warn("Lookup error:", e);
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.requestSubmit();
+      return;
+    }
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+      const target = e.target as HTMLInputElement;
+      if (target.placeholder?.includes("80000000")) {
+        handleLookupTaxpayer(target.value);
+      }
+      e.preventDefault();
+      const inputs = Array.from(e.currentTarget.querySelectorAll("input:not([disabled]), select:not([disabled])")) as HTMLElement[];
+      const currentIndex = inputs.indexOf(target);
+      if (currentIndex > -1 && currentIndex + 1 < inputs.length) {
+        inputs[currentIndex + 1].focus();
+      }
+    }
+  };
 
   // One Idempotency-Key per form lifetime, renewed after success (Task 12 pattern).
   const idem = useIdempotencyKey();
@@ -158,6 +214,7 @@ export default function ManualDocumentPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <form
           aria-label="Comprobante manual"
+          onKeyDown={handleFormKeyDown}
           className="lg:col-span-3 bg-gray-900/50 border border-gray-800 rounded-xl p-4 lg:p-6 grid grid-cols-1 md:grid-cols-2 gap-4"
           onSubmit={(e) => {
             e.preventDefault();
@@ -200,7 +257,7 @@ export default function ManualDocumentPage() {
             <div className="flex items-center gap-4 text-sm text-gray-300">
               <span className="font-medium">{form.direction === "received" ? "Proveedor" : "Cliente"}</span>
               <label className="flex items-center gap-1.5"><input type="radio" checked={form.partyMode === "existing"} onChange={() => set({ partyMode: "existing" })} /> Existente</label>
-              <label className="flex items-center gap-1.5"><input type="radio" checked={form.partyMode === "new"} onChange={() => set({ partyMode: "new" })} /> Nuevo (RUC)</label>
+              <label className="flex items-center gap-1.5"><input type="radio" checked={form.partyMode === "new"} onChange={() => set({ partyMode: "new" })} /> Nuevo (RUC / C.I.)</label>
             </div>
             {form.partyMode === "existing" ? (
               <>
@@ -215,15 +272,50 @@ export default function ManualDocumentPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Field label="RUC" placeholder="80000000-0" value={form.ruc} onChange={(v) => set({ ruc: v.trim() })} />
+                  <div className="flex items-center justify-between">
+                    <span className={labelCls}>RUC o C.I.</span>
+                    {isLookingUp && <span className="text-[11px] text-blue-400 animate-pulse">Consultando DNIT...</span>}
+                  </div>
+                  <div className="relative mt-1">
+                    <input
+                      placeholder="80000000-0 o C.I."
+                      value={form.ruc}
+                      onChange={(e) => set({ ruc: e.target.value.trim() })}
+                      onBlur={() => handleLookupTaxpayer()}
+                      className={inputCls}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleLookupTaxpayer()}
+                      disabled={isLookingUp}
+                      className="absolute right-1.5 top-1.5 px-2 py-1 text-[11px] font-medium bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 rounded border border-blue-500/30"
+                    >
+                      Buscar
+                    </button>
+                  </div>
+                  {taxpayerBadge && (
+                    <div className="mt-1">
+                      <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border font-medium", taxpayerBadge.color)}>
+                        {taxpayerBadge.text}
+                      </span>
+                    </div>
+                  )}
                   {rucError && <p role="alert" className="mt-1 text-xs text-red-400">{rucError}</p>}
                 </div>
-                <Field label="Razón social" value={form.legalName} onChange={(v) => set({ legalName: v })} />
+                <Field label="Razón social / Nombre" value={form.legalName} onChange={(v) => set({ legalName: v })} />
               </div>
             )}
           </div>
 
-          <Field label="Timbrado" placeholder="12345678" value={form.timbrado} onChange={(v) => set({ timbrado: digits(v, 8) })} />
+          <div>
+            <Field label="Timbrado" placeholder="12345678" value={form.timbrado} onChange={(v) => set({ timbrado: digits(v, 8) })} />
+            {form.timbrado.length > 0 && form.timbrado.length < 8 && (
+              <p className="mt-1 text-[11px] text-amber-400">⚠️ Requiere 8 dígitos numéricos ({form.timbrado.length}/8)</p>
+            )}
+            {form.timbrado.length === 8 && (
+              <p className="mt-1 text-[11px] text-emerald-400">✅ Estructura válida (8 dígitos DNIT)</p>
+            )}
+          </div>
           <Field label="Número" placeholder="001-001-0000001" value={form.number} onChange={(v) => set({ number: maskNumber(v) })} />
           <Field label="Fecha" type="date" value={form.issueDate} onChange={(v) => set({ issueDate: v })} />
           <div />

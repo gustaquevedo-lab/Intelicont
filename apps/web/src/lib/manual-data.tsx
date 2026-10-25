@@ -335,7 +335,7 @@ export const MANUAL_SECTIONS: ManualSection[] = [
               </div>
             </div>
           </div>
-          <p className="text-center text-[10px] text-gray-500 mt-4">© 2026 IntelliHouse Soluciones E.A.S. · RUC 80144114-5 · Asunción, Paraguay</p>
+          <p className="text-center text-[10px] text-gray-500 mt-4">© 2026 IntelliHouse Soluciones E.A.S. · RUC 80144114-5 · Pedro Juan Caballero, Paraguay</p>
         </MockCard>
 
         <div>

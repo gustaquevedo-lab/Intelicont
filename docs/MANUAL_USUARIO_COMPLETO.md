@@ -198,7 +198,7 @@ InteliCont cuenta con un portal de bienvenida unificado con la identidad visual 
 │  │                                            │  │  ─────────────────────────────────────  │ │
 │  │                                            │  │  ¿No tenés una cuenta todavía?          │ │
 │  │  © 2026 IntelliHouse Soluciones E.A.S.     │  │  [ Empezá 14 días de prueba gratis ]    │ │
-│  │  RUC 80144114-5 · Asunción, Paraguay       │  │                                         │ │
+│  │  RUC 80144114-5 · Pedro Juan Caballero, PY │  │                                         │ │
 │  └────────────────────────────────────────────┘  └─────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```

@@ -6,9 +6,10 @@ import { assertVisible } from "./reports";
 import { getRegistroDocs } from "@ledger/db/registro";
 import { buildRegistro } from "@intelicont/ledger/registro";
 import { getVencimientoIVA } from "@intelicont/ledger/fiscal-py";
-import { isMockMode } from "@ledger/db/index";
 import { ensureCalendar, getCalendarMonth, getUpcoming } from "@ledger/db/calendar";
 import { daysLeft, levelFor, previousPeriod, shiftPeriod, todayInAsuncionISO } from "@intelicont/ledger/tax-calendar";
+import { isMockMode } from "@ledger/db/index";
+import { lookupTaxpayer, verifyTimbrado } from "@/lib/fiscal-lookup-service";
 
 const period = {
   entityId: z.string().uuid(),
@@ -93,5 +94,26 @@ export const fiscalRouter = router({
       await ensureCalendar(input.entityId, viewed.year, viewed.month, 1);
       const rows = await getCalendarMonth(input.entityId, input.year, input.month);
       return { today, items: rows.map((r) => ({ ...r, daysLeft: daysLeft(r.dueDate, today), level: levelFor(daysLeft(r.dueDate, today)) })) };
+    }),
+
+  /** Fast taxpayer lookup against official DNIT RUC database (2M+) and National Padrón (5M+) */
+  lookupTaxpayer: protectedProcedure
+    .input(z.object({ document: z.string().min(1) }))
+    .query(async ({ input }) => {
+      return lookupTaxpayer(input.document);
+    }),
+
+  /** Verifies timbrado format, validity dates, and expiration */
+  verifyTimbrado: protectedProcedure
+    .input(
+      z.object({
+        timbrado: z.string(),
+        validFrom: z.string().optional(),
+        validTo: z.string().optional(),
+        issueDate: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      return verifyTimbrado(input.timbrado, input);
     }),
 });

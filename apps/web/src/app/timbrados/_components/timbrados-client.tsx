@@ -158,9 +158,20 @@ function NuevoTimbradoForm({
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  const isTimbradoValidFormat = /^\d{8}$/.test(form.numero.trim());
+  const isExpired = form.validoHasta ? new Date(form.validoHasta) < new Date(new Date().setHours(0,0,0,0)) : false;
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!isTimbradoValidFormat) {
+      setError("El número de timbrado debe contener exactamente 8 dígitos numéricos.");
+      return;
+    }
+    if (isExpired) {
+      setError("La fecha de vigencia del timbrado ya ha vencido.");
+      return;
+    }
     startTransition(async () => {
       const result = await createTimbrado(form);
       if (!result.ok) { setError(result.error); return; }
@@ -169,8 +180,24 @@ function NuevoTimbradoForm({
     });
   }
 
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.requestSubmit();
+      return;
+    }
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+      e.preventDefault();
+      const inputs = Array.from(e.currentTarget.querySelectorAll("input:not([disabled])")) as HTMLElement[];
+      const currentIndex = inputs.indexOf(e.target as HTMLElement);
+      if (currentIndex > -1 && currentIndex + 1 < inputs.length) {
+        inputs[currentIndex + 1].focus();
+      }
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="space-y-4">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -192,10 +219,17 @@ function NuevoTimbradoForm({
           <Label>Número de timbrado *</Label>
           <Input
             value={form.numero}
-            onChange={(e) => set("numero", e.target.value)}
+            onChange={(e) => set("numero", e.target.value.replace(/\D/g, "").slice(0, 8))}
             placeholder="12345678"
-            maxLength={20}
+            maxLength={8}
+            autoFocus
           />
+          {form.numero.length > 0 && !isTimbradoValidFormat && (
+            <p className="text-[11px] text-amber-500 font-medium">⚠️ Debe constar de exactamente 8 dígitos numéricos.</p>
+          )}
+          {isTimbradoValidFormat && (
+            <p className="text-[11px] text-emerald-500 font-medium">✅ Estructura válida (8 dígitos DNIT).</p>
+          )}
         </div>
 
         {/* Tipo */}
@@ -269,6 +303,12 @@ function NuevoTimbradoForm({
             value={form.validoHasta}
             onChange={(e) => set("validoHasta", e.target.value)}
           />
+          {form.validoHasta && isExpired && (
+            <p className="text-[11px] text-red-500 font-medium">❌ Timbrado expirado según fecha de fin de vigencia.</p>
+          )}
+          {form.validoHasta && !isExpired && (
+            <p className="text-[11px] text-emerald-500 font-medium">✅ Timbrado con vigencia activa.</p>
+          )}
         </div>
 
         {/* Notas */}
@@ -282,13 +322,18 @@ function NuevoTimbradoForm({
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={pending}>
-          {pending ? "Guardando…" : "Guardar timbrado"}
-        </Button>
+      <div className="flex items-center justify-between pt-2 border-t border-border">
+        <span className="text-[11px] text-muted-foreground hidden sm:inline">
+          ⌨️ <kbd className="px-1 py-0.5 bg-muted border rounded text-[10px]">Enter</kbd> siguiente campo · <kbd className="px-1 py-0.5 bg-muted border rounded text-[10px]">Ctrl+Enter</kbd> guardar
+        </span>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={pending || !isTimbradoValidFormat || isExpired}>
+            {pending ? "Guardando…" : "Guardar timbrado"}
+          </Button>
+        </div>
       </div>
     </form>
   );
