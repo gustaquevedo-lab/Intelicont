@@ -180,3 +180,24 @@ export async function resetUserPasswordAction(userId: string, newPass: string) {
   revalidatePath("/superadmin");
   return res;
 }
+
+export async function getPaymentOrdersAction(filter?: { status?: string }) {
+  const { listPaymentOrders } = await import("@/lib/subscription-service");
+  return listPaymentOrders(filter);
+}
+
+export async function approvePaymentOrderAction(orderId: string, approvedBy: string = "superadmin@intelicont.com.py") {
+  const { approvePaymentOrder } = await import("@/lib/subscription-service");
+  const res = await approvePaymentOrder(orderId, approvedBy);
+  revalidatePath("/superadmin");
+  revalidatePath("/suscripcion");
+  return { success: true, order: res };
+}
+
+export async function rejectPaymentOrderAction(orderId: string, reason: string) {
+  const { rejectPaymentOrder } = await import("@/lib/subscription-service");
+  const res = await rejectPaymentOrder(orderId, reason);
+  revalidatePath("/superadmin");
+  revalidatePath("/suscripcion");
+  return { success: true, order: res };
+}
