@@ -26,10 +26,10 @@ export const auth = betterAuth({
 });
 
 /** The only source of identity for server code. Any internal error yields null (fail closed). */
-export async function getSession(headers: Headers): Promise<{ userId: string } | null> {
+export async function getSession(headers: Headers): Promise<{ userId: string; user?: { id: string; email: string; name?: string; [k: string]: any } } | null> {
   try {
     const s = await auth.api.getSession({ headers });
-    return s?.user?.id ? { userId: s.user.id } : null;
+    return s?.user?.id ? { userId: s.user.id, user: s.user } : null;
   } catch {
     return null;
   }
