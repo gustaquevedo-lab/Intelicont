@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { withTenant } from "@ledger/db/index";
+import { withTenant, isMockMode } from "@ledger/db/index";
+import { sql } from "drizzle-orm";
 import { loadGuardUser, needs2FA } from "@/lib/auth-guard";
 import { logger, safeErrorInfo } from "@/lib/logger";
 
@@ -98,6 +99,40 @@ export const authedProcedure = base.use(async ({ ctx, next }) => {
   const guard = await withTenant(userId, (db) => loadGuardUser(db, userId));
   if (needs2FA(guard)) throw new TRPCError({ code: "FORBIDDEN", message: "2FA requerido" });
   return next({ ctx: { ...ctx, userId } });
+});
+
+/**
+ * Like `authedProcedure` but also verifies the caller's email is in SUPERADMIN_EMAILS.
+ * In test/mock mode: always allowed (existing codebase pattern).
+ */
+export const superadminProcedure = base.use(async ({ ctx, next }) => {
+  const userId = ctx.userId;
+  if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+  const guard = await withTenant(userId, (db) => loadGuardUser(db, userId));
+  if (needs2FA(guard)) throw new TRPCError({ code: "FORBIDDEN", message: "2FA requerido" });
+
+  if (!isMockMode() && process.env.NODE_ENV !== "test") {
+    const allowedRaw = process.env.SUPERADMIN_EMAILS ?? "";
+    const allowed = allowedRaw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+    if (allowed.length > 0) {
+      const emailRow = await withTenant(userId, async (db) => {
+        const rows = await db.execute<{ email: string }>(sql`select email from users where id = ${userId}`);
+        return rows[0]?.email?.toLowerCase() ?? "";
+      });
+      if (!allowed.includes(emailRow)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acceso restringido a superadmins" });
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "SUPERADMIN_EMAILS no configurado" });
+    }
+  }
+
+  return withTenant(userId, async (db) => {
+    const result = await next({ ctx: { ...ctx, userId } });
+    if (!result.ok) throw result.error;
+    return result;
+  });
 });
 
 export { z };

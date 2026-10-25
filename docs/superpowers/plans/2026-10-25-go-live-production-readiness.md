@@ -59,12 +59,12 @@ graph TD
 - Produces: `sendPasswordResetEmail(to, resetUrl): Promise<{ success: boolean; id?: string }>`
 - Produces: `sendFiscalAlertEmail(to, entityName, obligation, dueDate): Promise<{ success: boolean; id?: string }>`
 
-- [ ] **Step 1: Escribir el test unitario para email-service**
-- [ ] **Step 2: Ejecutar test y verificar que falla (Red)**
-- [ ] **Step 3: Implementar email-service.ts con Resend y fallback a consola**
-- [ ] **Step 4: Ejecutar test y verificar que pasa (Green)**
-- [ ] **Step 5: Crear página /olvide-password y enlazar en login/page.tsx**
-- [ ] **Step 6: Commit de Task 1**
+- [x] **Step 1: Escribir el test unitario para email-service**
+- [x] **Step 2: Ejecutar test y verificar que falla (Red)**
+- [x] **Step 3: Implementar email-service.ts con Resend y fallback a consola**
+- [x] **Step 4: Ejecutar test y verificar que pasa (Green)**
+- [x] **Step 5: Crear página /olvide-password y enlazar en login/page.tsx**
+- [x] **Step 6: Commit de Task 1**
 
 ---
 
@@ -81,13 +81,13 @@ graph TD
 **Interfaces:**
 - Produces: `registerSelfServiceTenant({ ruc, legalName, adminEmail, password, adminName? }): Promise<{ success: boolean; entity?: any; user?: any; error?: string }>`
 
-- [ ] **Step 1: Escribir test unitario para registration-service**
-- [ ] **Step 2: Ejecutar test y verificar que falla (Red)**
-- [ ] **Step 3: Implementar registration-service.ts (alta atómica con plan starter trial 14d)**
-- [ ] **Step 4: Ejecutar test y verificar que pasa (Green)**
-- [ ] **Step 5: Crear página /registro con diseño premium y validación RUC**
-- [ ] **Step 6: Actualizar middleware.ts, landing/index.html y login/page.tsx**
-- [ ] **Step 7: Commit de Task 2**
+- [x] **Step 1: Escribir test unitario para registration-service**
+- [x] **Step 2: Ejecutar test y verificar que falla (Red)**
+- [x] **Step 3: Implementar registration-service.ts (alta atómica con plan starter trial 14d)**
+- [x] **Step 4: Ejecutar test y verificar que pasa (Green)**
+- [x] **Step 5: Crear página /registro con diseño premium y validación RUC**
+- [x] **Step 6: Actualizar middleware.ts, landing/index.html y login/page.tsx**
+- [x] **Step 7: Commit de Task 2**
 
 ---
 
@@ -105,13 +105,13 @@ graph TD
 - Produces: `listPendingOrders(): Promise<any[]>`
 - Produces: `approvePaymentOrder(orderId, approvedBy): Promise<{ success: boolean }>`
 
-- [ ] **Step 1: Escribir test unitario para subscription-service**
-- [ ] **Step 2: Ejecutar test y verificar que falla (Red)**
-- [ ] **Step 3: Implementar subscription-service.ts**
-- [ ] **Step 4: Ejecutar test y verificar que pasa (Green)**
-- [ ] **Step 5: Crear página /suscripcion con planes, datos bancarios y carga de comprobante**
-- [ ] **Step 6: Integrar sección de aprobación de pagos en /superadmin**
-- [ ] **Step 7: Commit de Task 3**
+- [x] **Step 1: Escribir test unitario para subscription-service**
+- [x] **Step 2: Ejecutar test y verificar que falla (Red)**
+- [x] **Step 3: Implementar subscription-service.ts**
+- [x] **Step 4: Ejecutar test y verificar que pasa (Green)**
+- [x] **Step 5: Crear página /suscripcion con planes, datos bancarios y carga de comprobante**
+- [x] **Step 6: Integrar sección de aprobación de pagos en /superadmin**
+- [x] **Step 7: Commit de Task 3**
 
 ---
 
@@ -122,7 +122,7 @@ graph TD
 - Build: Compilación de producción (`next build`)
 - Git: Sincronización y commit en `origin/main`
 
-- [ ] **Step 1: Ejecutar toda la suite de pruebas del monorepo (250+ tests)**
-- [ ] **Step 2: Ejecutar compilación de producción de Next.js (next build)**
-- [ ] **Step 3: Commit final consolidado y push a origin/main**
-- [ ] **Step 4: Resumen final de entrega con evidencia y <!-- GOAL_COMPLETE -->**
+- [x] **Step 1: Ejecutar toda la suite de pruebas del monorepo (250+ tests)**
+- [x] **Step 2: Ejecutar compilación de producción de Next.js (next build)**
+- [x] **Step 3: Commit final consolidado y push a origin/main**
+- [x] **Step 4: Resumen final de entrega con evidencia y <!-- GOAL_COMPLETE -->**
