@@ -63,7 +63,7 @@ describe.skipIf(!process.env.TEST_ADMIN_URL)("registro de comprobantes 955 (real
     expect(r.entityRuc).toBe("1234567");
     expect(r.docs).toHaveLength(3);
     expect(r.docs.filter((d) => d.isElectronic)).toHaveLength(1);
-    expect(r.docs.every((d) => d.issueDate.startsWith("2026-08-") && !d.counterpartyId.includes("-"))).toBe(true);
+    expect(r.docs.every((d) => d.issueDate.startsWith("2026-08-") && !d.counterpartyId?.includes("-"))).toBe(true);
     const purchase = r.docs.find((d) => d.number === "001-001-0000010");
     expect(purchase).toMatchObject({
       side: "compras", docCode: 109, counterpartyIdType: 11, counterpartyId: "80005427", counterpartyName: "Contraparte S.A.",

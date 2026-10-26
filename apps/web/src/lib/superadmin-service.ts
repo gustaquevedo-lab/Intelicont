@@ -107,34 +107,39 @@ export async function createTenantAtomic(input: {
 
   const db = getDb();
 
-  // Transacción atómica
-  const [entityRow] = await db
-    .insert(entities)
-    .values({
-      ruc: input.ruc,
-      legalName: input.legalName,
-      tradeName: input.tradeName || null,
-      plan,
-      featuresOverrideJson,
-      taxRegimes: ["IVA_GRAL"],
-      baseCurrency: "PYG",
-      status: "active",
-    })
-    .returning();
+  // Transacción atómica respetando el contrato de RLS y create_entity() (SECURITY DEFINER)
+  const { entityRow, userRow } = await db.transaction(async (tx) => {
+    // 1. Insertar Usuario Administrador
+    const [u] = await tx
+      .insert(users)
+      .values({
+        email: input.adminEmail.toLowerCase().trim(),
+        name: input.adminName || "Administrador",
+        debeCambiarPassword: true,
+      })
+      .returning();
 
-  const [userRow] = await db
-    .insert(users)
-    .values({
-      email: input.adminEmail.toLowerCase().trim(),
-      name: input.adminName || "Administrador",
-      debeCambiarPassword: true,
-    })
-    .returning();
+    // 2. Establecer app.user_id en la sesión de la transacción
+    await tx.execute(sql`SELECT set_config('app.user_id', ${u.id}, true)`);
 
-  await db.insert(memberships).values({
-    userId: userRow.id,
-    entityId: entityRow.id,
-    role: "admin",
+    // 3. Invocar create_entity() (SECURITY DEFINER)
+    const regimes = sql`array['IVA_GRAL']::text[]`;
+    const entityRows = await tx.execute<{ id: string }>(
+      sql`SELECT create_entity(${input.ruc}, ${input.legalName}, ${input.tradeName || null}, ${regimes}, 'PYG') as id`
+    );
+    const entityId = entityRows[0].id;
+
+    // 4. Actualizar plan y featuresOverrideJson
+    const [e] = await tx
+      .update(entities)
+      .set({
+        plan,
+        featuresOverrideJson,
+      })
+      .where(eq(entities.id, entityId))
+      .returning();
+
+    return { entityRow: e, userRow: u };
   });
 
   try {

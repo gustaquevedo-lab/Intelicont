@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getDb, isMockMode } from "@ledger/db";
-import { entities, users, memberships } from "@ledger/db/schema";
-import { eq } from "drizzle-orm";
+import { entities, users, authAccounts } from "@ledger/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { sendWelcomeEmail } from "./email-service";
 
 export interface RegisterSelfServiceInput {
@@ -124,35 +124,52 @@ export async function registerSelfServiceTenant(
       return { success: false, error: `El correo electrónico ya está registrado. Por favor iniciá sesión.` };
     }
 
-    // Insertar Tenant con Plan Starter (14 días gratis)
-    const [entityRow] = await db
-      .insert(entities)
-      .values({
-        ruc,
-        legalName,
-        tradeName: input.tradeName || null,
-        plan: "starter",
-        taxRegimes: ["IVA_GRAL", "IRE_GRAL"],
-        baseCurrency: "PYG",
-        status: "active",
-      })
-      .returning();
+    // Transacción atómica respetando el aislamiento de tenants RLS y create_entity() (SECURITY DEFINER)
+    const { entityRow, userRow } = await db.transaction(async (tx) => {
+      // 1. Insertar Usuario Administrador (tabla users sin RLS de tenant)
+      const [u] = await tx
+        .insert(users)
+        .values({
+          email,
+          name: adminName,
+          debeCambiarPassword: false,
+        })
+        .returning();
 
-    // Insertar Usuario Administrador
-    const [userRow] = await db
-      .insert(users)
-      .values({
-        email,
-        name: adminName,
-        debeCambiarPassword: false,
-      })
-      .returning();
+      // 2. Establecer app.user_id en la sesión de la transacción
+      await tx.execute(sql`SELECT set_config('app.user_id', ${u.id}, true)`);
 
-    // Asignar Membresía como Admin
-    await db.insert(memberships).values({
-      userId: userRow.id,
-      entityId: entityRow.id,
-      role: "admin",
+      // 3. Invocar create_entity() (SECURITY DEFINER), que crea la entidad y membresía admin
+      const regimes = sql`array['IVA_GRAL', 'IRE_GRAL']::text[]`;
+      const entityRows = await tx.execute<{ id: string }>(
+        sql`SELECT create_entity(${ruc}, ${legalName}, ${input.tradeName || null}, ${regimes}, 'PYG') as id`
+      );
+      const entityId = entityRows[0].id;
+
+      // 4. Leer la entidad creada (permitido en la tx porque create_entity agrega el id a app.entity_ids)
+      const [e] = await tx
+        .select()
+        .from(entities)
+        .where(eq(entities.id, entityId));
+
+      // 5. Configurar credenciales de acceso para Better Auth
+      if (password) {
+        try {
+          const { auth } = await import("./auth");
+          const authCtx = await auth.$context;
+          const hash = await authCtx.password.hash(password);
+          await tx.insert(authAccounts).values({
+            userId: u.id,
+            providerId: "credential",
+            accountId: u.id,
+            password: hash,
+          });
+        } catch (authErr) {
+          console.warn("[Registration] Could not hash/insert auth_account:", authErr);
+        }
+      }
+
+      return { entityRow: e, userRow: u };
     });
 
     // Despachar email de bienvenida
@@ -168,7 +185,16 @@ export async function registerSelfServiceTenant(
       entity: entityRow,
       user: userRow,
     };
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code === "23505" || err?.cause?.code === "23505") {
+      const msg = err?.cause?.detail || err?.detail || err?.message || "";
+      if (msg.includes("ruc") || String(err).includes("ruc")) {
+        return { success: false, error: `El RUC ${ruc} ya se encuentra registrado en el sistema` };
+      }
+      if (msg.includes("email") || String(err).includes("email")) {
+        return { success: false, error: `El correo electrónico ya está registrado. Por favor iniciá sesión.` };
+      }
+    }
     return {
       success: false,
       error: err instanceof Error ? err.message : "Error inesperado durante el registro",
