@@ -1,5 +1,5 @@
 import { randomUUID, randomBytes } from "node:crypto";
-import { getDb, isMockMode } from "@ledger/db";
+import { getDb, isMockMode, withSuperadmin } from "@ledger/db";
 import { entities, users, memberships, authAccounts } from "@ledger/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { getFirmaLimits, validarLimiteUsuarios } from "./plans";
@@ -109,18 +109,24 @@ export async function createTenantAtomic(input: {
 
   // Transacción atómica respetando el contrato de RLS y create_entity() (SECURITY DEFINER)
   const { entityRow, userRow } = await db.transaction(async (tx) => {
-    // 1. Insertar Usuario Administrador
-    const [u] = await tx
-      .insert(users)
-      .values({
-        email: input.adminEmail.toLowerCase().trim(),
-        name: input.adminName || "Administrador",
-        debeCambiarPassword: true,
-      })
-      .returning();
+    // 1. Obtener o insertar Usuario Administrador
+    const emailNorm = input.adminEmail.toLowerCase().trim();
+    let [u] = await tx.select().from(users).where(eq(users.email, emailNorm));
 
-    // 2. Establecer app.user_id en la sesión de la transacción
+    if (!u) {
+      [u] = await tx
+        .insert(users)
+        .values({
+          email: emailNorm,
+          name: input.adminName || "Administrador",
+          debeCambiarPassword: true,
+        })
+        .returning();
+    }
+
+    // 2. Establecer app.user_id y app.is_superadmin en la sesión de la transacción
     await tx.execute(sql`SELECT set_config('app.user_id', ${u.id}, true)`);
+    await tx.execute(sql`SELECT set_config('app.is_superadmin', 'true', true)`);
 
     // 3. Invocar create_entity() (SECURITY DEFINER)
     const regimes = sql`array['IVA_GRAL']::text[]`;
@@ -201,51 +207,60 @@ export async function createUserWithLimits(input: {
     return { success: true, user, passwordTemporal };
   }
 
-  const db = getDb();
-  const [entity] = await db.select().from(entities).where(eq(entities.id, input.entityId));
-  if (!entity) return { success: false, error: "Tenant no encontrado" };
+  return withSuperadmin(async (db) => {
+    const [entity] = await db.select().from(entities).where(eq(entities.id, input.entityId));
+    if (!entity) return { success: false, error: "Tenant no encontrado" };
 
-  const currentMemberships = await db
-    .select()
-    .from(memberships)
-    .where(eq(memberships.entityId, input.entityId));
+    const currentMemberships = await db
+      .select()
+      .from(memberships)
+      .where(eq(memberships.entityId, input.entityId));
 
-  const limits = getFirmaLimits(entity.plan || "starter", entity.featuresOverrideJson);
-  const check = validarLimiteUsuarios(currentMemberships.length, limits);
+    const limits = getFirmaLimits(entity.plan || "starter", entity.featuresOverrideJson);
+    const check = validarLimiteUsuarios(currentMemberships.length, limits);
 
-  if (!check.allowed) {
-    return { success: false, error: check.reason };
-  }
+    if (!check.allowed) {
+      return { success: false, error: check.reason };
+    }
 
-  const [userRow] = await db
-    .insert(users)
-    .values({
-      email: input.email.toLowerCase().trim(),
-      name: input.name || input.email.split("@")[0] || "Usuario",
-      debeCambiarPassword: true,
-    })
-    .returning();
+    const emailNorm = input.email.toLowerCase().trim();
+    let [userRow] = await db.select().from(users).where(eq(users.email, emailNorm));
 
-  await db.insert(memberships).values({
-    userId: userRow.id,
-    entityId: input.entityId,
-    role: input.role || "accountant",
+    if (!userRow) {
+      [userRow] = await db
+        .insert(users)
+        .values({
+          email: emailNorm,
+          name: input.name || input.email.split("@")[0] || "Usuario",
+          debeCambiarPassword: true,
+        })
+        .returning();
+    }
+
+    await db
+      .insert(memberships)
+      .values({
+        userId: userRow.id,
+        entityId: input.entityId,
+        role: input.role || "accountant",
+      })
+      .onConflictDoNothing();
+
+    try {
+      const authCtx = await auth.$context;
+      const hash = await authCtx.password.hash(passwordTemporal);
+      await db.insert(authAccounts).values({
+        userId: userRow.id,
+        providerId: "credential",
+        accountId: userRow.id,
+        password: hash,
+      });
+    } catch (err) {
+      console.warn("[Superadmin] Could not hash/insert auth_account:", err);
+    }
+
+    return { success: true, user: userRow as any, passwordTemporal };
   });
-
-  try {
-    const authCtx = await auth.$context;
-    const hash = await authCtx.password.hash(passwordTemporal);
-    await db.insert(authAccounts).values({
-      userId: userRow.id,
-      providerId: "credential",
-      accountId: userRow.id,
-      password: hash,
-    });
-  } catch (err) {
-    console.warn("[Superadmin] Could not hash/insert auth_account:", err);
-  }
-
-  return { success: true, user: userRow as any, passwordTemporal };
 }
 
 /**
@@ -333,25 +348,26 @@ export async function impersonateTenant(input: {
     };
   }
 
-  const db = getDb();
-  const [entity] = await db.select().from(entities).where(eq(entities.id, input.entityId));
-  if (!entity) return { success: false, error: "Tenant no encontrado" };
+  return withSuperadmin(async (db) => {
+    const [entity] = await db.select().from(entities).where(eq(entities.id, input.entityId));
+    if (!entity) return { success: false, error: "Tenant no encontrado" };
 
-  const [member] = await db.select().from(memberships).where(eq(memberships.entityId, input.entityId)).limit(1);
-  let targetUser: any = null;
-  if (member) {
-    const [u] = await db.select().from(users).where(eq(users.id, member.userId));
-    targetUser = u;
-  }
+    const [member] = await db.select().from(memberships).where(eq(memberships.entityId, input.entityId)).limit(1);
+    let targetUser: any = null;
+    if (member) {
+      const [u] = await db.select().from(users).where(eq(users.id, member.userId));
+      targetUser = u;
+    }
 
-  const token = `imp_${randomBytes(24).toString("hex")}`;
-  return {
-    success: true,
-    token,
-    impersonatedBy: input.superAdminEmail,
-    targetEntity: entity,
-    targetUser,
-  };
+    const token = `imp_${randomBytes(24).toString("hex")}`;
+    return {
+      success: true,
+      token,
+      impersonatedBy: input.superAdminEmail,
+      targetEntity: entity,
+      targetUser,
+    };
+  });
 }
 
 /**
@@ -448,21 +464,22 @@ export async function getSuperadminStats(): Promise<{
     };
   }
 
-  const db = getDb();
-  const allTenants = await db.select().from(entities);
-  const allUsers = await db.select().from(users);
+  return withSuperadmin(async (db) => {
+    const allTenants = await db.select().from(entities);
+    const allUsers = await db.select().from(users);
 
-  const planDist: Record<string, number> = { starter: 0, pro: 0, inhouse: 0, enterprise: 0 };
-  for (const t of allTenants) {
-    const p = t.plan || "starter";
-    planDist[p] = (planDist[p] || 0) + 1;
-  }
+    const planDist: Record<string, number> = { starter: 0, pro: 0, inhouse: 0, enterprise: 0 };
+    for (const t of allTenants) {
+      const p = t.plan || "starter";
+      planDist[p] = (planDist[p] || 0) + 1;
+    }
 
-  return {
-    totalTenants: allTenants.length,
-    activeTenants: allTenants.filter((t) => t.status === "active").length,
-    totalUsers: allUsers.length,
-    planDistribution: planDist,
-    pendingErrorsCount: pendingErrors.length,
-  };
+    return {
+      totalTenants: allTenants.length,
+      activeTenants: allTenants.filter((t) => t.status === "active").length,
+      totalUsers: allUsers.length,
+      planDistribution: planDist,
+      pendingErrorsCount: pendingErrors.length,
+    };
+  });
 }

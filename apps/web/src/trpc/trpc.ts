@@ -125,6 +125,7 @@ export const superadminProcedure = base.use(async ({ ctx, next }) => {
   }
 
   return withTenant(userId, async (db) => {
+    await db.execute(sql`select set_config('app.is_superadmin', 'true', true)`);
     const result = await next({ ctx: { ...ctx, userId } });
     if (!result.ok) throw result.error;
     return result;

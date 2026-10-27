@@ -93,6 +93,21 @@ export async function withTenant<T>(userId: string, fn: (db: Db) => Promise<T>):
 }
 
 /**
+ * Superadmin scope: Opens a transaction, sets `app.is_superadmin` = 'true',
+ * allowing cross-tenant operations in superadmin consoles and background services.
+ */
+export async function withSuperadmin<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+  const base = getDb();
+  if (_usingMock) return fn(base);
+
+  return base.transaction(async (tx) => {
+    const db = tx as unknown as Db;
+    await db.execute(sql`select set_config('app.is_superadmin', 'true', true)`);
+    return fn(db);
+  });
+}
+
+/**
  * Internal accessor for repository/use-case code: the transaction of the enclosing
  * `withTenant`. Throws when there is none — never falls back to an unscoped connection.
  * Warning: `fn` must be awaited inside the `withTenant` callback; detached async work (not awaited,

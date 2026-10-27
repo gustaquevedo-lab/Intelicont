@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getDb, isMockMode } from "@ledger/db";
+import { getDb, isMockMode, withSuperadmin } from "@ledger/db";
 import { entities, users } from "@ledger/db/schema";
 import { eq, desc } from "drizzle-orm";
 import {
@@ -48,24 +48,25 @@ export async function getSuperadminTenantsAction() {
         },
       ];
     }
-    const db = getDb();
-    const rows = await db.select().from(entities).orderBy(desc(entities.createdAt));
-    return rows.map((e) => ({
-      id: e.id,
-      ruc: e.ruc,
-      legalName: e.legalName,
-      tradeName: e.tradeName,
-      entityType: "JURIDICA",
-      plan: e.plan || "starter",
-      featuresOverrideJson: e.featuresOverrideJson,
-      features: { sifenSync: true, aiTripleImputation: true, cgrReports: true, bankApi: true, multiUser: true },
-      mrr: e.plan === "enterprise" ? 650000 : e.plan === "inhouse" ? 440000 : e.plan === "pro" ? 385000 : 180000,
-      status: e.status || "active",
-      tenantType: "STUDIO" as const,
-      contactEmail: null,
-      contactPhone: null,
-      createdAt: e.createdAt,
-    }));
+    return withSuperadmin(async (db) => {
+      const rows = await db.select().from(entities).orderBy(desc(entities.createdAt));
+      return rows.map((e) => ({
+        id: e.id,
+        ruc: e.ruc,
+        legalName: e.legalName,
+        tradeName: e.tradeName,
+        entityType: "JURIDICA",
+        plan: e.plan || "starter",
+        featuresOverrideJson: e.featuresOverrideJson,
+        features: { sifenSync: true, aiTripleImputation: true, cgrReports: true, bankApi: true, multiUser: true },
+        mrr: e.plan === "enterprise" ? 650000 : e.plan === "inhouse" ? 440000 : e.plan === "pro" ? 385000 : 180000,
+        status: e.status || "active",
+        tenantType: "STUDIO" as const,
+        contactEmail: null,
+        contactPhone: null,
+        createdAt: e.createdAt,
+      }));
+    });
   } catch {
     return [];
   }
@@ -147,16 +148,17 @@ export async function updateTenantCommercialsAction(
   await requireSuperadmin();
   try {
     if (!isMockMode()) {
-      const db = getDb();
-      await db
-        .update(entities)
-        .set({
-          ...(data.plan && { plan: data.plan }),
-          ...(data.featuresOverrideJson !== undefined && { featuresOverrideJson: data.featuresOverrideJson }),
-          ...(data.status && { status: data.status }),
-          updatedAt: new Date(),
-        })
-        .where(eq(entities.id, entityId));
+      await withSuperadmin(async (db) => {
+        await db
+          .update(entities)
+          .set({
+            ...(data.plan && { plan: data.plan }),
+            ...(data.featuresOverrideJson !== undefined && { featuresOverrideJson: data.featuresOverrideJson }),
+            ...(data.status && { status: data.status }),
+            updatedAt: new Date(),
+          })
+          .where(eq(entities.id, entityId));
+      });
     }
     revalidatePath("/superadmin");
     return { success: true };
